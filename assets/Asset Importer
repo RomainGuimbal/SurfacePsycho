@@ -1,0 +1,25 @@
+import bpy
+
+# path to the blend
+filepath = "//..\..\Bezier_surface.blend"
+
+# name of object(s) to append or link
+obj_names = ["PsychoPatch", "PsychoPatch Quadratic", "PsychoCurve"]
+
+# append, set to true to keep the link to the original file
+link = False
+
+
+def is_asset(obj):
+    return obj.asset_data is not None
+
+# link all objects in the list
+with bpy.data.libraries.load(filepath, link=link) as (data_from, data_to):
+    data_to.objects = [name for name in data_from.objects if name in obj_names]
+
+
+# link object to current scene
+for obj in data_to.objects:
+    if obj is not None:
+       bpy.context.collection.objects.link(obj)
+       obj.location = (0,0,0)
