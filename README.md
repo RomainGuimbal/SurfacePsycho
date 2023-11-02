@@ -41,4 +41,4 @@ The addon offers a new surfacing workflow optimized for industrial deigners. It 
 * Conversion with Blender internal NURBS system
 * UVs for blender materials
 * Quadratic bezier curve
-* Curve from linear UV space cut (don't worry it will make sense eventually)
+* Trim patch and get curve from linear UV space cut (don't worry it will make sense eventually)
