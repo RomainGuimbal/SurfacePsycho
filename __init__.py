@@ -148,7 +148,7 @@ filepath = addonpath + "/assets/assets.blend"
 
 def append_object_by_name(obj_name, context):
     with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
-            data_to.objects = [name for name in data_from.objects if name==obj_name]
+        data_to.objects = [name for name in data_from.objects if name==obj_name]
 
     cursor_loc = context.scene.cursor.location
 
@@ -157,6 +157,7 @@ def append_object_by_name(obj_name, context):
             context.collection.objects.link(obj)
             obj.location = cursor_loc
             obj.asset_clear()
+            context.scene.objects(obj).select_set(True)
 
 class SP_OT_add_bicubic_patch(bpy.types.Operator):
     bl_idname = "sp.add_bicubic_patch"
@@ -176,7 +177,14 @@ class SP_OT_add_cubic_curve(bpy.types.Operator):
         append_object_by_name("PsychoCurve", context)
         return {'FINISHED'}
 
+class SP_OT_add_curvatures_probe(bpy.types.Operator):
+    bl_idname = "sp.add_curvatures_probe"
+    bl_label = "Add Curvatures Probe"
+    bl_options = {'REGISTER', 'UNDO'}
 
+    def execute(self, context):
+        append_object_by_name("SP - Curvatures Probe", context)
+        return {'FINISHED'}
 
 
 
@@ -193,7 +201,9 @@ class SP_PT_MainPanel(bpy.types.Panel):
     def draw(self, context):
         """panel layout"""
         row = self.layout.row()
-        row.operator("sp.quick_export", text="Quick export (.STEP)")
+        row.operator("sp.quick_export", text="Quick export as .STEP")
+        row = self.layout.row()
+        row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
         # row = self.layout.row()
         # row.operator("sp.test", text="Make tangent")
         # row = self.layout.row()
@@ -231,6 +241,7 @@ classes = (
     # SP_AddonPreferences,
     SP_OT_add_bicubic_patch,
     SP_OT_add_cubic_curve,
+    SP_OT_add_curvatures_probe,
 )
 def register():    
     for c in classes:
