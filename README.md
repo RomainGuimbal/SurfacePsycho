@@ -9,7 +9,6 @@ A new surfacing workflow optimized for industrial deigners ! It notably allows .
 ## Features
 * Primitives
   * Bicubic bezier patch ("The PsychoPatch" :D)
-  * Cubic bezier curve
   * Biquadratic bezier patch
 
 * .STEP export
