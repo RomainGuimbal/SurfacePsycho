@@ -186,6 +186,18 @@ class SP_OT_add_curvatures_probe(bpy.types.Operator):
         append_object_by_name("SP - Curvatures Probe", context)
         return {'FINISHED'}
 
+class SP_OT_add_library(bpy.types.Operator):
+    bl_idname = "sp.add_library"
+    bl_label = "Add Library"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        asset_lib_path = dirname(abspath(__file__))
+        paths = [a.path for a in bpy.context.preferences.filepaths.asset_libraries]
+        if asset_lib_path not in paths :
+            bpy.ops.preferences.asset_library_add(directory=asset_lib_path)
+        return {'FINISHED'}
+
 
 
 ##############################
@@ -212,15 +224,13 @@ class SP_PT_MainPanel(bpy.types.Panel):
         # row.operator("sp.test", text="Export .STEP")
 
 
-# class SP_AddonPreferences(bpy.types.AddonPreferences):
-#     bl_idname = __name__
+class SP_AddonPreferences(bpy.types.AddonPreferences):
+    bl_idname = __name__
 
-#     def draw(self, context):
-#         layout = self.layout
-
-#         col = layout.column()
-#         col.label(text="Manage Asset pack")
-#         col.operator("sp.asset_pack_link", text="Update asset pack")
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.operator("sp.add_library", text="Add Assets Path")
 
 def menu_surface(self, context):
     self.layout.separator()
@@ -238,10 +248,11 @@ classes = (
     SP_OT_quick_export,
     SP_PT_MainPanel,
     SP_OT_test,
-    # SP_AddonPreferences,
+    SP_AddonPreferences,
     SP_OT_add_bicubic_patch,
     SP_OT_add_cubic_curve,
     SP_OT_add_curvatures_probe,
+    SP_OT_add_library,
 )
 def register():    
     for c in classes:
