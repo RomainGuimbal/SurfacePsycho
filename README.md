@@ -1,8 +1,7 @@
 # SurfacePsycho
 Surfacing Blender addon
 
-The addon offers a new surfacing workflow optimized for industrial deigners. It notably allows .STEP export, several continuity types and some forms of trimming (much more in progress). By using GeometryNodes on meshes objects, it benefits from many vanilla blender tools such as sculting, and I recommand the following addons to work with :
-* [EdgeFlow](https://github.com/BenjaminSauder/EdgeFlow)
+A new surfacing workflow optimized for industrial deigners ! It notably allows .STEP export, several continuity types and some forms of trimming (much more in progress). By using GeometryNodes on meshes objects, it benefits from many vanilla blender tools such as sculting, and I recommand the following addons to work with :* [EdgeFlow](https://github.com/BenjaminSauder/EdgeFlow)
 * LoopTools (Shipped with Blender)
 
 [BlenderArtists thread](https://blenderartists.org/t/surfacepsycho-addon-project/1487629)
@@ -42,3 +41,4 @@ The addon offers a new surfacing workflow optimized for industrial deigners. It 
 * UVs for blender materials
 * Quadratic bezier curve
 * Trim patch and get curve from linear UV space cut (don't worry it will make sense eventually)
+* Curve export
