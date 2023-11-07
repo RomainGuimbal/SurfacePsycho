@@ -157,6 +157,8 @@ def append_object_by_name(obj_name, context):
             context.collection.objects.link(name)
             name.location = cursor_loc
             name.asset_clear()
+            for ob in context.selected_objects:
+                ob.select = False
             name.select_set(True)
 
 
