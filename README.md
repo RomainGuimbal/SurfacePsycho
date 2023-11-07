@@ -16,14 +16,13 @@ A new surfacing workflow optimized for industrial deigners ! It notably allows .
   * Mirror modifier
 
 * Editing
-  * Trim and extend parallel to sides (in UV space)
+  * Trim and extend parallel to the 4 sides (parallel in UV space)
   * Connect side to curve
   * Contiunities C0, G1 and C1 between patches
-  * Connect to untrimmed surface
-  * Make patch linear sweep (with rail curves)
+  * Patch as linear sweep
 
 * Inspect
-  * Curvature clover (plots principal curvatures at a specific surface point)
+  * Curvatures Probe (plots all curvatures at a specific surface point)
   * Curvature combs
 
 ## Current limitations
@@ -32,12 +31,11 @@ A new surfacing workflow optimized for industrial deigners ! It notably allows .
 * Continuities between N patches
 * Higher degrees patches and curves
 * Curved trims
-* Curvature combs only support internal cubic bezier curves
 * Biquadratic patches and linear sweeps exports as bicubic patches
 
 ## To expect soon
 * Conversion with Blender internal NURBS system
-* UVs for blender materials
+* UV maps on patches without trim
 * Quadratic bezier curve
 * Trim patch and get curve from linear UV space cut (don't worry it will make sense eventually)
 * Curve export
