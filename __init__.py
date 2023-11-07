@@ -152,12 +152,21 @@ def append_object_by_name(obj_name, context):
 
     cursor_loc = context.scene.cursor.location
 
-    for obj in data_to.objects:
-        if obj is not None:
-            context.collection.objects.link(obj)
-            obj.location = cursor_loc
-            obj.asset_clear()
-            context.scene.objects(obj).select_set(True)
+    for name in data_to.objects:
+        if name is not None:
+            context.collection.objects.link(name)
+            name.location = cursor_loc
+            name.asset_clear()
+            name.select_set(True)
+
+
+
+
+
+
+##############################
+##       OPERTATORS         ##
+##############################
 
 class SP_OT_add_bicubic_patch(bpy.types.Operator):
     bl_idname = "sp.add_bicubic_patch"
@@ -166,6 +175,15 @@ class SP_OT_add_bicubic_patch(bpy.types.Operator):
 
     def execute(self, context):
         append_object_by_name("PsychoPatch", context)
+        return {'FINISHED'}
+    
+class SP_OT_add_biquadratic_patch(bpy.types.Operator):
+    bl_idname = "sp.add_biquadratic_patch"
+    bl_label = "Add Biquadratic PsychoPatch"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        append_object_by_name("PsychoPatch Quadratic", context)
         return {'FINISHED'}
 
 class SP_OT_add_cubic_curve(bpy.types.Operator):
@@ -200,6 +218,8 @@ class SP_OT_add_library(bpy.types.Operator):
 
 
 
+
+
 ##############################
 ##          VIEW            ##
 ##############################
@@ -217,10 +237,6 @@ class SP_PT_MainPanel(bpy.types.Panel):
         row = self.layout.row()
         row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
         # row = self.layout.row()
-        # row.operator("sp.test", text="Make tangent")
-        # row = self.layout.row()
-        # row.operator("sp.test", text="Harmonize")
-        # row = self.layout.row()
         # row.operator("sp.test", text="Export .STEP")
 
 
@@ -236,6 +252,7 @@ def menu_surface(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
         self.layout.operator("sp.add_bicubic_patch", text="Bicubic PsychoPatch", icon="SURFACE_NSURFACE")
+        self.layout.operator("sp.add_biquadratic_patch", text="Biquadratic PsychoPatch", icon="SURFACE_NSURFACE")
 
 def menu_curve(self, context):
     self.layout.separator()
@@ -248,12 +265,14 @@ classes = (
     SP_OT_quick_export,
     SP_PT_MainPanel,
     SP_OT_test,
-    SP_AddonPreferences,
     SP_OT_add_bicubic_patch,
+    SP_OT_add_biquadratic_patch,
     SP_OT_add_cubic_curve,
     SP_OT_add_curvatures_probe,
     SP_OT_add_library,
+    SP_AddonPreferences,
 )
+
 def register():    
     for c in classes:
         bpy.utils.register_class(c)
