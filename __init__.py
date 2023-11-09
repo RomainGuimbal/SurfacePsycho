@@ -68,25 +68,52 @@ def new_bezier_surface(points):
 
 
 def get_GN_bezierSurf_controlPoints_Coords(o, context):
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    me = ob.data
-    coords = np.empty(3 * len(me.attributes['handle_co'].data))
-    me.attributes['handle_co'].data.foreach_get("vector", coords)
-    points = coords[0:16*3].reshape((-1, 3))
+    try :
+        ob = o.evaluated_get(context.evaluated_depsgraph_get())
+        me = ob.data
+        coords = np.empty(3 * len(me.attributes['handle_co'].data))
+        me.attributes['handle_co'].data.foreach_get("vector", coords)
+        points = coords[0:16*3].reshape((-1, 3))
+    except KeyError:
+        return None
     
-    #unit correction
-    points *= 1000
     return points
+                
+
+addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
+filepath = addonpath + "/assets/assets.blend"
+
+
+def append_object_by_name(obj_name, context):
+    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
+        data_to.objects = [name for name in data_from.objects if name==obj_name]
+
+    cursor_loc = context.scene.cursor.location
+
+    for name in data_to.objects:
+        if name is not None:
+            context.collection.objects.link(name)
+            name.location = cursor_loc
+            name.asset_clear()
+            for ob in context.selected_objects:
+                ob.select = False
+            name.select_set(True)
 
 
 
 
+
+
+
+
+##############################
+##       OPERTATORS         ##
+##############################
 
 from OCC.Extend.DataExchange import write_step_file
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing
 from OCC.Core.TopoDS import TopoDS_Shape #, TopoDS_Compound
 # from OCC.Core.BRep import BRep_Builder
-
 
 class SP_OT_test(bpy.types.Operator):
     bl_idname = "sp.test"
@@ -109,8 +136,12 @@ class SP_OT_quick_export(bpy.types.Operator):
             try :
                 points = get_GN_bezierSurf_controlPoints_Coords(o, context)
             except KeyError:
-                self.report({'ERROR'}, "Not all selected object are SP surfaces")
+                self.report({'ERROR'}, "Select only SP surfaces")
                 return {'FINISHED'}
+            
+            #unit correction
+            points *= 1000
+
             bsurf = new_bezier_surface(points)
             face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
             aSew.Add(face)
@@ -141,34 +172,6 @@ class SP_OT_quick_export(bpy.types.Operator):
         write_step_file(aShape, f"{path}.step", application_protocol="AP203")
         self.report({'INFO'}, f"Step file exported as {path}.step")
         return {'FINISHED'}
-
-addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
-filepath = addonpath + "/assets/assets.blend"
-
-
-def append_object_by_name(obj_name, context):
-    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
-        data_to.objects = [name for name in data_from.objects if name==obj_name]
-
-    cursor_loc = context.scene.cursor.location
-
-    for name in data_to.objects:
-        if name is not None:
-            context.collection.objects.link(name)
-            name.location = cursor_loc
-            name.asset_clear()
-            for ob in context.selected_objects:
-                ob.select = False
-            name.select_set(True)
-
-
-
-
-
-
-##############################
-##       OPERTATORS         ##
-##############################
 
 class SP_OT_add_bicubic_patch(bpy.types.Operator):
     bl_idname = "sp.add_bicubic_patch"
@@ -218,6 +221,33 @@ class SP_OT_add_library(bpy.types.Operator):
             bpy.ops.preferences.asset_library_add(directory=asset_lib_path)
         return {'FINISHED'}
 
+class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
+    bl_idname = "sp.psychopatch_to_bl_nurbs"
+    bl_label = "Convert Psychopatches to internal NURBS"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        i=-1
+        for o in context.selected_objects :
+            cp=get_GN_bezierSurf_controlPoints_Coords(o, context)
+            if cp is not None :
+                bpy.ops.surface.primitive_nurbs_surface_surface_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+                i+=1
+                spline=context.active_object.data.splines[i]
+                spline.use_endpoint_u = True
+                spline.use_endpoint_v = True
+                spline.order_u = 4
+                spline.order_v = 4
+                
+                # set CP of spline 
+                for j,p in enumerate(spline.points): 
+                    p.co = (cp[j][0], cp[j][1], cp[j][2], 1)
+        bpy.ops.object.editmode_toggle()
+        return {'FINISHED'}
+
+
+
+#TODO : nurbs to SP :  cp = [p.co for p in o.data.splines[0].points]
 
 
 
@@ -238,8 +268,8 @@ class SP_PT_MainPanel(bpy.types.Panel):
         row.operator("sp.quick_export", text="Quick export as .STEP")
         row = self.layout.row()
         row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
-        # row = self.layout.row()
-        # row.operator("sp.test", text="Export .STEP")
+        row = self.layout.row()
+        row.operator("sp.psychopatch_to_bl_nurbs", text="Convert to internal NURBS")
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
@@ -273,6 +303,7 @@ classes = (
     SP_OT_add_curvatures_probe,
     SP_OT_add_library,
     SP_AddonPreferences,
+    SP_OT_psychopatch_to_bl_nurbs,
 )
 
 def register():    
