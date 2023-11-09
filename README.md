@@ -39,7 +39,6 @@ A new surfacing workflow optimized for industrial deigners ! It notably allows .
 ## To expect soon
 * Curve export
 * Conversion __from__ Blender internal NURBS system
-* Angled linear trims (UV space)
 * UV maps on patches without trim
 * Quadratic bezier curve
 * Trim patch and get curve from linear UV space cut (don't worry it will make sense eventually)
