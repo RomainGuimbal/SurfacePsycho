@@ -43,3 +43,5 @@ A new surfacing workflow optimized for industrial deigners ! It notably allows .
 * Trim patch and get curve from linear UV space cut (don't worry it will make sense eventually)
 * Curve export
 * G1 Continuity with N patches
+* Bezier <-> Catmull-rom spline conversion
+* Way more
