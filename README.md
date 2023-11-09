@@ -37,11 +37,13 @@ A new surfacing workflow optimized for industrial deigners ! It notably allows .
 * Biquadratic patches and linear sweeps exports as bicubic patches
 
 ## To expect soon
+* Curve export
 * Conversion __from__ Blender internal NURBS system
+* Angled linear trims (UV space)
 * UV maps on patches without trim
 * Quadratic bezier curve
 * Trim patch and get curve from linear UV space cut (don't worry it will make sense eventually)
-* Curve export
 * G1 Continuity with N patches
 * Bezier <-> Catmull-rom spline conversion
+* Continuities improvments
 * Way more
