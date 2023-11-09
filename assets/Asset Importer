@@ -45,6 +45,7 @@ gr_names = [
 "SP - Sweep Linear",
 #"SP - Trim 4 sides",
 #"SP - Trim Parallel to UV Side"
+"SP - Patch Combs"
 ]
 
 append_node_group_by_names(filepath1, gr_names)
