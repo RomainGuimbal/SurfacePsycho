@@ -30,10 +30,10 @@ A new surfacing workflow optimized for industrial deigners ! It notably allows .
   
 
 ## Current limitations
-* Continuities doesn't support scaling
-* Mirror on several axis or several mirror modifiers
-* Higher degrees patches and curves
-* Curved trims
+* No scaling support
+* Mirror limited to one axis and one mirror modifier per patch
+* No higher degrees patches and curves
+* No curved trims
 * Biquadratic patches and linear sweeps exports as bicubic patches
 
 ## To expect soon
