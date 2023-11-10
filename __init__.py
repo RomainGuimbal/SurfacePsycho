@@ -88,17 +88,18 @@ def append_object_by_name(obj_name, context):
     with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
         data_to.objects = [name for name in data_from.objects if name==obj_name]
 
+
     cursor_loc = context.scene.cursor.location
 
-    for name in data_to.objects:
-        if name is not None:
-            context.collection.objects.link(name)
-            name.location = cursor_loc
-            name.asset_clear()
-            for ob in context.selected_objects:
-                ob.select = False
-            name.select_set(True)
-
+    for o in data_to.objects:
+        if o is not None:
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.select_all(action='DESELECT')
+            context.collection.objects.link(o)
+            o.location = cursor_loc
+            o.asset_clear()
+            o.select_set(True)
+            bpy.context.view_layer.objects.active = o
 
 
 
