@@ -17,7 +17,7 @@ bl_info = {
     "version": (0, 1),
     "blender": (3, 6, 0),
     "description": "Surface design for the mechanical industry",
-    "warning": "Alpha",
+    #"warning": "Alpha",
     "doc_url": "",
     "category": "3D View",
     "location": "View3D > Add > Surface  |  View3D > N Panel > Edit"
