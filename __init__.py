@@ -93,7 +93,8 @@ def append_object_by_name(obj_name, context):
 
     for o in data_to.objects:
         if o is not None:
-            bpy.ops.object.mode_set(mode='OBJECT')
+            if context.mode != 'OBJECT':
+                bpy.ops.object.mode_set(mode='OBJECT')
             bpy.ops.object.select_all(action='DESELECT')
             context.collection.objects.link(o)
             o.location = cursor_loc
@@ -310,6 +311,7 @@ classes = (
 def register():    
     for c in classes:
         bpy.utils.register_class(c)
+    # bpy.utils.register_class(SP_OT_add_library)
     bpy.types.VIEW3D_MT_surface_add.append(menu_surface)
     bpy.types.VIEW3D_MT_curve_add.append(menu_curve)
     
