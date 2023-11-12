@@ -27,7 +27,7 @@ import bpy
 import sys
 import numpy as np
 
-from os.path import dirname, abspath
+from os.path import dirname, abspath, exists
 
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
@@ -116,6 +116,7 @@ from OCC.Extend.DataExchange import write_step_file
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing
 from OCC.Core.TopoDS import TopoDS_Shape #, TopoDS_Compound
 # from OCC.Core.BRep import BRep_Builder
+from datetime import datetime
 
 class SP_OT_test(bpy.types.Operator):
     bl_idname = "sp.test"
@@ -167,12 +168,10 @@ class SP_OT_quick_export(bpy.types.Operator):
         aSew.Perform()
         aShape = aSew.SewedShape()
 
-        from random import random
-        from math import ceil
-        path = bpy.path.abspath("//") + str(ceil(random()*10000))
+        pathstr = bpy.path.abspath("//") + str(datetime.today())[:-7]
         
-        write_step_file(aShape, f"{path}.step", application_protocol="AP203")
-        self.report({'INFO'}, f"Step file exported as {path}.step")
+        write_step_file(aShape, f"{pathstr}.step", application_protocol="AP203")
+        self.report({'INFO'}, f"Step file exported as {pathstr}.step")
         return {'FINISHED'}
 
 class SP_OT_add_bicubic_patch(bpy.types.Operator):

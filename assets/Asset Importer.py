@@ -44,7 +44,6 @@ gr_names = [
 "SP - Sew and Symetrise",
 "SP - Sweep Linear",
 #"SP - Trim 4 sides",
-#"SP - Trim Parallel to UV Side"
 "SP - Patch Combs"
 ]
 
