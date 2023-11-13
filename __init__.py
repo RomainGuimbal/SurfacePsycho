@@ -15,9 +15,9 @@ bl_info = {
     "name": "Surface Psycho",
     "author": "Romain Guimbal",
     "version": (0, 1),
-    "blender": (3, 6, 0),
+    "blender": (4, 0, 0),
     "description": "Surface design for the mechanical industry",
-    #"warning": "Alpha",
+    "warning": "Alpha",
     "doc_url": "",
     "category": "3D View",
     "location": "View3D > Add > Surface  |  View3D > N Panel > Edit"
@@ -68,15 +68,11 @@ def new_bezier_surface(points):
 
 
 def get_GN_bezierSurf_controlPoints_Coords(o, context):
-    try :
-        ob = o.evaluated_get(context.evaluated_depsgraph_get())
-        me = ob.data
-        coords = np.empty(3 * len(me.attributes['handle_co'].data))
-        me.attributes['handle_co'].data.foreach_get("vector", coords)
-        points = coords[0:16*3].reshape((-1, 3))
-    except KeyError:
-        return None
-    
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    me = ob.data
+    coords = np.empty(3 * len(me.attributes['handle_co'].data))
+    me.attributes['handle_co'].data.foreach_get("vector", coords)
+    points = coords[0:16*3].reshape((-1, 3))
     return points
                 
 
@@ -135,43 +131,57 @@ class SP_OT_quick_export(bpy.types.Operator):
         aShape = TopoDS_Shape()
         aSew = BRepBuilderAPI_Sewing(1e-1)
         
+        SPobj_count=0
+        
         for o in context.selected_objects:
+            isSP=True
             try :
                 points = get_GN_bezierSurf_controlPoints_Coords(o, context)
-            except KeyError:
-                self.report({'ERROR'}, "Select only SP surfaces")
-                return {'FINISHED'}
-            
-            #unit correction
-            points *= 1000
+            except Exception:
+                isSP=False
+                pass
 
-            bsurf = new_bezier_surface(points)
-            face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-            aSew.Add(face)
-            
-            # mirrors (do not support rotations of mirror object)
-            for m in o.modifiers :
-                if m.type == 'MIRROR':
-                    # /!\ Doesn't supports multiple mirror axis yet
-                    for j in range(2):
-                        if m.use_axis[j]:
-                            mirror_vect = [1-2*(j==0), 1-2*(j==1), 1-2*(j==2)]
-                            if m.mirror_object==None:
-                                mirror_offset = o.location*1000
-                            else :
-                                mirror_offset = m.mirror_object.location*1000
-                            bsurf = new_bezier_surface((points - mirror_offset)*mirror_vect + mirror_offset)
-                            face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-                            aSew.Add(face)
+            if isSP :
+                SPobj_count +=1
+
+                #unit correction
+                points *= 1000
+
+                bsurf = new_bezier_surface(points)
+                face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+                aSew.Add(face)
+                
+                # mirrors (do not support rotations of mirror object)
+                for m in o.modifiers :
+                    if m.type == 'MIRROR':
+                        # /!\ Doesn't supports multiple mirror axis yet
+                        for j in range(2):
+                            if m.use_axis[j]:
+                                mirror_vect = [1-2*(j==0), 1-2*(j==1), 1-2*(j==2)]
+                                if m.mirror_object==None:
+                                    mirror_offset = o.location*1000
+                                else :
+                                    mirror_offset = m.mirror_object.location*1000
+                                bsurf = new_bezier_surface((points - mirror_offset)*mirror_vect + mirror_offset)
+                                face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+                                aSew.Add(face)
 
         aSew.SetNonManifoldMode(True)
         aSew.Perform()
         aShape = aSew.SewedShape()
 
-        pathstr = bpy.path.abspath("//") + str(datetime.today())[:-7]
-        
-        write_step_file(aShape, f"{pathstr}.step", application_protocol="AP203")
-        self.report({'INFO'}, f"Step file exported as {pathstr}.step")
+        blenddir = bpy.path.abspath("//")
+        if blenddir !="":#avoid exporting to root
+            dir =  bpy.path.abspath("//")
+        else :
+            dir = bpy.context.preferences.filepaths.temporary_directory
+        pathstr = dir + str(datetime.today())[:-7].replace('-','').replace(' ','-').replace(':','')
+
+        if SPobj_count>0 :
+            write_step_file(aShape, f"{pathstr}.step", application_protocol="AP203")
+            self.report({'INFO'}, f"Step file exported as {pathstr}.step")
+        else :
+            self.report({'INFO'}, 'No SurfacePsycho Objects selected')
         return {'FINISHED'}
 
 class SP_OT_add_bicubic_patch(bpy.types.Operator):
@@ -230,7 +240,12 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
     def execute(self, context):
         i=-1
         for o in context.selected_objects :
-            cp=get_GN_bezierSurf_controlPoints_Coords(o, context)
+            try:
+                cp=get_GN_bezierSurf_controlPoints_Coords(o, context)
+            except Exception :
+                cp=None
+                pass
+            
             if cp is not None :
                 bpy.ops.surface.primitive_nurbs_surface_surface_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
                 i+=1
