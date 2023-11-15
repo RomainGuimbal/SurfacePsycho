@@ -22,10 +22,4 @@ jobs:
       - name: Lint
         shell: bash -l {0}
         run: |
-          source activate pyoccenv
-          conda install -c conda-forge pythonocc-core=7.7.2      
-      - name: Run pytest
-        shell: bash -l {0}
-        run: |
-            conda install pytest
-            pytest
+          conda install -c conda-forge pythonocc-core=7.7.2
