@@ -24,7 +24,12 @@ jobs:
         shell: bash -l {0}
         run: |
           conda install -c conda-forge pythonocc-core=7.7.2
+      - name: echo paths
+        shell: bash -l {0}
+        run: |
+          echo Tous les paths de modules :
           echo $(conda info --all)
+          echo Ceux qui match :
           echo $(conda info --all | grep -i pythonocc-core)
           echo $(conda info --all | grep -i OCC)
           echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
