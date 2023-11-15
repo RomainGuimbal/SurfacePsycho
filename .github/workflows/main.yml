@@ -15,12 +15,12 @@ jobs:
           activate-environment: pyoccenv
           python-version: 3.9
           auto-activate-base: false
-      - shell: bash
+      - shell: bash -l {0}
         run: |
           conda info
           conda list
       - name: install pythonocc
-        shell: bash
+        shell: bash -l {0}
         run: |
           conda install -c conda-forge pythonocc-core=7.7.2
           echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
