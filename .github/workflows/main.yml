@@ -15,11 +15,16 @@ jobs:
           activate-environment: pyoccenv
           python-version: 3.9
           auto-activate-base: false
-      - shell: bash -l {0}
+      - shell: bash
         run: |
           conda info
           conda list
-      - name: Lint
-        shell: bash -l {0}
+      - name: install pythonocc
+        shell: bash
         run: |
           conda install -c conda-forge pythonocc-core=7.7.2
+          echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
+      - uses: actions/upload-artifact@v3
+        with:
+          name: my-artifact
+          path: $PYOCCPATH
