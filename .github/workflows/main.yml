@@ -23,6 +23,9 @@ jobs:
         shell: bash -l {0}
         run: |
           conda install -c conda-forge pythonocc-core=7.7.2
+          echo $(conda info --all)
+          echo $(conda info --all | grep -i pythonocc-core)
+          echo $(conda info --all | grep -i OCC)
           echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v3
         with:
