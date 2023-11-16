@@ -27,6 +27,7 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
+          cd\home/runner/conda_pkgs_dir
           echo pwd :
           pwd
           echo ls :
