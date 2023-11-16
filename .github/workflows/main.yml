@@ -24,10 +24,10 @@ jobs:
         shell: bash -l {0}
         run: |
           conda install -c conda-forge pythonocc-core=7.7.2
-      - name: echo paths
-        shell: bash -l {0}
-        run: |
-          ls -R
+      #- name: echo paths
+      #  shell: bash -l {0}
+       # run: |
+      
         # echo $(conda info --all)
           # echo Ceux qui match :
           # echo $(conda info --all | grep -i pythonocc-core)
