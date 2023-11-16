@@ -35,5 +35,5 @@ jobs:
           # echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v3
         with:
-          name: my-artifact
-          path: $PYOCCPATH
+          name: OCC-artifact
+          path: /usr/share/miniconda/envs/pyoccenv/lib/site-packages/OCC
