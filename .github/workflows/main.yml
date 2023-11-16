@@ -25,10 +25,10 @@ jobs:
         run: |
           conda install -c conda-forge pythonocc-core=7.7.2
       - name: echo paths
-         shell: bash -l {0}
-         run: |
-           python import OCC
-           python OCC.__file__
+        shell: bash -l {0}
+        run: |
+          python import OCC
+          python OCC.__file__
         # echo $(conda info --all)
           # echo Ceux qui match :
           # echo $(conda info --all | grep -i pythonocc-core)
