@@ -27,12 +27,12 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
-          echo Tous les paths de modules :
-          echo $(conda info --all)
-          echo Ceux qui match :
-          echo $(conda info --all | grep -i pythonocc-core)
-          echo $(conda info --all | grep -i OCC)
-          echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
+          ls -R
+        # echo $(conda info --all)
+          # echo Ceux qui match :
+          # echo $(conda info --all | grep -i pythonocc-core)
+          # echo $(conda info --all | grep -i OCC)
+          # echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v3
         with:
           name: my-artifact
