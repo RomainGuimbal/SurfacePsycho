@@ -36,4 +36,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: OCC-artifact
-          path: /usr/share/miniconda/envs/pyoccenv/lib/site-packages/OCC
+          path: /usr/share/miniconda/envs/pyoccenv/lib/site-packages/OCC/
