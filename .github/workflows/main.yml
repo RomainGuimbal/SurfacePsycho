@@ -23,12 +23,11 @@ jobs:
       - name: install pythonocc
         shell: bash -l {0}
         run: |
-          conda install -c conda-forge pythonocc-core=7.7.2
+          conda install -c conda-forge pythonocc-core=7.7.2 -o
       - name: echo paths
         shell: bash -l {0}
         run: |
-          cd /
-          cd usr
+          cd /usr
           echo pwd :
           pwd
           cd share
