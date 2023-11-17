@@ -27,7 +27,7 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
-          cd /usr/share/miniconda/env/pyoccenv/lib/site-packages
+          cd /usr/share/miniconda/env/pyoccenv/lib
           ls
           
         # echo $(conda info --all)
