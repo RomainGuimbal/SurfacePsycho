@@ -27,14 +27,8 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
-          cd /usr
-          echo pwd :
-          pwd
-          cd share
-          cd miniconda
-          cd env
-          echo pwd :
-          pwd
+          cd /usr/share/miniconda
+          ls
           
         # echo $(conda info --all)
           # echo Ceux qui match :
