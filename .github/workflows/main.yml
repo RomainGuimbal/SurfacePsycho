@@ -23,7 +23,7 @@ jobs:
       - name: install pythonocc
         shell: bash -l {0}
         run: |
-          conda install -c conda-forge pythonocc-core=7.7.2 -o
+          conda install -c conda-forge pythonocc-core=7.7.2
       - name: echo paths
         shell: bash -l {0}
         run: |
