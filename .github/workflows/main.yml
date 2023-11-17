@@ -27,8 +27,8 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
-          cd /usr/share/miniconda/envs/pyoccenv/lib
-          ls
+          cd /usr/share/miniconda/envs
+          tree -d pyoccenv
           
         # echo $(conda info --all)
           # echo Ceux qui match :
