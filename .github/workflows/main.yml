@@ -28,7 +28,10 @@ jobs:
         shell: bash -l {0}
         run: |
           cd /
-          cd home/runner/conda_pkgs_dir
+          cd usr
+          cd share
+          cd miniconda
+          cd env
           echo pwd :
           pwd
           echo ls :
