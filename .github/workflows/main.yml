@@ -7,7 +7,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
         matrix:
-            os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+            os: ["macos-latest"]
+            #"ubuntu-latest", "windows-latest", "macos-latest"]
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
@@ -26,8 +27,8 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
-          cd /usr/share/miniconda/envs
-          tree -d pyoccenv
+          cd /usr
+          tree -d /usr
           
         # echo $(conda info --all)
           # echo Ceux qui match :
