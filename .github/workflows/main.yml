@@ -29,13 +29,13 @@ jobs:
         run: |
           cd /
           cd usr
+          echo pwd :
+          pwd
           cd share
           cd miniconda
           cd env
           echo pwd :
           pwd
-          echo ls :
-          ls
           
         # echo $(conda info --all)
           # echo Ceux qui match :
