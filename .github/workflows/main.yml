@@ -27,9 +27,8 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
-          cd /usr/share/miniconda
+          cd /usr/share
           ls
-          cd envs
         # tree -d 
           
         # echo $(conda info --all)
