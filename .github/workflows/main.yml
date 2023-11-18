@@ -27,7 +27,7 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
-          cd /usr/share
+          cd /usr/local/miniconda/envs
           ls
         # tree -d 
           
