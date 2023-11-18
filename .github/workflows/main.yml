@@ -1,4 +1,4 @@
-name: PythonOCC conda build
+Vname: PythonOCC conda build
 on: [push]
 
 jobs:
@@ -27,9 +27,10 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
-          cd /usr
+          cd /usr/share/miniconda
           ls
-        # tree -d /usr
+          cd envs
+        # tree -d 
           
         # echo $(conda info --all)
           # echo Ceux qui match :
