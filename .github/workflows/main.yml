@@ -28,7 +28,8 @@ jobs:
         shell: bash -l {0}
         run: |
           cd /usr
-          tree -d /usr
+          ls
+        # tree -d /usr
           
         # echo $(conda info --all)
           # echo Ceux qui match :
