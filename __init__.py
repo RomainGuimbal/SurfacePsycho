@@ -38,7 +38,7 @@ from OCC.Core.gp import gp_Pnt
 from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface
 from OCC.Core.TColgp import TColgp_Array2OfPnt
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
-
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire
 
 
 def new_bezier_surface(points):
@@ -70,10 +70,10 @@ def new_bezier_surface(points):
 def get_GN_bezierSurf_controlPoints_Coords(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     me = ob.data
-    coords = np.empty(3 * len(me.attributes['handle_co'].data))
-    me.attributes['handle_co'].data.foreach_get("vector", coords)
-    points = coords[0:16*3].reshape((-1, 3))
-    return points
+    raw_coords = np.empty(3 * len(me.attributes['handle_co'].data))
+    me.attributes['handle_co'].data.foreach_get("vector", raw_coords)
+    coords = raw_coords[0:16*3].reshape((-1, 3))
+    return coords
                 
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
@@ -99,6 +99,26 @@ def append_object_by_name(obj_name, context):
             bpy.context.view_layer.objects.active = o
 
 
+def bl_to_occ_planar_surfaces_(o, context):
+    # List edges
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    me = ob.data
+    raw_cp_planar = np.empty(3 * len(me.attributes['CP_planar'].data))
+    me.attributes['CP_planar'].data.foreach_get("vector", raw_cp_planar)
+    cp_planar = raw_cp_planar.reshape((-1, 3))
+    # edges_list = TopTools_Array1OfShapes()
+    # for each segment : make bezier
+    # edges_list.add()
+    wire = BRepBuilderAPI_MakeWire(); 
+    # for e in edges_list :
+    #   wire.Add(TopoDS.Edge(e))
+    # w = TopoDS_Wire(wire)
+
+    #face = BRepBuilderAPI_MakeFace(planar_surf,wire)
+    return 0#face
+
+
+
 
 
 
@@ -109,7 +129,7 @@ def append_object_by_name(obj_name, context):
 ##############################
 
 from OCC.Extend.DataExchange import write_step_file
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Sewing
 from OCC.Core.TopoDS import TopoDS_Shape #, TopoDS_Compound
 # from OCC.Core.BRep import BRep_Builder
 from datetime import datetime

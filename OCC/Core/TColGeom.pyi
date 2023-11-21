@@ -5,10 +5,10 @@ from OCC.Core.Standard import *
 from OCC.Core.NCollection import *
 from OCC.Core.Geom import *
 
-#the following typedef cannot be wrapped as is
-TColGeom_Array2OfBezierSurface = NewType('TColGeom_Array2OfBezierSurface', Any)
-#the following typedef cannot be wrapped as is
-TColGeom_Array2OfSurface = NewType('TColGeom_Array2OfSurface', Any)
+# the following typedef cannot be wrapped as is
+TColGeom_Array2OfBezierSurface = NewType("TColGeom_Array2OfBezierSurface", Any)
+# the following typedef cannot be wrapped as is
+TColGeom_Array2OfSurface = NewType("TColGeom_Array2OfSurface", Any)
 
 class TColGeom_Array1OfBSplineCurve:
     @overload
@@ -153,24 +153,24 @@ class TColGeom_SequenceOfSurface:
 
 # harray1 classes
 
-class TColGeom_HArray1OfSurface(TColGeom_Array1OfSurface, Standard_Transient):
-    def __init__(self, theLower: int, theUpper: int) -> None: ...
-    def Array1(self) -> TColGeom_Array1OfSurface: ...
-
-
-class TColGeom_HArray1OfBezierCurve(TColGeom_Array1OfBezierCurve, Standard_Transient):
-    def __init__(self, theLower: int, theUpper: int) -> None: ...
-    def Array1(self) -> TColGeom_Array1OfBezierCurve: ...
-
-
 class TColGeom_HArray1OfBSplineCurve(TColGeom_Array1OfBSplineCurve, Standard_Transient):
     def __init__(self, theLower: int, theUpper: int) -> None: ...
     def Array1(self) -> TColGeom_Array1OfBSplineCurve: ...
 
 
+class TColGeom_HArray1OfSurface(TColGeom_Array1OfSurface, Standard_Transient):
+    def __init__(self, theLower: int, theUpper: int) -> None: ...
+    def Array1(self) -> TColGeom_Array1OfSurface: ...
+
+
 class TColGeom_HArray1OfCurve(TColGeom_Array1OfCurve, Standard_Transient):
     def __init__(self, theLower: int, theUpper: int) -> None: ...
     def Array1(self) -> TColGeom_Array1OfCurve: ...
+
+
+class TColGeom_HArray1OfBezierCurve(TColGeom_Array1OfBezierCurve, Standard_Transient):
+    def __init__(self, theLower: int, theUpper: int) -> None: ...
+    def Array1(self) -> TColGeom_Array1OfBezierCurve: ...
 
 # harray2 classes
 

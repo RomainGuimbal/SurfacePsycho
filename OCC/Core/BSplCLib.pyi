@@ -10,6 +10,13 @@ from OCC.Core.gp import *
 from OCC.Core.GeomAbs import *
 
 
+class BSplCLib_KnotDistribution(IntEnum):
+    BSplCLib_NonUniform: int = ...
+    BSplCLib_Uniform: int = ...
+
+BSplCLib_NonUniform = BSplCLib_KnotDistribution.BSplCLib_NonUniform
+BSplCLib_Uniform = BSplCLib_KnotDistribution.BSplCLib_Uniform
+
 class BSplCLib_MultDistribution(IntEnum):
     BSplCLib_NonConstant: int = ...
     BSplCLib_Constant: int = ...
@@ -18,13 +25,6 @@ class BSplCLib_MultDistribution(IntEnum):
 BSplCLib_NonConstant = BSplCLib_MultDistribution.BSplCLib_NonConstant
 BSplCLib_Constant = BSplCLib_MultDistribution.BSplCLib_Constant
 BSplCLib_QuasiConstant = BSplCLib_MultDistribution.BSplCLib_QuasiConstant
-
-class BSplCLib_KnotDistribution(IntEnum):
-    BSplCLib_NonUniform: int = ...
-    BSplCLib_Uniform: int = ...
-
-BSplCLib_NonUniform = BSplCLib_KnotDistribution.BSplCLib_NonUniform
-BSplCLib_Uniform = BSplCLib_KnotDistribution.BSplCLib_Uniform
 
 class bsplclib:
     @staticmethod
@@ -241,7 +241,7 @@ class bsplclib:
     def IncreaseDegree(NewDegree: int, Poles: TColgp_Array1OfPnt, Weights: TColStd_Array1OfReal, NewPoles: TColgp_Array1OfPnt, NewWeights: TColStd_Array1OfReal) -> None: ...
     @overload
     @staticmethod
-    def IncreaseDegree(NewDegree: int, Poles: TColgp_Array1OfPnt2d, Weights: TColStd_Array1OfReal, NewPoles: TColgp_Array1OfPnt2d, NewWeights: TColStd_Array1OfReal) -> None: ...
+    def IncreaseDegree(theNewDegree: int, thePoles: TColgp_Array1OfPnt2d, theWeights: TColStd_Array1OfReal, theNewPoles: TColgp_Array1OfPnt2d, theNewWeights: TColStd_Array1OfReal) -> None: ...
     @staticmethod
     def IncreaseDegreeCountKnots(Degree: int, NewDegree: int, Periodic: bool, Mults: TColStd_Array1OfInteger) -> int: ...
     @overload
@@ -277,6 +277,8 @@ class bsplclib:
     @overload
     @staticmethod
     def Interpolate(Degree: int, FlatKnots: TColStd_Array1OfReal, Parameters: TColStd_Array1OfReal, ContactOrderArray: TColStd_Array1OfInteger, ArrayDimension: int) -> Tuple[float, float, int]: ...
+    @staticmethod
+    def Intervals(theKnots: TColStd_Array1OfReal, theMults: TColStd_Array1OfInteger, theDegree: int, isPeriodic: bool, theContinuity: int, theFirst: float, theLast: float, theTolerance: float, theIntervals: TColStd_Array1OfReal) -> int: ...
     @staticmethod
     def IsRational(Weights: TColStd_Array1OfReal, I1: int, I2: int, Epsilon: Optional[float] = 0.0) -> bool: ...
     @staticmethod
@@ -477,152 +479,3 @@ class BSplCLib_EvaluatorFunction:
 # harray2 classes
 # hsequence classes
 
-bsplclib_AntiBoorScheme = bsplclib.AntiBoorScheme
-bsplclib_Bohm = bsplclib.Bohm
-bsplclib_BoorIndex = bsplclib.BoorIndex
-bsplclib_BoorScheme = bsplclib.BoorScheme
-bsplclib_BuildBSpMatrix = bsplclib.BuildBSpMatrix
-bsplclib_BuildBoor = bsplclib.BuildBoor
-bsplclib_BuildCache = bsplclib.BuildCache
-bsplclib_BuildCache = bsplclib.BuildCache
-bsplclib_BuildCache = bsplclib.BuildCache
-bsplclib_BuildCache = bsplclib.BuildCache
-bsplclib_BuildEval = bsplclib.BuildEval
-bsplclib_BuildEval = bsplclib.BuildEval
-bsplclib_BuildEval = bsplclib.BuildEval
-bsplclib_BuildKnots = bsplclib.BuildKnots
-bsplclib_BuildSchoenbergPoints = bsplclib.BuildSchoenbergPoints
-bsplclib_CacheD0 = bsplclib.CacheD0
-bsplclib_CacheD0 = bsplclib.CacheD0
-bsplclib_CacheD1 = bsplclib.CacheD1
-bsplclib_CacheD1 = bsplclib.CacheD1
-bsplclib_CacheD2 = bsplclib.CacheD2
-bsplclib_CacheD2 = bsplclib.CacheD2
-bsplclib_CacheD3 = bsplclib.CacheD3
-bsplclib_CacheD3 = bsplclib.CacheD3
-bsplclib_CoefsD0 = bsplclib.CoefsD0
-bsplclib_CoefsD0 = bsplclib.CoefsD0
-bsplclib_CoefsD1 = bsplclib.CoefsD1
-bsplclib_CoefsD1 = bsplclib.CoefsD1
-bsplclib_CoefsD2 = bsplclib.CoefsD2
-bsplclib_CoefsD2 = bsplclib.CoefsD2
-bsplclib_CoefsD3 = bsplclib.CoefsD3
-bsplclib_CoefsD3 = bsplclib.CoefsD3
-bsplclib_D0 = bsplclib.D0
-bsplclib_D0 = bsplclib.D0
-bsplclib_D0 = bsplclib.D0
-bsplclib_D0 = bsplclib.D0
-bsplclib_D0 = bsplclib.D0
-bsplclib_D1 = bsplclib.D1
-bsplclib_D1 = bsplclib.D1
-bsplclib_D1 = bsplclib.D1
-bsplclib_D1 = bsplclib.D1
-bsplclib_D1 = bsplclib.D1
-bsplclib_D2 = bsplclib.D2
-bsplclib_D2 = bsplclib.D2
-bsplclib_D2 = bsplclib.D2
-bsplclib_D2 = bsplclib.D2
-bsplclib_D2 = bsplclib.D2
-bsplclib_D3 = bsplclib.D3
-bsplclib_D3 = bsplclib.D3
-bsplclib_D3 = bsplclib.D3
-bsplclib_D3 = bsplclib.D3
-bsplclib_D3 = bsplclib.D3
-bsplclib_Derivative = bsplclib.Derivative
-bsplclib_Eval = bsplclib.Eval
-bsplclib_Eval = bsplclib.Eval
-bsplclib_Eval = bsplclib.Eval
-bsplclib_Eval = bsplclib.Eval
-bsplclib_Eval = bsplclib.Eval
-bsplclib_EvalBsplineBasis = bsplclib.EvalBsplineBasis
-bsplclib_FactorBandedMatrix = bsplclib.FactorBandedMatrix
-bsplclib_FirstUKnotIndex = bsplclib.FirstUKnotIndex
-bsplclib_FlatBezierKnots = bsplclib.FlatBezierKnots
-bsplclib_FlatIndex = bsplclib.FlatIndex
-bsplclib_FunctionMultiply = bsplclib.FunctionMultiply
-bsplclib_FunctionMultiply = bsplclib.FunctionMultiply
-bsplclib_FunctionMultiply = bsplclib.FunctionMultiply
-bsplclib_FunctionMultiply = bsplclib.FunctionMultiply
-bsplclib_FunctionReparameterise = bsplclib.FunctionReparameterise
-bsplclib_FunctionReparameterise = bsplclib.FunctionReparameterise
-bsplclib_FunctionReparameterise = bsplclib.FunctionReparameterise
-bsplclib_FunctionReparameterise = bsplclib.FunctionReparameterise
-bsplclib_GetPole = bsplclib.GetPole
-bsplclib_Hunt = bsplclib.Hunt
-bsplclib_IncreaseDegree = bsplclib.IncreaseDegree
-bsplclib_IncreaseDegree = bsplclib.IncreaseDegree
-bsplclib_IncreaseDegree = bsplclib.IncreaseDegree
-bsplclib_IncreaseDegree = bsplclib.IncreaseDegree
-bsplclib_IncreaseDegree = bsplclib.IncreaseDegree
-bsplclib_IncreaseDegreeCountKnots = bsplclib.IncreaseDegreeCountKnots
-bsplclib_InsertKnot = bsplclib.InsertKnot
-bsplclib_InsertKnot = bsplclib.InsertKnot
-bsplclib_InsertKnots = bsplclib.InsertKnots
-bsplclib_InsertKnots = bsplclib.InsertKnots
-bsplclib_InsertKnots = bsplclib.InsertKnots
-bsplclib_Interpolate = bsplclib.Interpolate
-bsplclib_Interpolate = bsplclib.Interpolate
-bsplclib_Interpolate = bsplclib.Interpolate
-bsplclib_Interpolate = bsplclib.Interpolate
-bsplclib_Interpolate = bsplclib.Interpolate
-bsplclib_Interpolate = bsplclib.Interpolate
-bsplclib_IsRational = bsplclib.IsRational
-bsplclib_KnotAnalysis = bsplclib.KnotAnalysis
-bsplclib_KnotForm = bsplclib.KnotForm
-bsplclib_KnotSequence = bsplclib.KnotSequence
-bsplclib_KnotSequence = bsplclib.KnotSequence
-bsplclib_KnotSequenceLength = bsplclib.KnotSequenceLength
-bsplclib_Knots = bsplclib.Knots
-bsplclib_KnotsLength = bsplclib.KnotsLength
-bsplclib_LastUKnotIndex = bsplclib.LastUKnotIndex
-bsplclib_LocateParameter = bsplclib.LocateParameter
-bsplclib_LocateParameter = bsplclib.LocateParameter
-bsplclib_LocateParameter = bsplclib.LocateParameter
-bsplclib_MaxDegree = bsplclib.MaxDegree
-bsplclib_MaxKnotMult = bsplclib.MaxKnotMult
-bsplclib_MergeBSplineKnots = bsplclib.MergeBSplineKnots
-bsplclib_MinKnotMult = bsplclib.MinKnotMult
-bsplclib_MovePoint = bsplclib.MovePoint
-bsplclib_MovePoint = bsplclib.MovePoint
-bsplclib_MovePointAndTangent = bsplclib.MovePointAndTangent
-bsplclib_MovePointAndTangent = bsplclib.MovePointAndTangent
-bsplclib_MovePointAndTangent = bsplclib.MovePointAndTangent
-bsplclib_MultForm = bsplclib.MultForm
-bsplclib_NbPoles = bsplclib.NbPoles
-bsplclib_NoMults = bsplclib.NoMults
-bsplclib_NoWeights = bsplclib.NoWeights
-bsplclib_PoleIndex = bsplclib.PoleIndex
-bsplclib_PolesCoefficients = bsplclib.PolesCoefficients
-bsplclib_PolesCoefficients = bsplclib.PolesCoefficients
-bsplclib_PolesCoefficients = bsplclib.PolesCoefficients
-bsplclib_PolesCoefficients = bsplclib.PolesCoefficients
-bsplclib_PrepareInsertKnots = bsplclib.PrepareInsertKnots
-bsplclib_PrepareTrimming = bsplclib.PrepareTrimming
-bsplclib_PrepareUnperiodize = bsplclib.PrepareUnperiodize
-bsplclib_RaiseMultiplicity = bsplclib.RaiseMultiplicity
-bsplclib_RaiseMultiplicity = bsplclib.RaiseMultiplicity
-bsplclib_RemoveKnot = bsplclib.RemoveKnot
-bsplclib_RemoveKnot = bsplclib.RemoveKnot
-bsplclib_RemoveKnot = bsplclib.RemoveKnot
-bsplclib_Reparametrize = bsplclib.Reparametrize
-bsplclib_Resolution = bsplclib.Resolution
-bsplclib_Resolution = bsplclib.Resolution
-bsplclib_Resolution = bsplclib.Resolution
-bsplclib_Reverse = bsplclib.Reverse
-bsplclib_Reverse = bsplclib.Reverse
-bsplclib_Reverse = bsplclib.Reverse
-bsplclib_Reverse = bsplclib.Reverse
-bsplclib_Reverse = bsplclib.Reverse
-bsplclib_SolveBandedSystem = bsplclib.SolveBandedSystem
-bsplclib_SolveBandedSystem = bsplclib.SolveBandedSystem
-bsplclib_SolveBandedSystem = bsplclib.SolveBandedSystem
-bsplclib_SolveBandedSystem = bsplclib.SolveBandedSystem
-bsplclib_SolveBandedSystem = bsplclib.SolveBandedSystem
-bsplclib_SolveBandedSystem = bsplclib.SolveBandedSystem
-bsplclib_TangExtendToConstraint = bsplclib.TangExtendToConstraint
-bsplclib_Trimming = bsplclib.Trimming
-bsplclib_Trimming = bsplclib.Trimming
-bsplclib_Trimming = bsplclib.Trimming
-bsplclib_Unperiodize = bsplclib.Unperiodize
-bsplclib_Unperiodize = bsplclib.Unperiodize
-bsplclib_Unperiodize = bsplclib.Unperiodize

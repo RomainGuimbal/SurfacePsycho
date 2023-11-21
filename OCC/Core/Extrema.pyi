@@ -13,20 +13,20 @@ from OCC.Core.TColStd import *
 from OCC.Core.Geom import *
 from OCC.Core.GeomAdaptor import *
 
-#the following typedef cannot be wrapped as is
-Extrema_Array2OfPOnCurv = NewType('Extrema_Array2OfPOnCurv', Any)
-#the following typedef cannot be wrapped as is
-Extrema_Array2OfPOnCurv2d = NewType('Extrema_Array2OfPOnCurv2d', Any)
-#the following typedef cannot be wrapped as is
-Extrema_Array2OfPOnSurf = NewType('Extrema_Array2OfPOnSurf', Any)
-#the following typedef cannot be wrapped as is
-Extrema_Array2OfPOnSurfParams = NewType('Extrema_Array2OfPOnSurfParams', Any)
-#the following typedef cannot be wrapped as is
-Extrema_HUBTreeOfSphere = NewType('Extrema_HUBTreeOfSphere', Any)
-#the following typedef cannot be wrapped as is
-Extrema_UBTreeFillerOfSphere = NewType('Extrema_UBTreeFillerOfSphere', Any)
-#the following typedef cannot be wrapped as is
-Extrema_UBTreeOfSphere = NewType('Extrema_UBTreeOfSphere', Any)
+# the following typedef cannot be wrapped as is
+Extrema_Array2OfPOnCurv = NewType("Extrema_Array2OfPOnCurv", Any)
+# the following typedef cannot be wrapped as is
+Extrema_Array2OfPOnCurv2d = NewType("Extrema_Array2OfPOnCurv2d", Any)
+# the following typedef cannot be wrapped as is
+Extrema_Array2OfPOnSurf = NewType("Extrema_Array2OfPOnSurf", Any)
+# the following typedef cannot be wrapped as is
+Extrema_Array2OfPOnSurfParams = NewType("Extrema_Array2OfPOnSurfParams", Any)
+# the following typedef cannot be wrapped as is
+Extrema_HUBTreeOfSphere = NewType("Extrema_HUBTreeOfSphere", Any)
+# the following typedef cannot be wrapped as is
+Extrema_UBTreeFillerOfSphere = NewType("Extrema_UBTreeFillerOfSphere", Any)
+# the following typedef cannot be wrapped as is
+Extrema_UBTreeOfSphere = NewType("Extrema_UBTreeOfSphere", Any)
 
 class Extrema_Array1OfPOnCurv:
     @overload
@@ -145,6 +145,17 @@ class Extrema_SequenceOfPOnSurf:
     def Value(self, theIndex: int) -> Extrema_POnSurf: ...
     def SetValue(self, theIndex: int, theValue: Extrema_POnSurf) -> None: ...
 
+class Extrema_ElementType(IntEnum):
+    Extrema_Node: int = ...
+    Extrema_UIsoEdge: int = ...
+    Extrema_VIsoEdge: int = ...
+    Extrema_Face: int = ...
+
+Extrema_Node = Extrema_ElementType.Extrema_Node
+Extrema_UIsoEdge = Extrema_ElementType.Extrema_UIsoEdge
+Extrema_VIsoEdge = Extrema_ElementType.Extrema_VIsoEdge
+Extrema_Face = Extrema_ElementType.Extrema_Face
+
 class Extrema_ExtAlgo(IntEnum):
     Extrema_ExtAlgo_Grad: int = ...
     Extrema_ExtAlgo_Tree: int = ...
@@ -160,17 +171,6 @@ class Extrema_ExtFlag(IntEnum):
 Extrema_ExtFlag_MIN = Extrema_ExtFlag.Extrema_ExtFlag_MIN
 Extrema_ExtFlag_MAX = Extrema_ExtFlag.Extrema_ExtFlag_MAX
 Extrema_ExtFlag_MINMAX = Extrema_ExtFlag.Extrema_ExtFlag_MINMAX
-
-class Extrema_ElementType(IntEnum):
-    Extrema_Node: int = ...
-    Extrema_UIsoEdge: int = ...
-    Extrema_VIsoEdge: int = ...
-    Extrema_Face: int = ...
-
-Extrema_Node = Extrema_ElementType.Extrema_Node
-Extrema_UIsoEdge = Extrema_ElementType.Extrema_UIsoEdge
-Extrema_VIsoEdge = Extrema_ElementType.Extrema_VIsoEdge
-Extrema_Face = Extrema_ElementType.Extrema_Face
 
 class Extrema_CCLocFOfLocECC(math_FunctionSetWithDerivatives):
     @overload
@@ -492,6 +492,10 @@ class Extrema_ExtCC:
     @overload
     def __init__(self, C1: Adaptor3d_Curve, C2: Adaptor3d_Curve, U1: float, U2: float, V1: float, V2: float, TolC1: Optional[float] = 1.0e-10, TolC2: Optional[float] = 1.0e-10) -> None: ...
     def GetSingleSolutionFlag(self) -> bool: ...
+    @overload
+    def Initialize(self, C1: Adaptor3d_Curve, C2: Adaptor3d_Curve, TolC1: Optional[float] = 1.0e-10, TolC2: Optional[float] = 1.0e-10) -> None: ...
+    @overload
+    def Initialize(self, C1: Adaptor3d_Curve, C2: Adaptor3d_Curve, U1: float, U2: float, V1: float, V2: float, TolC1: Optional[float] = 1.0e-10, TolC2: Optional[float] = 1.0e-10) -> None: ...
     def IsDone(self) -> bool: ...
     def IsParallel(self) -> bool: ...
     def NbExt(self) -> int: ...
@@ -532,6 +536,9 @@ class Extrema_ExtCS:
     def __init__(self, C: Adaptor3d_Curve, S: Adaptor3d_Surface, TolC: float, TolS: float) -> None: ...
     @overload
     def __init__(self, C: Adaptor3d_Curve, S: Adaptor3d_Surface, UCinf: float, UCsup: float, Uinf: float, Usup: float, Vinf: float, Vsup: float, TolC: float, TolS: float) -> None: ...
+    @overload
+    def Initialize(self, S: Adaptor3d_Surface, TolC: float, TolS: float) -> None: ...
+    @overload
     def Initialize(self, S: Adaptor3d_Surface, Uinf: float, Usup: float, Vinf: float, Vsup: float, TolC: float, TolS: float) -> None: ...
     def IsDone(self) -> bool: ...
     def IsParallel(self) -> bool: ...
@@ -796,10 +803,10 @@ class Extrema_ExtPExtS(Standard_Transient):
     @overload
     def __init__(self) -> None: ...
     @overload
-    def __init__(self, P: gp_Pnt, S: GeomAdaptor_HSurfaceOfLinearExtrusion, Umin: float, Usup: float, Vmin: float, Vsup: float, TolU: float, TolV: float) -> None: ...
+    def __init__(self, P: gp_Pnt, S: GeomAdaptor_SurfaceOfLinearExtrusion, Umin: float, Usup: float, Vmin: float, Vsup: float, TolU: float, TolV: float) -> None: ...
     @overload
-    def __init__(self, P: gp_Pnt, S: GeomAdaptor_HSurfaceOfLinearExtrusion, TolU: float, TolV: float) -> None: ...
-    def Initialize(self, S: GeomAdaptor_HSurfaceOfLinearExtrusion, Uinf: float, Usup: float, Vinf: float, Vsup: float, TolU: float, TolV: float) -> None: ...
+    def __init__(self, P: gp_Pnt, S: GeomAdaptor_SurfaceOfLinearExtrusion, TolU: float, TolV: float) -> None: ...
+    def Initialize(self, S: GeomAdaptor_SurfaceOfLinearExtrusion, Uinf: float, Usup: float, Vinf: float, Vsup: float, TolU: float, TolV: float) -> None: ...
     def IsDone(self) -> bool: ...
     def NbExt(self) -> int: ...
     def Perform(self, P: gp_Pnt) -> None: ...
@@ -810,10 +817,10 @@ class Extrema_ExtPRevS(Standard_Transient):
     @overload
     def __init__(self) -> None: ...
     @overload
-    def __init__(self, P: gp_Pnt, S: GeomAdaptor_HSurfaceOfRevolution, Umin: float, Usup: float, Vmin: float, Vsup: float, TolU: float, TolV: float) -> None: ...
+    def __init__(self, P: gp_Pnt, S: GeomAdaptor_SurfaceOfRevolution, Umin: float, Usup: float, Vmin: float, Vsup: float, TolU: float, TolV: float) -> None: ...
     @overload
-    def __init__(self, P: gp_Pnt, S: GeomAdaptor_HSurfaceOfRevolution, TolU: float, TolV: float) -> None: ...
-    def Initialize(self, S: GeomAdaptor_HSurfaceOfRevolution, Umin: float, Usup: float, Vmin: float, Vsup: float, TolU: float, TolV: float) -> None: ...
+    def __init__(self, P: gp_Pnt, S: GeomAdaptor_SurfaceOfRevolution, TolU: float, TolV: float) -> None: ...
+    def Initialize(self, S: GeomAdaptor_SurfaceOfRevolution, Umin: float, Usup: float, Vmin: float, Vsup: float, TolU: float, TolV: float) -> None: ...
     def IsDone(self) -> bool: ...
     def NbExt(self) -> int: ...
     def Perform(self, P: gp_Pnt) -> None: ...
@@ -986,8 +993,10 @@ class Extrema_GenLocateExtCS:
     def SquareDistance(self) -> float: ...
 
 class Extrema_GenLocateExtPS:
-    def __init__(self, theS: Adaptor3d_Surface, theTolU: Optional[float] = precision_PConfusion(), theTolV: Optional[float] = precision_PConfusion()) -> None: ...
+    def __init__(self, theS: Adaptor3d_Surface, theTolU: Optional[float] = Precision.PConfusion(), theTolV: Optional[float] = Precision.PConfusion()) -> None: ...
     def IsDone(self) -> bool: ...
+    @staticmethod
+    def IsMinDist(theP: gp_Pnt, theS: Adaptor3d_Surface, theU0: float, theV0: float) -> bool: ...
     def Perform(self, theP: gp_Pnt, theU0: float, theV0: float, isDistanceCriteria: Optional[bool] = False) -> None: ...
     def Point(self) -> Extrema_POnSurf: ...
     def SquareDistance(self) -> float: ...
@@ -1297,14 +1306,14 @@ class Extrema_POnSurfParams(Extrema_POnSurf):
 
 # harray1 classes
 
-class Extrema_HArray1OfPOnSurf(Extrema_Array1OfPOnSurf, Standard_Transient):
-    def __init__(self, theLower: int, theUpper: int) -> None: ...
-    def Array1(self) -> Extrema_Array1OfPOnSurf: ...
-
-
 class Extrema_HArray1OfPOnCurv(Extrema_Array1OfPOnCurv, Standard_Transient):
     def __init__(self, theLower: int, theUpper: int) -> None: ...
     def Array1(self) -> Extrema_Array1OfPOnCurv: ...
+
+
+class Extrema_HArray1OfPOnSurf(Extrema_Array1OfPOnSurf, Standard_Transient):
+    def __init__(self, theLower: int, theUpper: int) -> None: ...
+    def Array1(self) -> Extrema_Array1OfPOnSurf: ...
 
 
 class Extrema_HArray1OfPOnCurv2d(Extrema_Array1OfPOnCurv2d, Standard_Transient):
@@ -1313,12 +1322,12 @@ class Extrema_HArray1OfPOnCurv2d(Extrema_Array1OfPOnCurv2d, Standard_Transient):
 
 # harray2 classes
 
-class Extrema_HArray2OfPOnCurv2d(Extrema_Array2OfPOnCurv2d, Standard_Transient):
+class Extrema_HArray2OfPOnSurf(Extrema_Array2OfPOnSurf, Standard_Transient):
     @overload
     def __init__(self, theRowLow: int, theRowUpp: int, theColLow: int, theColUpp: int) -> None: ...
     @overload
-    def __init__(self, theOther: Extrema_Array2OfPOnCurv2d) -> None: ...
-    def Array2(self) -> Extrema_Array2OfPOnCurv2d: ...
+    def __init__(self, theOther: Extrema_Array2OfPOnSurf) -> None: ...
+    def Array2(self) -> Extrema_Array2OfPOnSurf: ...
 
 
 class Extrema_HArray2OfPOnCurv(Extrema_Array2OfPOnCurv, Standard_Transient):
@@ -1329,75 +1338,12 @@ class Extrema_HArray2OfPOnCurv(Extrema_Array2OfPOnCurv, Standard_Transient):
     def Array2(self) -> Extrema_Array2OfPOnCurv: ...
 
 
-class Extrema_HArray2OfPOnSurf(Extrema_Array2OfPOnSurf, Standard_Transient):
+class Extrema_HArray2OfPOnCurv2d(Extrema_Array2OfPOnCurv2d, Standard_Transient):
     @overload
     def __init__(self, theRowLow: int, theRowUpp: int, theColLow: int, theColUpp: int) -> None: ...
     @overload
-    def __init__(self, theOther: Extrema_Array2OfPOnSurf) -> None: ...
-    def Array2(self) -> Extrema_Array2OfPOnSurf: ...
-
-
-class Extrema_HArray2OfPOnSurfParams(Extrema_Array2OfPOnSurfParams, Standard_Transient):
-    @overload
-    def __init__(self, theRowLow: int, theRowUpp: int, theColLow: int, theColUpp: int) -> None: ...
-    @overload
-    def __init__(self, theOther: Extrema_Array2OfPOnSurfParams) -> None: ...
-    def Array2(self) -> Extrema_Array2OfPOnSurfParams: ...
+    def __init__(self, theOther: Extrema_Array2OfPOnCurv2d) -> None: ...
+    def Array2(self) -> Extrema_Array2OfPOnCurv2d: ...
 
 # hsequence classes
 
-Extrema_Curve2dTool_BSpline = Extrema_Curve2dTool.BSpline
-Extrema_Curve2dTool_Bezier = Extrema_Curve2dTool.Bezier
-Extrema_Curve2dTool_Circle = Extrema_Curve2dTool.Circle
-Extrema_Curve2dTool_Continuity = Extrema_Curve2dTool.Continuity
-Extrema_Curve2dTool_D0 = Extrema_Curve2dTool.D0
-Extrema_Curve2dTool_D1 = Extrema_Curve2dTool.D1
-Extrema_Curve2dTool_D2 = Extrema_Curve2dTool.D2
-Extrema_Curve2dTool_D3 = Extrema_Curve2dTool.D3
-Extrema_Curve2dTool_DN = Extrema_Curve2dTool.DN
-Extrema_Curve2dTool_DeflCurvIntervals = Extrema_Curve2dTool.DeflCurvIntervals
-Extrema_Curve2dTool_Degree = Extrema_Curve2dTool.Degree
-Extrema_Curve2dTool_Ellipse = Extrema_Curve2dTool.Ellipse
-Extrema_Curve2dTool_FirstParameter = Extrema_Curve2dTool.FirstParameter
-Extrema_Curve2dTool_GetType = Extrema_Curve2dTool.GetType
-Extrema_Curve2dTool_Hyperbola = Extrema_Curve2dTool.Hyperbola
-Extrema_Curve2dTool_Intervals = Extrema_Curve2dTool.Intervals
-Extrema_Curve2dTool_IsClosed = Extrema_Curve2dTool.IsClosed
-Extrema_Curve2dTool_IsPeriodic = Extrema_Curve2dTool.IsPeriodic
-Extrema_Curve2dTool_IsRational = Extrema_Curve2dTool.IsRational
-Extrema_Curve2dTool_LastParameter = Extrema_Curve2dTool.LastParameter
-Extrema_Curve2dTool_Line = Extrema_Curve2dTool.Line
-Extrema_Curve2dTool_NbIntervals = Extrema_Curve2dTool.NbIntervals
-Extrema_Curve2dTool_NbKnots = Extrema_Curve2dTool.NbKnots
-Extrema_Curve2dTool_NbPoles = Extrema_Curve2dTool.NbPoles
-Extrema_Curve2dTool_Parabola = Extrema_Curve2dTool.Parabola
-Extrema_Curve2dTool_Period = Extrema_Curve2dTool.Period
-Extrema_Curve2dTool_Resolution = Extrema_Curve2dTool.Resolution
-Extrema_Curve2dTool_Value = Extrema_Curve2dTool.Value
-Extrema_CurveTool_BSpline = Extrema_CurveTool.BSpline
-Extrema_CurveTool_Bezier = Extrema_CurveTool.Bezier
-Extrema_CurveTool_Circle = Extrema_CurveTool.Circle
-Extrema_CurveTool_Continuity = Extrema_CurveTool.Continuity
-Extrema_CurveTool_D0 = Extrema_CurveTool.D0
-Extrema_CurveTool_D1 = Extrema_CurveTool.D1
-Extrema_CurveTool_D2 = Extrema_CurveTool.D2
-Extrema_CurveTool_D3 = Extrema_CurveTool.D3
-Extrema_CurveTool_DN = Extrema_CurveTool.DN
-Extrema_CurveTool_DeflCurvIntervals = Extrema_CurveTool.DeflCurvIntervals
-Extrema_CurveTool_Degree = Extrema_CurveTool.Degree
-Extrema_CurveTool_Ellipse = Extrema_CurveTool.Ellipse
-Extrema_CurveTool_FirstParameter = Extrema_CurveTool.FirstParameter
-Extrema_CurveTool_GetType = Extrema_CurveTool.GetType
-Extrema_CurveTool_Hyperbola = Extrema_CurveTool.Hyperbola
-Extrema_CurveTool_Intervals = Extrema_CurveTool.Intervals
-Extrema_CurveTool_IsPeriodic = Extrema_CurveTool.IsPeriodic
-Extrema_CurveTool_IsRational = Extrema_CurveTool.IsRational
-Extrema_CurveTool_LastParameter = Extrema_CurveTool.LastParameter
-Extrema_CurveTool_Line = Extrema_CurveTool.Line
-Extrema_CurveTool_NbIntervals = Extrema_CurveTool.NbIntervals
-Extrema_CurveTool_NbKnots = Extrema_CurveTool.NbKnots
-Extrema_CurveTool_NbPoles = Extrema_CurveTool.NbPoles
-Extrema_CurveTool_Parabola = Extrema_CurveTool.Parabola
-Extrema_CurveTool_Period = Extrema_CurveTool.Period
-Extrema_CurveTool_Resolution = Extrema_CurveTool.Resolution
-Extrema_CurveTool_Value = Extrema_CurveTool.Value

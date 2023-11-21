@@ -19,8 +19,9 @@ import os
 
 from OCC.Core.TopoDS import TopoDS_Shape
 from OCC.Core.TopAbs import TopAbs_SOLID, TopAbs_SHELL, TopAbs_COMPOUND
+from OCC.Core.BRepTools import breptools
 from OCC.Core.BRepMesh import BRepMesh_IncrementalMesh
-from OCC.Core.StlAPI import stlapi_Read, StlAPI_Writer
+from OCC.Core.StlAPI import stlapi, StlAPI_Writer
 from OCC.Core.BRep import BRep_Builder
 from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pnt2d
 from OCC.Core.Bnd import Bnd_Box2d
@@ -35,19 +36,30 @@ from OCC.Core.STEPControl import (
     STEPControl_Writer,
     STEPControl_AsIs,
 )
-from OCC.Core.Interface import Interface_Static_SetCVal
+from OCC.Core.Interface import Interface_Static
 from OCC.Core.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
 from OCC.Core.TDocStd import TDocStd_Document
 from OCC.Core.XCAFDoc import (
-    XCAFDoc_DocumentTool_ShapeTool,
-    XCAFDoc_DocumentTool_ColorTool,
+    XCAFDoc_DocumentTool,
+    XCAFDoc_ColorTool,
 )
 from OCC.Core.STEPCAFControl import STEPCAFControl_Reader
 from OCC.Core.TDF import TDF_LabelSequence, TDF_Label
-from OCC.Core.TCollection import TCollection_ExtendedString
 from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
 from OCC.Core.TopLoc import TopLoc_Location
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Transform
+from OCC.Core.TColStd import TColStd_IndexedDataMapOfStringString
+from OCC.Core.TCollection import TCollection_AsciiString
+from OCC.Core.RWPly import RWPly_CafWriter
+from OCC.Core.Message import Message_ProgressRange
+
+from OCC.Core.RWGltf import RWGltf_CafReader, RWGltf_CafWriter
+from OCC.Core.RWObj import RWObj_CafWriter, RWObj_CafReader
+from OCC.Core.RWMesh import (
+    RWMesh_CoordinateSystem_posYfwd_posZup,
+    RWMesh_CoordinateSystem_negZfwd_posYup,
+)
+from OCC.Core.UnitsMethods import unitsmethods
 
 from OCC.Extend.TopologyUtils import (
     discretize_edge,
@@ -61,6 +73,14 @@ try:
     HAVE_SVGWRITE = True
 except ImportError:
     HAVE_SVGWRITE = False
+
+
+def check_svgwrite_installed():
+    if not HAVE_SVGWRITE:
+        raise IOError(
+            "svg exporter not available because the svgwrite package is not installed. use $pip install svgwrite'"
+        )
+
 
 ##########################
 # Step import and export #
@@ -78,36 +98,35 @@ def read_step_file(filename, as_compound=True, verbosity=True):
     step_reader = STEPControl_Reader()
     status = step_reader.ReadFile(filename)
 
-    if status == IFSelect_RetDone:  # check status
-        if verbosity:
-            failsonly = False
-            step_reader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity)
-            step_reader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity)
-        transfer_result = step_reader.TransferRoots()
-        if not transfer_result:
-            raise AssertionError("Transfer failed.")
-        _nbs = step_reader.NbShapes()
-        if _nbs == 0:
-            raise AssertionError("No shape to transfer.")
-        if _nbs == 1:  # most cases
-            return step_reader.Shape(1)
-        if _nbs > 1:
-            print("Number of shapes:", _nbs)
-            shps = []
-            # loop over root shapes
-            for k in range(1, _nbs + 1):
-                new_shp = step_reader.Shape(k)
-                if not new_shp.IsNull():
-                    shps.append(new_shp)
-            if as_compound:
-                compound, result = list_of_shapes_to_compound(shps)
-                if not result:
-                    print("Warning: all shapes were not added to the compound")
-                return compound
-            print("Warning, returns a list of shapes.")
-            return shps
-    else:
+    if status != IFSelect_RetDone:
         raise AssertionError("Error: can't read file.")
+    if verbosity:
+        failsonly = False
+        step_reader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity)
+        step_reader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity)
+    transfer_result = step_reader.TransferRoots()
+    if not transfer_result:
+        raise AssertionError("Transfer failed.")
+    _nbs = step_reader.NbShapes()
+    if _nbs == 0:
+        raise AssertionError("No shape to transfer.")
+    if _nbs == 1:  # most cases
+        return step_reader.Shape(1)
+    if _nbs > 1:
+        print("Number of shapes:", _nbs)
+        shps = []
+        # loop over root shapes
+        for k in range(1, _nbs + 1):
+            new_shp = step_reader.Shape(k)
+            if not new_shp.IsNull():
+                shps.append(new_shp)
+        if as_compound:
+            compound, result = list_of_shapes_to_compound(shps)
+            if not result:
+                print("Warning: all shapes were not added to the compound")
+            return compound
+        print("Warning, returns a list of shapes.")
+        return shps
     return None
 
 
@@ -128,13 +147,13 @@ def write_step_file(a_shape, filename, application_protocol="AP203"):
         print(f"Warning: {filename} file already exists and will be replaced")
     # creates and initialise the step exporter
     step_writer = STEPControl_Writer()
-    Interface_Static_SetCVal("write.step.schema", application_protocol)
+    Interface_Static.SetCVal("write.step.schema", application_protocol)
 
     # transfer shapes and write file
     step_writer.Transfer(a_shape, STEPControl_AsIs)
     status = step_writer.Write(filename)
 
-    if not status == IFSelect_RetDone:
+    if status != IFSelect_RetDone:
         raise IOError("Error while writing shape to STEP file.")
     if not os.path.isfile(filename):
         raise IOError(f"{filename} not saved to filesystem.")
@@ -150,11 +169,11 @@ def read_step_file_with_names_colors(filename):
     output_shapes = {}
 
     # create an handle to a document
-    doc = TDocStd_Document(TCollection_ExtendedString("pythonocc-doc"))
+    doc = TDocStd_Document("pythonocc-doc-step-import")
 
     # Get root assembly
-    shape_tool = XCAFDoc_DocumentTool_ShapeTool(doc.Main())
-    color_tool = XCAFDoc_DocumentTool_ColorTool(doc.Main())
+    shape_tool = XCAFDoc_DocumentTool.ShapeTool(doc.Main())
+    color_tool = XCAFDoc_DocumentTool.ColorTool(doc.Main())
     # layer_tool = XCAFDoc_DocumentTool_LayerTool(doc.Main())
     # mat_tool = XCAFDoc_DocumentTool_MaterialTool(doc.Main())
 
@@ -280,11 +299,10 @@ def read_step_file_with_names_colors(filename):
 
             if not color_set:
                 if (
-                    color_tool.GetColor(lab, 0, c)
-                    or color_tool.GetColor(lab, 1, c)
-                    or color_tool.GetColor(lab, 2, c)
+                    XCAFDoc_ColorTool.GetColor(lab, 0, c)
+                    or XCAFDoc_ColorTool.GetColor(lab, 1, c)
+                    or XCAFDoc_ColorTool.GetColor(lab, 2, c)
                 ):
-
                     color_tool.SetInstanceColor(shape, 0, c)
                     color_tool.SetInstanceColor(shape, 1, c)
                     color_tool.SetInstanceColor(shape, 2, c)
@@ -300,7 +318,7 @@ def read_step_file_with_names_colors(filename):
                     )
 
             shape_disp = BRepBuilderAPI_Transform(shape, loc.Transformation()).Shape()
-            if not shape_disp in output_shapes:
+            if shape_disp not in output_shapes:
                 output_shapes[shape_disp] = [lab.GetLabelName(), c]
             for i in range(l_subss.Length()):
                 lab_subs = l_subss.Value(i + 1)
@@ -330,9 +348,9 @@ def read_step_file_with_names_colors(filename):
 
                 if not color_set:
                     if (
-                        color_tool.GetColor(lab_subs, 0, c)
-                        or color_tool.GetColor(lab_subs, 1, c)
-                        or color_tool.GetColor(lab_subs, 2, c)
+                        XCAFDoc_ColorTool.GetColor(lab_subs, 0, c)
+                        or XCAFDoc_ColorTool.GetColor(lab_subs, 1, c)
+                        or XCAFDoc_ColorTool.GetColor(lab_subs, 2, c)
                     ):
                         color_tool.SetInstanceColor(shape, 0, c)
                         color_tool.SetInstanceColor(shape, 1, c)
@@ -351,7 +369,7 @@ def read_step_file_with_names_colors(filename):
                     shape_sub, loc.Transformation()
                 ).Shape()
                 # position the subshape to display
-                if not shape_to_disp in output_shapes:
+                if shape_to_disp not in output_shapes:
                     output_shapes[shape_to_disp] = [lab_subs.GetLabelName(), c]
 
     def _get_shapes():
@@ -417,7 +435,7 @@ def read_stl_file(filename):
         raise FileNotFoundError(f"{filename} not found.")
 
     the_shape = TopoDS_Shape()
-    stlapi_Read(the_shape, filename)
+    stlapi.Read(the_shape, filename)
 
     if the_shape.IsNull():
         raise AssertionError("Shape is null.")
@@ -515,6 +533,8 @@ def write_iges_file(a_shape, filename):
 ##############
 def edge_to_svg_polyline(topods_edge, tol=0.1, unit="mm"):
     """Returns a svgwrite.Path for the edge, and the 2d bounding box"""
+    check_svgwrite_installed()
+
     unit_factor = 1  # by default
 
     if unit == "mm":
@@ -561,15 +581,10 @@ def export_shape_to_svg(
     color (optional), "default to "black".
     line_width (optional, default to 1): an integer
     """
+    check_svgwrite_installed()
+
     if shape.IsNull():
         raise AssertionError("shape is Null")
-
-    if not HAVE_SVGWRITE:
-        print(
-            "svg exporter not available because the svgwrite package is not installed."
-        )
-        print("please use '$ conda install -c conda-forge svgwrite'")
-        return False
 
     # find all edges
     visible_edges, hidden_edges = get_sorted_hlr_edges(
@@ -633,3 +648,147 @@ def export_shape_to_svg(
         print(f"Shape successfully exported to {filename}")
         return True
     return dwg.tostring()
+
+
+#################################################
+# ply export (write not avaiable from upstream) #
+#################################################
+def write_ply_file(a_shape, ply_filename):
+    """ocaf based ply exporter"""
+    # create a document
+    doc = TDocStd_Document("pythonocc-doc-ply-export")
+    shape_tool = XCAFDoc_DocumentTool.ShapeTool(doc.Main())
+
+    # mesh shape
+    breptools.Clean(a_shape)
+    msh_algo = BRepMesh_IncrementalMesh(a_shape, True)
+    msh_algo.Perform()
+
+    shape_tool.AddShape(a_shape)
+
+    # metadata
+    a_file_info = TColStd_IndexedDataMapOfStringString()
+    a_file_info.Add(
+        TCollection_AsciiString("Authors"), TCollection_AsciiString("pythonocc")
+    )
+
+    rwply_writer = RWPly_CafWriter(ply_filename)
+
+    rwply_writer.SetNormals(True)
+    rwply_writer.SetColors(True)
+    rwply_writer.SetTexCoords(True)
+    rwply_writer.SetPartId(True)
+    rwply_writer.SetFaceId(True)
+
+    rwply_writer.Perform(doc, a_file_info, Message_ProgressRange())
+
+
+#################################################
+# Obj export (write not avaiable from upstream) #
+#################################################
+def write_obj_file(a_shape, obj_filename):
+    """ocaf based ply exporter"""
+    # create a document
+    doc = TDocStd_Document("pythonocc-doc-obj-export")
+    shape_tool = XCAFDoc_DocumentTool.ShapeTool(doc.Main())
+
+    # mesh shape
+    breptools.Clean(a_shape)
+    msh_algo = BRepMesh_IncrementalMesh(a_shape, True)
+    msh_algo.Perform()
+
+    shape_tool.AddShape(a_shape)
+
+    # metadata
+    a_file_info = TColStd_IndexedDataMapOfStringString()
+    a_file_info.Add(
+        TCollection_AsciiString("Authors"), TCollection_AsciiString("pythonocc")
+    )
+
+    rwobj_writer = RWObj_CafWriter(obj_filename)
+
+    # apply a scale factor of 0.001 to mimic conversion from m to mm
+    csc = rwobj_writer.ChangeCoordinateSystemConverter()
+
+    system_unit_factor = unitsmethods.GetCasCadeLengthUnit() * 0.001
+    csc.SetInputLengthUnit(system_unit_factor)
+    csc.SetOutputLengthUnit(system_unit_factor)
+    csc.SetInputCoordinateSystem(RWMesh_CoordinateSystem_posYfwd_posZup)
+    csc.SetOutputCoordinateSystem(RWMesh_CoordinateSystem_negZfwd_posYup)
+
+    rwobj_writer.SetCoordinateSystemConverter(csc)
+
+    rwobj_writer.Perform(doc, a_file_info, Message_ProgressRange())
+
+
+########
+# gltf #
+########
+def read_gltf_file(
+    filename,
+    is_parallel=False,
+    is_double_precision=False,
+    skip_late_data_loading=True,
+    keep_late_data=True,
+    verbose=False,
+    load_all_scenes=False,
+):
+    shapes_to_return = []
+
+    if not os.path.isfile(filename):
+        raise FileNotFoundError(f"{filename} not found.")
+    doc = TDocStd_Document("pythonocc-doc-gltf-import")
+
+    # Get root assembly
+    shape_tool = XCAFDoc_DocumentTool.ShapeTool(doc.Main())
+
+    gltf_reader = RWGltf_CafReader()
+    # gltf_reader.SetSystemLengthUnit (aScaleFactorM);
+    gltf_reader.SetSystemCoordinateSystem(RWMesh_CoordinateSystem_posYfwd_posZup)
+    gltf_reader.SetDocument(doc)
+    gltf_reader.SetParallel(is_parallel)
+    gltf_reader.SetDoublePrecision(is_double_precision)
+    gltf_reader.SetToSkipLateDataLoading(skip_late_data_loading)
+    gltf_reader.SetToKeepLateData(keep_late_data)
+    gltf_reader.SetToPrintDebugMessages(verbose)
+    gltf_reader.SetLoadAllScenes(load_all_scenes)
+
+    status = gltf_reader.Perform(filename, Message_ProgressRange())
+
+    if status != IFSelect_RetDone:
+        raise IOError("Error while writing shape to STEP file.")
+
+    labels = TDF_LabelSequence()
+    shape_tool.GetFreeShapes(labels)
+
+    for i in range(1, labels.Length()):
+        shapes_to_return.append(shape_tool.GetShape(labels.Value(i)))
+
+    return shapes_to_return
+
+
+def write_gltf_file(a_shape, gltf_filename):
+    """ocaf based ply exporter"""
+    # create a document
+    doc = TDocStd_Document("pythonocc-doc-gltf-export")
+    shape_tool = XCAFDoc_DocumentTool.ShapeTool(doc.Main())
+
+    # mesh shape
+    breptools.Clean(a_shape)
+    msh_algo = BRepMesh_IncrementalMesh(a_shape, True)
+    msh_algo.Perform()
+
+    shape_tool.AddShape(a_shape)
+
+    # metadata
+    a_file_info = TColStd_IndexedDataMapOfStringString()
+    a_file_info.Add(
+        TCollection_AsciiString("Authors"), TCollection_AsciiString("pythonocc")
+    )
+
+    rwgltf_writer = RWGltf_CafWriter(gltf_filename, True)
+
+    status = rwgltf_writer.Perform(doc, a_file_info, Message_ProgressRange())
+
+    if status != IFSelect_RetDone:
+        raise IOError("Error while writing shape to STEP file.")

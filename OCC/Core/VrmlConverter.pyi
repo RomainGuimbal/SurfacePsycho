@@ -15,6 +15,15 @@ from OCC.Core.TColgp import *
 from OCC.Core.BRepAdaptor import *
 
 
+class VrmlConverter_TypeOfCamera(IntEnum):
+    VrmlConverter_NoCamera: int = ...
+    VrmlConverter_PerspectiveCamera: int = ...
+    VrmlConverter_OrthographicCamera: int = ...
+
+VrmlConverter_NoCamera = VrmlConverter_TypeOfCamera.VrmlConverter_NoCamera
+VrmlConverter_PerspectiveCamera = VrmlConverter_TypeOfCamera.VrmlConverter_PerspectiveCamera
+VrmlConverter_OrthographicCamera = VrmlConverter_TypeOfCamera.VrmlConverter_OrthographicCamera
+
 class VrmlConverter_TypeOfLight(IntEnum):
     VrmlConverter_NoLight: int = ...
     VrmlConverter_DirectionLight: int = ...
@@ -25,15 +34,6 @@ VrmlConverter_NoLight = VrmlConverter_TypeOfLight.VrmlConverter_NoLight
 VrmlConverter_DirectionLight = VrmlConverter_TypeOfLight.VrmlConverter_DirectionLight
 VrmlConverter_PointLight = VrmlConverter_TypeOfLight.VrmlConverter_PointLight
 VrmlConverter_SpotLight = VrmlConverter_TypeOfLight.VrmlConverter_SpotLight
-
-class VrmlConverter_TypeOfCamera(IntEnum):
-    VrmlConverter_NoCamera: int = ...
-    VrmlConverter_PerspectiveCamera: int = ...
-    VrmlConverter_OrthographicCamera: int = ...
-
-VrmlConverter_NoCamera = VrmlConverter_TypeOfCamera.VrmlConverter_NoCamera
-VrmlConverter_PerspectiveCamera = VrmlConverter_TypeOfCamera.VrmlConverter_PerspectiveCamera
-VrmlConverter_OrthographicCamera = VrmlConverter_TypeOfCamera.VrmlConverter_OrthographicCamera
 
 class VrmlConverter_Curve:
     pass
@@ -155,25 +155,3 @@ class VrmlConverter_IsoAspect(VrmlConverter_LineAspect):
 # harray2 classes
 # hsequence classes
 
-VrmlConverter_Curve_Add = VrmlConverter_Curve.Add
-VrmlConverter_Curve_Add = VrmlConverter_Curve.Add
-VrmlConverter_Curve_Add = VrmlConverter_Curve.Add
-VrmlConverter_DeflectionCurve_Add = VrmlConverter_DeflectionCurve.Add
-VrmlConverter_DeflectionCurve_Add = VrmlConverter_DeflectionCurve.Add
-VrmlConverter_DeflectionCurve_Add = VrmlConverter_DeflectionCurve.Add
-VrmlConverter_DeflectionCurve_Add = VrmlConverter_DeflectionCurve.Add
-VrmlConverter_DeflectionCurve_Add = VrmlConverter_DeflectionCurve.Add
-VrmlConverter_DeflectionCurve_Add = VrmlConverter_DeflectionCurve.Add
-VrmlConverter_HLRShape_Add = VrmlConverter_HLRShape.Add
-VrmlConverter_ShadedShape_Add = VrmlConverter_ShadedShape.Add
-VrmlConverter_ShadedShape_ComputeNormal = VrmlConverter_ShadedShape.ComputeNormal
-VrmlConverter_WFDeflectionRestrictedFace_Add = VrmlConverter_WFDeflectionRestrictedFace.Add
-VrmlConverter_WFDeflectionRestrictedFace_Add = VrmlConverter_WFDeflectionRestrictedFace.Add
-VrmlConverter_WFDeflectionRestrictedFace_AddUIso = VrmlConverter_WFDeflectionRestrictedFace.AddUIso
-VrmlConverter_WFDeflectionRestrictedFace_AddVIso = VrmlConverter_WFDeflectionRestrictedFace.AddVIso
-VrmlConverter_WFDeflectionShape_Add = VrmlConverter_WFDeflectionShape.Add
-VrmlConverter_WFRestrictedFace_Add = VrmlConverter_WFRestrictedFace.Add
-VrmlConverter_WFRestrictedFace_Add = VrmlConverter_WFRestrictedFace.Add
-VrmlConverter_WFRestrictedFace_AddUIso = VrmlConverter_WFRestrictedFace.AddUIso
-VrmlConverter_WFRestrictedFace_AddVIso = VrmlConverter_WFRestrictedFace.AddVIso
-VrmlConverter_WFShape_Add = VrmlConverter_WFShape.Add

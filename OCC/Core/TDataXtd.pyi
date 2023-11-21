@@ -10,7 +10,6 @@ from OCC.Core.TNaming import *
 from OCC.Core.Quantity import *
 from OCC.Core.TopoDS import *
 from OCC.Core.Poly import *
-from OCC.Core.TShort import *
 
 
 class TDataXtd_Array1OfTrsf:
@@ -387,7 +386,6 @@ class TDataXtd_Triangulation(TDF_Attribute):
     def Set(self, theTriangulation: Poly_Triangulation) -> None: ...
     def SetNode(self, theIndex: int, theNode: gp_Pnt) -> None: ...
     def SetNormal(self, theIndex: int, theNormal: gp_Dir) -> None: ...
-    def SetNormals(self, theNormals: TShort_HArray1OfShortReal) -> None: ...
     def SetTriangle(self, theIndex: int, theTriangle: Poly_Triangle) -> None: ...
     def SetUVNode(self, theIndex: int, theUVNode: gp_Pnt2d) -> None: ...
     def Triangle(self, theIndex: int) -> Poly_Triangle: ...
@@ -456,58 +454,3 @@ class TDataXtd_HArray1OfTrsf(TDataXtd_Array1OfTrsf, Standard_Transient):
 # harray2 classes
 # hsequence classes
 
-tdataxtd_IDList = tdataxtd.IDList
-tdataxtd_Print = tdataxtd.Print
-tdataxtd_Print = tdataxtd.Print
-TDataXtd_Axis_GetID = TDataXtd_Axis.GetID
-TDataXtd_Axis_Set = TDataXtd_Axis.Set
-TDataXtd_Axis_Set = TDataXtd_Axis.Set
-TDataXtd_Constraint_CollectChildConstraints = TDataXtd_Constraint.CollectChildConstraints
-TDataXtd_Constraint_GetID = TDataXtd_Constraint.GetID
-TDataXtd_Constraint_Set = TDataXtd_Constraint.Set
-TDataXtd_Geometry_Axis = TDataXtd_Geometry.Axis
-TDataXtd_Geometry_Axis = TDataXtd_Geometry.Axis
-TDataXtd_Geometry_Circle = TDataXtd_Geometry.Circle
-TDataXtd_Geometry_Circle = TDataXtd_Geometry.Circle
-TDataXtd_Geometry_Cylinder = TDataXtd_Geometry.Cylinder
-TDataXtd_Geometry_Cylinder = TDataXtd_Geometry.Cylinder
-TDataXtd_Geometry_Ellipse = TDataXtd_Geometry.Ellipse
-TDataXtd_Geometry_Ellipse = TDataXtd_Geometry.Ellipse
-TDataXtd_Geometry_GetID = TDataXtd_Geometry.GetID
-TDataXtd_Geometry_Line = TDataXtd_Geometry.Line
-TDataXtd_Geometry_Line = TDataXtd_Geometry.Line
-TDataXtd_Geometry_Plane = TDataXtd_Geometry.Plane
-TDataXtd_Geometry_Plane = TDataXtd_Geometry.Plane
-TDataXtd_Geometry_Point = TDataXtd_Geometry.Point
-TDataXtd_Geometry_Point = TDataXtd_Geometry.Point
-TDataXtd_Geometry_Set = TDataXtd_Geometry.Set
-TDataXtd_Geometry_Type = TDataXtd_Geometry.Type
-TDataXtd_Geometry_Type = TDataXtd_Geometry.Type
-TDataXtd_Pattern_GetID = TDataXtd_Pattern.GetID
-TDataXtd_Placement_GetID = TDataXtd_Placement.GetID
-TDataXtd_Placement_Set = TDataXtd_Placement.Set
-TDataXtd_Plane_GetID = TDataXtd_Plane.GetID
-TDataXtd_Plane_Set = TDataXtd_Plane.Set
-TDataXtd_Plane_Set = TDataXtd_Plane.Set
-TDataXtd_Point_GetID = TDataXtd_Point.GetID
-TDataXtd_Point_Set = TDataXtd_Point.Set
-TDataXtd_Point_Set = TDataXtd_Point.Set
-TDataXtd_Position_Get = TDataXtd_Position.Get
-TDataXtd_Position_GetID = TDataXtd_Position.GetID
-TDataXtd_Position_Set = TDataXtd_Position.Set
-TDataXtd_Position_Set = TDataXtd_Position.Set
-TDataXtd_Presentation_GetID = TDataXtd_Presentation.GetID
-TDataXtd_Presentation_Set = TDataXtd_Presentation.Set
-TDataXtd_Presentation_Unset = TDataXtd_Presentation.Unset
-TDataXtd_Presentation_getColorNameFromOldEnum = TDataXtd_Presentation.getColorNameFromOldEnum
-TDataXtd_Presentation_getOldColorNameFromNewEnum = TDataXtd_Presentation.getOldColorNameFromNewEnum
-TDataXtd_Shape_Find = TDataXtd_Shape.Find
-TDataXtd_Shape_Get = TDataXtd_Shape.Get
-TDataXtd_Shape_GetID = TDataXtd_Shape.GetID
-TDataXtd_Shape_New = TDataXtd_Shape.New
-TDataXtd_Shape_Set = TDataXtd_Shape.Set
-TDataXtd_Triangulation_GetID = TDataXtd_Triangulation.GetID
-TDataXtd_Triangulation_Set = TDataXtd_Triangulation.Set
-TDataXtd_Triangulation_Set = TDataXtd_Triangulation.Set
-TDataXtd_PatternStd_GetPatternID = TDataXtd_PatternStd.GetPatternID
-TDataXtd_PatternStd_Set = TDataXtd_PatternStd.Set

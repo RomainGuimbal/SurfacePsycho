@@ -12,12 +12,12 @@ from OCC.Core.TopTools import *
 from OCC.Core.GeomAbs import *
 from OCC.Core.TopLoc import *
 
-#the following typedef cannot be wrapped as is
-Draft_IndexedDataMapOfEdgeEdgeInfo = NewType('Draft_IndexedDataMapOfEdgeEdgeInfo', Any)
-#the following typedef cannot be wrapped as is
-Draft_IndexedDataMapOfFaceFaceInfo = NewType('Draft_IndexedDataMapOfFaceFaceInfo', Any)
-#the following typedef cannot be wrapped as is
-Draft_IndexedDataMapOfVertexVertexInfo = NewType('Draft_IndexedDataMapOfVertexVertexInfo', Any)
+# the following typedef cannot be wrapped as is
+Draft_IndexedDataMapOfEdgeEdgeInfo = NewType("Draft_IndexedDataMapOfEdgeEdgeInfo", Any)
+# the following typedef cannot be wrapped as is
+Draft_IndexedDataMapOfFaceFaceInfo = NewType("Draft_IndexedDataMapOfFaceFaceInfo", Any)
+# the following typedef cannot be wrapped as is
+Draft_IndexedDataMapOfVertexVertexInfo = NewType("Draft_IndexedDataMapOfVertexVertexInfo", Any)
 
 class Draft_ErrorStatus(IntEnum):
     Draft_NoError: int = ...
@@ -115,4 +115,3 @@ class Draft_VertexInfo:
 # harray2 classes
 # hsequence classes
 
-draft_Angle = draft.Angle

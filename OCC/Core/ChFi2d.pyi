@@ -38,7 +38,10 @@ ChFi2d_BothEdgesDegenerated = ChFi2d_ConstructionError.ChFi2d_BothEdgesDegenerat
 ChFi2d_NotAuthorized = ChFi2d_ConstructionError.ChFi2d_NotAuthorized
 
 class chfi2d:
-    pass
+    @staticmethod
+    def CommonVertex(E1: TopoDS_Edge, E2: TopoDS_Edge, V: TopoDS_Vertex) -> bool: ...
+    @staticmethod
+    def FindConnectedEdges(F: TopoDS_Face, V: TopoDS_Vertex, E1: TopoDS_Edge, E2: TopoDS_Edge) -> ChFi2d_ConstructionError: ...
 
 class ChFi2d_AnaFilletAlgo:
     @overload
