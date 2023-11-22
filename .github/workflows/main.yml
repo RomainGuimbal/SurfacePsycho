@@ -1,0 +1,42 @@
+name: PythonOCC conda build
+on: [push]
+
+jobs:
+  miniconda:
+    name: Miniconda ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+        matrix:
+            os: ["windows-latest"]
+            #"ubuntu-latest", "windows-latest", "macos-latest"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: pyoccenv
+          python-version: 3.10
+          auto-activate-base: false
+      - shell: bash -l {0}
+        run: |
+          conda info
+          conda list
+      - name: install pythonocc
+        shell: bash -l {0}
+        run: |
+          conda install -c conda-forge pythonocc-core=7.7.2
+      - name: echo paths
+        shell: bash -l {0}
+        run: |
+          cd /usr/local/miniconda/envs
+          ls
+        # tree -d 
+          
+        # echo $(conda info --all)
+          # echo Ceux qui match :
+          # echo $(conda info --all | grep -i pythonocc-core)
+          # echo $(conda info --all | grep -i OCC)
+          # echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
+      - uses: actions/upload-artifact@v3
+        with:
+          name: OCC-wind
+          path: /usr/local/miniconda/envs/pyoccenv/lib/python3.9/site-packages/OCC/
