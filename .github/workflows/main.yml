@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
         matrix:
-            os: ["windows-latest"]
+            os: ["ubuntu-latest"]
             #"ubuntu-latest", "windows-latest", "macos-latest"]
     steps:
       - uses: actions/checkout@v3
@@ -27,16 +27,8 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
-          cd /usr/local/miniconda/envs
-          ls
-        # tree -d 
-          
-        # echo $(conda info --all)
-          # echo Ceux qui match :
-          # echo $(conda info --all | grep -i pythonocc-core)
-          # echo $(conda info --all | grep -i OCC)
-          # echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
+          conda search pythonocc-core --info
       - uses: actions/upload-artifact@v3
         with:
-          name: OCC-wind
-          path: /usr/local/miniconda/envs/pyoccenv/lib/python3.9/site-packages/OCC/
+          name: OCC-linux
+          path: /usr/share/miniconda/envs/pyoccenv/lib/python3.9/site-packages/OCC/
