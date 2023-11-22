@@ -10,10 +10,7 @@ https://www.opencascade.com/doc/occt-7.7.0/refman/html/package_geom.html
 """
 
 from sys import version_info as _swig_python_version_info
-print("çaaaaaaaaaaaaaaa: ")
-print(__package__)
-print(__name__)
-#Import the low-level C/C++ module
+# Import the low-level C/C++ module
 if __package__ or "." in __name__:
     from . import _Geom
 else:
