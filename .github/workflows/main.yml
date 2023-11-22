@@ -28,7 +28,7 @@ jobs:
         shell: bash -l {0}
         run: |
           conda list
-          conda search pythonocc-core --info
+          conda search -c conda-forge pythonocc-core --info
       - uses: actions/upload-artifact@v3
         with:
           name: OCC-linux
