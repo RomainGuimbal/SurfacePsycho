@@ -27,6 +27,7 @@ jobs:
       - name: echo paths
         shell: bash -l {0}
         run: |
+          conda list
           conda search pythonocc-core --info
       - uses: actions/upload-artifact@v3
         with:
