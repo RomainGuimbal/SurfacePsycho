@@ -5,14 +5,14 @@ from OCC.Core.Standard import *
 from OCC.Core.NCollection import *
 from OCC.Core.gp import *
 
-# the following typedef cannot be wrapped as is
-TopLoc_IndexedMapOfLocation = NewType("TopLoc_IndexedMapOfLocation", Any)
-# the following typedef cannot be wrapped as is
-TopLoc_MapIteratorOfMapOfLocation = NewType("TopLoc_MapIteratorOfMapOfLocation", Any)
-# the following typedef cannot be wrapped as is
-TopLoc_MapLocationHasher = NewType("TopLoc_MapLocationHasher", Any)
-# the following typedef cannot be wrapped as is
-TopLoc_MapOfLocation = NewType("TopLoc_MapOfLocation", Any)
+#the following typedef cannot be wrapped as is
+TopLoc_IndexedMapOfLocation = NewType('TopLoc_IndexedMapOfLocation', Any)
+#the following typedef cannot be wrapped as is
+TopLoc_MapIteratorOfMapOfLocation = NewType('TopLoc_MapIteratorOfMapOfLocation', Any)
+#the following typedef cannot be wrapped as is
+TopLoc_MapLocationHasher = NewType('TopLoc_MapLocationHasher', Any)
+#the following typedef cannot be wrapped as is
+TopLoc_MapOfLocation = NewType('TopLoc_MapOfLocation', Any)
 
 class TopLoc_Datum3D(Standard_Transient):
     @overload
@@ -33,7 +33,6 @@ class TopLoc_Location:
     def __init__(self, T: gp_Trsf) -> None: ...
     @overload
     def __init__(self, D: TopLoc_Datum3D) -> None: ...
-    def Clear(self) -> None: ...
     def Divided(self, Other: TopLoc_Location) -> TopLoc_Location: ...
     def FirstDatum(self) -> TopLoc_Datum3D: ...
     def FirstPower(self) -> int: ...
@@ -47,8 +46,6 @@ class TopLoc_Location:
     def NextLocation(self) -> TopLoc_Location: ...
     def Powered(self, pwr: int) -> TopLoc_Location: ...
     def Predivided(self, Other: TopLoc_Location) -> TopLoc_Location: ...
-    @staticmethod
-    def ScalePrec() -> float: ...
     def Transformation(self) -> gp_Trsf: ...
 
 class TopLoc_SListNodeOfItemLocation(Standard_Transient):

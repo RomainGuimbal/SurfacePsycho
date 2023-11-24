@@ -7,8 +7,8 @@ from OCC.Core.gp import *
 from OCC.Core.Adaptor3d import *
 from OCC.Core.GeomAbs import *
 
-# the following typedef cannot be wrapped as is
-IntSurf_Allocator = NewType("IntSurf_Allocator", Any)
+#the following typedef cannot be wrapped as is
+IntSurf_Allocator = NewType('IntSurf_Allocator', Any)
 
 class IntSurf_ListOfPntOn2S:
     def __init__(self) -> None: ...
@@ -108,7 +108,7 @@ class intsurf:
     @staticmethod
     def MakeTransition(TgFirst: gp_Vec, TgSecond: gp_Vec, Normal: gp_Dir, TFirst: IntSurf_Transition, TSecond: IntSurf_Transition) -> None: ...
     @staticmethod
-    def SetPeriod(theFirstSurf: Adaptor3d_Surface, theSecondSurf: Adaptor3d_Surface, theArrOfPeriod_list: List[float]) -> None: ...
+    def SetPeriod(theFirstSurf: Adaptor3d_HSurface, theSecondSurf: Adaptor3d_HSurface, theArrOfPeriod_list: List[float]) -> None: ...
 
 class IntSurf_Couple:
     @overload
@@ -152,7 +152,6 @@ class IntSurf_LineOn2S(Standard_Transient):
     def NbPoints(self) -> int: ...
     def RemovePoint(self, I: int) -> None: ...
     def Reverse(self) -> None: ...
-    def SetPoint(self, Index: int, thePnt: gp_Pnt) -> None: ...
     def SetUV(self, Index: int, OnFirst: bool, U: float, V: float) -> None: ...
     def Split(self, Index: int) -> IntSurf_LineOn2S: ...
     @overload
@@ -290,3 +289,21 @@ class IntSurf_Transition:
 # harray2 classes
 # hsequence classes
 
+intsurf_MakeTransition = intsurf.MakeTransition
+intsurf_SetPeriod = intsurf.SetPeriod
+IntSurf_InteriorPointTool_Direction2d = IntSurf_InteriorPointTool.Direction2d
+IntSurf_InteriorPointTool_Direction3d = IntSurf_InteriorPointTool.Direction3d
+IntSurf_InteriorPointTool_Value2d = IntSurf_InteriorPointTool.Value2d
+IntSurf_InteriorPointTool_Value3d = IntSurf_InteriorPointTool.Value3d
+IntSurf_PathPointTool_Direction2d = IntSurf_PathPointTool.Direction2d
+IntSurf_PathPointTool_Direction3d = IntSurf_PathPointTool.Direction3d
+IntSurf_PathPointTool_IsPassingPnt = IntSurf_PathPointTool.IsPassingPnt
+IntSurf_PathPointTool_IsTangent = IntSurf_PathPointTool.IsTangent
+IntSurf_PathPointTool_Multiplicity = IntSurf_PathPointTool.Multiplicity
+IntSurf_PathPointTool_Parameters = IntSurf_PathPointTool.Parameters
+IntSurf_PathPointTool_Value2d = IntSurf_PathPointTool.Value2d
+IntSurf_PathPointTool_Value3d = IntSurf_PathPointTool.Value3d
+IntSurf_QuadricTool_Gradient = IntSurf_QuadricTool.Gradient
+IntSurf_QuadricTool_Tolerance = IntSurf_QuadricTool.Tolerance
+IntSurf_QuadricTool_Value = IntSurf_QuadricTool.Value
+IntSurf_QuadricTool_ValueAndGradient = IntSurf_QuadricTool.ValueAndGradient

@@ -4,7 +4,6 @@ from typing import overload, NewType, Optional, Tuple
 from OCC.Core.Standard import *
 from OCC.Core.NCollection import *
 from OCC.Core.TopoDS import *
-from OCC.Core.RWMesh import *
 from OCC.Core.VrmlConverter import *
 from OCC.Core.Vrml import *
 from OCC.Core.Quantity import *
@@ -23,9 +22,6 @@ VrmlAPI_BothRepresentation = VrmlAPI_RepresentationOfShape.VrmlAPI_BothRepresent
 class vrmlapi:
     @staticmethod
     def Write(aShape: TopoDS_Shape, aFileName: str, aVersion: Optional[int] = 2) -> bool: ...
-
-class VrmlAPI_CafReader(RWMesh_CafReader):
-    pass
 
 class VrmlAPI_Writer:
     def __init__(self) -> None: ...
@@ -55,3 +51,4 @@ class VrmlAPI_Writer:
 # harray2 classes
 # hsequence classes
 
+vrmlapi_Write = vrmlapi.Write

@@ -7,20 +7,13 @@ from OCC.Core.StepGeom import *
 from OCC.Core.Geom import *
 from OCC.Core.Geom2d import *
 from OCC.Core.gp import *
-from OCC.Core.StepKinematics import *
-from OCC.Core.StepRepr import *
-from OCC.Core.TColStd import *
 
 
 class steptogeom:
     @staticmethod
     def MakeAxis1Placement(SA: StepGeom_Axis1Placement) -> Geom_Axis1Placement: ...
-    @overload
     @staticmethod
     def MakeAxis2Placement(SA: StepGeom_Axis2Placement3d) -> Geom_Axis2Placement: ...
-    @overload
-    @staticmethod
-    def MakeAxis2Placement(SP: StepGeom_SuParameters) -> Geom_Axis2Placement: ...
     @staticmethod
     def MakeAxisPlacement(SA: StepGeom_Axis2Placement2d) -> Geom2d_AxisPlacement: ...
     @staticmethod
@@ -109,10 +102,54 @@ class steptogeom:
     def MakeVectorWithMagnitude(SV: StepGeom_Vector) -> Geom_VectorWithMagnitude: ...
     @staticmethod
     def MakeVectorWithMagnitude2d(SV: StepGeom_Vector) -> Geom2d_VectorWithMagnitude: ...
-    @staticmethod
-    def MakeYprRotation(SR: StepKinematics_SpatialRotation, theCntxt: StepRepr_GlobalUnitAssignedContext) -> TColStd_HArray1OfReal: ...
 
 # harray1 classes
 # harray2 classes
 # hsequence classes
 
+steptogeom_MakeAxis1Placement = steptogeom.MakeAxis1Placement
+steptogeom_MakeAxis2Placement = steptogeom.MakeAxis2Placement
+steptogeom_MakeAxisPlacement = steptogeom.MakeAxisPlacement
+steptogeom_MakeBSplineCurve = steptogeom.MakeBSplineCurve
+steptogeom_MakeBSplineCurve2d = steptogeom.MakeBSplineCurve2d
+steptogeom_MakeBSplineSurface = steptogeom.MakeBSplineSurface
+steptogeom_MakeBoundedCurve = steptogeom.MakeBoundedCurve
+steptogeom_MakeBoundedCurve2d = steptogeom.MakeBoundedCurve2d
+steptogeom_MakeBoundedSurface = steptogeom.MakeBoundedSurface
+steptogeom_MakeCartesianPoint = steptogeom.MakeCartesianPoint
+steptogeom_MakeCartesianPoint2d = steptogeom.MakeCartesianPoint2d
+steptogeom_MakeCircle = steptogeom.MakeCircle
+steptogeom_MakeCircle2d = steptogeom.MakeCircle2d
+steptogeom_MakeConic = steptogeom.MakeConic
+steptogeom_MakeConic2d = steptogeom.MakeConic2d
+steptogeom_MakeConicalSurface = steptogeom.MakeConicalSurface
+steptogeom_MakeCurve = steptogeom.MakeCurve
+steptogeom_MakeCurve2d = steptogeom.MakeCurve2d
+steptogeom_MakeCylindricalSurface = steptogeom.MakeCylindricalSurface
+steptogeom_MakeDirection = steptogeom.MakeDirection
+steptogeom_MakeDirection2d = steptogeom.MakeDirection2d
+steptogeom_MakeElementarySurface = steptogeom.MakeElementarySurface
+steptogeom_MakeEllipse = steptogeom.MakeEllipse
+steptogeom_MakeEllipse2d = steptogeom.MakeEllipse2d
+steptogeom_MakeHyperbola = steptogeom.MakeHyperbola
+steptogeom_MakeHyperbola2d = steptogeom.MakeHyperbola2d
+steptogeom_MakeLine = steptogeom.MakeLine
+steptogeom_MakeLine2d = steptogeom.MakeLine2d
+steptogeom_MakeParabola = steptogeom.MakeParabola
+steptogeom_MakeParabola2d = steptogeom.MakeParabola2d
+steptogeom_MakePlane = steptogeom.MakePlane
+steptogeom_MakePolyline = steptogeom.MakePolyline
+steptogeom_MakePolyline2d = steptogeom.MakePolyline2d
+steptogeom_MakeRectangularTrimmedSurface = steptogeom.MakeRectangularTrimmedSurface
+steptogeom_MakeSphericalSurface = steptogeom.MakeSphericalSurface
+steptogeom_MakeSurface = steptogeom.MakeSurface
+steptogeom_MakeSurfaceOfLinearExtrusion = steptogeom.MakeSurfaceOfLinearExtrusion
+steptogeom_MakeSurfaceOfRevolution = steptogeom.MakeSurfaceOfRevolution
+steptogeom_MakeSweptSurface = steptogeom.MakeSweptSurface
+steptogeom_MakeToroidalSurface = steptogeom.MakeToroidalSurface
+steptogeom_MakeTransformation2d = steptogeom.MakeTransformation2d
+steptogeom_MakeTransformation3d = steptogeom.MakeTransformation3d
+steptogeom_MakeTrimmedCurve = steptogeom.MakeTrimmedCurve
+steptogeom_MakeTrimmedCurve2d = steptogeom.MakeTrimmedCurve2d
+steptogeom_MakeVectorWithMagnitude = steptogeom.MakeVectorWithMagnitude
+steptogeom_MakeVectorWithMagnitude2d = steptogeom.MakeVectorWithMagnitude2d

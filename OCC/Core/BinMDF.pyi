@@ -9,11 +9,11 @@ from OCC.Core.TDF import *
 from OCC.Core.BinObjMgt import *
 from OCC.Core.TCollection import *
 
-# the following typedef cannot be wrapped as is
-BinMDF_DoubleMapIteratorOfTypeIdMap = NewType("BinMDF_DoubleMapIteratorOfTypeIdMap", Any)
-BinMDF_StringIdMap = NewType("BinMDF_StringIdMap", TColStd_DataMapOfAsciiStringInteger)
-# the following typedef cannot be wrapped as is
-BinMDF_TypeIdMap = NewType("BinMDF_TypeIdMap", Any)
+#the following typedef cannot be wrapped as is
+BinMDF_DoubleMapIteratorOfTypeIdMap = NewType('BinMDF_DoubleMapIteratorOfTypeIdMap', Any)
+BinMDF_StringIdMap = NewType('BinMDF_StringIdMap', TColStd_DataMapOfAsciiStringInteger)
+#the following typedef cannot be wrapped as is
+BinMDF_TypeIdMap = NewType('BinMDF_TypeIdMap', Any)
 
 class binmdf:
     @staticmethod
@@ -27,7 +27,7 @@ class BinMDF_ADriver(Standard_Transient):
     @overload
     def Paste(self, aSource: TDF_Attribute, aTarget: BinObjMgt_Persistent, aRelocTable: BinObjMgt_SRelocationTable) -> None: ...
     def SourceType(self) -> Standard_Type: ...
-    def TypeName(self) -> str: ...
+    def TypeName(self) -> TCollection_AsciiString: ...
 
 class BinMDF_ADriverTable(Standard_Transient):
     def __init__(self) -> None: ...
@@ -73,3 +73,4 @@ class BinMDF_TagSourceDriver(BinMDF_ADriver):
 # harray2 classes
 # hsequence classes
 
+binmdf_AddDrivers = binmdf.AddDrivers

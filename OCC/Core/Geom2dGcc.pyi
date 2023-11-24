@@ -11,21 +11,6 @@ from OCC.Core.GccEnt import *
 from OCC.Core.math import *
 
 
-class Geom2dGcc_Type1(IntEnum):
-    Geom2dGcc_CuCuCu: int = ...
-    Geom2dGcc_CiCuCu: int = ...
-    Geom2dGcc_CiCiCu: int = ...
-    Geom2dGcc_CiLiCu: int = ...
-    Geom2dGcc_LiLiCu: int = ...
-    Geom2dGcc_LiCuCu: int = ...
-
-Geom2dGcc_CuCuCu = Geom2dGcc_Type1.Geom2dGcc_CuCuCu
-Geom2dGcc_CiCuCu = Geom2dGcc_Type1.Geom2dGcc_CiCuCu
-Geom2dGcc_CiCiCu = Geom2dGcc_Type1.Geom2dGcc_CiCiCu
-Geom2dGcc_CiLiCu = Geom2dGcc_Type1.Geom2dGcc_CiLiCu
-Geom2dGcc_LiLiCu = Geom2dGcc_Type1.Geom2dGcc_LiLiCu
-Geom2dGcc_LiCuCu = Geom2dGcc_Type1.Geom2dGcc_LiCuCu
-
 class Geom2dGcc_Type2(IntEnum):
     Geom2dGcc_CuCuOnCu: int = ...
     Geom2dGcc_CiCuOnCu: int = ...
@@ -59,6 +44,21 @@ class Geom2dGcc_Type3(IntEnum):
 
 Geom2dGcc_CuCu = Geom2dGcc_Type3.Geom2dGcc_CuCu
 Geom2dGcc_CiCu = Geom2dGcc_Type3.Geom2dGcc_CiCu
+
+class Geom2dGcc_Type1(IntEnum):
+    Geom2dGcc_CuCuCu: int = ...
+    Geom2dGcc_CiCuCu: int = ...
+    Geom2dGcc_CiCiCu: int = ...
+    Geom2dGcc_CiLiCu: int = ...
+    Geom2dGcc_LiLiCu: int = ...
+    Geom2dGcc_LiCuCu: int = ...
+
+Geom2dGcc_CuCuCu = Geom2dGcc_Type1.Geom2dGcc_CuCuCu
+Geom2dGcc_CiCuCu = Geom2dGcc_Type1.Geom2dGcc_CiCuCu
+Geom2dGcc_CiCiCu = Geom2dGcc_Type1.Geom2dGcc_CiCiCu
+Geom2dGcc_CiLiCu = Geom2dGcc_Type1.Geom2dGcc_CiLiCu
+Geom2dGcc_LiLiCu = Geom2dGcc_Type1.Geom2dGcc_LiLiCu
+Geom2dGcc_LiCuCu = Geom2dGcc_Type1.Geom2dGcc_LiCuCu
 
 class geom2dgcc:
     @staticmethod
@@ -448,3 +448,15 @@ class Geom2dGcc_FunctionTanCuCuCu: ...
 # harray2 classes
 # hsequence classes
 
+geom2dgcc_Enclosed = geom2dgcc.Enclosed
+geom2dgcc_Enclosing = geom2dgcc.Enclosing
+geom2dgcc_Outside = geom2dgcc.Outside
+geom2dgcc_Unqualified = geom2dgcc.Unqualified
+Geom2dGcc_CurveTool_D1 = Geom2dGcc_CurveTool.D1
+Geom2dGcc_CurveTool_D2 = Geom2dGcc_CurveTool.D2
+Geom2dGcc_CurveTool_D3 = Geom2dGcc_CurveTool.D3
+Geom2dGcc_CurveTool_EpsX = Geom2dGcc_CurveTool.EpsX
+Geom2dGcc_CurveTool_FirstParameter = Geom2dGcc_CurveTool.FirstParameter
+Geom2dGcc_CurveTool_LastParameter = Geom2dGcc_CurveTool.LastParameter
+Geom2dGcc_CurveTool_NbSamples = Geom2dGcc_CurveTool.NbSamples
+Geom2dGcc_CurveTool_Value = Geom2dGcc_CurveTool.Value

@@ -68,3 +68,4 @@ class ShapeBuild_Vertex:
 # harray2 classes
 # hsequence classes
 
+shapebuild_PlaneXOY = shapebuild.PlaneXOY

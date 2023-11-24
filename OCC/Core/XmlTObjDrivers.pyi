@@ -25,7 +25,7 @@ class XmlTObjDrivers_DocumentRetrievalDriver(XmlLDrivers_DocumentRetrievalDriver
     def AttributeDrivers(self, theMsgDriver: Message_Messenger) -> XmlMDF_ADriverTable: ...
 
 class XmlTObjDrivers_DocumentStorageDriver(XmlLDrivers_DocumentStorageDriver):
-    def __init__(self, theCopyright: str) -> None: ...
+    def __init__(self, theCopyright: TCollection_ExtendedString) -> None: ...
     def AttributeDrivers(self, theMsgDriver: Message_Messenger) -> XmlMDF_ADriverTable: ...
 
 class XmlTObjDrivers_IntSparseArrayDriver(XmlMDF_ADriver):
@@ -72,3 +72,6 @@ class XmlTObjDrivers_XYZDriver(XmlMDF_ADriver):
 # harray2 classes
 # hsequence classes
 
+xmltobjdrivers_AddDrivers = xmltobjdrivers.AddDrivers
+xmltobjdrivers_DefineFormat = xmltobjdrivers.DefineFormat
+xmltobjdrivers_Factory = xmltobjdrivers.Factory

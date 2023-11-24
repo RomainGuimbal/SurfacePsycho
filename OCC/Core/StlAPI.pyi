@@ -26,3 +26,5 @@ class StlAPI_Writer:
 # harray2 classes
 # hsequence classes
 
+stlapi_Read = stlapi.Read
+stlapi_Write = stlapi.Write

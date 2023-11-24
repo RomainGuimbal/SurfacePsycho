@@ -7,10 +7,10 @@ from OCC.Core.Message import *
 from OCC.Core.Interface import *
 from OCC.Core.TColStd import *
 
-# the following typedef cannot be wrapped as is
-Transfer_TransferMapOfProcessForFinder = NewType("Transfer_TransferMapOfProcessForFinder", Any)
-# the following typedef cannot be wrapped as is
-Transfer_TransferMapOfProcessForTransient = NewType("Transfer_TransferMapOfProcessForTransient", Any)
+#the following typedef cannot be wrapped as is
+Transfer_TransferMapOfProcessForFinder = NewType('Transfer_TransferMapOfProcessForFinder', Any)
+#the following typedef cannot be wrapped as is
+Transfer_TransferMapOfProcessForTransient = NewType('Transfer_TransferMapOfProcessForTransient', Any)
 
 class Transfer_SequenceOfBinder:
     def __init__(self) -> None: ...
@@ -55,15 +55,6 @@ Transfer_StatusDone = Transfer_StatusExec.Transfer_StatusDone
 Transfer_StatusError = Transfer_StatusExec.Transfer_StatusError
 Transfer_StatusLoop = Transfer_StatusExec.Transfer_StatusLoop
 
-class Transfer_StatusResult(IntEnum):
-    Transfer_StatusVoid: int = ...
-    Transfer_StatusDefined: int = ...
-    Transfer_StatusUsed: int = ...
-
-Transfer_StatusVoid = Transfer_StatusResult.Transfer_StatusVoid
-Transfer_StatusDefined = Transfer_StatusResult.Transfer_StatusDefined
-Transfer_StatusUsed = Transfer_StatusResult.Transfer_StatusUsed
-
 class Transfer_UndefMode(IntEnum):
     Transfer_UndefIgnore: int = ...
     Transfer_UndefFailure: int = ...
@@ -74,6 +65,15 @@ Transfer_UndefIgnore = Transfer_UndefMode.Transfer_UndefIgnore
 Transfer_UndefFailure = Transfer_UndefMode.Transfer_UndefFailure
 Transfer_UndefContent = Transfer_UndefMode.Transfer_UndefContent
 Transfer_UndefUser = Transfer_UndefMode.Transfer_UndefUser
+
+class Transfer_StatusResult(IntEnum):
+    Transfer_StatusVoid: int = ...
+    Transfer_StatusDefined: int = ...
+    Transfer_StatusUsed: int = ...
+
+Transfer_StatusVoid = Transfer_StatusResult.Transfer_StatusVoid
+Transfer_StatusDefined = Transfer_StatusResult.Transfer_StatusDefined
+Transfer_StatusUsed = Transfer_StatusResult.Transfer_StatusUsed
 
 class Transfer_ActorOfProcessForFinder(Standard_Transient):
     def __init__(self) -> None: ...
@@ -479,3 +479,8 @@ class Transfer_HSequenceOfFinder(Transfer_SequenceOfFinder, Standard_Transient):
     def Append(self, theSequence: Transfer_SequenceOfFinder) -> None: ...
 
 
+Transfer_DataInfo_Type = Transfer_DataInfo.Type
+Transfer_DataInfo_TypeName = Transfer_DataInfo.TypeName
+Transfer_FindHasher_HashCode = Transfer_FindHasher.HashCode
+Transfer_FindHasher_IsEqual = Transfer_FindHasher.IsEqual
+Transfer_SimpleBinderOfTransient_GetTypedResult = Transfer_SimpleBinderOfTransient.GetTypedResult

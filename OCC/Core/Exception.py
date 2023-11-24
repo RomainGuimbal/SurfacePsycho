@@ -31,49 +31,19 @@ This module is part of the OCC.Core package:
 from OCC.Core.Exception import *
 """
 
-import warnings
-import functools
-
-
 class MethodNotWrappedError(BaseException):
     pass
-
 
 class ClassNotWrappedError(BaseException):
     pass
 
-
 def methodnotwrapped(func):
     def function_wrapper(*x):
-        raise MethodNotWrappedError(f"{func.__name__} not wrapped")
-
+        raise MethodNotWrappedError('%s not wrapped' % func.__name__)
     return function_wrapper
 
-
 def classnotwrapped(klass):
-    class NewCls:
-        def __init__(self, *args, **kwargs):
-            raise ClassNotWrappedError(f"{klass.__name__} not wrapped")
-
+    class NewCls(object):
+        def __init__(self,*args,**kwargs):
+            raise ClassNotWrappedError('%s not wrapped' % klass.__name__)
     return NewCls
-
-
-def deprecated(func):
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emitted
-    when the function is used."""
-
-    @functools.wraps(func)
-    def new_func(*args, **kwargs):
-        warnings.simplefilter("always", DeprecationWarning)  # turn off filter
-        function_name = func.__name__
-        function_name_to_use = ".".join(function_name.rsplit("_", 1))
-        warnings.warn(
-            f"Call to deprecated function {function_name} since pythonocc-core 7.7.1. This function will be removed in a future release, please rather use the static method {function_name_to_use}",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        warnings.simplefilter("default", DeprecationWarning)  # reset filter
-        return func(*args, **kwargs)
-
-    return new_func

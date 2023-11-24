@@ -12,8 +12,8 @@ from OCC.Core.TopTools import *
 from OCC.Core.IntCurvesFace import *
 from OCC.Core.BRepAdaptor import *
 
-# the following typedef cannot be wrapped as is
-BRepClass3d_BndBoxTree = NewType("BRepClass3d_BndBoxTree", Any)
+#the following typedef cannot be wrapped as is
+BRepClass3d_BndBoxTree = NewType('BRepClass3d_BndBoxTree', Any)
 
 class brepclass3d:
     @staticmethod
@@ -88,9 +88,9 @@ class BRepClass3d_SolidExplorer:
     @overload
     def PointInTheFace(self, F: TopoDS_Face, P: gp_Pnt) -> Tuple[bool, float, float, float, int]: ...
     @overload
-    def PointInTheFace(self, F: TopoDS_Face, P: gp_Pnt, surf: BRepAdaptor_Surface, u1: float, v1: float, u2: float, v2: float) -> Tuple[bool, float, float, float, int]: ...
+    def PointInTheFace(self, F: TopoDS_Face, P: gp_Pnt, surf: BRepAdaptor_HSurface, u1: float, v1: float, u2: float, v2: float) -> Tuple[bool, float, float, float, int]: ...
     @overload
-    def PointInTheFace(self, F: TopoDS_Face, P: gp_Pnt, surf: BRepAdaptor_Surface, u1: float, v1: float, u2: float, v2: float, theVecD1U: gp_Vec, theVecD1V: gp_Vec) -> Tuple[bool, float, float, float, int]: ...
+    def PointInTheFace(self, F: TopoDS_Face, P: gp_Pnt, surf: BRepAdaptor_HSurface, u1: float, v1: float, u2: float, v2: float, theVecD1U: gp_Vec, theVecD1V: gp_Vec) -> Tuple[bool, float, float, float, int]: ...
     def Reject(self, P: gp_Pnt) -> bool: ...
     def RejectFace(self, L: gp_Lin) -> bool: ...
     def RejectShell(self, L: gp_Lin) -> bool: ...
@@ -127,3 +127,10 @@ class BRepClass3d_BndBoxTreeSelectorPoint: ...
 # harray2 classes
 # hsequence classes
 
+brepclass3d_OuterShell = brepclass3d.OuterShell
+BRepClass3d_SolidExplorer_FindAPointInTheFace = BRepClass3d_SolidExplorer.FindAPointInTheFace
+BRepClass3d_SolidExplorer_FindAPointInTheFace = BRepClass3d_SolidExplorer.FindAPointInTheFace
+BRepClass3d_SolidExplorer_FindAPointInTheFace = BRepClass3d_SolidExplorer.FindAPointInTheFace
+BRepClass3d_SolidExplorer_FindAPointInTheFace = BRepClass3d_SolidExplorer.FindAPointInTheFace
+BRepClass3d_SolidExplorer_FindAPointInTheFace = BRepClass3d_SolidExplorer.FindAPointInTheFace
+BRepClass3d_SolidExplorer_FindAPointInTheFace = BRepClass3d_SolidExplorer.FindAPointInTheFace

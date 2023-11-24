@@ -69,3 +69,6 @@ class BinMDataXtd_TriangulationDriver(BinMDF_ADriver):
 # harray2 classes
 # hsequence classes
 
+binmdataxtd_AddDrivers = binmdataxtd.AddDrivers
+binmdataxtd_DocumentVersion = binmdataxtd.DocumentVersion
+binmdataxtd_SetDocumentVersion = binmdataxtd.SetDocumentVersion

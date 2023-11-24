@@ -180,3 +180,8 @@ class GProp_VelGProps(GProp_GProps):
 # harray2 classes
 # hsequence classes
 
+gprop_HOperator = gprop.HOperator
+GProp_PGProps_Barycentre = GProp_PGProps.Barycentre
+GProp_PGProps_Barycentre = GProp_PGProps.Barycentre
+GProp_PGProps_Barycentre = GProp_PGProps.Barycentre
+GProp_PGProps_Barycentre = GProp_PGProps.Barycentre

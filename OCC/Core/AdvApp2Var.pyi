@@ -10,31 +10,6 @@ from OCC.Core.Geom import *
 from OCC.Core.gp import *
 from OCC.Core.TColgp import *
 
-C_f = NewType("C_f", None)
-E_f = NewType("E_f", float)
-H_f = NewType("H_f", None)
-# the following typedef cannot be wrapped as is
-Multitype = NewType("Multitype", Any)
-# the following typedef cannot be wrapped as is
-Namelist = NewType("Namelist", Any)
-# the following typedef cannot be wrapped as is
-Vardesc = NewType("Vardesc", Any)
-Z_f = NewType("Z_f", None)
-address = NewType("address", str)
-doublereal = NewType("doublereal", float)
-flag = NewType("flag", int)
-ftnint = NewType("ftnint", int)
-ftnlen = NewType("ftnlen", int)
-integer = NewType("integer", int)
-integer1 = NewType("integer1", str)
-logical = NewType("logical", int)
-logical1 = NewType("logical1", str)
-longint = NewType("longint", int)
-real = NewType("real", float)
-shortint = NewType("shortint", int)
-shortlogical = NewType("shortlogical", int)
-uinteger = NewType("uinteger", int)
-ulongint = NewType("ulongint", int)
 
 class AdvApp2Var_SequenceOfNode:
     def __init__(self) -> None: ...
@@ -140,20 +115,7 @@ class AdvApp2Var_ApproxAFunc2Var:
     def VFrontError(self, Dimension: int, Index: int) -> float: ...
 
 class AdvApp2Var_ApproxF2var:
-    @staticmethod
-    def mma2cdi_(ndimen: int, nbpntu: int, urootl: float, nbpntv: int, vrootl: float, iordru: int, iordrv: int, contr1: float, contr2: float, contr3: float, contr4: float, sotbu1: float, sotbu2: float, ditbu1: float, ditbu2: float, sotbv1: float, sotbv2: float, ditbv1: float, ditbv2: float, sosotb: float, soditb: float, disotb: float, diditb: float, iercod: int) -> int: ...
-    @staticmethod
-    def mma2ce1_(numdec: int, ndimen: int, nbsesp: int, ndimse: int, ndminu: int, ndminv: int, ndguli: int, ndgvli: int, ndjacu: int, ndjacv: int, iordru: int, iordrv: int, nbpntu: int, nbpntv: int, epsapr: float, sosotb: float, disotb: float, soditb: float, diditb: float, patjac: float, errmax: float, errmoy: float, ndegpu: int, ndegpv: int, itydec: int, iercod: int) -> int: ...
-    @staticmethod
-    def mma2ds1_(ndimen: int, uintfn: float, vintfn: float, foncnp: AdvApp2Var_EvaluatorFunc2Var, nbpntu: int, nbpntv: int, urootb: float, vrootb: float, isofav: int, sosotb: float, disotb: float, soditb: float, diditb: float, fpntab: float, ttable: float, iercod: int) -> int: ...
-    @staticmethod
-    def mma2fnc_(ndimen: int, nbsesp: int, ndimse: int, uvfonc: float, foncnp: AdvApp2Var_EvaluatorFunc2Var, tconst: float, isofav: int, nbroot: int, rootlg: float, iordre: int, ideriv: int, ndgjac: int, nbcrmx: int, ncflim: int, epsapr: float, ncoeff: int, courbe: float, nbcrbe: int, somtab: float, diftab: float, contr1: float, contr2: float, tabdec: float, errmax: float, errmoy: float, iercod: int) -> int: ...
-    @staticmethod
-    def mma2fx6_(ncfmxu: int, ncfmxv: int, ndimen: int, nbsesp: int, ndimse: int, nbupat: int, nbvpat: int, iordru: int, iordrv: int, epsapr: float, epsfro: float, patcan: float, errmax: float, ncoefu: int, ncoefv: int) -> int: ...
-    @staticmethod
-    def mma2jmx_(ndgjac: int, iordre: int, xjacmx: float) -> int: ...
-    @staticmethod
-    def mma2roo_(nbpntu: int, nbpntv: int, urootl: float, vrootl: float) -> int: ...
+    pass
 
 class AdvApp2Var_Context:
     @overload
@@ -231,72 +193,7 @@ class AdvApp2Var_Framework:
     def VEquation(self, IndexIso: int, IndexStrip: int) -> TColStd_HArray1OfReal: ...
 
 class AdvApp2Var_MathBase:
-    @staticmethod
-    def mdsptpt_(ndimen: int, point1: float, point2: float, distan: float) -> int: ...
-    @staticmethod
-    def mmaperx_(ncofmx: int, ndimen: int, ncoeff: int, iordre: int, crvjac: float, ncfnew: int, ycvmax: float, errmax: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmarcin_(ndimax: int, ndim: int, ncoeff: int, crvold: float, u0: float, u1: float, crvnew: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmbulld_(nbcoln: int, nblign: int, dtabtr: float, numcle: int) -> int: ...
-    @staticmethod
-    def mmcdriv_(ndimen: int, ncoeff: int, courbe: float, ideriv: int, ncofdv: int, crvdrv: float) -> int: ...
-    @staticmethod
-    def mmcglc1_(ndimax: int, ndimen: int, ncoeff: int, courbe: float, tdebut: float, tfinal: float, epsiln: float, xlongc: float, erreur: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmcvctx_(ndimen: int, ncofmx: int, nderiv: int, ctrtes: float, crvres: float, tabaux: float, xmatri: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmcvinv_(ndimax: int, ncoef: int, ndim: int, curveo: float, curve: float) -> int: ...
-    @staticmethod
-    def mmdrvck_(ncoeff: int, ndimen: int, courbe: float, ideriv: int, tparam: float, pntcrb: float) -> int: ...
-    @staticmethod
-    def mmeps1_(epsilo: float) -> int: ...
-    @staticmethod
-    def mmfmca8_(ndimen: int, ncoefu: int, ncoefv: int, ndimax: int, ncfumx: int, ncfvmx: int, tabini: float, tabres: float) -> int: ...
-    @staticmethod
-    def mmfmcar_(ndimen: int, ncofmx: int, ncoefu: int, ncoefv: int, patold: float, upara1: float, upara2: float, vpara1: float, vpara2: float, patnew: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmfmtb1_(maxsz1: int, table1: float, isize1: int, jsize1: int, maxsz2: int, table2: float, isize2: int, jsize2: int, iercod: int) -> int: ...
-    @staticmethod
-    def mmhjcan_(ndimen: int, ncourb: int, ncftab: int, orcont: int, ncflim: int, tcbold: float, tdecop: float, tcbnew: float, iercod: int) -> int: ...
-    @staticmethod
-    def mminltt_(ncolmx: int, nlgnmx: int, tabtri: float, nbrcol: int, nbrlgn: int, ajoute: float, epseg: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmjacan_(ideriv: int, ndeg: int, poljac: float, polcan: float) -> int: ...
-    @staticmethod
-    def mmjaccv_(ncoef: int, ndim: int, ider: int, crvlgd: float, polaux: float, crvcan: float) -> int: ...
-    @staticmethod
-    def mmmpocur_(ncofmx: int, ndim: int, ndeg: int, courbe: float, tparam: float, tabval: float) -> int: ...
-    @staticmethod
-    def mmmrslwd_(normax: int, nordre: int, ndim: int, amat: float, bmat: float, epspiv: float, aaux: float, xmat: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmpobas_(tparam: float, iordre: int, ncoeff: int, nderiv: int, valbas: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmpocrb_(ndimax: int, ncoeff: int, courbe: float, ndim: int, tparam: float, pntcrb: float) -> int: ...
-    @staticmethod
-    def mmposui_(dimmat: int, nistoc: int, aposit: int, posuiv: int, iercod: int) -> int: ...
-    @staticmethod
-    def mmresol_(hdimen: int, gdimen: int, hnstoc: int, gnstoc: int, mnstoc: int, matsyh: float, matsyg: float, vecsyh: float, vecsyg: float, hposit: int, hposui: int, gposit: int, mmposui: int, mposit: int, vecsol: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmrtptt_(ndglgd: int, rtlegd: float) -> int: ...
-    @staticmethod
-    def mmsrre2_(tparam: float, nbrval: int, tablev: float, epsil: float, numint: int, itypen: int, iercod: int) -> int: ...
-    @staticmethod
-    def mmtrpjj_(ncofmx: int, ndimen: int, ncoeff: int, epsi3d: float, iordre: int, crvlgd: float, ycvmax: float, errmax: float, ncfnew: int) -> int: ...
-    @staticmethod
-    def mmunivt_(ndimen: int, vector: float, vecnrm: float, epsiln: float, iercod: int) -> int: ...
-    @staticmethod
-    def mmveps3_(eps03: float) -> int: ...
-    @staticmethod
-    def mmvncol_(ndimen: int, vecin: float, vecout: float, iercod: int) -> int: ...
-    @staticmethod
-    def msc_(ndimen: int, vecte1: float, vecte2: float) -> float: ...
-    @staticmethod
-    def mvsheld_(n: int, is_: int, dtab: float, icle: int) -> int: ...
-    @staticmethod
-    def mzsnorm_(ndimen: int, vecteu: float) -> float: ...
-    @staticmethod
-    def pow__di(x: float, n: int) -> float: ...
+    pass
 
 class AdvApp2Var_Network:
     @overload
@@ -373,23 +270,9 @@ class AdvApp2Var_SysBase:
     def do__fio() -> int: ...
     @staticmethod
     def do__lio() -> int: ...
-    def mainial_(self) -> int: ...
-    @staticmethod
-    def maitbr8_(itaill: int, xtab: float, xval: float) -> int: ...
-    @staticmethod
-    def maovsr8_(ivalcs: int) -> int: ...
-    @staticmethod
-    def mcrfill_(size: int, tin: None, tout: None) -> int: ...
-    @staticmethod
-    def miraz_(taille: int, adt: None) -> None: ...
+    def mainial_(self) -> False: ...
     @staticmethod
     def mnfndeb_() -> int: ...
-    @staticmethod
-    def msifill_(nbintg: int, ivecin: int, ivecou: int) -> int: ...
-    @staticmethod
-    def msrfill_(nbreel: int, vecent: float, vecsor: float) -> int: ...
-    @staticmethod
-    def mvriraz_(taille: int, adt: None) -> None: ...
 
 #classnotwrapped
 class AdvApp2Var_EvaluatorFunc2Var: ...
@@ -401,3 +284,80 @@ class AdvApp2Var_Iso: ...
 # harray2 classes
 # hsequence classes
 
+AdvApp2Var_ApproxF2var_mma1her_ = AdvApp2Var_ApproxF2var.mma1her_
+AdvApp2Var_ApproxF2var_mma2ac1_ = AdvApp2Var_ApproxF2var.mma2ac1_
+AdvApp2Var_ApproxF2var_mma2ac2_ = AdvApp2Var_ApproxF2var.mma2ac2_
+AdvApp2Var_ApproxF2var_mma2ac3_ = AdvApp2Var_ApproxF2var.mma2ac3_
+AdvApp2Var_ApproxF2var_mma2can_ = AdvApp2Var_ApproxF2var.mma2can_
+AdvApp2Var_ApproxF2var_mma2cdi_ = AdvApp2Var_ApproxF2var.mma2cdi_
+AdvApp2Var_ApproxF2var_mma2ce1_ = AdvApp2Var_ApproxF2var.mma2ce1_
+AdvApp2Var_ApproxF2var_mma2ds1_ = AdvApp2Var_ApproxF2var.mma2ds1_
+AdvApp2Var_ApproxF2var_mma2fnc_ = AdvApp2Var_ApproxF2var.mma2fnc_
+AdvApp2Var_ApproxF2var_mma2fx6_ = AdvApp2Var_ApproxF2var.mma2fx6_
+AdvApp2Var_ApproxF2var_mma2jmx_ = AdvApp2Var_ApproxF2var.mma2jmx_
+AdvApp2Var_ApproxF2var_mma2roo_ = AdvApp2Var_ApproxF2var.mma2roo_
+AdvApp2Var_ApproxF2var_mmapptt_ = AdvApp2Var_ApproxF2var.mmapptt_
+AdvApp2Var_Data_Getmaovpar = AdvApp2Var_Data.Getmaovpar
+AdvApp2Var_Data_Getmaovpch = AdvApp2Var_Data.Getmaovpch
+AdvApp2Var_Data_Getmdnombr = AdvApp2Var_Data.Getmdnombr
+AdvApp2Var_Data_Getminombr = AdvApp2Var_Data.Getminombr
+AdvApp2Var_Data_Getmlgdrtl = AdvApp2Var_Data.Getmlgdrtl
+AdvApp2Var_Data_Getmmapgs0 = AdvApp2Var_Data.Getmmapgs0
+AdvApp2Var_Data_Getmmapgs1 = AdvApp2Var_Data.Getmmapgs1
+AdvApp2Var_Data_Getmmapgs2 = AdvApp2Var_Data.Getmmapgs2
+AdvApp2Var_Data_Getmmapgss = AdvApp2Var_Data.Getmmapgss
+AdvApp2Var_Data_Getmmcmcnp = AdvApp2Var_Data.Getmmcmcnp
+AdvApp2Var_Data_Getmmjcobi = AdvApp2Var_Data.Getmmjcobi
+AdvApp2Var_MathBase_mdsptpt_ = AdvApp2Var_MathBase.mdsptpt_
+AdvApp2Var_MathBase_mmapcmp_ = AdvApp2Var_MathBase.mmapcmp_
+AdvApp2Var_MathBase_mmaperx_ = AdvApp2Var_MathBase.mmaperx_
+AdvApp2Var_MathBase_mmarcin_ = AdvApp2Var_MathBase.mmarcin_
+AdvApp2Var_MathBase_mmbulld_ = AdvApp2Var_MathBase.mmbulld_
+AdvApp2Var_MathBase_mmcdriv_ = AdvApp2Var_MathBase.mmcdriv_
+AdvApp2Var_MathBase_mmcglc1_ = AdvApp2Var_MathBase.mmcglc1_
+AdvApp2Var_MathBase_mmcvctx_ = AdvApp2Var_MathBase.mmcvctx_
+AdvApp2Var_MathBase_mmcvinv_ = AdvApp2Var_MathBase.mmcvinv_
+AdvApp2Var_MathBase_mmdrc11_ = AdvApp2Var_MathBase.mmdrc11_
+AdvApp2Var_MathBase_mmdrvck_ = AdvApp2Var_MathBase.mmdrvck_
+AdvApp2Var_MathBase_mmeps1_ = AdvApp2Var_MathBase.mmeps1_
+AdvApp2Var_MathBase_mmfmca8_ = AdvApp2Var_MathBase.mmfmca8_
+AdvApp2Var_MathBase_mmfmca9_ = AdvApp2Var_MathBase.mmfmca9_
+AdvApp2Var_MathBase_mmfmcar_ = AdvApp2Var_MathBase.mmfmcar_
+AdvApp2Var_MathBase_mmfmcb5_ = AdvApp2Var_MathBase.mmfmcb5_
+AdvApp2Var_MathBase_mmfmtb1_ = AdvApp2Var_MathBase.mmfmtb1_
+AdvApp2Var_MathBase_mmhjcan_ = AdvApp2Var_MathBase.mmhjcan_
+AdvApp2Var_MathBase_mminltt_ = AdvApp2Var_MathBase.mminltt_
+AdvApp2Var_MathBase_mmjacan_ = AdvApp2Var_MathBase.mmjacan_
+AdvApp2Var_MathBase_mmjaccv_ = AdvApp2Var_MathBase.mmjaccv_
+AdvApp2Var_MathBase_mmmpocur_ = AdvApp2Var_MathBase.mmmpocur_
+AdvApp2Var_MathBase_mmmrslwd_ = AdvApp2Var_MathBase.mmmrslwd_
+AdvApp2Var_MathBase_mmpobas_ = AdvApp2Var_MathBase.mmpobas_
+AdvApp2Var_MathBase_mmpocrb_ = AdvApp2Var_MathBase.mmpocrb_
+AdvApp2Var_MathBase_mmposui_ = AdvApp2Var_MathBase.mmposui_
+AdvApp2Var_MathBase_mmresol_ = AdvApp2Var_MathBase.mmresol_
+AdvApp2Var_MathBase_mmrtptt_ = AdvApp2Var_MathBase.mmrtptt_
+AdvApp2Var_MathBase_mmsrre2_ = AdvApp2Var_MathBase.mmsrre2_
+AdvApp2Var_MathBase_mmtrpjj_ = AdvApp2Var_MathBase.mmtrpjj_
+AdvApp2Var_MathBase_mmunivt_ = AdvApp2Var_MathBase.mmunivt_
+AdvApp2Var_MathBase_mmveps3_ = AdvApp2Var_MathBase.mmveps3_
+AdvApp2Var_MathBase_mmvncol_ = AdvApp2Var_MathBase.mmvncol_
+AdvApp2Var_MathBase_mmwprcs_ = AdvApp2Var_MathBase.mmwprcs_
+AdvApp2Var_MathBase_msc_ = AdvApp2Var_MathBase.msc_
+AdvApp2Var_MathBase_mvsheld_ = AdvApp2Var_MathBase.mvsheld_
+AdvApp2Var_MathBase_mzsnorm_ = AdvApp2Var_MathBase.mzsnorm_
+AdvApp2Var_MathBase_pow__di = AdvApp2Var_MathBase.pow__di
+AdvApp2Var_SysBase_do__fio = AdvApp2Var_SysBase.do__fio
+AdvApp2Var_SysBase_do__lio = AdvApp2Var_SysBase.do__lio
+AdvApp2Var_SysBase_macinit_ = AdvApp2Var_SysBase.macinit_
+AdvApp2Var_SysBase_maermsg_ = AdvApp2Var_SysBase.maermsg_
+AdvApp2Var_SysBase_maitbr8_ = AdvApp2Var_SysBase.maitbr8_
+AdvApp2Var_SysBase_maovsr8_ = AdvApp2Var_SysBase.maovsr8_
+AdvApp2Var_SysBase_mcrfill_ = AdvApp2Var_SysBase.mcrfill_
+AdvApp2Var_SysBase_mgenmsg_ = AdvApp2Var_SysBase.mgenmsg_
+AdvApp2Var_SysBase_mgsomsg_ = AdvApp2Var_SysBase.mgsomsg_
+AdvApp2Var_SysBase_miraz_ = AdvApp2Var_SysBase.miraz_
+AdvApp2Var_SysBase_mnfndeb_ = AdvApp2Var_SysBase.mnfndeb_
+AdvApp2Var_SysBase_msifill_ = AdvApp2Var_SysBase.msifill_
+AdvApp2Var_SysBase_msrfill_ = AdvApp2Var_SysBase.msrfill_
+AdvApp2Var_SysBase_mswrdbg_ = AdvApp2Var_SysBase.mswrdbg_
+AdvApp2Var_SysBase_mvriraz_ = AdvApp2Var_SysBase.mvriraz_

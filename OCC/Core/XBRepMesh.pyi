@@ -15,3 +15,4 @@ class xbrepmesh:
 # harray2 classes
 # hsequence classes
 
+xbrepmesh_Discret = xbrepmesh.Discret

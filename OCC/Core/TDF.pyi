@@ -6,37 +6,37 @@ from OCC.Core.NCollection import *
 from OCC.Core.TCollection import *
 from OCC.Core.TColStd import *
 
-# the following typedef cannot be wrapped as is
-TDF_AttributeDoubleMap = NewType("TDF_AttributeDoubleMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_AttributeIndexedMap = NewType("TDF_AttributeIndexedMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_AttributeMap = NewType("TDF_AttributeMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_DoubleMapIteratorOfAttributeDoubleMap = NewType("TDF_DoubleMapIteratorOfAttributeDoubleMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_DoubleMapIteratorOfGUIDProgIDMap = NewType("TDF_DoubleMapIteratorOfGUIDProgIDMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_DoubleMapIteratorOfLabelDoubleMap = NewType("TDF_DoubleMapIteratorOfLabelDoubleMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_GUIDProgIDMap = NewType("TDF_GUIDProgIDMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_HAllocator = NewType("TDF_HAllocator", Any)
-# the following typedef cannot be wrapped as is
-TDF_IDMap = NewType("TDF_IDMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_LabelDoubleMap = NewType("TDF_LabelDoubleMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_LabelIndexedMap = NewType("TDF_LabelIndexedMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_LabelMap = NewType("TDF_LabelMap", Any)
-TDF_LabelNodePtr = NewType("TDF_LabelNodePtr", TDF_LabelNode)
-# the following typedef cannot be wrapped as is
-TDF_MapIteratorOfAttributeMap = NewType("TDF_MapIteratorOfAttributeMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_MapIteratorOfIDMap = NewType("TDF_MapIteratorOfIDMap", Any)
-# the following typedef cannot be wrapped as is
-TDF_MapIteratorOfLabelMap = NewType("TDF_MapIteratorOfLabelMap", Any)
+#the following typedef cannot be wrapped as is
+TDF_AttributeDoubleMap = NewType('TDF_AttributeDoubleMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_AttributeIndexedMap = NewType('TDF_AttributeIndexedMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_AttributeMap = NewType('TDF_AttributeMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_DoubleMapIteratorOfAttributeDoubleMap = NewType('TDF_DoubleMapIteratorOfAttributeDoubleMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_DoubleMapIteratorOfGUIDProgIDMap = NewType('TDF_DoubleMapIteratorOfGUIDProgIDMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_DoubleMapIteratorOfLabelDoubleMap = NewType('TDF_DoubleMapIteratorOfLabelDoubleMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_GUIDProgIDMap = NewType('TDF_GUIDProgIDMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_HAllocator = NewType('TDF_HAllocator', Any)
+#the following typedef cannot be wrapped as is
+TDF_IDMap = NewType('TDF_IDMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_LabelDoubleMap = NewType('TDF_LabelDoubleMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_LabelIndexedMap = NewType('TDF_LabelIndexedMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_LabelMap = NewType('TDF_LabelMap', Any)
+TDF_LabelNodePtr = NewType('TDF_LabelNodePtr', TDF_LabelNode)
+#the following typedef cannot be wrapped as is
+TDF_MapIteratorOfAttributeMap = NewType('TDF_MapIteratorOfAttributeMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_MapIteratorOfIDMap = NewType('TDF_MapIteratorOfIDMap', Any)
+#the following typedef cannot be wrapped as is
+TDF_MapIteratorOfLabelMap = NewType('TDF_MapIteratorOfLabelMap', Any)
 
 class TDF_AttributeArray1:
     @overload
@@ -165,13 +165,13 @@ class TDF_LabelSequence:
 
 class tdf:
     @staticmethod
-    def AddLinkGUIDToProgID(ID: Standard_GUID, ProgID: str) -> None: ...
+    def AddLinkGUIDToProgID(ID: Standard_GUID, ProgID: TCollection_ExtendedString) -> None: ...
     @staticmethod
-    def GUIDFromProgID(ProgID: str, ID: Standard_GUID) -> bool: ...
+    def GUIDFromProgID(ProgID: TCollection_ExtendedString, ID: Standard_GUID) -> bool: ...
     @staticmethod
     def LowestID() -> Standard_GUID: ...
     @staticmethod
-    def ProgIDFromGUID(ID: Standard_GUID, ProgID: str) -> bool: ...
+    def ProgIDFromGUID(ID: Standard_GUID, ProgID: TCollection_ExtendedString) -> bool: ...
     @staticmethod
     def UppestID() -> Standard_GUID: ...
 
@@ -323,15 +323,11 @@ class TDF_Data(Standard_Transient):
     def __init__(self) -> None: ...
     def AllowModification(self, isAllowed: bool) -> None: ...
     def Destroy(self) -> None: ...
-    def GetLabel(self, anEntry: str, aLabel: TDF_Label) -> bool: ...
-    def IsAccessByEntries(self) -> bool: ...
     def IsApplicable(self, aDelta: TDF_Delta) -> bool: ...
     def IsModificationAllowed(self) -> bool: ...
     def LabelNodeAllocator(self) -> TDF_HAllocator: ...
     def NotUndoMode(self) -> bool: ...
-    def RegisterLabel(self, aLabel: TDF_Label) -> None: ...
     def Root(self) -> TDF_Label: ...
-    def SetAccessByEntries(self, aSet: bool) -> None: ...
     def Time(self) -> int: ...
     def Transaction(self) -> int: ...
     def Undo(self, aDelta: TDF_Delta, withDelta: Optional[bool] = False) -> TDF_Delta: ...
@@ -357,8 +353,8 @@ class TDF_Delta(Standard_Transient):
     def IsApplicable(self, aCurrentTime: int) -> bool: ...
     def IsEmpty(self) -> bool: ...
     def Labels(self, aLabelList: TDF_LabelList) -> None: ...
-    def Name(self) -> str: ...
-    def SetName(self, theName: str) -> None: ...
+    def Name(self) -> TCollection_ExtendedString: ...
+    def SetName(self, theName: TCollection_ExtendedString) -> None: ...
 
 class TDF_IDFilter:
     def __init__(self, ignoreMode: Optional[bool] = True) -> None: ...
@@ -464,7 +460,7 @@ class TDF_Tool:
     @staticmethod
     def DeductLabels(aLabelList: TDF_LabelList, aLabelMap: TDF_LabelIntegerMap) -> None: ...
     @staticmethod
-    def Entry(aLabel: TDF_Label, anEntry: str) -> None: ...
+    def Entry(aLabel: TDF_Label, anEntry: TCollection_AsciiString) -> None: ...
     @overload
     @staticmethod
     def IsSelfContained(aLabel: TDF_Label) -> bool: ...
@@ -473,7 +469,7 @@ class TDF_Tool:
     def IsSelfContained(aLabel: TDF_Label, aFilter: TDF_IDFilter) -> bool: ...
     @overload
     @staticmethod
-    def Label(aDF: TDF_Data, anEntry: str, aLabel: TDF_Label, create: Optional[bool] = False) -> None: ...
+    def Label(aDF: TDF_Data, anEntry: TCollection_AsciiString, aLabel: TDF_Label, create: Optional[bool] = False) -> None: ...
     @overload
     @staticmethod
     def Label(aDF: TDF_Data, anEntry: str, aLabel: TDF_Label, create: Optional[bool] = False) -> None: ...
@@ -507,19 +503,19 @@ class TDF_Tool:
     def TagList(aLabel: TDF_Label, aTagList: TColStd_ListOfInteger) -> None: ...
     @overload
     @staticmethod
-    def TagList(anEntry: str, aTagList: TColStd_ListOfInteger) -> None: ...
+    def TagList(anEntry: TCollection_AsciiString, aTagList: TColStd_ListOfInteger) -> None: ...
 
 class TDF_Transaction:
     @overload
-    def __init__(self, aName: Optional[str] = "") -> None: ...
+    def __init__(self, aName: Optional[TCollection_AsciiString] = "") -> None: ...
     @overload
-    def __init__(self, aDF: TDF_Data, aName: Optional[str] = "") -> None: ...
+    def __init__(self, aDF: TDF_Data, aName: Optional[TCollection_AsciiString] = "") -> None: ...
     def Abort(self) -> None: ...
     def Commit(self, withDelta: Optional[bool] = False) -> TDF_Delta: ...
     def Data(self) -> TDF_Data: ...
     def Initialize(self, aDF: TDF_Data) -> None: ...
     def IsOpen(self) -> bool: ...
-    def Name(self) -> str: ...
+    def Name(self) -> TCollection_AsciiString: ...
     def Open(self) -> int: ...
     def Transaction(self) -> int: ...
 
@@ -601,3 +597,50 @@ class TDF_HAttributeArray1(TDF_AttributeArray1, Standard_Transient):
 # harray2 classes
 # hsequence classes
 
+tdf_AddLinkGUIDToProgID = tdf.AddLinkGUIDToProgID
+tdf_GUIDFromProgID = tdf.GUIDFromProgID
+tdf_LowestID = tdf.LowestID
+tdf_ProgIDFromGUID = tdf.ProgIDFromGUID
+tdf_UppestID = tdf.UppestID
+TDF_ClosureTool_Closure = TDF_ClosureTool.Closure
+TDF_ClosureTool_Closure = TDF_ClosureTool.Closure
+TDF_ClosureTool_Closure = TDF_ClosureTool.Closure
+TDF_ComparisonTool_Compare = TDF_ComparisonTool.Compare
+TDF_ComparisonTool_Cut = TDF_ComparisonTool.Cut
+TDF_ComparisonTool_IsSelfContained = TDF_ComparisonTool.IsSelfContained
+TDF_ComparisonTool_SourceUnbound = TDF_ComparisonTool.SourceUnbound
+TDF_ComparisonTool_TargetUnbound = TDF_ComparisonTool.TargetUnbound
+TDF_CopyLabel_ExternalReferences = TDF_CopyLabel.ExternalReferences
+TDF_CopyLabel_ExternalReferences = TDF_CopyLabel.ExternalReferences
+TDF_CopyTool_Copy = TDF_CopyTool.Copy
+TDF_CopyTool_Copy = TDF_CopyTool.Copy
+TDF_CopyTool_Copy = TDF_CopyTool.Copy
+TDF_LabelMapHasher_HashCode = TDF_LabelMapHasher.HashCode
+TDF_LabelMapHasher_IsEqual = TDF_LabelMapHasher.IsEqual
+TDF_Tool_CountLabels = TDF_Tool.CountLabels
+TDF_Tool_DeductLabels = TDF_Tool.DeductLabels
+TDF_Tool_DeepDump = TDF_Tool.DeepDump
+TDF_Tool_DeepDump = TDF_Tool.DeepDump
+TDF_Tool_Entry = TDF_Tool.Entry
+TDF_Tool_ExtendedDeepDump = TDF_Tool.ExtendedDeepDump
+TDF_Tool_ExtendedDeepDump = TDF_Tool.ExtendedDeepDump
+TDF_Tool_IsSelfContained = TDF_Tool.IsSelfContained
+TDF_Tool_IsSelfContained = TDF_Tool.IsSelfContained
+TDF_Tool_Label = TDF_Tool.Label
+TDF_Tool_Label = TDF_Tool.Label
+TDF_Tool_Label = TDF_Tool.Label
+TDF_Tool_NbAttributes = TDF_Tool.NbAttributes
+TDF_Tool_NbAttributes = TDF_Tool.NbAttributes
+TDF_Tool_NbLabels = TDF_Tool.NbLabels
+TDF_Tool_OutReferences = TDF_Tool.OutReferences
+TDF_Tool_OutReferences = TDF_Tool.OutReferences
+TDF_Tool_OutReferers = TDF_Tool.OutReferers
+TDF_Tool_OutReferers = TDF_Tool.OutReferers
+TDF_Tool_RelocateLabel = TDF_Tool.RelocateLabel
+TDF_Tool_TagList = TDF_Tool.TagList
+TDF_Tool_TagList = TDF_Tool.TagList
+TDF_Reference_GetID = TDF_Reference.GetID
+TDF_Reference_Set = TDF_Reference.Set
+TDF_TagSource_GetID = TDF_TagSource.GetID
+TDF_TagSource_NewChild = TDF_TagSource.NewChild
+TDF_TagSource_Set = TDF_TagSource.Set

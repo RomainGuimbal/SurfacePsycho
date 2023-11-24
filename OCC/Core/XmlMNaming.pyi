@@ -8,7 +8,6 @@ from OCC.Core.Message import *
 from OCC.Core.TopTools import *
 from OCC.Core.TDF import *
 from OCC.Core.XmlObjMgt import *
-from OCC.Core.TDocStd import *
 from OCC.Core.TopAbs import *
 from OCC.Core.TopoDS import *
 
@@ -27,7 +26,7 @@ class XmlMNaming_NamedShapeDriver(XmlMDF_ADriver):
     @overload
     def Paste(self, theSource: TDF_Attribute, theTarget: XmlObjMgt_Persistent, theRelocTable: XmlObjMgt_SRelocationTable) -> None: ...
     def ReadShapeSection(self, anElement: XmlObjMgt_Element, theRange: Optional[Message_ProgressRange] = Message_ProgressRange()) -> None: ...
-    def WriteShapeSection(self, anElement: XmlObjMgt_Element, theStorageFormatVersion: TDocStd_FormatVersion, theRange: Optional[Message_ProgressRange] = Message_ProgressRange()) -> None: ...
+    def WriteShapeSection(self, anElement: XmlObjMgt_Element, theRange: Optional[Message_ProgressRange] = Message_ProgressRange()) -> None: ...
 
 class XmlMNaming_NamingDriver(XmlMDF_ADriver):
     def __init__(self, aMessageDriver: Message_Messenger) -> None: ...
@@ -56,3 +55,4 @@ class XmlMNaming_Shape1:
 # harray2 classes
 # hsequence classes
 
+xmlmnaming_AddDrivers = xmlmnaming.AddDrivers

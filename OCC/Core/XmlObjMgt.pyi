@@ -9,9 +9,9 @@ from OCC.Core.gp import *
 from OCC.Core.TColStd import *
 from OCC.Core.Storage import *
 
-XmlObjMgt_DOMString = NewType("XmlObjMgt_DOMString", LDOMString)
-XmlObjMgt_Document = NewType("XmlObjMgt_Document", LDOM_Document)
-XmlObjMgt_Element = NewType("XmlObjMgt_Element", LDOM_Element)
+XmlObjMgt_DOMString = NewType('XmlObjMgt_DOMString', LDOMString)
+XmlObjMgt_Document = NewType('XmlObjMgt_Document', LDOM_Document)
+XmlObjMgt_Element = NewType('XmlObjMgt_Element', LDOM_Element)
 
 class xmlobjmgt:
     @staticmethod
@@ -21,7 +21,9 @@ class xmlobjmgt:
     @staticmethod
     def FindChildElement(theSource: XmlObjMgt_Element, theObjId: int) -> XmlObjMgt_Element: ...
     @staticmethod
-    def GetExtendedString(theElement: XmlObjMgt_Element, theString: str) -> bool: ...
+    def GetExtendedString(theElement: XmlObjMgt_Element, theString: TCollection_ExtendedString) -> bool: ...
+    @staticmethod
+    def GetInteger(theString: str) -> Tuple[bool, int]: ...
     @overload
     @staticmethod
     def GetReal(theString: str) -> Tuple[bool, float]: ...
@@ -31,15 +33,15 @@ class xmlobjmgt:
     @staticmethod
     def GetStringValue(theElement: XmlObjMgt_Element) -> XmlObjMgt_DOMString: ...
     @staticmethod
-    def GetTagEntryString(theTarget: XmlObjMgt_DOMString, theTagEntry: str) -> bool: ...
+    def GetTagEntryString(theTarget: XmlObjMgt_DOMString, theTagEntry: TCollection_AsciiString) -> bool: ...
     @staticmethod
     def IdString() -> XmlObjMgt_DOMString: ...
     @staticmethod
-    def SetExtendedString(theElement: XmlObjMgt_Element, theString: str) -> bool: ...
+    def SetExtendedString(theElement: XmlObjMgt_Element, theString: TCollection_ExtendedString) -> bool: ...
     @staticmethod
     def SetStringValue(theElement: XmlObjMgt_Element, theData: XmlObjMgt_DOMString, isClearText: Optional[bool] = False) -> None: ...
     @staticmethod
-    def SetTagEntryString(theSource: XmlObjMgt_DOMString, theTagEntry: str) -> None: ...
+    def SetTagEntryString(theSource: XmlObjMgt_DOMString, theTagEntry: TCollection_AsciiString) -> None: ...
 
 class XmlObjMgt_Array1:
     @overload
@@ -103,3 +105,22 @@ class XmlObjMgt_SRelocationTable(TColStd_IndexedMapOfTransient):
 # harray2 classes
 # hsequence classes
 
+xmlobjmgt_FindChildByName = xmlobjmgt.FindChildByName
+xmlobjmgt_FindChildByRef = xmlobjmgt.FindChildByRef
+xmlobjmgt_FindChildElement = xmlobjmgt.FindChildElement
+xmlobjmgt_GetExtendedString = xmlobjmgt.GetExtendedString
+xmlobjmgt_GetInteger = xmlobjmgt.GetInteger
+xmlobjmgt_GetReal = xmlobjmgt.GetReal
+xmlobjmgt_GetReal = xmlobjmgt.GetReal
+xmlobjmgt_GetStringValue = xmlobjmgt.GetStringValue
+xmlobjmgt_GetTagEntryString = xmlobjmgt.GetTagEntryString
+xmlobjmgt_IdString = xmlobjmgt.IdString
+xmlobjmgt_SetExtendedString = xmlobjmgt.SetExtendedString
+xmlobjmgt_SetStringValue = xmlobjmgt.SetStringValue
+xmlobjmgt_SetTagEntryString = xmlobjmgt.SetTagEntryString
+XmlObjMgt_GP_Translate = XmlObjMgt_GP.Translate
+XmlObjMgt_GP_Translate = XmlObjMgt_GP.Translate
+XmlObjMgt_GP_Translate = XmlObjMgt_GP.Translate
+XmlObjMgt_GP_Translate = XmlObjMgt_GP.Translate
+XmlObjMgt_GP_Translate = XmlObjMgt_GP.Translate
+XmlObjMgt_GP_Translate = XmlObjMgt_GP.Translate

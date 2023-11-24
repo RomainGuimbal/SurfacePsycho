@@ -115,3 +115,11 @@ class CPnts_UniformDeflection:
 # harray2 classes
 # hsequence classes
 
+CPnts_AbscissaPoint_Length = CPnts_AbscissaPoint.Length
+CPnts_AbscissaPoint_Length = CPnts_AbscissaPoint.Length
+CPnts_AbscissaPoint_Length = CPnts_AbscissaPoint.Length
+CPnts_AbscissaPoint_Length = CPnts_AbscissaPoint.Length
+CPnts_AbscissaPoint_Length = CPnts_AbscissaPoint.Length
+CPnts_AbscissaPoint_Length = CPnts_AbscissaPoint.Length
+CPnts_AbscissaPoint_Length = CPnts_AbscissaPoint.Length
+CPnts_AbscissaPoint_Length = CPnts_AbscissaPoint.Length

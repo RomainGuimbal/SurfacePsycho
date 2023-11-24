@@ -66,9 +66,7 @@ class BRep_Builder(TopoDS_Builder):
     @overload
     def MakeFace(self, F: TopoDS_Face, S: Geom_Surface, L: TopLoc_Location, Tol: float) -> None: ...
     @overload
-    def MakeFace(self, theFace: TopoDS_Face, theTriangulation: Poly_Triangulation) -> None: ...
-    @overload
-    def MakeFace(self, theFace: TopoDS_Face, theTriangulations: Poly_ListOfTriangulation, theActiveTriangulation: Optional[Poly_Triangulation] = Poly_Triangulation()) -> None: ...
+    def MakeFace(self, F: TopoDS_Face, T: Poly_Triangulation) -> None: ...
     @overload
     def MakeVertex(self, V: TopoDS_Vertex) -> None: ...
     @overload
@@ -127,7 +125,7 @@ class BRep_Builder(TopoDS_Builder):
     @overload
     def UpdateFace(self, F: TopoDS_Face, S: Geom_Surface, L: TopLoc_Location, Tol: float) -> None: ...
     @overload
-    def UpdateFace(self, theFace: TopoDS_Face, theTriangulation: Poly_Triangulation, theToReset: Optional[bool] = true) -> None: ...
+    def UpdateFace(self, F: TopoDS_Face, T: Poly_Triangulation) -> None: ...
     @overload
     def UpdateFace(self, F: TopoDS_Face, Tol: float) -> None: ...
     @overload
@@ -274,33 +272,27 @@ class BRep_TEdge(TopoDS_TEdge):
 
 class BRep_TFace(TopoDS_TFace):
     def __init__(self) -> None: ...
-    def ActiveTriangulation(self) -> Poly_Triangulation: ...
     def EmptyCopy(self) -> TopoDS_TShape: ...
     @overload
     def Location(self) -> TopLoc_Location: ...
     @overload
-    def Location(self, theLocation: TopLoc_Location) -> None: ...
+    def Location(self, L: TopLoc_Location) -> None: ...
     @overload
     def NaturalRestriction(self) -> bool: ...
     @overload
-    def NaturalRestriction(self, theRestriction: bool) -> None: ...
-    def NbTriangulations(self) -> int: ...
+    def NaturalRestriction(self, N: bool) -> None: ...
     @overload
     def Surface(self) -> Geom_Surface: ...
     @overload
-    def Surface(self, theSurface: Geom_Surface) -> None: ...
+    def Surface(self, S: Geom_Surface) -> None: ...
     @overload
     def Tolerance(self) -> float: ...
     @overload
-    def Tolerance(self, theTolerance: float) -> None: ...
+    def Tolerance(self, T: float) -> None: ...
     @overload
-    def Triangulation(self, thePurpose: Optional[Poly_MeshPurpose] = Poly_MeshPurpose_NONE) -> Poly_Triangulation: ...
+    def Triangulation(self) -> Poly_Triangulation: ...
     @overload
-    def Triangulation(self, theTriangulation: Poly_Triangulation, theToReset: Optional[bool] = true) -> None: ...
-    @overload
-    def Triangulations(self) -> Poly_ListOfTriangulation: ...
-    @overload
-    def Triangulations(self, theTriangulations: Poly_ListOfTriangulation, theActiveTriangulation: Poly_Triangulation) -> None: ...
+    def Triangulation(self, T: Poly_Triangulation) -> None: ...
 
 class BRep_TVertex(TopoDS_TVertex):
     def __init__(self) -> None: ...
@@ -453,9 +445,7 @@ class BRep_Tool:
     @staticmethod
     def Tolerance(V: TopoDS_Vertex) -> float: ...
     @staticmethod
-    def Triangulation(theFace: TopoDS_Face, theLocation: TopLoc_Location, theMeshPurpose: Optional[Poly_MeshPurpose] = Poly_MeshPurpose_NONE) -> Poly_Triangulation: ...
-    @staticmethod
-    def Triangulations(theFace: TopoDS_Face, theLocation: TopLoc_Location) -> Poly_ListOfTriangulation: ...
+    def Triangulation(F: TopoDS_Face, L: TopLoc_Location) -> Poly_Triangulation: ...
     @overload
     @staticmethod
     def UVPoints(E: TopoDS_Edge, S: Geom_Surface, L: TopLoc_Location, PFirst: gp_Pnt2d, PLast: gp_Pnt2d) -> None: ...
@@ -638,3 +628,54 @@ class BRep_CurveOnClosedSurface(BRep_CurveOnSurface):
 # harray2 classes
 # hsequence classes
 
+BRep_Tool_Continuity = BRep_Tool.Continuity
+BRep_Tool_Continuity = BRep_Tool.Continuity
+BRep_Tool_Curve = BRep_Tool.Curve
+BRep_Tool_Curve = BRep_Tool.Curve
+BRep_Tool_CurveOnPlane = BRep_Tool.CurveOnPlane
+BRep_Tool_CurveOnSurface = BRep_Tool.CurveOnSurface
+BRep_Tool_CurveOnSurface = BRep_Tool.CurveOnSurface
+BRep_Tool_CurveOnSurface = BRep_Tool.CurveOnSurface
+BRep_Tool_CurveOnSurface = BRep_Tool.CurveOnSurface
+BRep_Tool_Degenerated = BRep_Tool.Degenerated
+BRep_Tool_HasContinuity = BRep_Tool.HasContinuity
+BRep_Tool_HasContinuity = BRep_Tool.HasContinuity
+BRep_Tool_HasContinuity = BRep_Tool.HasContinuity
+BRep_Tool_IsClosed = BRep_Tool.IsClosed
+BRep_Tool_IsClosed = BRep_Tool.IsClosed
+BRep_Tool_IsClosed = BRep_Tool.IsClosed
+BRep_Tool_IsClosed = BRep_Tool.IsClosed
+BRep_Tool_IsGeometric = BRep_Tool.IsGeometric
+BRep_Tool_IsGeometric = BRep_Tool.IsGeometric
+BRep_Tool_MaxContinuity = BRep_Tool.MaxContinuity
+BRep_Tool_MaxTolerance = BRep_Tool.MaxTolerance
+BRep_Tool_NaturalRestriction = BRep_Tool.NaturalRestriction
+BRep_Tool_Parameter = BRep_Tool.Parameter
+BRep_Tool_Parameter = BRep_Tool.Parameter
+BRep_Tool_Parameter = BRep_Tool.Parameter
+BRep_Tool_Parameter = BRep_Tool.Parameter
+BRep_Tool_Parameters = BRep_Tool.Parameters
+BRep_Tool_Pnt = BRep_Tool.Pnt
+BRep_Tool_Polygon3D = BRep_Tool.Polygon3D
+BRep_Tool_PolygonOnSurface = BRep_Tool.PolygonOnSurface
+BRep_Tool_PolygonOnSurface = BRep_Tool.PolygonOnSurface
+BRep_Tool_PolygonOnSurface = BRep_Tool.PolygonOnSurface
+BRep_Tool_PolygonOnSurface = BRep_Tool.PolygonOnSurface
+BRep_Tool_PolygonOnTriangulation = BRep_Tool.PolygonOnTriangulation
+BRep_Tool_PolygonOnTriangulation = BRep_Tool.PolygonOnTriangulation
+BRep_Tool_PolygonOnTriangulation = BRep_Tool.PolygonOnTriangulation
+BRep_Tool_Range = BRep_Tool.Range
+BRep_Tool_Range = BRep_Tool.Range
+BRep_Tool_Range = BRep_Tool.Range
+BRep_Tool_SameParameter = BRep_Tool.SameParameter
+BRep_Tool_SameRange = BRep_Tool.SameRange
+BRep_Tool_SetUVPoints = BRep_Tool.SetUVPoints
+BRep_Tool_SetUVPoints = BRep_Tool.SetUVPoints
+BRep_Tool_Surface = BRep_Tool.Surface
+BRep_Tool_Surface = BRep_Tool.Surface
+BRep_Tool_Tolerance = BRep_Tool.Tolerance
+BRep_Tool_Tolerance = BRep_Tool.Tolerance
+BRep_Tool_Tolerance = BRep_Tool.Tolerance
+BRep_Tool_Triangulation = BRep_Tool.Triangulation
+BRep_Tool_UVPoints = BRep_Tool.UVPoints
+BRep_Tool_UVPoints = BRep_Tool.UVPoints

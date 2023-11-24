@@ -40,6 +40,8 @@ from OCC.Core.TColgp import TColgp_Array2OfPnt
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire
 
+addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
+filepath = addonpath + "/assets/assets.blend"
 
 def new_bezier_surface(points):
     controlPoints = TColgp_Array2OfPnt(1, 4, 1, 4)
@@ -66,6 +68,8 @@ def new_bezier_surface(points):
         BSPLSURF = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
         return BSPLSURF
 
+def new_bezier_face():
+
 
 def get_GN_bezierSurf_controlPoints_Coords(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -74,16 +78,11 @@ def get_GN_bezierSurf_controlPoints_Coords(o, context):
     me.attributes['handle_co'].data.foreach_get("vector", raw_coords)
     coords = raw_coords[0:16*3].reshape((-1, 3))
     return coords
-                
-
-addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
-filepath = addonpath + "/assets/assets.blend"
 
 
-def append_object_by_name(obj_name, context):
+def append_object_by_name(obj_name, context):# for importing from the asset file
     with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
         data_to.objects = [name for name in data_from.objects if name==obj_name]
-
 
     cursor_loc = context.scene.cursor.location
 
@@ -99,7 +98,7 @@ def append_object_by_name(obj_name, context):
             bpy.context.view_layer.objects.active = o
 
 
-def bl_to_occ_planar_surfaces_(o, context):
+def new_planar_face_(o, context):
     # List edges
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     me = ob.data
@@ -155,11 +154,20 @@ class SP_OT_quick_export(bpy.types.Operator):
         
         for o in context.selected_objects:
             isSP=True
+            
+            # Is bezier surf
             try :
                 points = get_GN_bezierSurf_controlPoints_Coords(o, context)
             except Exception:
                 isSP=False
-                pass
+            
+            # Is planar surface
+            try :
+                points = get_GN_bezierSurf_controlPoints_Coords(o, context)
+            except Exception:
+                isSP=False
+
+
 
             if isSP :
                 SPobj_count +=1
@@ -284,6 +292,9 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
 
 
 #TODO : nurbs to SP :  cp = [p.co for p in o.data.splines[0].points]
+
+
+
 
 
 
