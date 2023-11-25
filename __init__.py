@@ -33,12 +33,13 @@ file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve
 from OCC.Core.gp import gp_Pnt
 from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface
-from OCC.Core.TColgp import TColgp_Array2OfPnt
+from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire
+from OCC.Core.TopTools import TopTools_Array1OfShapes, TopoDS_Wire, TopoDS_Edge, TopoDS_Face
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 filepath = addonpath + "/assets/assets.blend"
@@ -65,10 +66,9 @@ def new_bezier_surface(points):
         udeg = BB.UDegree()
         vdeg = BB.VDegree()
 
-        BSPLSURF = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
-        return BSPLSURF
-
-def new_bezier_face():
+        bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
+        face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+        return face
 
 
 def get_GN_bezierSurf_controlPoints_Coords(o, context):
@@ -98,23 +98,52 @@ def append_object_by_name(obj_name, context):# for importing from the asset file
             bpy.context.view_layer.objects.active = o
 
 
-def new_planar_face_(o, context):
+def new_planar_face(o, context):
     # List edges
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     me = ob.data
+
+    point_count = me.attributes['P_count'].data[0].value
     raw_cp_planar = np.empty(3 * len(me.attributes['CP_planar'].data))
     me.attributes['CP_planar'].data.foreach_get("vector", raw_cp_planar)
-    cp_planar = raw_cp_planar.reshape((-1, 3))
-    # edges_list = TopTools_Array1OfShapes()
-    # for each segment : make bezier
-    # edges_list.add()
-    wire = BRepBuilderAPI_MakeWire(); 
-    # for e in edges_list :
-    #   wire.Add(TopoDS.Edge(e))
-    # w = TopoDS_Wire(wire)
+    cp_planar = raw_cp_planar.reshape((-1, 3))[0:point_count]
+    
+    controlPoints = TColgp_Array1OfPnt(1, point_count)
+    for i in range(point_count):
+        controlPoints.SetValue(i, gp_Pnt(cp_planar[i][0], cp_planar[i][1], cp_planar[i][2]))
 
-    #face = BRepBuilderAPI_MakeFace(planar_surf,wire)
-    return 0#face
+    edges_list = TopTools_Array1OfShapes(1, point_count//3)
+    for i in range(point_count//3):
+        segment = Geom_BezierCurve(controlPoints[i*3], controlPoints[i*3+1], controlPoints[i*3+2], controlPoints[i*3+3])
+        edges_list.add(segment)
+
+    wire = BRepBuilderAPI_MakeWire(); 
+    for e in edges_list :
+        wire.Add(TopoDS_Edge(e))
+    w = TopoDS_Wire(wire)
+
+    planar_surf = TopoDS_Face()
+
+    face = BRepBuilderAPI_MakeFace(planar_surf, w)
+    return face
+
+def geom_type_of_object(o, context):
+    type = None
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    if hasattr(ob.data.attributes) :
+        attr = ob.data.attributes
+        for v in attr.values() :
+            if v == attr['handle_co'] :
+                type = 'bezier_surf'
+                break
+            if v == attr['CP_planar'] :
+                type = 'planar'
+                break
+    return type
+
+
+
+
 
 
 
@@ -132,14 +161,6 @@ from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Sewing
 from OCC.Core.TopoDS import TopoDS_Shape #, TopoDS_Compound
 # from OCC.Core.BRep import BRep_Builder
 from datetime import datetime
-
-class SP_OT_test(bpy.types.Operator):
-    bl_idname = "sp.test"
-    bl_label = "Add Mesh Object"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        return {'FINISHED'}
     
 class SP_OT_quick_export(bpy.types.Operator):
     bl_idname = "sp.quick_export"
@@ -153,31 +174,15 @@ class SP_OT_quick_export(bpy.types.Operator):
         SPobj_count=0
         
         for o in context.selected_objects:
-            isSP=True
-            
-            # Is bezier surf
-            try :
-                points = get_GN_bezierSurf_controlPoints_Coords(o, context)
-            except Exception:
-                isSP=False
-            
-            # Is planar surface
-            try :
-                points = get_GN_bezierSurf_controlPoints_Coords(o, context)
-            except Exception:
-                isSP=False
+            gto = geom_type_of_object(o, context)
 
-
-
-            if isSP :
+            if gto == "bezier_surf" :
                 SPobj_count +=1
 
+                points = get_GN_bezierSurf_controlPoints_Coords(o, context)
                 #unit correction
                 points *= 1000
-
-                bsurf = new_bezier_surface(points)
-                face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-                aSew.Add(face)
+                aSew.Add(new_bezier_surface(points))
                 
                 # mirrors (do not support rotations of mirror object)
                 for m in o.modifiers :
@@ -190,9 +195,10 @@ class SP_OT_quick_export(bpy.types.Operator):
                                     mirror_offset = o.location*1000
                                 else :
                                     mirror_offset = m.mirror_object.location*1000
-                                bsurf = new_bezier_surface((points - mirror_offset)*mirror_vect + mirror_offset)
-                                face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-                                aSew.Add(face)
+                                aSew.Add(new_bezier_surface((points - mirror_offset)*mirror_vect + mirror_offset))
+            elif gto == "planar" :
+                SPobj_count +=1
+                aSew.Add(new_planar_face(o, context))
 
         aSew.SetNonManifoldMode(True)
         aSew.Perform()
@@ -272,7 +278,6 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                 cp=get_GN_bezierSurf_controlPoints_Coords(o, context)
             except Exception :
                 cp=None
-                pass
             
             if cp is not None :
                 bpy.ops.surface.primitive_nurbs_surface_surface_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
@@ -343,7 +348,6 @@ def menu_curve(self, context):
 classes = (
     SP_OT_quick_export,
     SP_PT_MainPanel,
-    SP_OT_test,
     SP_OT_add_bicubic_patch,
     SP_OT_add_biquadratic_patch,
     SP_OT_add_cubic_curve,
