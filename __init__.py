@@ -26,20 +26,25 @@ bl_info = {
 import bpy
 import sys
 import numpy as np
+from mathutils import Vector
 
+from datetime import datetime
 from os.path import dirname, abspath, exists
 
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve
-from OCC.Core.gp import gp_Pnt
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane
+from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln
 from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface
 from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
+from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire
-from OCC.Core.TopTools import TopTools_Array1OfShapes, TopoDS_Wire, TopoDS_Edge, TopoDS_Face
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_MakeShape
+from OCC.Core.TopTools import TopTools_Array1OfShape 
+from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
+from OCC.Extend.DataExchange import write_step_file
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 filepath = addonpath + "/assets/assets.blend"
@@ -102,41 +107,55 @@ def new_planar_face(o, context):
     # List edges
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     me = ob.data
-
     point_count = me.attributes['P_count'].data[0].value
+
     raw_cp_planar = np.empty(3 * len(me.attributes['CP_planar'].data))
     me.attributes['CP_planar'].data.foreach_get("vector", raw_cp_planar)
     cp_planar = raw_cp_planar.reshape((-1, 3))[0:point_count]
-    
+    cp_planar*=1000 #unit correction
+
+    loc, rot, scale = o.matrix_world.decompose()
+    loc*=1000
+    pl_normal = rot@ Vector([0,0,1])
+    pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z),gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
+    gpl = Geom_Plane(pl)
+
     controlPoints = TColgp_Array1OfPnt(1, point_count)
     for i in range(point_count):
-        controlPoints.SetValue(i, gp_Pnt(cp_planar[i][0], cp_planar[i][1], cp_planar[i][2]))
+        pnt= gp_Pnt(cp_planar[i][0], cp_planar[i][1], cp_planar[i][2])
+        pnt= GeomAPI_ProjectPointOnSurf(pnt, gpl).Point(1)
+        controlPoints.SetValue(i+1, pnt)
 
-    edges_list = TopTools_Array1OfShapes(1, point_count//3)
+    edges_list = TopTools_Array1OfShape(1, point_count//3)
     for i in range(point_count//3):
-        segment = Geom_BezierCurve(controlPoints[i*3], controlPoints[i*3+1], controlPoints[i*3+2], controlPoints[i*3+3])
-        edges_list.add(segment)
+        bezier_segment_CP_array = TColgp_Array1OfPnt(0,3)
+        bezier_segment_CP_array.SetValue(0, controlPoints[i*3])
+        bezier_segment_CP_array.SetValue(1, controlPoints[(i*3+1)%point_count])
+        bezier_segment_CP_array.SetValue(2, controlPoints[(i*3+2)%point_count])
+        bezier_segment_CP_array.SetValue(3, controlPoints[(i*3+3)%point_count])
+         
+        segment = Geom_BezierCurve(bezier_segment_CP_array)
+        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+        edges_list.SetValue(i+1, edge)
 
-    wire = BRepBuilderAPI_MakeWire(); 
+    makeWire = BRepBuilderAPI_MakeWire()
     for e in edges_list :
-        wire.Add(TopoDS_Edge(e))
-    w = TopoDS_Wire(wire)
+        makeWire.Add(e)
+    w = TopoDS_Wire()
+    w = makeWire.Wire()
 
-    planar_surf = TopoDS_Face()
-
-    face = BRepBuilderAPI_MakeFace(planar_surf, w)
-    return face
+    aface = BRepBuilderAPI_MakeFace(w, True).Face()
+    return aface
 
 def geom_type_of_object(o, context):
     type = None
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    if hasattr(ob.data.attributes) :
-        attr = ob.data.attributes
-        for v in attr.values() :
-            if v == attr['handle_co'] :
+    if hasattr(ob.data, "attributes") :
+        for k in ob.data.attributes.keys() :
+            if k == 'handle_co' :
                 type = 'bezier_surf'
                 break
-            if v == attr['CP_planar'] :
+            if k == 'CP_planar' :
                 type = 'planar'
                 break
     return type
@@ -151,16 +170,9 @@ def geom_type_of_object(o, context):
 
 
 
-
 ##############################
 ##       OPERTATORS         ##
 ##############################
-
-from OCC.Extend.DataExchange import write_step_file
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Sewing
-from OCC.Core.TopoDS import TopoDS_Shape #, TopoDS_Compound
-# from OCC.Core.BRep import BRep_Builder
-from datetime import datetime
     
 class SP_OT_quick_export(bpy.types.Operator):
     bl_idname = "sp.quick_export"
@@ -184,10 +196,10 @@ class SP_OT_quick_export(bpy.types.Operator):
                 points *= 1000
                 aSew.Add(new_bezier_surface(points))
                 
-                # mirrors (do not support rotations of mirror object)
+                # mirrors (Does not support rotations of mirror object)
                 for m in o.modifiers :
                     if m.type == 'MIRROR':
-                        # /!\ Doesn't supports multiple mirror axis yet
+                        # /!\ Does not supports multiple mirror axis yet
                         for j in range(2):
                             if m.use_axis[j]:
                                 mirror_vect = [1-2*(j==0), 1-2*(j==1), 1-2*(j==2)]
@@ -206,7 +218,7 @@ class SP_OT_quick_export(bpy.types.Operator):
 
         blenddir = bpy.path.abspath("//")
         if blenddir !="":#avoid exporting to root
-            dir =  bpy.path.abspath("//")
+            dir =  blenddir
         else :
             dir = bpy.context.preferences.filepaths.temporary_directory
         pathstr = dir + str(datetime.today())[:-7].replace('-','').replace(' ','-').replace(':','')
@@ -217,6 +229,7 @@ class SP_OT_quick_export(bpy.types.Operator):
         else :
             self.report({'INFO'}, 'No SurfacePsycho Objects selected')
         return {'FINISHED'}
+
 
 class SP_OT_add_bicubic_patch(bpy.types.Operator):
     bl_idname = "sp.add_bicubic_patch"
