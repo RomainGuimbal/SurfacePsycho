@@ -35,6 +35,10 @@ obj_names1 = ["PsychoPatch", "PsychoPatch Quadratic", "PsychoCurve"]
 filepath2 = "//..\..\Bezier Quest\Principal curvature.blend"
 obj_names2 = ["SP - Curvatures Probe"]
 
+filepath3 = "//..\..\Bezier Quest\Flat surfaces.blend"
+obj_names3 = ["FlatPatch"]
+
+
 gr_names = [
 "SP - Auto mid points linear",
 #"SP - Continuities",
@@ -46,10 +50,16 @@ gr_names = [
 #"SP - Trim 4 sides",
 "SP - Patch Combs"
 ]
+gr_names = [
+"SP - Connect to Flat patch"
+]
+
 
 append_node_group_by_names(filepath1, gr_names)
+append_node_group_by_names(filepath2, gr_names2)
 append_objs_by_names(filepath1, obj_names1)
 append_objs_by_names(filepath2, obj_names2)
+append_objs_by_names(filepath3, obj_names3)
 
 
 

@@ -248,6 +248,15 @@ class SP_OT_add_biquadratic_patch(bpy.types.Operator):
     def execute(self, context):
         append_object_by_name("PsychoPatch Quadratic", context)
         return {'FINISHED'}
+    
+class SP_OT_add_flat_patch(bpy.types.Operator):
+    bl_idname = "sp.add_flat_patch"
+    bl_label = "Add flat PsychoPatch"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        append_object_by_name("FlatPatch", context)
+        return {'FINISHED'}
 
 class SP_OT_add_cubic_curve(bpy.types.Operator):
     bl_idname = "sp.add_cubic_curve"
@@ -350,6 +359,7 @@ def menu_surface(self, context):
     if context.mode == 'OBJECT':
         self.layout.operator("sp.add_bicubic_patch", text="Bicubic PsychoPatch", icon="SURFACE_NSURFACE")
         self.layout.operator("sp.add_biquadratic_patch", text="Biquadratic PsychoPatch", icon="SURFACE_NSURFACE")
+        self.layout.operator("sp.add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE")
 
 def menu_curve(self, context):
     self.layout.separator()
@@ -363,6 +373,7 @@ classes = (
     SP_PT_MainPanel,
     SP_OT_add_bicubic_patch,
     SP_OT_add_biquadratic_patch,
+    SP_OT_add_flat_patch,
     SP_OT_add_cubic_curve,
     SP_OT_add_curvatures_probe,
     SP_OT_add_library,
