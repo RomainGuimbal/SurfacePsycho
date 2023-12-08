@@ -36,20 +36,28 @@ if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
 from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane
-from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln
+from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax2, gp_Vec
 from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface
 from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_MakeShape
-from OCC.Core.TopTools import TopTools_Array1OfShape 
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform
+from OCC.Core.TopTools import TopTools_Array1OfShape
 from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
 from OCC.Extend.DataExchange import write_step_file
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 filepath = addonpath + "/assets/assets.blend"
 
-def new_bezier_surface(points):
+
+
+
+
+##############################
+##         FUNCTIONS        ##
+##############################
+
+def new_bezier_face(points):
     controlPoints = TColgp_Array2OfPnt(1, 4, 1, 4)
     for i in range(4):
         for j in range(4):
@@ -161,6 +169,69 @@ def geom_type_of_object(o, context):
     return type
 
 
+def mirrors(o, face):
+    ms = BRepBuilderAPI_Sewing(1e-1)
+    ms.SetNonManifoldMode(True)
+    ms.Add(face)
+    mshape = TopoDS_Shape()
+
+    ms.Perform()
+    shape = ms.SewedShape()
+    loc, rot, scale = o.matrix_world.decompose()
+
+    for m in o.modifiers :
+        if m.type == 'MIRROR':
+            if m.mirror_object==None:
+                mirror_offset = loc*1000
+            else :
+                loc, rot, scale = m.mirror_object.matrix_world.decompose()
+                mirror_offset = loc*1000
+            
+            #Fill configurations array
+            configurations = [False]*7
+
+            x = m.use_axis[0]
+            y = m.use_axis[1]
+            z = m.use_axis[2]
+
+            configurations[0]= x
+            configurations[1]= y
+            configurations[2]= z
+            configurations[3]= x and y and z
+            configurations[4]= y and z
+            configurations[5]= x and z
+            configurations[6]= x and y
+
+            xscales = [-1, 0, 0,-1, 0,-1,-1]
+            yscales = [ 0,-1, 0,-1,-1, 0,-1]
+            zscales = [ 0, 0,-1,-1,-1,-1, 0]
+            # xscales = [-1, 1, 1,-1, 1,-1,-1]
+            # yscales = [ 1,-1, 1,-1,-1, 1,-1]
+            # zscales = [ 1, 1,-1,-1,-1,-1, 1]
+            
+            for i in range(7):
+                if configurations[i]:
+                    base = rot@Vector([xscales[i],yscales[i],zscales[i]])
+                    atrsf = gp_Trsf()
+                    #trans_trsf = gp_Trsf()   gp_Pnt(loc[0],loc[1],loc[2])
+                    atrsf.SetMirror(gp_Ax2(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]), gp_Dir(base.x, base.y, base.z)))
+                    
+                    mshape = BRepBuilderAPI_Transform(shape, atrsf).Shape()
+                    # mshape = BRepBuilderAPI_Transform(mshape, trans_trsf).Shape()
+                    
+                    ms.Add(mshape)
+            
+            ms.Perform()
+            shape = ms.SewedShape()
+            
+    ms.Perform()
+    shape = ms.SewedShape()
+    return shape
+
+
+
+
+
 
 
 
@@ -194,23 +265,14 @@ class SP_OT_quick_export(bpy.types.Operator):
                 points = get_GN_bezierSurf_controlPoints_Coords(o, context)
                 #unit correction
                 points *= 1000
-                aSew.Add(new_bezier_surface(points))
-                
-                # mirrors (Does not support rotations of mirror object)
-                for m in o.modifiers :
-                    if m.type == 'MIRROR':
-                        # /!\ Does not supports multiple mirror axis yet
-                        for j in range(2):
-                            if m.use_axis[j]:
-                                mirror_vect = [1-2*(j==0), 1-2*(j==1), 1-2*(j==2)]
-                                if m.mirror_object==None:
-                                    mirror_offset = o.location*1000
-                                else :
-                                    mirror_offset = m.mirror_object.location*1000
-                                aSew.Add(new_bezier_surface((points - mirror_offset)*mirror_vect + mirror_offset))
+                bf = new_bezier_face(points)
+                aSew.Add(bf)
+                aSew.Add(mirrors(o, bf))
             elif gto == "planar" :
                 SPobj_count +=1
-                aSew.Add(new_planar_face(o, context))
+                pf =new_planar_face(o, context)
+                aSew.Add(pf)
+                aSew.Add(mirrors(o, pf))
 
         aSew.SetNonManifoldMode(True)
         aSew.Perform()
@@ -229,7 +291,6 @@ class SP_OT_quick_export(bpy.types.Operator):
         else :
             self.report({'INFO'}, 'No SurfacePsycho Objects selected')
         return {'FINISHED'}
-
 
 class SP_OT_add_bicubic_patch(bpy.types.Operator):
     bl_idname = "sp.add_bicubic_patch"
@@ -326,8 +387,11 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
 
 
 
+
+
+
 ##############################
-##          VIEW            ##
+##          MENUES          ##
 ##############################
 
 class SP_PT_MainPanel(bpy.types.Panel):
@@ -368,6 +432,20 @@ def menu_curve(self, context):
 
 
 
+
+
+
+
+
+
+
+
+
+
+##############################
+##         REGISTER         ##
+##############################
+
 classes = (
     SP_OT_quick_export,
     SP_PT_MainPanel,
@@ -381,7 +459,7 @@ classes = (
     SP_OT_psychopatch_to_bl_nurbs,
 )
 
-def register():    
+def register():
     for c in classes:
         bpy.utils.register_class(c)
     # bpy.utils.register_class(SP_OT_add_library)
