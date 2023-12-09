@@ -4,8 +4,12 @@
 # 3 : Clean up recursive unused data blocks
 # 4 : Execut script
 
-
 import bpy
+
+#bpy.ops.object.select_all(action='SELECT')
+#bpy.ops.object.delete(use_global=False)
+#bpy.ops.asset.clear(set_fake_user=False)
+#bpy.ops.outliner.orphans_purge(num_deleted=115, do_local_ids=True, #do_linked_ids=True, do_recursive=True)
 
 def is_asset(obj):
     return obj.asset_data is not None
@@ -48,9 +52,12 @@ gr_names = [
 "SP - Sew and Symetrise",
 "SP - Sweep Linear",
 #"SP - Trim 4 sides",
-"SP - Patch Combs"
+"SP - Patch Combs",
+"SP - Continuities (Auto Snap)",
+"SP - Sew and Symmetrize",
+"SP - Straighten Rows"
 ]
-gr_names = [
+gr_names2 = [
 "SP - Connect to Flat patch"
 ]
 

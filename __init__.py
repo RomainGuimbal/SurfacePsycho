@@ -213,7 +213,7 @@ def mirrors(o, face):
                 if configurations[i]:
                     base = rot@Vector([xscales[i],yscales[i],zscales[i]])
                     atrsf = gp_Trsf()
-                    #trans_trsf = gp_Trsf()   gp_Pnt(loc[0],loc[1],loc[2])
+                    # trans_trsf = gp_Trsf()   gp_Pnt(loc[0],loc[1],loc[2])
                     atrsf.SetMirror(gp_Ax2(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]), gp_Dir(base.x, base.y, base.z)))
                     
                     mshape = BRepBuilderAPI_Transform(shape, atrsf).Shape()
