@@ -36,7 +36,7 @@ if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
 from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane
-from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax2, gp_Vec
+from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Vec
 from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface
 from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
@@ -202,19 +202,24 @@ def mirrors(o, face):
             configurations[5]= x and z
             configurations[6]= x and y
 
-            xscales = [-1, 0, 0,-1, 0,-1,-1]
-            yscales = [ 0,-1, 0,-1,-1, 0,-1]
-            zscales = [ 0, 0,-1,-1,-1,-1, 0]
-            # xscales = [-1, 1, 1,-1, 1,-1,-1]
-            # yscales = [ 1,-1, 1,-1,-1, 1,-1]
-            # zscales = [ 1, 1,-1,-1,-1,-1, 1]
-            
+            xscales = [ 1, 0, 0, 1, 0, 1, 1]
+            yscales = [ 0, 1, 0, 1, 1, 0, 1]
+            zscales = [ 0, 0, 1, 1, 1, 1, 0]
+            symtype = [x+y+z for x,y,z in zip(xscales,yscales,zscales)]
+
             for i in range(7):
                 if configurations[i]:
-                    base = rot@Vector([xscales[i],yscales[i],zscales[i]])
-                    atrsf = gp_Trsf()
-                    # trans_trsf = gp_Trsf()   gp_Pnt(loc[0],loc[1],loc[2])
-                    atrsf.SetMirror(gp_Ax2(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]), gp_Dir(base.x, base.y, base.z)))
+                    if symtype[i]==1:#sym planaire
+                        base = rot@(Vector([xscales[i],yscales[i],zscales[i]]))
+                        atrsf = gp_Trsf()
+                        atrsf.SetMirror(gp_Ax2(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]), gp_Dir(base.x, base.y, base.z)))
+                    elif symtype[i]==2 :#sym axiale
+                        base = rot@(Vector([xscales[i]-1,abs(yscales[i]-1),abs(zscales[i]-1)])) 
+                        atrsf = gp_Trsf()
+                        atrsf.SetMirror(gp_Ax1(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]), gp_Dir(base.x, base.y, base.z)))
+                    else :#sym centrale
+                        atrsf = gp_Trsf()
+                        atrsf.SetMirror(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]))
                     
                     mshape = BRepBuilderAPI_Transform(shape, atrsf).Shape()
                     # mshape = BRepBuilderAPI_Transform(mshape, trans_trsf).Shape()
@@ -224,7 +229,7 @@ def mirrors(o, face):
             ms.Perform()
             shape = ms.SewedShape()
             
-    ms.Perform()
+    # ms.Perform()
     shape = ms.SewedShape()
     return shape
 
