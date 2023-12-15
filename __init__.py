@@ -26,7 +26,7 @@ bl_info = {
 import bpy
 import sys
 import numpy as np
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 from datetime import datetime
 from os.path import dirname, abspath, exists
@@ -166,6 +166,8 @@ def geom_type_of_object(o, context):
             if k == 'CP_planar' :
                 type = 'planar'
                 break
+    elif o.type == 'EMPTY' and not o.intantce_collection==None :
+        type = 'collection_instance'
     return type
 
 
@@ -260,24 +262,51 @@ class SP_OT_quick_export(bpy.types.Operator):
         aSew = BRepBuilderAPI_Sewing(1e-1)
         
         SPobj_count=0
+        obj_list = context.selected_objects
+        obj_to_del =[]
         
-        for o in context.selected_objects:
-            gto = geom_type_of_object(o, context)
+        while(len(obj_list)>0):
+            obj_done = []
+            for o in obj_list:
+                gto = geom_type_of_object(o, context)
 
-            if gto == "bezier_surf" :
-                SPobj_count +=1
+                match gto :
+                    case "bezier_surf" :
+                        SPobj_count +=1
 
-                points = get_GN_bezierSurf_controlPoints_Coords(o, context)
-                #unit correction
-                points *= 1000
-                bf = new_bezier_face(points)
-                aSew.Add(bf)
-                aSew.Add(mirrors(o, bf))
-            elif gto == "planar" :
-                SPobj_count +=1
-                pf =new_planar_face(o, context)
-                aSew.Add(pf)
-                aSew.Add(mirrors(o, pf))
+                        points = get_GN_bezierSurf_controlPoints_Coords(o, context)
+                        points *= 1000 #unit correction
+                        bf = new_bezier_face(points)
+                        aSew.Add(bf)
+                        aSew.Add(mirrors(o, bf))
+
+                    case "planar" :
+                        SPobj_count +=1
+                        pf =new_planar_face(o, context)
+                        aSew.Add(pf)
+                        aSew.Add(mirrors(o, pf))
+
+                    case "collection_instance": 
+                        instanced_collection  = o.instance_collection
+                        collection_transform= o.matrix_world
+                        
+                        for co in instanced_collection.objects :
+                            co_copy = co.copy()
+                            im = Matrix(np.identity(4, dtype=float)).Translation(co_copy.location)
+                            co_copy.matrix_world = collection_transform@im@co_copy.matrix_world # pas ça faut mmult ou jsp sfigjrmijriomgjsmoifjsiogjsiog
+                            obj_list.append(co_copy)
+                            obj_list.append(obj_to_del)
+                obj_done.append(o)
+
+            for od in obj_done :
+                obj_list.remove(od)
+
+        for o in obj_to_del :
+            bpy.data.objects.remove(o, do_unlink=True)
+
+
+                    
+
 
         aSew.SetNonManifoldMode(True)
         aSew.Perform()
