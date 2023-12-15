@@ -157,19 +157,19 @@ def new_planar_face(o, context):
 
 def geom_type_of_object(o, context):
     type = None
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    if hasattr(ob.data, "attributes") :
-        for k in ob.data.attributes.keys() :
-            if k == 'handle_co' :
-                type = 'bezier_surf'
-                break
-            if k == 'CP_planar' :
-                type = 'planar'
-                break
-    elif o.type == 'EMPTY' and not o.intantce_collection==None :
+    if o.type == 'EMPTY' and o.instance_collection!=None :
         type = 'collection_instance'
+    else : 
+        ob = o.evaluated_get(context.evaluated_depsgraph_get())
+        if hasattr(ob.data, "attributes") :
+            for k in ob.data.attributes.keys() :
+                if k == 'handle_co' :
+                    type = 'bezier_surf'
+                    break
+                if k == 'CP_planar' :
+                    type = 'planar'
+                    break
     return type
-
 
 def mirrors(o, face):
     ms = BRepBuilderAPI_Sewing(1e-1)
@@ -287,15 +287,15 @@ class SP_OT_quick_export(bpy.types.Operator):
                         aSew.Add(mirrors(o, pf))
 
                     case "collection_instance": 
-                        instanced_collection  = o.instance_collection
-                        collection_transform= o.matrix_world
+                        empty_transform= o.matrix_world
                         
-                        for co in instanced_collection.objects :
+                        for co in o.instance_collection.objects :
                             co_copy = co.copy()
+                            print(type(co_copy))
                             im = Matrix(np.identity(4, dtype=float)).Translation(co_copy.location)
-                            co_copy.matrix_world = collection_transform@im@co_copy.matrix_world # pas ça faut mmult ou jsp sfigjrmijriomgjsmoifjsiogjsiog
+                            co_copy.matrix_world = empty_transform@im@co_copy.matrix_world # pas ça faut mmult ou jsp sfigjrmijriomgjsmoifjsiogjsiog
                             obj_list.append(co_copy)
-                            obj_list.append(obj_to_del)
+                            obj_to_del.append(co_copy)
                 obj_done.append(o)
 
             for od in obj_done :
