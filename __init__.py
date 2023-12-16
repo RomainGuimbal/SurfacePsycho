@@ -264,16 +264,17 @@ class SP_OT_quick_export(bpy.types.Operator):
         SPobj_count=0
         obj_list = context.selected_objects
         obj_to_del =[]
+        # flag_instances = False
         
-        while(len(obj_list)>0):
+        while(len(obj_list)>0 ): #or flag_instances
             obj_done = []
+            # flag_instances = False
             for o in obj_list:
                 gto = geom_type_of_object(o, context)
 
                 match gto :
                     case "bezier_surf" :
                         SPobj_count +=1
-
                         points = get_GN_bezierSurf_controlPoints_Coords(o, context)
                         points *= 1000 #unit correction
                         bf = new_bezier_face(points)
@@ -286,14 +287,14 @@ class SP_OT_quick_export(bpy.types.Operator):
                         aSew.Add(pf)
                         aSew.Add(mirrors(o, pf))
 
-                    case "collection_instance": 
+                    case "collection_instance":
+                        # flag_instances = True
                         empty_transform= o.matrix_world
-                        
-                        for co in o.instance_collection.objects :
+                        for co in o.instance_collection.all_objects :
                             co_copy = co.copy()
-                            print(type(co_copy))
-                            im = Matrix(np.identity(4, dtype=float)).Translation(co_copy.location)
-                            co_copy.matrix_world = empty_transform@im@co_copy.matrix_world # pas ça faut mmult ou jsp sfigjrmijriomgjsmoifjsiogjsiog
+                            bpy.context.collection.objects.link(co_copy)
+                            translat_mat = Matrix(np.identity(4, dtype=float)).Translation(co_copy.location)
+                            co_copy.matrix_world = empty_transform @ translat_mat @ co_copy.matrix_world #<--------wrong
                             obj_list.append(co_copy)
                             obj_to_del.append(co_copy)
                 obj_done.append(o)
@@ -303,10 +304,6 @@ class SP_OT_quick_export(bpy.types.Operator):
 
         for o in obj_to_del :
             bpy.data.objects.remove(o, do_unlink=True)
-
-
-                    
-
 
         aSew.SetNonManifoldMode(True)
         aSew.Perform()
