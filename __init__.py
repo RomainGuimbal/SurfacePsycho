@@ -294,7 +294,9 @@ class SP_OT_quick_export(bpy.types.Operator):
                             co_copy = co.copy()
                             bpy.context.collection.objects.link(co_copy)
                             translat_mat = Matrix(np.identity(4, dtype=float)).Translation(co_copy.location)
-                            co_copy.matrix_world = empty_transform @ translat_mat @ co_copy.matrix_world #<--------wrong
+                            co_copy.matrix_world = empty_transform @ co_copy.matrix_world
+                            print(co_copy.matrix_world)
+                            # co_copy.matrix_world = empty_transform @ translat_mat @ co_copy.matrix_world #<--------wrong
                             obj_list.append(co_copy)
                             obj_to_del.append(co_copy)
                 obj_done.append(o)
