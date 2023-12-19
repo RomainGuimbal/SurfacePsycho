@@ -263,6 +263,7 @@ class SP_OT_quick_export(bpy.types.Operator):
         
         SPobj_count=0
         obj_list = context.selected_objects
+        initial_selection = obj_list
         obj_to_del =[]
         
         while(len(obj_list)>0 ):
@@ -287,17 +288,14 @@ class SP_OT_quick_export(bpy.types.Operator):
 
                     case "collection_instance":
                         empty_mw = o.matrix_world
-
                         bpy.ops.object.select_all(action='DESELECT')
                         for co in o.instance_collection.all_objects :
-                            bpy.ops.object.select
+                            co.select_set(True)
                         bpy.ops.object.duplicate(linked=True)
-                        for co in o.instance_collection.all_objects :
-                            co_copy = co.copy()
-                            context.collection.objects.link(co_copy)
-                            co_copy.matrix_world = empty_mw @ co_copy.matrix_world
-                            obj_list.append(co_copy)
-                            obj_to_del.append(co_copy)
+                        for so in context.selected_objects :
+                            so.matrix_world = empty_mw @ so.matrix_world # not recursive compliant :/
+                            obj_list.append(so)
+                            obj_to_del.append(so)
                 obj_done.append(o)
 
             for od in obj_done :
@@ -305,6 +303,10 @@ class SP_OT_quick_export(bpy.types.Operator):
 
         for o in obj_to_del :
             bpy.data.objects.remove(o, do_unlink=True)
+        
+        bpy.ops.object.select_all(action='DESELECT')
+        for i_s in initial_selection:
+            i_s.select_set(True)
 
         aSew.SetNonManifoldMode(True)
         aSew.Perform()
