@@ -264,11 +264,9 @@ class SP_OT_quick_export(bpy.types.Operator):
         SPobj_count=0
         obj_list = context.selected_objects
         obj_to_del =[]
-        # flag_instances = False
         
-        while(len(obj_list)>0 ): #or flag_instances
+        while(len(obj_list)>0 ):
             obj_done = []
-            # flag_instances = False
             for o in obj_list:
                 gto = geom_type_of_object(o, context)
 
@@ -288,15 +286,16 @@ class SP_OT_quick_export(bpy.types.Operator):
                         aSew.Add(mirrors(o, pf))
 
                     case "collection_instance":
-                        # flag_instances = True
-                        empty_transform= o.matrix_world
+                        empty_mw = o.matrix_world
+
+                        bpy.ops.object.select_all(action='DESELECT')
+                        for co in o.instance_collection.all_objects :
+                            bpy.ops.object.select
+                        bpy.ops.object.duplicate(linked=True)
                         for co in o.instance_collection.all_objects :
                             co_copy = co.copy()
-                            bpy.context.collection.objects.link(co_copy)
-                            translat_mat = Matrix(np.identity(4, dtype=float)).Translation(co_copy.location)
-                            co_copy.matrix_world = empty_transform @ co_copy.matrix_world
-                            print(co_copy.matrix_world)
-                            # co_copy.matrix_world = empty_transform @ translat_mat @ co_copy.matrix_world #<--------wrong
+                            context.collection.objects.link(co_copy)
+                            co_copy.matrix_world = empty_mw @ co_copy.matrix_world
                             obj_list.append(co_copy)
                             obj_to_del.append(co_copy)
                 obj_done.append(o)
@@ -315,7 +314,7 @@ class SP_OT_quick_export(bpy.types.Operator):
         if blenddir !="":#avoid exporting to root
             dir =  blenddir
         else :
-            dir = bpy.context.preferences.filepaths.temporary_directory
+            dir = context.preferences.filepaths.temporary_directory
         pathstr = dir + str(datetime.today())[:-7].replace('-','').replace(' ','-').replace(':','')
 
         if SPobj_count>0 :
@@ -434,13 +433,13 @@ class SP_PT_MainPanel(bpy.types.Panel):
     bl_category = "Edit"
     
     def draw(self, context):
-        """panel layout"""
-        row = self.layout.row()
-        row.operator("sp.quick_export", text="Quick export as .STEP")
-        row = self.layout.row()
-        row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
-        row = self.layout.row()
-        row.operator("sp.psychopatch_to_bl_nurbs", text="Convert to internal NURBS")
+        if context.mode == 'OBJECT':    
+            row = self.layout.row()
+            row.operator("sp.quick_export", text="Quick export as .STEP")
+            row = self.layout.row()
+            row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
+            row = self.layout.row()
+            row.operator("sp.psychopatch_to_bl_nurbs", text="Convert to internal NURBS")
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
