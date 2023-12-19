@@ -224,8 +224,6 @@ def mirrors(o, face):
                         atrsf.SetMirror(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]))
                     
                     mshape = BRepBuilderAPI_Transform(shape, atrsf).Shape()
-                    # mshape = BRepBuilderAPI_Transform(mshape, trans_trsf).Shape()
-                    
                     ms.Add(mshape)
             
             ms.Perform()
@@ -266,8 +264,10 @@ class SP_OT_quick_export(bpy.types.Operator):
         initial_selection = obj_list
         obj_to_del =[]
         
-        while(len(obj_list)>0 ):
-            obj_done = []
+        while(len(obj_list)>0 ): # itterate until ob_list is empty
+            obj_done = [] #keep track of objects to remove from ob_list on next iteration
+            obj_newly_real = []
+
             for o in obj_list:
                 gto = geom_type_of_object(o, context)
 
@@ -277,13 +277,11 @@ class SP_OT_quick_export(bpy.types.Operator):
                         points = get_GN_bezierSurf_controlPoints_Coords(o, context)
                         points *= 1000 #unit correction
                         bf = new_bezier_face(points)
-                        aSew.Add(bf)
                         aSew.Add(mirrors(o, bf))
 
                     case "planar" :
                         SPobj_count +=1
                         pf =new_planar_face(o, context)
-                        aSew.Add(pf)
                         aSew.Add(mirrors(o, pf))
 
                     case "collection_instance":
@@ -294,14 +292,17 @@ class SP_OT_quick_export(bpy.types.Operator):
                         bpy.ops.object.duplicate(linked=True)
                         for so in context.selected_objects :
                             so.matrix_world = empty_mw @ so.matrix_world # not recursive compliant :/
-                            obj_list.append(so)
+                            obj_newly_real.append(so)
                             obj_to_del.append(so)
+                
                 obj_done.append(o)
 
             for od in obj_done :
                 obj_list.remove(od)
+            for onr in obj_newly_real:
+                obj_list.append(onr)
 
-        for o in obj_to_del :
+        for o in obj_to_del : # clear realized objects
             bpy.data.objects.remove(o, do_unlink=True)
         
         bpy.ops.object.select_all(action='DESELECT')
