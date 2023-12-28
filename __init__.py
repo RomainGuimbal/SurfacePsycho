@@ -14,7 +14,7 @@
 bl_info = {
     "name": "Surface Psycho",
     "author": "Romain Guimbal",
-    "version": (0, 1),
+    "version": (0, 2),
     "blender": (4, 0, 0),
     "description": "Surface design for the mechanical industry",
     "warning": "Alpha",
@@ -26,7 +26,7 @@ bl_info = {
 import bpy
 import sys
 import numpy as np
-from mathutils import Vector, Matrix
+from mathutils import Vector
 
 from datetime import datetime
 from os.path import dirname, abspath, exists
@@ -89,14 +89,15 @@ def new_brep_any_order_curve(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     ge = ob.data
 
-    points_nb = len(ge.attributes['CP_any_order_curve'].data)
-    points = np.empty(3 * points_nb)
-    ge.attributes['CP_curve'].data.foreach_get("vector", points)
-    points = points[0:points_nb*3].reshape((-1, 3))
+    point_count = ge.attributes['CP_count'].data[0].value
+    points = np.empty(3 * len(ge.attributes['CP_any_order_curve'].data))
+    ge.attributes['CP_any_order_curve'].data.foreach_get("vector", points)
+    points = points.reshape((-1, 3))[0:point_count]
     points *= 1000 #unit correction
+    print(point_count)
 
-    controlPoints = TColgp_Array1OfPnt(1, points_nb)
-    for i in range(points_nb):
+    controlPoints = TColgp_Array1OfPnt(1, point_count)
+    for i in range(point_count):
         controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
 
     geom_curve = Geom_BezierCurve(controlPoints)
@@ -180,7 +181,7 @@ def new_brep_planar_face(o, context):
 
 def geom_type_of_object(o, context):
     type = None
-    if o.type == 'EMPTY' and o.instance_collection!=None :
+    if o.type == 'EMPTY' and o.instance_collection != None :
         type = 'collection_instance'
     else : 
         ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -497,7 +498,7 @@ def menu_surface(self, context):
 def menu_curve(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
-        self.layout.operator("sp.add_bezier_chain", text="Psycho Cubic Chain", icon="CURVE_BEZCURVE")
+        self.layout.operator("sp.add_cubic_bezier_chain", text="Cubic Bezier Chain", icon="CURVE_BEZCURVE")
         self.layout.operator("sp.add_any_order_curve", text="Any Order PsychoCurve", icon="CURVE_NCURVE")
 
 
