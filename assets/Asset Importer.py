@@ -33,17 +33,19 @@ def append_node_group_by_names(filepath, gr_names):
 #        data_to.node_groups = [name for name in data_from.node_groups if data_from.node_groups(name).asset_data is not None]
 
 
-filepath1 = "//..\..\Bezier Quest\Bezier_surface.blend"
-obj_names1 = ["PsychoPatch", "PsychoPatch Quadratic", "PsychoCurve"]
+filepath_surf = "//..\..\Bezier Quest\Bezier_surface.blend"
+obj_surf = ["PsychoPatch", "PsychoPatch Quadratic"]
 
-filepath2 = "//..\..\Bezier Quest\Principal curvature.blend"
-obj_names2 = ["SP - Curvatures Probe"]
+filepath_probe = "//..\..\Bezier Quest\Principal curvature.blend"
+obj_probe = ["SP - Curvatures Probe"]
 
-filepath3 = "//..\..\Bezier Quest\Flat surfaces.blend"
-obj_names3 = ["FlatPatch"]
+filepath_flat = "//..\..\Bezier Quest\Flat surfaces.blend"
+obj_flat = ["FlatPatch"]
 
+filepath_curve = "//..\..\Bezier Quest\Curves.blend"
+obj_curve = ["Psycho Cubic Chain","PsychoCurve Any Order"]
 
-gr_names = [
+gr_surf = [
 "SP - Auto mid points linear",
 #"SP - Continuities",
 "SP - Angle side (do not preserve surface)",
@@ -57,16 +59,21 @@ gr_names = [
 "SP - Sew and Symmetrize",
 "SP - Straighten Rows"
 ]
-gr_names2 = [
+gr_flat = [
 "SP - Connect to Flat patch"
 ]
+gr_curve = [
+"SP - Raise Bezier Order"
+]
 
+append_objs_by_names(filepath_surf, obj_surf)
+append_objs_by_names(filepath_probe, obj_probe)
+append_objs_by_names(filepath_flat, obj_flat)
+append_objs_by_names(filepath_curve, obj_curve)
 
-append_node_group_by_names(filepath1, gr_names)
-append_node_group_by_names(filepath2, gr_names2)
-append_objs_by_names(filepath1, obj_names1)
-append_objs_by_names(filepath2, obj_names2)
-append_objs_by_names(filepath3, obj_names3)
+append_node_group_by_names(filepath_surf, gr_surf)
+append_node_group_by_names(filepath_flat, gr_flat)
+append_node_group_by_names(filepath_curve, gr_curve)
 
 
 

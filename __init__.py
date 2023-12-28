@@ -35,9 +35,9 @@ file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_BSplineCurve
 from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Vec
-from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface
+from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface, TColGeom_Array1OfBezierCurve
 from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
@@ -57,17 +57,19 @@ filepath = addonpath + "/assets/assets.blend"
 ##         FUNCTIONS        ##
 ##############################
 
-def new_bezier_face(points):
+def new_brep_bezier_face(o, context):
+    points = get_GN_bezierSurf_controlPoints_Coords(o, context)
+    points *= 1000 #unit correction
+
     controlPoints = TColgp_Array2OfPnt(1, 4, 1, 4)
     for i in range(4):
         for j in range(4):
             id= 4*i+j
             controlPoints.SetValue(i+1, j+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
-    BZ1 = Geom_BezierSurface(controlPoints)
-
+    geom_surf = Geom_BezierSurface(controlPoints)
     bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
-    bezierarray.SetValue(1, 1, BZ1)
+    bezierarray.SetValue(1, 1, geom_surf)
     
     BB = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
     if BB.IsDone():
@@ -83,6 +85,27 @@ def new_bezier_face(points):
         face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
         return face
 
+def new_brep_any_order_curve(o, context):
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    ge = ob.data
+
+    points_nb = len(ge.attributes['CP_any_order_curve'].data)
+    points = np.empty(3 * points_nb)
+    ge.attributes['CP_curve'].data.foreach_get("vector", points)
+    points = points[0:points_nb*3].reshape((-1, 3))
+    points *= 1000 #unit correction
+
+    controlPoints = TColgp_Array1OfPnt(1, points_nb)
+    for i in range(points_nb):
+        controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
+
+    geom_curve = Geom_BezierCurve(controlPoints)
+    curve = BRepBuilderAPI_MakeEdge(geom_curve).Edge()
+    return curve
+
+#TODO
+#def new_brep_cubic_bezier_chain(o, context):
+#
 
 def get_GN_bezierSurf_controlPoints_Coords(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -111,7 +134,7 @@ def append_object_by_name(obj_name, context):# for importing from the asset file
             bpy.context.view_layer.objects.active = o
 
 
-def new_planar_face(o, context):
+def new_brep_planar_face(o, context):
     # List edges
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     me = ob.data
@@ -163,12 +186,19 @@ def geom_type_of_object(o, context):
         ob = o.evaluated_get(context.evaluated_depsgraph_get())
         if hasattr(ob.data, "attributes") :
             for k in ob.data.attributes.keys() :
-                if k == 'handle_co' :
-                    type = 'bezier_surf'
-                    break
-                if k == 'CP_planar' :
-                    type = 'planar'
-                    break
+                match k:
+                    case 'handle_co' :
+                        type = 'bezier_surf'
+                        break
+                    case 'CP_planar' :
+                        type = 'planar'
+                        break
+                    case 'CP_any_order_curve':
+                        type = 'curve_any'
+                        break
+                    case 'CP_bezier_chain':
+                        type = 'bezier_chain'
+                        break
     return type
 
 def mirrors(o, face):
@@ -262,10 +292,10 @@ class SP_OT_quick_export(bpy.types.Operator):
         SPobj_count=0
         obj_list = context.selected_objects
         initial_selection = obj_list
-        obj_to_del =[]
+        obj_to_del = []
         
-        while(len(obj_list)>0 ): # itterate until ob_list is empty
-            obj_done = [] #keep track of objects to remove from ob_list on next iteration
+        while(len(obj_list)>0): # itterate until ob_list is empty
+            obj_done = [] # objects to remove from ob_list on next iteration
             obj_newly_real = []
 
             for o in obj_list:
@@ -274,15 +304,18 @@ class SP_OT_quick_export(bpy.types.Operator):
                 match gto :
                     case "bezier_surf" :
                         SPobj_count +=1
-                        points = get_GN_bezierSurf_controlPoints_Coords(o, context)
-                        points *= 1000 #unit correction
-                        bf = new_bezier_face(points)
+                        bf = new_brep_bezier_face(o, context)
                         aSew.Add(mirrors(o, bf))
 
                     case "planar" :
                         SPobj_count +=1
-                        pf =new_planar_face(o, context)
+                        pf = new_brep_planar_face(o, context)
                         aSew.Add(mirrors(o, pf))
+                    
+                    case "curve_any" :
+                        SPobj_count +=1
+                        ce = new_brep_any_order_curve(o, context)
+                        aSew.Add(mirrors(o, ce))
 
                     case "collection_instance":
                         empty_mw = o.matrix_world
@@ -291,9 +324,8 @@ class SP_OT_quick_export(bpy.types.Operator):
                             co.select_set(True)
                         bpy.ops.object.duplicate(linked=True)
                         for so in context.selected_objects :
-                            so.matrix_world = empty_mw @ so.matrix_world # not recursive compliant :/
+                            so.matrix_world = empty_mw @ so.matrix_world # not recursive compliant? :/
                             obj_newly_real.append(so)
-                            obj_to_del.append(so)
                 
                 obj_done.append(o)
 
@@ -301,12 +333,13 @@ class SP_OT_quick_export(bpy.types.Operator):
                 obj_list.remove(od)
             for onr in obj_newly_real:
                 obj_list.append(onr)
+                obj_to_del.append(onr)
 
         for o in obj_to_del : # clear realized objects
             bpy.data.objects.remove(o, do_unlink=True)
         
         bpy.ops.object.select_all(action='DESELECT')
-        for i_s in initial_selection:
+        for i_s in initial_selection: # <------------------ doesn't work
             i_s.select_set(True)
 
         aSew.SetNonManifoldMode(True)
@@ -314,7 +347,7 @@ class SP_OT_quick_export(bpy.types.Operator):
         aShape = aSew.SewedShape()
 
         blenddir = bpy.path.abspath("//")
-        if blenddir !="":#avoid exporting to root
+        if blenddir !="":#avoids exporting to root
             dir =  blenddir
         else :
             dir = context.preferences.filepaths.temporary_directory
@@ -331,7 +364,6 @@ class SP_OT_add_bicubic_patch(bpy.types.Operator):
     bl_idname = "sp.add_bicubic_patch"
     bl_label = "Add Bicubic PsychoPatch"
     bl_options = {'REGISTER', 'UNDO'}
-
     def execute(self, context):
         append_object_by_name("PsychoPatch", context)
         return {'FINISHED'}
@@ -340,7 +372,6 @@ class SP_OT_add_biquadratic_patch(bpy.types.Operator):
     bl_idname = "sp.add_biquadratic_patch"
     bl_label = "Add Biquadratic PsychoPatch"
     bl_options = {'REGISTER', 'UNDO'}
-
     def execute(self, context):
         append_object_by_name("PsychoPatch Quadratic", context)
         return {'FINISHED'}
@@ -349,25 +380,30 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
     bl_idname = "sp.add_flat_patch"
     bl_label = "Add flat PsychoPatch"
     bl_options = {'REGISTER', 'UNDO'}
-
     def execute(self, context):
         append_object_by_name("FlatPatch", context)
         return {'FINISHED'}
 
-class SP_OT_add_cubic_curve(bpy.types.Operator):
-    bl_idname = "sp.add_cubic_curve"
-    bl_label = "Add Cubic PsychoCurve"
+class SP_OT_add_cubic_bezier_chain(bpy.types.Operator):
+    bl_idname = "sp.add_cubic_bezier_chain"
+    bl_label = "Add Cubic Bezier Chain"
     bl_options = {'REGISTER', 'UNDO'}
-
     def execute(self, context):
-        append_object_by_name("PsychoCurve", context)
+        append_object_by_name("Psycho Cubic Chain", context)
+        return {'FINISHED'}
+    
+class SP_OT_add_any_order_curve(bpy.types.Operator):
+    bl_idname = "sp.add_any_order_curve"
+    bl_label = "Add Any Order PsychoCurve"
+    bl_options = {'REGISTER', 'UNDO'}
+    def execute(self, context):
+        append_object_by_name("PsychoCurve Any Order", context)
         return {'FINISHED'}
 
 class SP_OT_add_curvatures_probe(bpy.types.Operator):
     bl_idname = "sp.add_curvatures_probe"
     bl_label = "Add Curvatures Probe"
     bl_options = {'REGISTER', 'UNDO'}
-
     def execute(self, context):
         append_object_by_name("SP - Curvatures Probe", context)
         return {'FINISHED'}
@@ -376,7 +412,6 @@ class SP_OT_add_library(bpy.types.Operator):
     bl_idname = "sp.add_library"
     bl_label = "Add Library"
     bl_options = {'REGISTER', 'UNDO'}
-
     def execute(self, context):
         asset_lib_path = dirname(abspath(__file__))
         paths = [a.path for a in bpy.context.preferences.filepaths.asset_libraries]
@@ -388,7 +423,6 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
     bl_idname = "sp.psychopatch_to_bl_nurbs"
     bl_label = "Convert Psychopatches to internal NURBS"
     bl_options = {'REGISTER', 'UNDO'}
-
     def execute(self, context):
         i=-1
         for o in context.selected_objects :
@@ -463,7 +497,8 @@ def menu_surface(self, context):
 def menu_curve(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
-        self.layout.operator("sp.add_cubic_curve", text="Cubic PsychoCurve", icon="CURVE_BEZCURVE")
+        self.layout.operator("sp.add_bezier_chain", text="Psycho Cubic Chain", icon="CURVE_BEZCURVE")
+        self.layout.operator("sp.add_any_order_curve", text="Any Order PsychoCurve", icon="CURVE_NCURVE")
 
 
 
@@ -487,7 +522,8 @@ classes = (
     SP_OT_add_bicubic_patch,
     SP_OT_add_biquadratic_patch,
     SP_OT_add_flat_patch,
-    SP_OT_add_cubic_curve,
+    SP_OT_add_cubic_bezier_chain,
+    SP_OT_add_any_order_curve,
     SP_OT_add_curvatures_probe,
     SP_OT_add_library,
     SP_AddonPreferences,
@@ -500,7 +536,6 @@ def register():
     # bpy.utils.register_class(SP_OT_add_library)
     bpy.types.VIEW3D_MT_surface_add.append(menu_surface)
     bpy.types.VIEW3D_MT_curve_add.append(menu_curve)
-    
 
 def unregister():
     for c in classes[::-1]:
