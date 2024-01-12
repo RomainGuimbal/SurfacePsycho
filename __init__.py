@@ -35,9 +35,9 @@ file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_BSplineCurve
-from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Vec
-from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface, TColGeom_Array1OfBezierCurve
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane#, Geom_BSplineCurve
+from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, #gp_Vec
+from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface, #TColGeom_Array1OfBezierCurve
 from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
@@ -45,6 +45,7 @@ from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Make
 from OCC.Core.TopTools import TopTools_Array1OfShape
 from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
 from OCC.Extend.DataExchange import write_step_file
+from OCC.Core.GC import GC_MakeSegment
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 filepath = addonpath + "/assets/assets.blend"
@@ -140,6 +141,7 @@ def new_brep_planar_face(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     me = ob.data
     point_count = me.attributes['P_count'].data[0].value
+    subtype = me.attributes['subtype'].data[0].value
 
     raw_cp_planar = np.empty(3 * len(me.attributes['CP_planar'].data))
     me.attributes['CP_planar'].data.foreach_get("vector", raw_cp_planar)
@@ -158,17 +160,26 @@ def new_brep_planar_face(o, context):
         pnt= GeomAPI_ProjectPointOnSurf(pnt, gpl).Point(1)
         controlPoints.SetValue(i+1, pnt)
 
-    edges_list = TopTools_Array1OfShape(1, point_count//3)
-    for i in range(point_count//3):
-        bezier_segment_CP_array = TColgp_Array1OfPnt(0,3)
-        bezier_segment_CP_array.SetValue(0, controlPoints[i*3])
-        bezier_segment_CP_array.SetValue(1, controlPoints[(i*3+1)%point_count])
-        bezier_segment_CP_array.SetValue(2, controlPoints[(i*3+2)%point_count])
-        bezier_segment_CP_array.SetValue(3, controlPoints[(i*3+3)%point_count])
-         
-        segment = Geom_BezierCurve(bezier_segment_CP_array)
-        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
-        edges_list.SetValue(i+1, edge)
+
+    if subtype :
+        edges_list = TopTools_Array1OfShape(1, point_count)
+        for i in range(point_count):
+            segment = GC_MakeSegment(controlPoints[i],controlPoints[(i+1)%point_count])
+            edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+            edges_list.SetValue(i+1, edge)
+
+    else :
+        edges_list = TopTools_Array1OfShape(1, point_count//3)
+        for i in range(point_count//3):
+            bezier_segment_CP_array = TColgp_Array1OfPnt(0,3)
+            bezier_segment_CP_array.SetValue(0, controlPoints[i*3])
+            bezier_segment_CP_array.SetValue(1, controlPoints[(i*3+1)%point_count])
+            bezier_segment_CP_array.SetValue(2, controlPoints[(i*3+2)%point_count])
+            bezier_segment_CP_array.SetValue(3, controlPoints[(i*3+3)%point_count])
+            
+            segment = Geom_BezierCurve(bezier_segment_CP_array)
+            edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+            edges_list.SetValue(i+1, edge)
 
     makeWire = BRepBuilderAPI_MakeWire()
     for e in edges_list :
