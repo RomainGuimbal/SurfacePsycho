@@ -35,9 +35,9 @@ file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane#, Geom_BSplineCurve
-from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, #gp_Vec
-from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface, #TColGeom_Array1OfBezierCurve
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
+from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2 #, gp_Vec
+from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
 from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
@@ -137,7 +137,6 @@ def append_object_by_name(obj_name, context):# for importing from the asset file
 
 
 def new_brep_planar_face(o, context):
-    # List edges
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     me = ob.data
     point_count = me.attributes['P_count'].data[0].value
@@ -154,21 +153,23 @@ def new_brep_planar_face(o, context):
     pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z),gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
     gpl = Geom_Plane(pl)
 
+    # Create CP
     controlPoints = TColgp_Array1OfPnt(1, point_count)
     for i in range(point_count):
         pnt= gp_Pnt(cp_planar[i][0], cp_planar[i][1], cp_planar[i][2])
         pnt= GeomAPI_ProjectPointOnSurf(pnt, gpl).Point(1)
         controlPoints.SetValue(i+1, pnt)
 
-
-    if subtype :
+    # Make contour
+    if subtype :#polygon mode
         edges_list = TopTools_Array1OfShape(1, point_count)
         for i in range(point_count):
-            segment = GC_MakeSegment(controlPoints[i],controlPoints[(i+1)%point_count])
+            makesegment = GC_MakeSegment(controlPoints[i], controlPoints[(i+1)%point_count])
+            segment = makesegment.Value()
             edge = BRepBuilderAPI_MakeEdge(segment).Edge()
             edges_list.SetValue(i+1, edge)
 
-    else :
+    else :#bezier mode
         edges_list = TopTools_Array1OfShape(1, point_count//3)
         for i in range(point_count//3):
             bezier_segment_CP_array = TColgp_Array1OfPnt(0,3)
