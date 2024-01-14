@@ -95,7 +95,6 @@ def new_brep_any_order_curve(o, context):
     ge.attributes['CP_any_order_curve'].data.foreach_get("vector", points)
     points = points.reshape((-1, 3))[0:point_count]
     points *= 1000 #unit correction
-    print(point_count)
 
     controlPoints = TColgp_Array1OfPnt(1, point_count)
     for i in range(point_count):
@@ -105,9 +104,41 @@ def new_brep_any_order_curve(o, context):
     curve = BRepBuilderAPI_MakeEdge(geom_curve).Edge()
     return curve
 
-#TODO
-#def new_brep_cubic_bezier_chain(o, context):
-#
+def new_brep_cubic_bezier_chain(o, context):
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    ge = ob.data
+
+    point_count = ge.attributes['CP_count'].data[0].value
+    points = np.empty(3 * len(ge.attributes['CP_bezier_chain'].data))
+    ge.attributes['CP_bezier_chain'].data.foreach_get("vector", points)
+    points = points.reshape((-1, 3))[0:point_count]
+    points *= 1000 #unit correction
+
+    # Create CP
+    controlPoints = TColgp_Array1OfPnt(1, point_count)
+    for i in range(point_count):
+        pnt= gp_Pnt(points[i][0], points[i][1], points[i][2])
+        controlPoints.SetValue(i+1, pnt)
+
+    ms = BRepBuilderAPI_Sewing(1e-1)
+    ms.SetNonManifoldMode(True)
+    
+    for i in range(point_count//3):
+        bezier_segment_CP_array = TColgp_Array1OfPnt(0,3)
+        bezier_segment_CP_array.SetValue(0, controlPoints[i*3])
+        bezier_segment_CP_array.SetValue(1, controlPoints[(i*3+1)%point_count])
+        bezier_segment_CP_array.SetValue(2, controlPoints[(i*3+2)%point_count])
+        bezier_segment_CP_array.SetValue(3, controlPoints[(i*3+3)%point_count])
+        
+        segment = Geom_BezierCurve(bezier_segment_CP_array)
+        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+        ms.Add(edge)
+
+    ms.Perform()
+    chain = ms.SewedShape()
+    return chain
+
+    
 
 def get_GN_bezierSurf_controlPoints_Coords(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -214,10 +245,10 @@ def geom_type_of_object(o, context):
                         break
     return type
 
-def mirrors(o, face):
+def mirrors(o, shape):
     ms = BRepBuilderAPI_Sewing(1e-1)
     ms.SetNonManifoldMode(True)
-    ms.Add(face)
+    ms.Add(shape)
     mshape = TopoDS_Shape()
 
     ms.Perform()
@@ -252,7 +283,7 @@ def mirrors(o, face):
             zscales = [ 0, 0, 1, 1, 1, 1, 0]
             symtype = [x+y+z for x,y,z in zip(xscales,yscales,zscales)]
 
-            for i in range(7):
+            for i in range(7): # 7 = 8 mirror configs -1 original config
                 if configurations[i]:
                     if symtype[i]==1:#sym planaire
                         base = rot@(Vector([xscales[i],yscales[i],zscales[i]]))
@@ -329,6 +360,11 @@ class SP_OT_quick_export(bpy.types.Operator):
                         SPobj_count +=1
                         ce = new_brep_any_order_curve(o, context)
                         aSew.Add(mirrors(o, ce))
+                    
+                    case "bezier_chain" :
+                        SPobj_count +=1
+                        bc = new_brep_cubic_bezier_chain(o, context)
+                        aSew.Add(mirrors(o, bc))
 
                     case "collection_instance":
                         empty_mw = o.matrix_world
@@ -510,7 +546,7 @@ def menu_surface(self, context):
 def menu_curve(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
-        #self.layout.operator("sp.add_cubic_bezier_chain", text="Cubic Bezier Chain", icon="CURVE_BEZCURVE")
+        self.layout.operator("sp.add_cubic_bezier_chain", text="Cubic Bezier Chain", icon="CURVE_BEZCURVE")
         self.layout.operator("sp.add_any_order_curve", text="Any Order PsychoCurve", icon="CURVE_NCURVE")
 
 
