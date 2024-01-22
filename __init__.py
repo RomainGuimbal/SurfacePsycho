@@ -58,8 +58,27 @@ filepath = addonpath + "/assets/assets.blend"
 ##         FUNCTIONS        ##
 ##############################
 
+def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
+    ge = ob_deps_graph.data
+    match type :
+
+        case 'first_int':
+            attribute = ge.attributes[name].data[0].value
+
+        case 'vec3':
+            len_raw = len(ge.attributes[name].data)
+            if len_attr==None :
+                len_attr = len_raw
+            attribute = np.empty(3 * len_raw)
+            ge.attributes[name].data.foreach_get("vector", attribute)
+            attribute = attribute.reshape((-1, 3))[0:len_attr]
+
+    return attribute
+
+
 def new_brep_bezier_face(o, context):
-    points = get_GN_bezierSurf_controlPoints_Coords(o, context)
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    points = get_attribute_by_name(ob, 'handle_co', 'vec3', 16)
     points *= 1000 #unit correction
 
     controlPoints = TColgp_Array2OfPnt(1, 4, 1, 4)
@@ -89,12 +108,8 @@ def new_brep_bezier_face(o, context):
 
 def new_brep_any_order_curve(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    ge = ob.data
-
-    point_count = ge.attributes['CP_count'].data[0].value
-    points = np.empty(3 * len(ge.attributes['CP_any_order_curve'].data))
-    ge.attributes['CP_any_order_curve'].data.foreach_get("vector", points)
-    points = points.reshape((-1, 3))[0:point_count]
+    point_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+    points = get_attribute_by_name(ob, 'CP_any_order_curve', 'vec3', point_count)
     points *= 1000 #unit correction
 
     controlPoints = TColgp_Array1OfPnt(1, point_count)
@@ -108,12 +123,8 @@ def new_brep_any_order_curve(o, context):
 
 def new_brep_cubic_bezier_chain(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    ge = ob.data
-
-    point_count = ge.attributes['CP_count'].data[0].value
-    points = np.empty(3 * len(ge.attributes['CP_bezier_chain'].data))
-    ge.attributes['CP_bezier_chain'].data.foreach_get("vector", points)
-    points = points.reshape((-1, 3))[0:point_count]
+    point_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+    points = get_attribute_by_name(ob, 'CP_bezier_chain', 'vec3', point_count)
     points *= 1000 #unit correction
 
     # Create CP
@@ -139,15 +150,6 @@ def new_brep_cubic_bezier_chain(o, context):
     ms.Perform()
     chain = ms.SewedShape()
     return chain
-    
-
-def get_GN_bezierSurf_controlPoints_Coords(o, context):
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    me = ob.data
-    raw_coords = np.empty(3 * len(me.attributes['handle_co'].data))
-    me.attributes['handle_co'].data.foreach_get("vector", raw_coords)
-    coords = raw_coords[0:16*3].reshape((-1, 3))
-    return coords
 
 
 def append_object_by_name(obj_name, context):# for importing from the asset file
@@ -170,33 +172,32 @@ def append_object_by_name(obj_name, context):# for importing from the asset file
 
 def new_brep_planar_face(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    me = ob.data
-    point_count = me.attributes['P_count'].data[0].value
-    subtype = me.attributes['subtype'].data[0].value
-
-    raw_cp_planar = np.empty(3 * len(me.attributes['CP_planar'].data))
-    me.attributes['CP_planar'].data.foreach_get("vector", raw_cp_planar)
-    cp_planar = raw_cp_planar.reshape((-1, 3))[0:point_count]
-    cp_planar*=1000 #unit correction
+    point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
+    subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
+    points = get_attribute_by_name(ob, 'CP_planar', 'vec3', point_count)
+    points*=1000 #unit correction
 
     loc, rot, scale = o.matrix_world.decompose()
-    loc*=1000
-    pl_normal = rot@ Vector([0,0,1])
+    offset = get_attribute_by_name(ob, 'planar_offset', 'vec3', 1)[0]
+    loc += rot@ Vector(offset)
+    loc *= 1000
+    orient = get_attribute_by_name(ob, 'planar_orient', 'vec3', 1)[0]
+    pl_normal = rot@ Vector(orient)
     pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z),gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
-    gpl = Geom_Plane(pl)
+    geom_pl = Geom_Plane(pl)
 
     # Create CP
-    controlPoints = TColgp_Array1OfPnt(1, point_count)
+    points_occ = TColgp_Array1OfPnt(1, point_count)
     for i in range(point_count):
-        pnt= gp_Pnt(cp_planar[i][0], cp_planar[i][1], cp_planar[i][2])
-        pnt= GeomAPI_ProjectPointOnSurf(pnt, gpl).Point(1)
-        controlPoints.SetValue(i+1, pnt)
+        pnt= gp_Pnt(points[i][0], points[i][1], points[i][2])
+        pnt= GeomAPI_ProjectPointOnSurf(pnt, geom_pl).Point(1)
+        points_occ.SetValue(i+1, pnt)
 
     # Make contour
     if subtype :#polygon mode
         edges_list = TopTools_Array1OfShape(1, point_count)
         for i in range(point_count):
-            makesegment = GC_MakeSegment(controlPoints[i], controlPoints[(i+1)%point_count])
+            makesegment = GC_MakeSegment(points_occ[i], points_occ[(i+1)%point_count])
             segment = makesegment.Value()
             edge = BRepBuilderAPI_MakeEdge(segment).Edge()
             edges_list.SetValue(i+1, edge)
@@ -205,10 +206,10 @@ def new_brep_planar_face(o, context):
         edges_list = TopTools_Array1OfShape(1, point_count//3)
         for i in range(point_count//3):
             bezier_segment_CP_array = TColgp_Array1OfPnt(0,3)
-            bezier_segment_CP_array.SetValue(0, controlPoints[i*3])
-            bezier_segment_CP_array.SetValue(1, controlPoints[(i*3+1)%point_count])
-            bezier_segment_CP_array.SetValue(2, controlPoints[(i*3+2)%point_count])
-            bezier_segment_CP_array.SetValue(3, controlPoints[(i*3+3)%point_count])
+            bezier_segment_CP_array.SetValue(0, points_occ[i*3])
+            bezier_segment_CP_array.SetValue(1, points_occ[(i*3+1)%point_count])
+            bezier_segment_CP_array.SetValue(2, points_occ[(i*3+2)%point_count])
+            bezier_segment_CP_array.SetValue(3, points_occ[(i*3+3)%point_count])
             
             segment = Geom_BezierCurve(bezier_segment_CP_array)
             edge = BRepBuilderAPI_MakeEdge(segment).Edge()
@@ -309,6 +310,9 @@ def mirrors(o, shape):
     # ms.Perform()
     shape = ms.SewedShape()
     return shape
+
+
+
 
 
 
@@ -479,7 +483,8 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
         i=-1
         for o in context.selected_objects :
             try:
-                cp=get_GN_bezierSurf_controlPoints_Coords(o, context)
+                ob = o.evaluated_get(context.evaluated_depsgraph_get())
+                cp=get_attribute_by_name(ob, 'handle_co', 'vec3', 16)
             except Exception :
                 cp=None
             
