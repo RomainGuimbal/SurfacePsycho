@@ -86,6 +86,7 @@ def new_brep_bezier_face(o, context):
         face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
         return face
 
+
 def new_brep_any_order_curve(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     ge = ob.data
@@ -103,6 +104,7 @@ def new_brep_any_order_curve(o, context):
     geom_curve = Geom_BezierCurve(controlPoints)
     curve = BRepBuilderAPI_MakeEdge(geom_curve).Edge()
     return curve
+
 
 def new_brep_cubic_bezier_chain(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -137,7 +139,6 @@ def new_brep_cubic_bezier_chain(o, context):
     ms.Perform()
     chain = ms.SewedShape()
     return chain
-
     
 
 def get_GN_bezierSurf_controlPoints_Coords(o, context):
@@ -222,6 +223,7 @@ def new_brep_planar_face(o, context):
     aface = BRepBuilderAPI_MakeFace(w, True).Face()
     return aface
 
+
 def geom_type_of_object(o, context):
     type = None
     if o.type == 'EMPTY' and o.instance_collection != None :
@@ -244,6 +246,7 @@ def geom_type_of_object(o, context):
                         type = 'bezier_chain'
                         break
     return type
+
 
 def mirrors(o, shape):
     ms = BRepBuilderAPI_Sewing(1e-1)
@@ -495,9 +498,9 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
         bpy.ops.object.editmode_toggle()
         return {'FINISHED'}
 
-
-
-#TODO : nurbs to SP :  cp = [p.co for p in o.data.splines[0].points]
+#TODO : nurbs to SP :  
+    # class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
+    #   cp = [p.co for p in o.data.splines[0].points]
 
 
 
