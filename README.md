@@ -1,6 +1,7 @@
 # SurfacePsycho
 Blender addon for product design surfacing ! 
-It notably allows .STEP export and a non destructive workflow on curves and NURBS surfaces.
+Actively devlopped since may 2023, it notably allows .STEP export and a non destructive workflow on curves and NURBS surfaces. 
+The long term goal is a full class A surfacing tool accessible by anyone.
 
 ![Surface Psycho simply explained](https://github.com/RomainGuimbal/SurfacePsycho/assets/39882829/1c2f17b8-cf11-4e87-af30-346958bcf929)
 
