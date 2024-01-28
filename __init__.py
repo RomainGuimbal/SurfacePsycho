@@ -78,7 +78,7 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
 
 def new_brep_bezier_face(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    points = get_attribute_by_name(ob, 'handle_co', 'vec3', 16)
+    points = get_attribute_by_name(ob, 'CP_bezier_surf', 'vec3', 16)
     points *= 1000 #unit correction
 
     controlPoints = TColgp_Array2OfPnt(1, 4, 1, 4)
@@ -178,10 +178,14 @@ def new_brep_planar_face(o, context):
     points*=1000 #unit correction
 
     loc, rot, scale = o.matrix_world.decompose()
-    offset = get_attribute_by_name(ob, 'planar_offset', 'vec3', 1)[0]
+    try :
+        offset = get_attribute_by_name(ob, 'planar_offset', 'vec3', 1)[0]
+        orient = get_attribute_by_name(ob, 'planar_orient', 'vec3', 1)[0]
+    except Exception:
+        offset = [0,0,0]
+        orient = [0,0,1]
     loc += rot@ Vector(offset)
     loc *= 1000
-    orient = get_attribute_by_name(ob, 'planar_orient', 'vec3', 1)[0]
     pl_normal = rot@ Vector(orient)
     pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z),gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
     geom_pl = Geom_Plane(pl)
@@ -234,7 +238,7 @@ def geom_type_of_object(o, context):
         if hasattr(ob.data, "attributes") :
             for k in ob.data.attributes.keys() :
                 match k:
-                    case 'handle_co' :
+                    case 'CP_bezier_surf' :
                         type = 'bezier_surf'
                         break
                     case 'CP_planar' :
@@ -484,7 +488,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
         for o in context.selected_objects :
             try:
                 ob = o.evaluated_get(context.evaluated_depsgraph_get())
-                cp=get_attribute_by_name(ob, 'handle_co', 'vec3', 16)
+                cp=get_attribute_by_name(ob, 'CP_bezier_surf', 'vec3', 16)
             except Exception :
                 cp=None
             
