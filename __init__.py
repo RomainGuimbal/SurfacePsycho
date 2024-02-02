@@ -345,8 +345,8 @@ class SP_OT_quick_export(bpy.types.Operator):
         aSew = BRepBuilderAPI_Sewing(1e-1)
         
         SPobj_count=0
-        obj_list = context.selected_objects
-        initial_selection = obj_list
+        initial_selection = context.selected_objects
+        obj_list = initial_selection
         obj_to_del = []
         
         while(len(obj_list)>0): # itterate until ob_list is empty
@@ -379,13 +379,13 @@ class SP_OT_quick_export(bpy.types.Operator):
 
                     case "collection_instance":
                         empty_mw = o.matrix_world
-                        bpy.ops.object.select_all(action='DESELECT')
-                        for co in o.instance_collection.all_objects :
+                        bpy.ops.object.select_all(action='DESELECT') #deselect
+                        for co in o.instance_collection.all_objects : #select all object of collection linked to o
                             co.select_set(True)
-                        bpy.ops.object.duplicate(linked=True)
-                        for so in context.selected_objects :
+                        bpy.ops.object.duplicate(linked=True) #duplicate selection
+                        for so in context.selected_objects : #transform selection
                             so.matrix_world = empty_mw @ so.matrix_world # not recursive compliant? :/
-                            obj_newly_real.append(so)
+                            obj_newly_real.append(so) #flag the new objects
                 
                 obj_done.append(o)
 
