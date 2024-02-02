@@ -14,7 +14,7 @@
 bl_info = {
     "name": "Surface Psycho",
     "author": "Romain Guimbal",
-    "version": (0, 2),
+    "version": (0, 3),
     "blender": (4, 0, 0),
     "description": "Surface design for the mechanical industry",
     "warning": "Alpha",
@@ -377,15 +377,14 @@ class SP_OT_quick_export(bpy.types.Operator):
                         aSew.Add(mirrors(o, bc))
 
                     case "collection_instance":
-                        empty_mw = o.matrix_world
-                        bpy.ops.object.select_all(action='DESELECT') #deselect
-                        for co in o.instance_collection.all_objects : #select all object of collection linked to o
-                            co.select_set(True)
-                        bpy.ops.object.duplicate(linked=True) #duplicate selection
-                        for so in context.selected_objects : #transform selection
-                            so.matrix_world = empty_mw @ so.matrix_world # not recursive compliant? :/
-                            obj_newly_real.append(so) #flag the new objects
-                
+                        self.report({'INFO'}, 'Collection instances will not export')
+                        # empty_mw = o.matrix_world
+                        # for co in o.instance_collection.all_objects : #select all object of collection linked to o
+                        #     dupli = co.copy()
+                        #     dupli.data = co.data.copy()
+                        #     dupli.matrix_world = empty_mw @ dupli.matrix_world # not recursive compliant? :/
+                        #     obj_newly_real.append(dupli) #flag the new objects
+                        #     context.scene.collection.objects.link(dupli)
 
             obj_list=[]
             for onr in obj_newly_real:
@@ -394,10 +393,6 @@ class SP_OT_quick_export(bpy.types.Operator):
 
         for o in obj_to_del : # clear realized objects
             bpy.data.objects.remove(o, do_unlink=True)
-        
-        bpy.ops.object.select_all(action='DESELECT')
-        for i_s in initial_selection:
-            i_s.select_set(True)
 
         aSew.SetNonManifoldMode(True)
         aSew.Perform()
