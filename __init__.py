@@ -350,7 +350,6 @@ class SP_OT_quick_export(bpy.types.Operator):
         obj_to_del = []
         
         while(len(obj_list)>0): # itterate until ob_list is empty
-            obj_done = [] # objects to remove from ob_list on next iteration
             obj_newly_real = []
 
             for o in obj_list:
@@ -387,10 +386,8 @@ class SP_OT_quick_export(bpy.types.Operator):
                             so.matrix_world = empty_mw @ so.matrix_world # not recursive compliant? :/
                             obj_newly_real.append(so) #flag the new objects
                 
-                obj_done.append(o)
 
-            for od in obj_done :
-                obj_list.remove(od)
+            obj_list=[]
             for onr in obj_newly_real:
                 obj_list.append(onr)
                 obj_to_del.append(onr)
@@ -399,7 +396,7 @@ class SP_OT_quick_export(bpy.types.Operator):
             bpy.data.objects.remove(o, do_unlink=True)
         
         bpy.ops.object.select_all(action='DESELECT')
-        for i_s in initial_selection: # <------------------ doesn't work
+        for i_s in initial_selection:
             i_s.select_set(True)
 
         aSew.SetNonManifoldMode(True)
