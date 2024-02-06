@@ -18,7 +18,7 @@ bl_info = {
     "blender": (4, 0, 0),
     "description": "Surface design for the mechanical industry",
     "warning": "Alpha",
-    "doc_url": "",
+    "doc_url": "https://github.com/RomainGuimbal/SurfacePsycho/wiki",
     "category": "3D View",
     "location": "View3D > Add > Surface  |  View3D > N Panel > Edit"
 }
@@ -29,26 +29,32 @@ import numpy as np
 from mathutils import Vector
 
 from datetime import datetime
-from os.path import dirname, abspath, exists
+from os.path import dirname, abspath
 
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
-from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2 #, gp_Vec
-from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
-from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
-from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
-from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform
-from OCC.Core.TopTools import TopTools_Array1OfShape
-from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
-from OCC.Extend.DataExchange import write_step_file
-from OCC.Core.GC import GC_MakeSegment
+import platform
+os = platform.system()
+if os=="Windows":
+    from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
+    from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2 #, gp_Vec
+    from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
+    from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
+    from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
+    from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform
+    from OCC.Core.TopTools import TopTools_Array1OfShape
+    from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
+    from OCC.Extend.DataExchange import write_step_file
+    from OCC.Core.GC import GC_MakeSegment
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 filepath = addonpath + "/assets/assets.blend"
+
+
+
 
 
 
@@ -61,10 +67,10 @@ filepath = addonpath + "/assets/assets.blend"
 def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
     ge = ob_deps_graph.data
     match type :
-
         case 'first_int':
             attribute = ge.attributes[name].data[0].value
-
+        case 'second_int':
+            attribute = ge.attributes[name].data[1].value
         case 'vec3':
             len_raw = len(ge.attributes[name].data)
             if len_attr==None :
@@ -86,6 +92,38 @@ def new_brep_bezier_face(o, context):
         for j in range(4):
             id= 4*i+j
             controlPoints.SetValue(i+1, j+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
+
+    geom_surf = Geom_BezierSurface(controlPoints)
+    bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
+    bezierarray.SetValue(1, 1, geom_surf)
+    
+    BB = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
+    if BB.IsDone():
+        poles = BB.Poles().Array2()
+        uknots = BB.UKnots().Array1()
+        vknots = BB.VKnots().Array1()
+        umult = BB.UMultiplicities().Array1()
+        vmult = BB.VMultiplicities().Array1()
+        udeg = BB.UDegree()
+        vdeg = BB.VDegree()
+
+        bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
+        face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+        return face
+
+
+def new_brep_any_order_face(o, context):
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+    v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
+    points = get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', u_count*v_count)
+    points *= 1000 #unit correction
+
+    controlPoints = TColgp_Array2OfPnt(1, u_count, 1, v_count)
+    for i in range(v_count):
+        for j in range(u_count):
+            id= u_count*i +j
+            controlPoints.SetValue(j+1, i+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
     geom_surf = Geom_BezierSurface(controlPoints)
     bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
@@ -241,6 +279,9 @@ def geom_type_of_object(o, context):
                     case 'CP_bezier_surf' :
                         type = 'bezier_surf'
                         break
+                    case 'CP_any_order_surf' :
+                        type = 'surf_any'
+                        break
                     case 'CP_planar' :
                         type = 'planar'
                         break
@@ -360,6 +401,11 @@ class SP_OT_quick_export(bpy.types.Operator):
                         SPobj_count +=1
                         bf = new_brep_bezier_face(o, context)
                         aSew.Add(mirrors(o, bf))
+
+                    case "any_order_surf" :
+                        SPobj_count +=1
+                        af = new_brep_any_order_face(o, context)
+                        aSew.Add(mirrors(o, af))
 
                     case "planar" :
                         SPobj_count +=1
@@ -523,10 +569,11 @@ class SP_PT_MainPanel(bpy.types.Panel):
     bl_category = "Edit"
     
     def draw(self, context):
-        if context.mode == 'OBJECT':    
+        if context.mode == 'OBJECT':
             row = self.layout.row()
-            row.operator("sp.quick_export", text="Quick export as .STEP")
-            row = self.layout.row()
+            if os == "Windows" :
+                row.operator("sp.quick_export", text="Quick export as .STEP")
+                row = self.layout.row()
             row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
             row = self.layout.row()
             row.operator("sp.psychopatch_to_bl_nurbs", text="Convert to internal NURBS")
