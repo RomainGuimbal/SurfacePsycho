@@ -402,7 +402,7 @@ class SP_OT_quick_export(bpy.types.Operator):
                         bf = new_brep_bezier_face(o, context)
                         aSew.Add(mirrors(o, bf))
 
-                    case "any_order_surf" :
+                    case "surf_any" :
                         SPobj_count +=1
                         af = new_brep_any_order_face(o, context)
                         aSew.Add(mirrors(o, af))
