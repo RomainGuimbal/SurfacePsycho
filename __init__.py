@@ -524,24 +524,70 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
     def execute(self, context):
         i=-1
         for o in context.selected_objects :
-            try:
-                ob = o.evaluated_get(context.evaluated_depsgraph_get())
-                cp=get_attribute_by_name(ob, 'CP_bezier_surf', 'vec3', 16)
-            except Exception :
-                cp=None
-            
-            if cp is not None :
-                bpy.ops.surface.primitive_nurbs_surface_surface_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
-                i+=1
-                spline=context.active_object.data.splines[i]
-                spline.use_endpoint_u = True
-                spline.use_endpoint_v = True
-                spline.order_u = 4
-                spline.order_v = 4
+            type = geom_type_of_object(o, context)
+            ob = o.evaluated_get(context.evaluated_depsgraph_get())
+            match type :
+                case "bezier_surf":
+                    cp=get_attribute_by_name(ob, 'CP_bezier_surf', 'vec3', 16)
+                    bpy.ops.surface.primitive_nurbs_surface_surface_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+                    i+=1
+                    spline=context.active_object.data.splines[i]
+                    spline.use_endpoint_u = True
+                    spline.use_endpoint_v = True
+                    spline.order_u = 4
+                    spline.order_v = 4
+                    
+                    # set CP of spline
+                    for j,p in enumerate(spline.points): 
+                        p.co = (cp[j][0], cp[j][1], cp[j][2], 1)
+                    
+                case "surf_any":
+                    u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+                    v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
+                    cp=get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', u_count*v_count)
+                    if i == -1 :
+                        bpy.ops.surface.primitive_nurbs_surface_surface_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+                        bpy.ops.curve.delete(type='VERT')
+                    i+=1
+                    splines = context.active_object.data.splines
+                    for v in range(v_count):
+                        spline = splines.new('NURBS')
+                        spline.points.add(u_count-1)
+                        spline.use_endpoint_u = True
+                        spline.use_endpoint_v = True
+                        spline.use_bezier_u = True
+                        spline.use_bezier_v = True
+                        # set CP of spline
+                        for j,p in enumerate(spline.points): 
+                            p.co = (cp[j+v*u_count][0], cp[j+v*u_count][1], cp[j+v*u_count][2], 1)
+
+                    for s in splines[i:i+v_count]:
+                        for p in s.points:
+                            p.select = True
+                    bpy.ops.object.mode_set(mode = 'EDIT') 
+                    bpy.ops.curve.make_segment()
+                    splines[i].order_u =min(v_count,6)
+                    splines[i].order_v =min(u_count,6)
                 
-                # set CP of spline 
-                for j,p in enumerate(spline.points): 
-                    p.co = (cp[j][0], cp[j][1], cp[j][2], 1)
+                case "curve_any":
+                    cp_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+                    cp=get_attribute_by_name(ob, 'CP_any_order_curve', 'vec3', cp_count)
+                    if i == -1 :
+                        bpy.ops.surface.primitive_nurbs_surface_surface_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+                        bpy.ops.curve.delete(type='VERT')
+                    i+=1
+                    spline = context.active_object.data.splines.new('NURBS')
+                    spline.points.add(cp_count-1)
+                    spline.use_endpoint_u = True
+                    spline.use_endpoint_v = True
+                    spline.use_bezier_u = True
+                    spline.use_bezier_v = True
+                    spline.order_u =min(cp_count,6)
+                    spline.order_v =min(cp_count,6)
+
+                    # set CP of spline
+                    for j,p in enumerate(spline.points): 
+                        p.co = (cp[j][0], cp[j][1], cp[j][2], 1)
         bpy.ops.object.editmode_toggle()
         return {'FINISHED'}
 
