@@ -39,16 +39,18 @@ import platform
 os = platform.system()
 if os=="Windows":
     from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
-    from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2 #, gp_Vec
+    from OCC.Core.Geom2d import Geom2d_BezierCurve
+    from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Pnt2d #, gp_Vec
     from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
-    from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt
+    from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
     from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
     from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
-    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeEdge2d
     from OCC.Core.TopTools import TopTools_Array1OfShape
     from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
     from OCC.Extend.DataExchange import write_step_file
     from OCC.Core.GC import GC_MakeSegment
+    from OCC.Core.GCE2d import GCE2d_MakeSegment
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 filepath = addonpath + "/assets/assets.blend"
@@ -64,6 +66,24 @@ filepath = addonpath + "/assets/assets.blend"
 ##         FUNCTIONS        ##
 ##############################
 
+def append_object_by_name(obj_name, context):# for importing from the asset file
+    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
+        data_to.objects = [name for name in data_from.objects if name==obj_name]
+
+    cursor_loc = context.scene.cursor.location
+
+    for o in data_to.objects:
+        if o is not None:
+            if context.mode != 'OBJECT':
+                bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.select_all(action='DESELECT')
+            context.collection.objects.link(o)
+            o.location = cursor_loc
+            o.asset_clear()
+            o.select_set(True)
+            bpy.context.view_layer.objects.active = o
+
+
 def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
     ge = ob_deps_graph.data
     match type :
@@ -78,21 +98,67 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
             attribute = np.empty(3 * len_raw)
             ge.attributes[name].data.foreach_get("vector", attribute)
             attribute = attribute.reshape((-1, 3))[0:len_attr]
-
     return attribute
 
 
 def new_brep_bezier_face(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
+
+    # Control Polygon
     points = get_attribute_by_name(ob, 'CP_bezier_surf', 'vec3', 16)
     points *= 1000 #unit correction
-
     controlPoints = TColgp_Array2OfPnt(1, 4, 1, 4)
     for i in range(4):
         for j in range(4):
             id= 4*i+j
             controlPoints.SetValue(i+1, j+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
+    # Trimming wire
+    trimmed = False
+    try:
+        point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
+    except Exception:
+        point_count=None
+    if point_count!=None:
+        trimmed = True
+        subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
+        trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
+        #trim_pts*=1000 #unit correction
+
+        # Create points
+        points_occ = TColgp_Array1OfPnt2d(1, point_count)
+        for i in range(point_count):
+            pnt= gp_Pnt2d(trim_pts[i][0], trim_pts[i][1])
+            points_occ.SetValue(i+1, pnt)
+
+        # Make wire
+        if subtype :#polygon mode
+            edges_list = TopTools_Array1OfShape(1, point_count)
+            for i in range(point_count):
+                makesegment = GCE2d_MakeSegment(points_occ[i], points_occ[(i+1)%point_count])
+                segment = makesegment.Value()
+                edge = BRepBuilderAPI_MakeEdge2d(segment).Edge()
+                edges_list.SetValue(i+1, edge)
+        else :#bezier mode
+            edges_list = TopTools_Array1OfShape(1, point_count//3)
+            for i in range(point_count//3):
+                bezier_segment_CP_array = TColgp_Array1OfPnt2d(0,3)
+                bezier_segment_CP_array.SetValue(0, points_occ[i*3])
+                bezier_segment_CP_array.SetValue(1, points_occ[(i*3+1)%point_count])
+                bezier_segment_CP_array.SetValue(2, points_occ[(i*3+2)%point_count])
+                bezier_segment_CP_array.SetValue(3, points_occ[(i*3+3)%point_count])
+                
+                segment = Geom2d_BezierCurve(bezier_segment_CP_array)
+                edge = BRepBuilderAPI_MakeEdge2d(segment).Edge()
+                edges_list.SetValue(i+1, edge)
+
+        makeWire = BRepBuilderAPI_MakeWire()
+        for e in edges_list :
+            makeWire.Add(e)
+        trim_wire = TopoDS_Wire()
+        trim_wire = makeWire.Wire()
+
+    #Bezier surface
     geom_surf = Geom_BezierSurface(controlPoints)
     bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
     bezierarray.SetValue(1, 1, geom_surf)
@@ -108,8 +174,14 @@ def new_brep_bezier_face(o, context):
         vdeg = BB.VDegree()
 
         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
-        face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+        if trimmed :
+            makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, True)
+            face = makeface.Face()
+            print(makeface.Error)
+        else :
+            face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
         return face
+
 
 
 def new_brep_any_order_face(o, context):
@@ -188,24 +260,6 @@ def new_brep_cubic_bezier_chain(o, context):
     ms.Perform()
     chain = ms.SewedShape()
     return chain
-
-
-def append_object_by_name(obj_name, context):# for importing from the asset file
-    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
-        data_to.objects = [name for name in data_from.objects if name==obj_name]
-
-    cursor_loc = context.scene.cursor.location
-
-    for o in data_to.objects:
-        if o is not None:
-            if context.mode != 'OBJECT':
-                bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.ops.object.select_all(action='DESELECT')
-            context.collection.objects.link(o)
-            o.location = cursor_loc
-            o.asset_clear()
-            o.select_set(True)
-            bpy.context.view_layer.objects.active = o
 
 
 def new_brep_planar_face(o, context):
@@ -623,6 +677,8 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
             row = self.layout.row()
             row.operator("sp.psychopatch_to_bl_nurbs", text="Convert to internal NURBS")
+            
+            # TODO : Toggle all Control Geom
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
