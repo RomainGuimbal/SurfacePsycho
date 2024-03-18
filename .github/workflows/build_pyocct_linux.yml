@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    # - uses: actions/checkout@v4
 
     - name: Restore cached occt
       id: cache-restore
@@ -114,8 +114,8 @@ jobs:
     - name: make
       run: |    
         cd /home/runner/work/SurfacePsycho/swig-4.1.1
-        ./configure && make -j4 && make install
-
+        sudo ./configure && make -j4
+        
     - name: Save cache swig build
       id: cache-save
       if: steps.cache-restore.outputs.cache-hit != 'true'
@@ -153,7 +153,7 @@ jobs:
       - name: install swig
         run: |
           cd home/runner/work/SurfacePsycho/swig-4.1.1
-          make install
+          sudo make install
 
       - name: 3rd party pyocct
         run: |
