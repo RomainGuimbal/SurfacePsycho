@@ -117,7 +117,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install python3.11
-          Python3_INCLUDE_DIRS Python3_LIBRARIES
+          echo "Python3_LIBRARIES=/usr/lib/python3.11" >> $GITHUB_ENV
           echo "PYTHONPATH=/usr/bin/python3.11" >> $GITHUB_ENV
           echo ..
           echo lib python
