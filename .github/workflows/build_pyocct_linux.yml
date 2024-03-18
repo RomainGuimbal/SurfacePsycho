@@ -67,24 +67,12 @@ jobs:
     - name: cmake build OCCT
       if: steps.cache-restore.outputs.cache-hit != 'true'
       run : |
-        cmake --build /home/runner/work/SurfacePsycho/occt-cec1ecd/ma_build    
-    
-    # - name: prepare
-    #   run : | 
-    #     mv /home/runner/work/SurfacePsycho/occt-cec1ecd/ma_build/win64/vc14/bind /home/runner/work/SurfacePsycho/occt-cec1ecd/ma_build/win64/vc14/bin
-    #     mv /home/runner/work/SurfacePsycho/occt-cec1ecd/ma_build/win64/vc14/libd /home/runner/work/SurfacePsycho/occt-cec1ecd/ma_build/win64/vc14/lib
-    #   #cd ../
-      #7z a occt_build_not_installed /home/runner/work/SurfacePsycho/occt-cec1ecd/ma_build
-
-   #- uses: actions/upload-artifact@v4
-      #with:
-        #name: occt_build_not_installed
-        #path: /home/runner/work/SurfacePsycho/occt_build_not_installed.7z
+        cmake --build /home/runner/work/SurfacePsycho/occt-cec1ecd/ma_build
         
     - name: cmake install OCCT
       if: steps.cache-restore.outputs.cache-hit != 'true'
       run : |
-        cmake --install /home/runner/work/SurfacePsycho/occt-cec1ecd/ma_build  
+        cmake --install /home/runner/work/SurfacePsycho/occt-cec1ecd/ma_build
 
     #- name: add system path
       #run : echo "/home/runner/work/SurfacePsycho/pythonocc-core/ma_build" >> /etc/ld.so.conf.d/occt.conf
@@ -119,17 +107,27 @@ jobs:
     needs: build-occt
     runs-on: ubuntu-latest #${{ matrix.os }}
     steps:
+      - uses: actions/checkout@v4
+      
       - name: Restore cached occt
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
            path: /home/runner/work/SurfacePsycho/OCCT_mon_install
            key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-           
-      - uses: actions/checkout@v4 
 
       # echo "::set-env name=PYTHONPATH::C:\hostedtoolcache\windows\Python\3.11.8\x64"
       #echo "::set-env name=PYTHONPATH::home/runner/work/SurfacePsycho"
+      - name: prepare
+        run : |
+          cd ../
+          ls
+          7z a OCCT_build /home/runner/work/SurfacePsycho/OCCT_mon_install
+          ls
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OCCT_mon_install
+          path: /home/runner/work/SurfacePsycho/OCCT_mon_install.7z
 
       - name: download pyocc source 7.7.2
         run: |
