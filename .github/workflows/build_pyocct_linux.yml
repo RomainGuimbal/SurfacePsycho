@@ -103,12 +103,16 @@ jobs:
         key: swig-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
         lookup-only: true
 
-    - run: |
+    - name: download
+      run: |
         sudo apt-get install -y libpcre2-dev    
         cd /home/runner/work/SurfacePsycho/
         wget http://prdownloads.sourceforge.net/swig/swig-4.1.1.tar.gz
         tar -zxvf swig-4.1.1.tar.gz
         cd swig-4.1.1
+    
+    - name: make
+      run: |    
         sudo ./configure && make -j4 && make install
 
     - name: Save cache swig build
@@ -125,7 +129,7 @@ jobs:
 
 
   build-pyocct:
-    needs: build-occt
+    needs: [build-occt, build-swig]
     runs-on: ubuntu-latest #${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
