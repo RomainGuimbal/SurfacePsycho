@@ -100,11 +100,6 @@ jobs:
 
 
 
-
-
-
-
-    
     # - name: build swig
     #   run: |
     #     cd ../../
@@ -119,23 +114,10 @@ jobs:
     #     mv "index.html@p=occt.git;a=snapshot;h=cec1ecd0c9f3b3d2572c47035d11949e8dfa85e2;sf=zip" occt-7.7.2.zip
     #     7z x occt-7.7.2.zip
 
-
-
-
-
-
-
-
-
-
-      
-      
-
-
   
   build-pyocct:
     needs: build-occt
-    runs-on: windows-latest #${{ matrix.os }}
+    runs-on: ubuntu-latest #${{ matrix.os }}
     steps:
       - name: Restore cached occt
         id: cache-restore
@@ -148,13 +130,12 @@ jobs:
 
       # echo "::set-env name=PYTHONPATH::C:\hostedtoolcache\windows\Python\3.11.8\x64"
       #echo "::set-env name=PYTHONPATH::home/runner/work/SurfacePsycho"
-      
 
       - name: download pyocc source 7.7.2
         run: |
           cd ../
           ls
-          wget -o log "https://github.com/tpaviot/pythonocc-core/archive/refs/tags/7.7.2.zip"
+          wget "https://github.com/tpaviot/pythonocc-core/archive/refs/tags/7.7.2.zip"
           7z x 7.7.2.zip
 
       - uses: mmomtchev/setup-swig@v1
