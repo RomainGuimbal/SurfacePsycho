@@ -140,6 +140,12 @@ jobs:
           dpkg -L python3.11
           echo ..
           echo "PYTHONPATH=/usr/lib/python3.11" >> $GITHUB_ENV
+          echo ..
+          cd /usr/lib
+          ls
+          echo ..
+          cd /usr/bin
+          ls
           
       - name: cmake configure
         run: |
