@@ -118,17 +118,6 @@ jobs:
 
       # echo "::set-env name=PYTHONPATH::C:\hostedtoolcache\windows\Python\3.11.8\x64"
       #echo "::set-env name=PYTHONPATH::home/runner/work/SurfacePsycho"
-      - name: prepare
-        run : |
-          cd ../
-          ls
-          7z a OCCT_mon_install /home/runner/work/SurfacePsycho/OCCT_mon_install
-          ls
-      - uses: actions/upload-artifact@v4
-        with:
-          name: OCCT_mon_install
-          path: /home/runner/work/SurfacePsycho/OCCT_mon_install.7z
-
 
       - name: download pyocc source 7.7.2
         run: |
@@ -163,7 +152,7 @@ jobs:
           mkdir pyocc_mon_install
           cd pythonocc-core-7.7.2
           mkdir ma_build
-          cmake -DOCCT_INCLUDE_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/inc" -DOCCT_LIBRARY_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/win64/vc14/lib" -DPYTHONOCC_BUILD_TYPE=Release -DPYTHONOCC_INSTALL_DIRECTORY="/home/runner/work/SurfacePsycho/pyocc_mon_install" -DGP_PNT_HEADER_LOCATION="/home/runner/work/SurfacePsycho/OCCT_mon_install/inc/gp_Pnt.hxx" -B="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build" -S="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2"
+          cmake -DOCCT_INCLUDE_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade" -DOCCT_LIBRARY_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" -DPYTHONOCC_BUILD_TYPE=Release -DPYTHONOCC_INSTALL_DIRECTORY="/home/runner/work/SurfacePsycho/pyocc_mon_install" -DGP_PNT_HEADER_LOCATION="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade/gp_Pnt.hxx" -B="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build" -S="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2"
           
           cd ../
           7z a hhhh /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/
