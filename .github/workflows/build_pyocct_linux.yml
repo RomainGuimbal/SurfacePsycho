@@ -113,23 +113,6 @@ jobs:
 
       # echo "::set-env name=PYTHONPATH::C:\hostedtoolcache\windows\Python\3.11.8\x64"
       #echo "::set-env name=PYTHONPATH::home/runner/work/SurfacePsycho"
-
-      - name: download pyocc source 7.7.2
-        run: |
-          cd ../
-          ls
-          wget "https://github.com/tpaviot/pythonocc-core/archive/refs/tags/7.7.2.zip"
-          7z x 7.7.2.zip
-
-      - uses: mmomtchev/setup-swig@v1
-        with:
-          version: v4.1.1
-      - name: Verify
-        run: |
-          swig -version
-          echo "/opt/hostedtoolcache/swig" >> $GITHUB_PATH
-
-          
       - name: 3rd party pyocct
         run: |
           sudo apt-get update
@@ -146,6 +129,21 @@ jobs:
           echo ..
           cd /usr/bin
           ls
+
+      - name: download pyocc source 7.7.2
+        run: |
+          cd ../
+          ls
+          wget "https://github.com/tpaviot/pythonocc-core/archive/refs/tags/7.7.2.zip"
+          7z x 7.7.2.zip    
+          
+      - uses: mmomtchev/setup-swig@v1
+        with:
+          version: v4.1.1
+      - name: Verify
+        run: |
+          swig -version
+          echo "/opt/hostedtoolcache/swig" >> $GITHUB_PATH
           
       - name: cmake configure
         run: |
