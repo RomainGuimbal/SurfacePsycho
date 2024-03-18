@@ -118,8 +118,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install python3.11
           echo "PYTHONPATH=/usr/bin/python3.11" >> $GITHUB_PATH
-          echo "Python3_LIBRARIES=/usr/lib/python3.11" >> $GITHUB_PATH
-          
       - name: python paths
         run: |
           echo python includes
@@ -166,7 +164,15 @@ jobs:
           mkdir pyocc_mon_install
           cd pythonocc-core-7.7.2
           mkdir ma_build
-          cmake -DOCCT_INCLUDE_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade" -DOCCT_LIBRARY_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" -DPYTHONOCC_BUILD_TYPE=Release -DPYTHONOCC_INSTALL_DIRECTORY="/home/runner/work/SurfacePsycho/pyocc_mon_install" -DGP_PNT_HEADER_LOCATION="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade/gp_Pnt.hxx" -B="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build" -S="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2"
+          cmake -DPYTHON_LIBRARY=/usr/lib/python3.11 \
+          -DPYTHON_INCLUDE_DIR=/usr/include/python3.11 \
+          -DOCCT_INCLUDE_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade" \
+          -DOCCT_LIBRARY_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" \
+          -DPYTHONOCC_BUILD_TYPE=Release \
+          -DPYTHONOCC_INSTALL_DIRECTORY="/home/runner/work/SurfacePsycho/pyocc_mon_install" \
+          -DGP_PNT_HEADER_LOCATION="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade/gp_Pnt.hxx" \
+          -B="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build" \
+          -S="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2"
           
           cd ../
           7z a hhhh /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/
