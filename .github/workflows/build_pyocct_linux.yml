@@ -139,7 +139,7 @@ jobs:
           echo ..
           dpkg -L python3.11
           echo ..
-          echo "PYTHONPATH=/opt/hostedtoolcache/Python/3.11.8" >> $GITHUB_ENV
+          echo "PYTHONPATH=/usr/lib/python3.11" >> $GITHUB_ENV
           
       - name: cmake configure
         run: |
