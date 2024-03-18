@@ -117,15 +117,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install python3.11
-          echo "Python3_LIBRARIES=/usr/lib/python3.11" >> $GITHUB_ENV
-          echo "PYTHONPATH=/usr/bin/python3.11" >> $GITHUB_ENV
-      
+          echo "PYTHONPATH=/usr/bin/python3.11" >> $GITHUB_PATH
+          echo "Python3_LIBRARIES=/usr/lib/python3.11" >> $GITHUB_PATH
+          
       - name: python paths
         run: |
           echo python includes
-          python-config --includes
-          echo python libs
-          python-config --libs
+          python -c "from sysconfig import get_paths as gp; print(gp()[\"include\"])"
           
           echo ..
           echo lib python
