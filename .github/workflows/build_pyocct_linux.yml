@@ -126,25 +126,16 @@ jobs:
           wget "https://github.com/tpaviot/pythonocc-core/archive/refs/tags/7.7.2.zip"
           7z x 7.7.2.zip
 
-      - uses: mmomtchev/setup-swig@v1
-        with:
-          version: v4.1.1
-      - name: Verify
-        run: swig -version
+      #- uses: mmomtchev/setup-swig@v1
+       # with:
+        #  version: v4.1.1
+      #- name: Verify
+       # run: swig -version
     
       - name: 3rd party pyocct
         run: |
           sudo apt-get update
           sudo apt-get install -y wget libglu1-mesa-dev libgl1-mesa-dev libxmu-dev libxi-dev build-essential cmake libfreetype6-dev tk-dev python3-dev rapidjson-dev python3 git python3-pip libpcre2-dev
-
-      - name: configure
-        run: ./configure
-      - name: make
-        run: make
-      - name: make check
-        run: make check
-        #- name: make distcheck
-         # run: make distcheck
 
       - name: cmake configure
         run: |
