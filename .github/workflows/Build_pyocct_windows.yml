@@ -7,7 +7,7 @@ jobs:
   build-occt:
     runs-on: windows-latest #${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4 
+      #- uses: actions/checkout@v4 
       
       - name: Restore cached occt
         id: cache-restore

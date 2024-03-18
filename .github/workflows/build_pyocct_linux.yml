@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    #- uses: actions/checkout@v4
 
     - name: Restore cached occt
       id: cache-restore
@@ -114,8 +114,9 @@ jobs:
     - name: make
       run: |    
         cd /home/runner/work/SurfacePsycho/swig-4.1.1
-        sudo ./configure && make -j4
-        
+        sudo ./configure 
+        sudo make -j4
+
     - name: Save cache swig build
       id: cache-save
       if: steps.cache-restore.outputs.cache-hit != 'true'
