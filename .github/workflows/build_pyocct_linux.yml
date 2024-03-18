@@ -164,8 +164,8 @@ jobs:
           mkdir pyocc_mon_install
           cd pythonocc-core-7.7.2
           mkdir ma_build
-          cmake -DPYTHON_LIBRARY=/usr/lib/python3.11 \
-          -DPYTHON_INCLUDE_DIR=/usr/include/python3.11 \
+          cmake -DPython3_LIBRARIES=/usr/lib/python3.11 \
+          -DPython3_INCLUDE_DIRS=/usr/include/python3.11 \
           -DOCCT_INCLUDE_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade" \
           -DOCCT_LIBRARY_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" \
           -DPYTHONOCC_BUILD_TYPE=Release \
