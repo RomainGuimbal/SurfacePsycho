@@ -122,12 +122,13 @@ jobs:
         run : |
           cd ../
           ls
-          7z a OCCT_build /home/runner/work/SurfacePsycho/OCCT_mon_install
+          7z a OCCT_mon_install /home/runner/work/SurfacePsycho/OCCT_mon_install
           ls
       - uses: actions/upload-artifact@v4
         with:
           name: OCCT_mon_install
           path: /home/runner/work/SurfacePsycho/OCCT_mon_install.7z
+
 
       - name: download pyocc source 7.7.2
         run: |
