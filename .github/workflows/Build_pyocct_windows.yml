@@ -13,7 +13,7 @@ jobs:
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
-           path: D:/a/pythonocc-core/OCCT_mon_install
+           path: D:/a/SurfacePsycho/OCCT_mon_install
            key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
            lookup-only: true
       
@@ -58,39 +58,39 @@ jobs:
         run : |
           cd ../../
           ls
-          cmake -DINSTALL_DIR="D:/a/pythonocc-core/OCCT_mon_install" -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF -D3RDPARTY_DIR="D:/a/pythonocc-core/occt-cec1ecd/3rdparty" -DCMAKE_BUILD_TYPE=Release -B="D:/a/pythonocc-core/occt-cec1ecd/ma_build"  -S="D:/a/pythonocc-core/occt-cec1ecd"
+          cmake -DINSTALL_DIR="D:/a/SurfacePsycho/OCCT_mon_install" -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF -D3RDPARTY_DIR="D:/a/SurfacePsycho/occt-cec1ecd/3rdparty" -DCMAKE_BUILD_TYPE=Release -B="D:/a/SurfacePsycho/occt-cec1ecd/ma_build"  -S="D:/a/SurfacePsycho/occt-cec1ecd"
           
       - name: cmake build OCCT
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run : |
-          cmake --build D:/a/pythonocc-core/occt-cec1ecd/ma_build    
+          cmake --build D:/a/SurfacePsycho/occt-cec1ecd/ma_build    
       - name: prepare
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run : | 
-          mv D:/a/pythonocc-core/occt-cec1ecd/ma_build/win64/vc14/bind D:/a/pythonocc-core/occt-cec1ecd/ma_build/win64/vc14/bin
-          mv D:/a/pythonocc-core/occt-cec1ecd/ma_build/win64/vc14/libd D:/a/pythonocc-core/occt-cec1ecd/ma_build/win64/vc14/lib
+          mv D:/a/SurfacePsycho/occt-cec1ecd/ma_build/win64/vc14/bind D:/a/SurfacePsycho/occt-cec1ecd/ma_build/win64/vc14/bin
+          mv D:/a/SurfacePsycho/occt-cec1ecd/ma_build/win64/vc14/libd D:/a/SurfacePsycho/occt-cec1ecd/ma_build/win64/vc14/lib
         #cd ../
-        #7z a occt_build_not_installed D:/a/pythonocc-core/occt-cec1ecd/ma_build
+        #7z a occt_build_not_installed D:/a/SurfacePsycho/occt-cec1ecd/ma_build
 
      #- uses: actions/upload-artifact@v4
         #with:
           #name: occt_build_not_installed
-          #path: D:/a/pythonocc-core/occt_build_not_installed.7z
+          #path: D:/a/SurfacePsycho/occt_build_not_installed.7z
           
       - name: cmake install OCCT
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run : |
-          cmake --install D:/a/pythonocc-core/occt-cec1ecd/ma_build  
+          cmake --install D:/a/SurfacePsycho/occt-cec1ecd/ma_build  
         #if: steps.cache-restore.outputs.cache-hit != 'true'
       #- name: add system path
-        #run : echo "D:/a/pythonocc-core/pythonocc-core/ma_build" >> /etc/ld.so.conf.d/occt.conf
+        #run : echo "D:/a/SurfacePsycho/pythonocc-core/ma_build" >> /etc/ld.so.conf.d/occt.conf
 
       - name: Save cache occt build
         id: cache-save
         if: steps.cache-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: D:/a/pythonocc-core/OCCT_mon_install
+          path: D:/a/SurfacePsycho/OCCT_mon_install
           key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
 
@@ -103,7 +103,7 @@ jobs:
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
-           path: D:/a/pythonocc-core/OCCT_mon_install
+           path: D:/a/SurfacePsycho/OCCT_mon_install
            key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
            
       - uses: actions/checkout@v4 
@@ -123,7 +123,7 @@ jobs:
           C:\msys64\usr\bin\wget.exe -o log "https://sourceforge.net/projects/swig/files/swigwin/swigwin-4.1.1/swigwin-4.1.1.zip"
           7z x swigwin-4.1.1.zip
           ls
-          echo "D:/a/pythonocc-core/swigwin-4.1.1" >> $GITHUB_PATH
+          echo "D:/a/SurfacePsycho/swigwin-4.1.1" >> $GITHUB_PATH
 
       - name: download pyocc source 7.7.2
         run: |
@@ -137,32 +137,32 @@ jobs:
           mkdir pyocc_mon_install
           cd pythonocc-core-7.7.2
           mkdir ma_build
-          cmake -DOCCT_INCLUDE_DIR="D:/a/pythonocc-core/OCCT_mon_install/inc" -DOCCT_LIBRARY_DIR="D:/a/pythonocc-core/OCCT_mon_install/win64/vc14/lib" -DPYTHONOCC_BUILD_TYPE=Release -DPYTHONOCC_INSTALL_DIRECTORY="D:/a/pythonocc-core/pyocc_mon_install" -DGP_PNT_HEADER_LOCATION="D:/a/pythonocc-core/OCCT_mon_install/inc/gp_Pnt.hxx" -B="D:/a/pythonocc-core/pythonocc-core-7.7.2/ma_build" -S="D:/a/pythonocc-core/pythonocc-core-7.7.2"
+          cmake -DOCCT_INCLUDE_DIR="D:/a/SurfacePsycho/OCCT_mon_install/inc" -DOCCT_LIBRARY_DIR="D:/a/SurfacePsycho/OCCT_mon_install/win64/vc14/lib" -DPYTHONOCC_BUILD_TYPE=Release -DPYTHONOCC_INSTALL_DIRECTORY="D:/a/SurfacePsycho/pyocc_mon_install" -DGP_PNT_HEADER_LOCATION="D:/a/SurfacePsycho/OCCT_mon_install/inc/gp_Pnt.hxx" -B="D:/a/SurfacePsycho/pythonocc-core-7.7.2/ma_build" -S="D:/a/SurfacePsycho/pythonocc-core-7.7.2"
           
           cd ../
-          7z a hhhh D:/a/pythonocc-core/pythonocc-core-7.7.2/
+          7z a hhhh D:/a/SurfacePsycho/pythonocc-core-7.7.2/
           ls
           
       - uses: actions/upload-artifact@v4
         with:
           name: hhhh
-          path: D:/a/pythonocc-core/hhhh.7z
+          path: D:/a/SurfacePsycho/hhhh.7z
           
       - name: cmake build
         run: |
-          cmake --build D:/a/pythonocc-core/pythonocc-core-7.7.2/ma_build
-          echo "D:/a/pythonocc-core/OCCT_mon_install/lib" >> $LD_LIBRARY_PATH
+          cmake --build D:/a/SurfacePsycho/pythonocc-core-7.7.2/ma_build
+          echo "D:/a/SurfacePsycho/OCCT_mon_install/lib" >> $LD_LIBRARY_PATH
       - name: cmake install pythonocc
         run: |
-          cmake --install D:/a/pythonocc-core/pythonocc-core-7.7.2/ma_build
+          cmake --install D:/a/SurfacePsycho/pythonocc-core-7.7.2/ma_build
           
       - name: prepare
         run : |
           cd ../
           ls
-          7z a OCC D:/a/pythonocc-core/pyocc_mon_install
+          7z a OCC D:/a/SurfacePsycho/pyocc_mon_install
           ls
       - uses: actions/upload-artifact@v4
         with:
           name: pythonOCC
-          path: D:/a/pythonocc-core/OCC.7z
+          path: D:/a/SurfacePsycho/OCC.7z
