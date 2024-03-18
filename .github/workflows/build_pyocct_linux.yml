@@ -85,24 +85,19 @@ jobs:
         path: /home/runner/work/SurfacePsycho/OCCT_mon_install
         key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
+    - name: build swig
+      run: |
+        cd ../../
+        wget http://prdownloads.sourceforge.net/swig/swig-4.1.1.tar.gz
+        tar -zxvf swig-4.1.1.tar.gz
+        cd swig-4.1.1
+        sudo ./configure && make -j4 && make install
 
 
 
-    # - name: build swig
-    #   run: |
-    #     cd ../../
-    #     wget http://prdownloads.sourceforge.net/swig/swig-4.1.1.tar.gz
-    #     tar -zxvf swig-4.1.1.tar.gz
-    #     cd swig-4.1.1
-    #     sudo ./configure && make -j4 && make install
-        
-    # - name: get occt source
-    #   run: |
-    #     wget -o log "https://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=cec1ecd0c9f3b3d2572c47035d11949e8dfa85e2;sf=zip"
-    #     mv "index.html@p=occt.git;a=snapshot;h=cec1ecd0c9f3b3d2572c47035d11949e8dfa85e2;sf=zip" occt-7.7.2.zip
-    #     7z x occt-7.7.2.zip
 
-  
+
+
   build-pyocct:
     needs: build-occt
     runs-on: ubuntu-latest #${{ matrix.os }}
