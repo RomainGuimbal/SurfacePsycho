@@ -128,7 +128,7 @@ jobs:
         run: |
           swig -version
           echo "/opt/hostedtoolcache/swig" >> $GITHUB_PATH
-          echo "/opt/hostedtoolcache/swig" >> $GITHUB_ENV
+
           
       - name: 3rd party pyocct
         run: |
