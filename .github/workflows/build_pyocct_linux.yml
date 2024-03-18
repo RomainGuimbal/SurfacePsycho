@@ -113,7 +113,7 @@ jobs:
     
     - name: make
       run: |    
-        sudo ./configure && make -j4 && make install
+        ./configure && make -j4 && make install
 
     - name: Save cache swig build
       id: cache-save
@@ -152,7 +152,7 @@ jobs:
       - name: install swig
         run: |
           cd home/runner/work/SurfacePsycho/swig-4.1.1
-          sudo make install
+          make install
 
       - name: 3rd party pyocct
         run: |
