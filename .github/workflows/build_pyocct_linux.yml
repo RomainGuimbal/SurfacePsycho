@@ -85,13 +85,13 @@ jobs:
         path: /home/runner/work/SurfacePsycho/OCCT_mon_install
         key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
-    - name: build swig
-      run: |
-        cd ../../
-        wget http://prdownloads.sourceforge.net/swig/swig-4.1.1.tar.gz
-        tar -zxvf swig-4.1.1.tar.gz
-        cd swig-4.1.1
-        sudo ./configure && make -j4 && make install
+    #- name: build swig
+     # run: |
+     #   cd ../../
+      #  wget http://prdownloads.sourceforge.net/swig/swig-4.1.1.tar.gz
+       # tar -zxvf swig-4.1.1.tar.gz
+        #cd swig-4.1.1
+        #sudo ./configure && make -j4 && make install
 
 
 
@@ -121,11 +121,11 @@ jobs:
           wget "https://github.com/tpaviot/pythonocc-core/archive/refs/tags/7.7.2.zip"
           7z x 7.7.2.zip
 
-      #- uses: mmomtchev/setup-swig@v1
-       # with:
-        #  version: v4.1.1
-      #- name: Verify
-       # run: swig -version
+      - uses: mmomtchev/setup-swig@v1
+        with:
+          version: v4.1.1
+      - name: Verify
+        run: swig -version
     
       - name: 3rd party pyocct
         run: |
