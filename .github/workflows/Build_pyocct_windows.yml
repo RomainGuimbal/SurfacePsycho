@@ -1,4 +1,4 @@
-name: Python OCC Windows Build
+name: Build Python OCC Windows
 
 on:
   workflow_dispatch:
