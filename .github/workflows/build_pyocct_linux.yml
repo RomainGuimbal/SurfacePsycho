@@ -125,7 +125,9 @@ jobs:
         with:
           version: v4.1.1
       - name: Verify
-        run: swig -version
+        run: |
+          swig -version
+          echo "/opt/hostedtoolcache/swig" >> $GITHUB_PATH
     
       - name: 3rd party pyocct
         run: |
