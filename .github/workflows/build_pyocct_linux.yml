@@ -119,6 +119,14 @@ jobs:
           sudo apt-get install python3.11
           echo "Python3_LIBRARIES=/usr/lib/python3.11" >> $GITHUB_ENV
           echo "PYTHONPATH=/usr/bin/python3.11" >> $GITHUB_ENV
+      
+      - name: python paths
+        run: |
+          echo python includes
+          python-config --includes
+          echo python libs
+          python-config --libs
+          
           echo ..
           echo lib python
           echo ..
@@ -129,14 +137,22 @@ jobs:
           echo ..
           cd /usr/bin
           ls
+          echo ..
+          echo usr
+          echo ..
+          cd /usr
+          ls
+
+      - name: 3rd party
+        run: |
           sudo apt-get install -y wget libglu1-mesa-dev libgl1-mesa-dev libxmu-dev libxi-dev build-essential cmake libfreetype6-dev tk-dev python3-dev rapidjson-dev python3 git python3-pip libpcre2-dev
   
       - name: download pyocc source 7.7.2
         run: |
-          cd ../
+          cd /home/runner/work/SurfacePsycho/
           ls
           wget "https://github.com/tpaviot/pythonocc-core/archive/refs/tags/7.7.2.zip"
-          7z x 7.7.2.zip    
+          7z x 7.7.2.zip
           
       - uses: mmomtchev/setup-swig@v1
         with:
