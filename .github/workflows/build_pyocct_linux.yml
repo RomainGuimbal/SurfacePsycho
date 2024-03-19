@@ -156,16 +156,19 @@ jobs:
       - name: install swig
         run: |
           sudo apt-get remove swig
+          sudo apt-get remove swig4.0
           cd /home/runner/work/SurfacePsycho/swig-4.1.1
+          ./configure --prefix=/home/runner/work/SurfacePsycho/
           sudo make install
-          echo .................................
-          cd /usr/bin/
           ls
-
-
-          sudo PATH="/usr/bin/swig:$PATH"
+          sudo PATH="/home/runner/work/SurfacePsycho/swig:$PATH"
           echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> /etc/ld.so.conf.d/occt.conf
+        # echo .................................
+        # cd /usr/bin/
+        # ls
 
+
+          
       - name: 3rd party pyocct
         run: |
           sudo apt-get update
