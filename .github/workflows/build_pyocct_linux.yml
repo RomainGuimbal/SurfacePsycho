@@ -162,7 +162,7 @@ jobs:
           sudo make install
           cd ../
           ls
-          export PATH="/home/runner/work/SurfacePsycho/mon_swig/bin/swig:$PATH"
+          sudo export PATH="/home/runner/work/SurfacePsycho/mon_swig/bin/swig:$PATH"
           echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> /etc/ld.so.conf.d/occt.conf
         # echo .................................
         # cd /usr/bin/
