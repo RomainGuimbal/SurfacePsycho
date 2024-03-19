@@ -126,7 +126,6 @@ jobs:
           D:\a\SurfacePsycho\python-3.11.8-amd64.exe --Include_debug=1 --InstallAllUsers=1 --Include_symbols=1 --DefaultAllUsersTargetDir="D:\a\SurfacePsycho\python3.11"
           set "PATH=D:\a\SurfacePsycho\python3.11;D:\a\SurfacePsycho\python3.11\Scripts\;%PATH%"
 
-          cd ../
           7z a hhhh D:\a\SurfacePsycho\python3.11
           
         # pythonPath = "C:\Program Files\Python311"
@@ -144,7 +143,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: hhhh
-          path: D:/a/SurfacePsycho/hhhh.7z
+          path: D:\a\SurfacePsycho\python3.11.7z
 
 
       - name: setup swig
