@@ -202,12 +202,9 @@ jobs:
                 -DOCCT_LIBRARY_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" \
                 -DPYTHONOCC_BUILD_TYPE=Release \
                 -DPYTHONOCC_INSTALL_DIRECTORY="/home/runner/work/SurfacePsycho/pyocc_mon_install" \
-                -DGP_PNT_HEADER_LOCATION="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade/gp_Pnt.hxx"
+                
           
-        
-        # echo ............................
-        # cmake -LAH
-        # echo ............................
+      #-DGP_PNT_HEADER_LOCATION="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade/gp_Pnt.hxx"
       #     cd ../
       #     7z a hhhh /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/
       #     ls
@@ -221,6 +218,7 @@ jobs:
           
       - name: cmake build
         run: |
+          cd /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2
           sudo make -j4
       #     cmake --build /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build
       #     echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> $LD_LIBRARY_PATH
