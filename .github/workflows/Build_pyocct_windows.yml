@@ -151,8 +151,11 @@ jobs:
       - name: install python
         run: |
           cd D:\a\SurfacePsycho\
+          mkdir python3.11
           cmd /c D:\a\SurfacePsycho\python-3.11.8-amd64.exe /quiet Include_debug=1 Include_symbols=1 PrependPath=1 DefaultJustForMeTargetDir="C:/hostedtoolcache/windows/Python/3.11.8"
-          echo .................
+          
+          echo ......test.................................
+          py
 
       - name: paaaaaath
         run : |
