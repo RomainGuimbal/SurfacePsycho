@@ -139,6 +139,13 @@ jobs:
         with:
           path: D:\a\SurfacePsycho\python-3.11.8-amd64.exe
           key: python-installer-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      
+          
+      - name:
+        run: |
+          cd C:/hostedtoolcache/windows/Python/
+          ls
+          del C:/hostedtoolcache/windows/Python/3.12.2
           
       - name: install python
         run: |
