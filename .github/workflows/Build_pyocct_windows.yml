@@ -94,6 +94,9 @@ jobs:
           key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
 
+
+
+
   
   build-pyocct:
     needs: build-occt
@@ -106,20 +109,33 @@ jobs:
            path: D:/a/SurfacePsycho/OCCT_mon_install
            key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
            
-      - uses: actions/checkout@v4 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: |
-          python
+      # - uses: actions/checkout@v4 
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.11'
+      # - run: |
+      #     python
+      #     echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_PATH
+      #     echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_ENV
+
+      - name: install python
+        run: |
+          cd ../
+          dir
+          C:\msys64\usr\bin\wget.exe https://www.python.org/ftp/python/3.11.8/python-3.11.8-amd64.exe
+          ls
+          python-3.11.8-amd64.exe --Include_debug=1 --InstallAllUsers=1 --Include_symbols=1
+
           echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_PATH
           echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_ENV
+
+
+          
 
       # echo "::set-env name=PYTHONPATH::C:\hostedtoolcache\windows\Python\3.11.8\x64"
       #echo "::set-env name=PYTHONPATH::home/runner/work/pythonocc-core"
       - name: setup swig
         run : |
-          cd ../
           C:\msys64\usr\bin\wget.exe -o log "https://sourceforge.net/projects/swig/files/swigwin/swigwin-4.1.1/swigwin-4.1.1.zip"
           7z x swigwin-4.1.1.zip
           ls
@@ -131,6 +147,7 @@ jobs:
           ls
           C:\msys64\usr\bin\wget.exe -o log "https://github.com/tpaviot/pythonocc-core/archive/refs/tags/7.7.2.zip"
           7z x 7.7.2.zip
+
       - name: cmake configure
         run: |
           cd ../
