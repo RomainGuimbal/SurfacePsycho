@@ -219,6 +219,7 @@ jobs:
       - name: cmake build
         run: |
           cd /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2
+          ./configure
           sudo make -j4
       #     cmake --build /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build
       #     echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> $LD_LIBRARY_PATH
