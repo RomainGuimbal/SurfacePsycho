@@ -206,7 +206,7 @@ jobs:
           mkdir ma_build
           cmake -S="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2" \
                 -B="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build" \
-                -DSWIG_DIR="/home/runner/work/SurfacePsycho/mon_swig"\
+                -DSWIG_DIR="/home/runner/work/SurfacePsycho/mon_swig" \
                 -DOCCT_INCLUDE_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade" \
                 -DOCCT_LIBRARY_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" \
                 -DPYTHONOCC_BUILD_TYPE=Release \
