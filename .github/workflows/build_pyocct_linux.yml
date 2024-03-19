@@ -155,6 +155,7 @@ jobs:
         
       - name: install swig
         run: |
+          echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> /etc/ld.so.conf.d/occt.conf
           sudo apt-get remove swig
           sudo apt-get remove swig4.0
           cd /home/runner/work/SurfacePsycho/swig-4.1.1
@@ -162,8 +163,9 @@ jobs:
           sudo make install
           cd ../
           ls
-          sudo export PATH="/home/runner/work/SurfacePsycho/mon_swig/bin/swig:$PATH"
-          echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> /etc/ld.so.conf.d/occt.conf
+          ln -s /usr/bin/swig3.0 /home/runner/work/SurfacePsycho/mon_swig/bin/swig
+        # export PATH="/home/runner/work/SurfacePsycho/mon_swig/bin/swig:$PATH"
+          
         # echo .................................
         # cd /usr/bin/
         # ls
