@@ -157,6 +157,13 @@ jobs:
         run: |
           cd /home/runner/work/SurfacePsycho/swig-4.1.1
           sudo make install
+          
+          cd /usr/local/bin/swig
+          ls
+
+
+          PATH="/usr/local/bin/swig:$PATH"
+          echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> /etc/ld.so.conf.d/occt.conf
 
       - name: 3rd party pyocct
         run: |
