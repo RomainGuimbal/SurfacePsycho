@@ -166,9 +166,16 @@ jobs:
           sudo ln -s /home/runner/work/SurfacePsycho/mon_swig/bin/swig /usr/bin/swig
           echo .............................. 
           export PATH="/home/runner/work/SurfacePsycho/mon_swig/bin/swig:$PATH"
-
+          
+          cd /home/runner/work/SurfacePsycho/
+          7z a swig-install /home/runner/work/SurfacePsycho/mon_swig
         # echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> /etc/ld.so.conf.d/occt.conf
   
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swig-install
+          path: /home/runner/work/SurfacePsycho/swig-install.7z
+
       - name: 3rd party pyocct
         run: |
           sudo apt-get update
@@ -198,7 +205,7 @@ jobs:
           mkdir ma_build
           cmake -S="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2" \
                 -B="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build" \
-                -DSWIG_DIR="/home/runner/work/SurfacePsycho/mon_swig/bin"\
+                -DSWIG_DIR="/home/runner/work/SurfacePsycho/mon_swig/bin/swig"\
                 -DOCCT_INCLUDE_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/include/opencascade" \
                 -DOCCT_LIBRARY_DIR="/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" \
                 -DPYTHONOCC_BUILD_TYPE=Release \
