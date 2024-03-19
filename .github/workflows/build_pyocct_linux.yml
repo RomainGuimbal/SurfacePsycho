@@ -158,11 +158,11 @@ jobs:
           sudo apt-get remove swig
           sudo apt-get remove swig4.0
           cd /home/runner/work/SurfacePsycho/swig-4.1.1
-          ./configure --prefix=/home/runner/work/SurfacePsycho/
+          ./configure --prefix=/home/runner/work/SurfacePsycho/mon_swig/
           sudo make install
           cd ../
           ls
-          sudo PATH="/home/runner/work/SurfacePsycho/swig:$PATH"
+          export PATH="/home/runner/work/SurfacePsycho/mon_swig/bin/swig:$PATH"
           echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> /etc/ld.so.conf.d/occt.conf
         # echo .................................
         # cd /usr/bin/
