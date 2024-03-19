@@ -128,8 +128,7 @@ jobs:
       - name: download python
         if: steps.cache-python.outputs.cache-hit != 'true'
         run: |
-          cd D:\a\SurfacePsycho\python-3.11.8-amd64.exe
-          mkdir python3.11
+          cd D:\a\SurfacePsycho\
           C:\msys64\usr\bin\wget.exe https://www.python.org/ftp/python/3.11.8/python-3.11.8-amd64.exe
           
 
@@ -143,6 +142,8 @@ jobs:
           
       - name: install python
         run: |
+          cd D:\a\SurfacePsycho\
+          mkdir python3.11
           cmd /c D:\a\SurfacePsycho\python-3.11.8-amd64.exe /quiet Include_debug=1 Include_symbols=1 PrependPath=1 DefaultJustForMeTargetDir="D:\a\SurfacePsycho\python3.11"
           
           echo ......test.................................
