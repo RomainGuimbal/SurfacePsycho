@@ -118,14 +118,31 @@ jobs:
       #     echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_PATH
       #     echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_ENV
 
-      - name: install python
+      - name: Restore cached occt
+        id: cache-python
+        uses: actions/cache/restore@v4
+        with:
+           path: D:\a\SurfacePsycho\python-3.11.8-amd64.exe
+           key: python-installer-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      
+      - name: download python
+        if: steps.cache-python.outputs.cache-hit != 'true'
         run: |
-          cd D:\a\SurfacePsycho\
+          cd D:\a\SurfacePsycho\python-3.11.8-amd64.exe
           mkdir python3.11
           C:\msys64\usr\bin\wget.exe https://www.python.org/ftp/python/3.11.8/python-3.11.8-amd64.exe
           
-          echo ..............................................
 
+      - name: Save cache occt build
+        id: python-installer-cache
+        if: steps.cache-python.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: D:\a\SurfacePsycho\python-3.11.8-amd64.exe
+          key: python-installer-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+          
+      - name: install python
+        run: |
           cmd /c D:\a\SurfacePsycho\python-3.11.8-amd64.exe /quiet Include_debug=1 Include_symbols=1 PrependPath=1 DefaultJustForMeTargetDir="D:\a\SurfacePsycho\python3.11"
           
           echo ......test.................................
