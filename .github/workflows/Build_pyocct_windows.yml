@@ -151,10 +151,10 @@ jobs:
       - name: install python
         run: |
           cd D:\a\SurfacePsycho\
-
           cmd /c D:\a\SurfacePsycho\python-3.11.8-amd64.exe /quiet Include_debug=1 Include_symbols=1 PrependPath=1 DefaultJustForMeTargetDir="C:/hostedtoolcache/windows/Python/3.11.8"
-          
-      - name: setup swig
+          echo .................
+
+      - name: paaaaaath
         run : |
           echo "C:/hostedtoolcache/windows/Python/3.11.8" >> $GITHUB_PATH
           echo "C:/hostedtoolcache/windows/Python/3.11.8" >> $GITHUB_ENV
@@ -202,9 +202,10 @@ jobs:
           cd ../
           mkdir pyocc_mon_install
           cd pythonocc-core-7.7.2
+          rm CMakeLists.txt
+          copy D:\a\SurfacePsycho\.github\workflows\CMakeLists.txt D:\a\SurfacePsycho\pythonocc-core-7.7.2\CMakeLists.txt
           mkdir ma_build
           cmake -DOCCT_INCLUDE_DIR="D:/a/SurfacePsycho/OCCT_mon_install/inc" -DOCCT_LIBRARY_DIR="D:/a/SurfacePsycho/OCCT_mon_install/win64/vc14/lib" -DPYTHONOCC_BUILD_TYPE=Release -DPYTHONOCC_INSTALL_DIRECTORY="D:/a/SurfacePsycho/pyocc_mon_install" -DGP_PNT_HEADER_LOCATION="D:/a/SurfacePsycho/OCCT_mon_install/inc/gp_Pnt.hxx" -B="D:/a/SurfacePsycho/pythonocc-core-7.7.2/ma_build" -S="D:/a/SurfacePsycho/pythonocc-core-7.7.2"
-          
           
       - name: cmake build
         run: |
