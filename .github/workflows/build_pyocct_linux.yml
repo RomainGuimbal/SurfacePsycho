@@ -162,14 +162,11 @@ jobs:
           sudo make install
           cd ../
           ls
-          ln -s /home/runner/work/SurfacePsycho/mon_swig/bin/swig /usr/bin/swig3.0
-          ln -s /home/runner/work/SurfacePsycho/mon_swig/bin/swig /usr/bin/swig
+          sudo ln -s /home/runner/work/SurfacePsycho/mon_swig/bin/swig /usr/bin/swig3.0
+          sudo ln -s /home/runner/work/SurfacePsycho/mon_swig/bin/swig /usr/bin/swig
           echo .............................. 
           export PATH="/home/runner/work/SurfacePsycho/mon_swig/bin/swig:$PATH"
           
-        # echo .................................
-        # cd /usr/bin/
-        # ls
         # echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> /etc/ld.so.conf.d/occt.conf
   
       - name: 3rd party pyocct
