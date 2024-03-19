@@ -146,21 +146,21 @@ jobs:
           cd C:/hostedtoolcache/windows/Python/
           ls
           rm "C:/hostedtoolcache/windows/Python/3.11.8" -r -force
-          rm "C:/hostedtoolcache/windows/Python/3.12.2" -r -force
+        # rm "C:/hostedtoolcache/windows/Python/3.12.2" -r -force
 
-      - name: install python
-        run: |
-          cd D:\a\SurfacePsycho\
-          mkdir python3.11
-          cmd /c D:\a\SurfacePsycho\python-3.11.8-amd64.exe /quiet Include_debug=1 Include_symbols=1 PrependPath=1 DefaultJustForMeTargetDir="C:/hostedtoolcache/windows/Python/3.11.8"
+      # - name: install python
+      #   run: |
+      #     cd D:\a\SurfacePsycho\
+      #     mkdir python3.11
+      #     cmd /c D:\a\SurfacePsycho\python-3.11.8-amd64.exe /quiet Include_debug=1 Include_symbols=1 PrependPath=1 DefaultJustForMeTargetDir="C:/hostedtoolcache/windows/Python/3.11.8"
           
-          echo ......test.................................
-          py
+      #     echo ......test.................................
+      #     py
 
-      - name: paaaaaath
-        run : |
-          echo "C:/hostedtoolcache/windows/Python/3.11.8" >> $GITHUB_PATH
-          echo "C:/hostedtoolcache/windows/Python/3.11.8" >> $GITHUB_ENV
+      # - name: paaaaaath
+      #   run : |
+      #     echo "C:/hostedtoolcache/windows/Python/3.11.8" >> $GITHUB_PATH
+      #     echo "C:/hostedtoolcache/windows/Python/3.11.8" >> $GITHUB_ENV
         # mkdir python3.11
         # echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_PATH
         # echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11\Scripts" >> $GITHUB_PATH
