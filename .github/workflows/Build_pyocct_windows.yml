@@ -153,9 +153,7 @@ jobs:
           cd D:\a\SurfacePsycho\
 
           cmd /c D:\a\SurfacePsycho\python-3.11.8-amd64.exe /quiet Include_debug=1 Include_symbols=1 PrependPath=1 DefaultJustForMeTargetDir="C:/hostedtoolcache/windows/Python/3.11.8"
-          
-          echo ......test.................................
-          py --version
+          echo "C:/hostedtoolcache/windows/Python/3.11.8" >> $GITHUB_PATH
         # mkdir python3.11
         # echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_PATH
         # echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11\Scripts" >> $GITHUB_PATH
@@ -166,11 +164,11 @@ jobs:
         # echo "::set-env name=PYTHONPATH::D:\a\SurfacePsycho\python3.11\Scripts"
         # echo "::set-env name=PYTHONPATH::D:\a\SurfacePsycho\python3.11"
 
-      - name: paaaaaath
-        shell: powershell
-        run: |
-          $pythonPath = "D:\a\SurfacePsycho\python3.11"
-          $env:Path += ";$pythonPath;$pythonPath\Scripts" >> $GITHUB_ENV
+      # - name: paaaaaath
+      #   shell: powershell
+      #   run: |
+      #     $pythonPath = "D:\a\SurfacePsycho\python3.11"
+      #     $env:Path += ";$pythonPath;$pythonPath\Scripts" >> $GITHUB_ENV
           
 
       #     7z a hhhh D:\a\SurfacePsycho\python3.11
