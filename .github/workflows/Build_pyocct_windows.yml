@@ -133,26 +133,27 @@ jobs:
           echo ..................
           python
 
-          set "PATH=D:\a\SurfacePsycho\python3.11;D:\a\SurfacePsycho\python3.11\Scripts\;%PATH%"
+          echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_PATH
+          echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11\Scripts" >> $GITHUB_PATH
+          echo "D:\a\SurfacePsycho\python3.11\Scripts" >> $GITHUB_PATH
+          echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_ENV
+          set "PATH=D:\a\SurfacePsycho\python3.11;D:\a\SurfacePsycho\python3.11\Scripts;%PATH%"
+          echo "::set-env name=PYTHONPATH::D:\a\SurfacePsycho\python3.11\Scripts"
+          echo "::set-env name=PYTHONPATH::D:\a\SurfacePsycho\python3.11"
 
-          7z a hhhh D:\a\SurfacePsycho\python3.11
+      - name: paaaaaath
+        shell: powershell
+        run: |
+          $pythonPath = "D:\a\SurfacePsycho\python3.11"
+          $env:Path += ";$pythonPath;$pythonPath\Scripts" >> $GITHUB_ENV
           
-        # pythonPath = "C:\Program Files\Python311"
-        # $env:Path += ";$pythonPath;$pythonPath\Scripts" >> $GITHUB_ENV
-        #  echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_PATH
-        # echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_ENV
-          
 
-
-      # echo "::set-env name=PYTHONPATH::C:\hostedtoolcache\windows\Python\3.11.8\x64"
-      #echo "::set-env name=PYTHONPATH::home/runner/work/pythonocc-core"
-
-
+      #     7z a hhhh D:\a\SurfacePsycho\python3.11
       
-      - uses: actions/upload-artifact@v4
-        with:
-          name: hhhh
-          path: D:\a\SurfacePsycho\hhhh.7z
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     name: hhhh
+      #     path: D:\a\SurfacePsycho\hhhh.7z
 
 
       - name: setup swig
