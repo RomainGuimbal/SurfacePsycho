@@ -143,7 +143,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: hhhh
-          path: D:\a\SurfacePsycho\python3.11.7z
+          path: D:\a\SurfacePsycho\hhhh.7z
 
 
       - name: setup swig
