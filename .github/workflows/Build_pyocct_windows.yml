@@ -126,8 +126,13 @@ jobs:
           
           echo ..............................................
 
-          D:\a\SurfacePsycho\python-3.11.8-amd64.exe /quiet Include_debug=1 InstallAllUsers=1 Include_symbols=1 DefaultAllUsersTargetDir="D:\a\SurfacePsycho\python3.11"
+          cmd /c D:\a\SurfacePsycho\python-3.11.8-amd64.exe /quiet Include_debug=1 Include_symbols=1 PrependPath=1 DefaultJustForMeTargetDir="D:\a\SurfacePsycho\python3.11"
           
+          echo ......test.................................
+          py
+          echo ..................
+          python
+
           set "PATH=D:\a\SurfacePsycho\python3.11;D:\a\SurfacePsycho\python3.11\Scripts\;%PATH%"
 
           7z a hhhh D:\a\SurfacePsycho\python3.11
