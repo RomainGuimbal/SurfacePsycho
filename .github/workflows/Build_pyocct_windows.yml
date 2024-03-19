@@ -120,12 +120,14 @@ jobs:
 
       - name: install python
         run: |
-          cd C:\msys64\usr\bin\
-          ls
           cd D:\a\SurfacePsycho\
           C:\msys64\usr\bin\wget.exe https://www.python.org/ftp/python/3.11.8/python-3.11.8-amd64.exe
-          ls
           D:\a\SurfacePsycho\python-3.11.8-amd64.exe --Include_debug=1 --InstallAllUsers=1 --Include_symbols=1
+          
+          cd C:\msys64\usr\bin\
+          ls
+          echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_PATH
+          echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_ENV
           
 
 
