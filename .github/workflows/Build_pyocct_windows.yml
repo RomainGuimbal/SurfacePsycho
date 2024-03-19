@@ -121,13 +121,14 @@ jobs:
       - name: install python
         run: |
           cd D:\a\SurfacePsycho\
+          mkdir python3.11
           C:\msys64\usr\bin\wget.exe https://www.python.org/ftp/python/3.11.8/python-3.11.8-amd64.exe
-          D:\a\SurfacePsycho\python-3.11.8-amd64.exe --Include_debug=1 --InstallAllUsers=1 --Include_symbols=1
+          D:\a\SurfacePsycho\python-3.11.8-amd64.exe --Include_debug=1 --InstallAllUsers=1 --Include_symbols=1 --DefaultAllUsersTargetDir="D:\a\SurfacePsycho\python3.11"
           
           cd C:\msys64\usr\bin\
           ls
-          echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_PATH
-          echo "PYTHONPATH=C:\hostedtoolcache\windows\Python\3.11.8\x64" >> $GITHUB_ENV
+          echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_PATH
+          echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_ENV
           
 
 
