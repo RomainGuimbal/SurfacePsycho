@@ -155,7 +155,6 @@ jobs:
         
       - name: install swig
         run: |
-         
           sudo apt-get remove swig
           sudo apt-get remove swig4.0
           cd /home/runner/work/SurfacePsycho/swig-4.1.1
@@ -163,7 +162,8 @@ jobs:
           sudo make install
           cd ../
           ls
-          ln -s /usr/bin/swig3.0 /home/runner/work/SurfacePsycho/mon_swig/bin/swig
+          ln -s /home/runner/work/SurfacePsycho/mon_swig/bin/swig /usr/bin/swig3.0
+          ln -s /home/runner/work/SurfacePsycho/mon_swig/bin/swig /usr/bin/swig
           echo .............................. 
           export PATH="/home/runner/work/SurfacePsycho/mon_swig/bin/swig:$PATH"
           
