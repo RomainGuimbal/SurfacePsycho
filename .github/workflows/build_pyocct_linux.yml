@@ -158,7 +158,7 @@ jobs:
           cd /home/runner/work/SurfacePsycho/swig-4.1.1
           sudo make install
           echo .................................
-          cd /usr/local/bin/swig
+          cd /usr/bin/swig
           ls
 
 
