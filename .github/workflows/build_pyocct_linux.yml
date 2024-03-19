@@ -171,17 +171,17 @@ jobs:
           wget "https://github.com/tpaviot/pythonocc-core/archive/refs/tags/7.7.2.zip"
           7z x 7.7.2.zip
           
-      - uses: mmomtchev/setup-swig@v1
-        with:
-          version: v4.1.1
-      - name: Verify
-        run: |
-          swig -version
-          echo "/opt/hostedtoolcache/swig" >> $GITHUB_PATH
+      # - uses: mmomtchev/setup-swig@v1
+      #   with:
+      #     version: v4.1.1
+      # - name: Verify
+      #   run: |
+      #     swig -version
+      #     echo "/opt/hostedtoolcache/swig" >> $GITHUB_PATH
           
       - name: cmake configure
         run: |
-          cd ../
+          cd /home/runner/work/SurfacePsycho/
           mkdir pyocc_mon_install
           cd pythonocc-core-7.7.2
           mkdir ma_build
@@ -193,24 +193,27 @@ jobs:
           -B="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build" \
           -S="/home/runner/work/SurfacePsycho/pythonocc-core-7.7.2"
           
-          cd ../
-          7z a hhhh /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/
-          ls
-        # -DPython3_LIBRARIES=/usr/lib/python3.11 \
-        # -DPython3_INCLUDE_DIRS=/usr/include/python3.11 \
+      #     cd ../
+      #     7z a hhhh /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/
+      #     ls
+      #   # -DPython3_LIBRARIES=/usr/lib/python3.11 \
+      #   # -DPython3_INCLUDE_DIRS=/usr/include/python3.11 \
           
-      - uses: actions/upload-artifact@v4
-        with:
-          name: hhhh
-          path: /home/runner/work/SurfacePsycho/hhhh.7z
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     name: hhhh
+      #     path: /home/runner/work/SurfacePsycho/hhhh.7z
           
       - name: cmake build
         run: |
-          cmake --build /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build
-          echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> $LD_LIBRARY_PATH
+          sudo make -j4
+      #     cmake --build /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build
+      #     echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> $LD_LIBRARY_PATH
+      
       - name: cmake install pythonocc
         run: |
-          cmake --install /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build
+          sudo make install 
+        # cmake --install /home/runner/work/SurfacePsycho/pythonocc-core-7.7.2/ma_build
           
       - name: prepare
         run : |
