@@ -145,7 +145,7 @@ jobs:
         run: |
           cd C:/hostedtoolcache/windows/Python/
           ls
-          rm "C:/hostedtoolcache/windows/Python/" -r -force
+          rm "C:/hostedtoolcache/windows/Python/3.11.8" -r -force
 
       - name: install python
         run: |
