@@ -146,7 +146,7 @@ jobs:
            key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
 
-      - name: restor swig
+      - name: Restore cached swig
         id: restore-swig
         uses: actions/cache/restore@v4
         with:
@@ -160,6 +160,7 @@ jobs:
           cd /home/runner/work/SurfacePsycho/swig-4.1.1
           ./configure --prefix=/home/runner/work/SurfacePsycho/
           sudo make install
+          cd ../
           ls
           sudo PATH="/home/runner/work/SurfacePsycho/swig:$PATH"
           echo "/home/runner/work/SurfacePsycho/OCCT_mon_install/lib" >> /etc/ld.so.conf.d/occt.conf
