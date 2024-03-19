@@ -145,8 +145,8 @@ jobs:
         run: |
           cd C:/hostedtoolcache/windows/Python/
           ls
-          del C:/hostedtoolcache/windows/Python/3.12.2
-          
+          rm C:\hostedtoolcache\windows\Python\3.12.2
+
       - name: install python
         run: |
           cd D:\a\SurfacePsycho\
