@@ -109,7 +109,7 @@ jobs:
            path: D:/a/SurfacePsycho/OCCT_mon_install
            key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
            
-      # - uses: actions/checkout@v4 
+      - uses: actions/checkout@v4 
       # - uses: actions/setup-python@v5
       #   with:
       #     python-version: '3.11'
@@ -124,9 +124,13 @@ jobs:
           mkdir python3.11
           C:\msys64\usr\bin\wget.exe https://www.python.org/ftp/python/3.11.8/python-3.11.8-amd64.exe
           D:\a\SurfacePsycho\python-3.11.8-amd64.exe --Include_debug=1 --InstallAllUsers=1 --Include_symbols=1 --DefaultAllUsersTargetDir="D:\a\SurfacePsycho\python3.11"
-          
           set "PATH=D:\a\SurfacePsycho\python3.11;D:\a\SurfacePsycho\python3.11\Scripts\;%PATH%"
+
+          cd ../
+          7z a hhhh D:\a\SurfacePsycho\python3.11
           
+        # pythonPath = "C:\Program Files\Python311"
+        # $env:Path += ";$pythonPath;$pythonPath\Scripts" >> $GITHUB_ENV
         #  echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_PATH
         # echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_ENV
           
@@ -134,6 +138,15 @@ jobs:
 
       # echo "::set-env name=PYTHONPATH::C:\hostedtoolcache\windows\Python\3.11.8\x64"
       #echo "::set-env name=PYTHONPATH::home/runner/work/pythonocc-core"
+
+
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hhhh
+          path: D:/a/SurfacePsycho/hhhh.7z
+
+
       - name: setup swig
         run : |
           C:\msys64\usr\bin\wget.exe -o log "https://sourceforge.net/projects/swig/files/swigwin/swigwin-4.1.1/swigwin-4.1.1.zip"
@@ -156,14 +169,6 @@ jobs:
           mkdir ma_build
           cmake -DOCCT_INCLUDE_DIR="D:/a/SurfacePsycho/OCCT_mon_install/inc" -DOCCT_LIBRARY_DIR="D:/a/SurfacePsycho/OCCT_mon_install/win64/vc14/lib" -DPYTHONOCC_BUILD_TYPE=Release -DPYTHONOCC_INSTALL_DIRECTORY="D:/a/SurfacePsycho/pyocc_mon_install" -DGP_PNT_HEADER_LOCATION="D:/a/SurfacePsycho/OCCT_mon_install/inc/gp_Pnt.hxx" -B="D:/a/SurfacePsycho/pythonocc-core-7.7.2/ma_build" -S="D:/a/SurfacePsycho/pythonocc-core-7.7.2"
           
-          cd ../
-          7z a hhhh D:/a/SurfacePsycho/pythonocc-core-7.7.2/
-          ls
-          
-      - uses: actions/upload-artifact@v4
-        with:
-          name: hhhh
-          path: D:/a/SurfacePsycho/hhhh.7z
           
       - name: cmake build
         run: |
