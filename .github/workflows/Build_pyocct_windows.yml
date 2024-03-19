@@ -138,8 +138,8 @@ jobs:
           echo "D:\a\SurfacePsycho\python3.11\Scripts" >> $GITHUB_PATH
           echo "PYTHONPATH=D:\a\SurfacePsycho\python3.11" >> $GITHUB_ENV
           set "PATH=D:\a\SurfacePsycho\python3.11;D:\a\SurfacePsycho\python3.11\Scripts;%PATH%"
-          echo "::set-env name=PYTHONPATH::D:\a\SurfacePsycho\python3.11\Scripts"
-          echo "::set-env name=PYTHONPATH::D:\a\SurfacePsycho\python3.11"
+        # echo "::set-env name=PYTHONPATH::D:\a\SurfacePsycho\python3.11\Scripts"
+        # echo "::set-env name=PYTHONPATH::D:\a\SurfacePsycho\python3.11"
 
       - name: paaaaaath
         shell: powershell
