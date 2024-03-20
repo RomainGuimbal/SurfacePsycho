@@ -13,6 +13,7 @@ from OCC.Core.gp import *
 from OCC.Core.TColStd import *
 from OCC.Core.BRepBuilderAPI import *
 from OCC.Core.TColgp import *
+from OCC.Core.Message import *
 from OCC.Core.ShapeAnalysis import *
 from OCC.Core.ShapeExtend import *
 
@@ -55,7 +56,7 @@ class ShapeConstruct_MakeTriangulation(BRepBuilderAPI_MakeShape):
     def __init__(self, pnts: TColgp_Array1OfPnt, prec: Optional[float] = 0.0) -> None: ...
     @overload
     def __init__(self, wire: TopoDS_Wire, prec: Optional[float] = 0.0) -> None: ...
-    def Build(self) -> None: ...
+    def Build(self, theRange: Optional[Message_ProgressRange] = Message_ProgressRange()) -> None: ...
     def IsDone(self) -> bool: ...
 
 class ShapeConstruct_ProjectCurveOnSurface(Standard_Transient):
@@ -81,11 +82,3 @@ class ShapeConstruct_ProjectCurveOnSurface(Standard_Transient):
 # harray2 classes
 # hsequence classes
 
-shapeconstruct_ConvertCurveToBSpline = shapeconstruct.ConvertCurveToBSpline
-shapeconstruct_ConvertCurveToBSpline = shapeconstruct.ConvertCurveToBSpline
-shapeconstruct_ConvertSurfaceToBSpline = shapeconstruct.ConvertSurfaceToBSpline
-shapeconstruct_JoinCurves = shapeconstruct.JoinCurves
-shapeconstruct_JoinCurves = shapeconstruct.JoinCurves
-shapeconstruct_JoinPCurves = shapeconstruct.JoinPCurves
-ShapeConstruct_Curve_FixKnots = ShapeConstruct_Curve.FixKnots
-ShapeConstruct_Curve_FixKnots = ShapeConstruct_Curve.FixKnots

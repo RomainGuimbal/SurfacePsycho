@@ -13,17 +13,17 @@ from OCC.Core.TopTools import *
 from OCC.Core.gp import *
 from OCC.Core.TColStd import *
 
-#the following typedef cannot be wrapped as is
-TopOpeBRepDS_DoubleMapIteratorOfDoubleMapOfIntegerShape = NewType('TopOpeBRepDS_DoubleMapIteratorOfDoubleMapOfIntegerShape', Any)
-#the following typedef cannot be wrapped as is
-TopOpeBRepDS_DoubleMapOfIntegerShape = NewType('TopOpeBRepDS_DoubleMapOfIntegerShape', Any)
-#the following typedef cannot be wrapped as is
-TopOpeBRepDS_IndexedDataMapOfShapeWithState = NewType('TopOpeBRepDS_IndexedDataMapOfShapeWithState', Any)
-#the following typedef cannot be wrapped as is
-TopOpeBRepDS_IndexedDataMapOfVertexPoint = NewType('TopOpeBRepDS_IndexedDataMapOfVertexPoint', Any)
-#the following typedef cannot be wrapped as is
-TopOpeBRepDS_MapOfShapeData = NewType('TopOpeBRepDS_MapOfShapeData', Any)
-TopOpeBRepDS_PDataStructure = NewType('TopOpeBRepDS_PDataStructure', TopOpeBRepDS_DataStructure)
+# the following typedef cannot be wrapped as is
+TopOpeBRepDS_DoubleMapIteratorOfDoubleMapOfIntegerShape = NewType("TopOpeBRepDS_DoubleMapIteratorOfDoubleMapOfIntegerShape", Any)
+# the following typedef cannot be wrapped as is
+TopOpeBRepDS_DoubleMapOfIntegerShape = NewType("TopOpeBRepDS_DoubleMapOfIntegerShape", Any)
+# the following typedef cannot be wrapped as is
+TopOpeBRepDS_IndexedDataMapOfShapeWithState = NewType("TopOpeBRepDS_IndexedDataMapOfShapeWithState", Any)
+# the following typedef cannot be wrapped as is
+TopOpeBRepDS_IndexedDataMapOfVertexPoint = NewType("TopOpeBRepDS_IndexedDataMapOfVertexPoint", Any)
+# the following typedef cannot be wrapped as is
+TopOpeBRepDS_MapOfShapeData = NewType("TopOpeBRepDS_MapOfShapeData", Any)
+TopOpeBRepDS_PDataStructure = NewType("TopOpeBRepDS_PDataStructure", TopOpeBRepDS_DataStructure)
 
 class TopOpeBRepDS_Array1OfDataMapOfIntegerListOfInterference:
     @overload
@@ -63,6 +63,13 @@ class TopOpeBRepDS_ListOfInterference:
     def Value(self, theIndex: int) -> False: ...
     def SetValue(self, theIndex: int, theValue: False) -> None: ...
 
+class TopOpeBRepDS_CheckStatus(IntEnum):
+    TopOpeBRepDS_OK: int = ...
+    TopOpeBRepDS_NOK: int = ...
+
+TopOpeBRepDS_OK = TopOpeBRepDS_CheckStatus.TopOpeBRepDS_OK
+TopOpeBRepDS_NOK = TopOpeBRepDS_CheckStatus.TopOpeBRepDS_NOK
+
 class TopOpeBRepDS_Config(IntEnum):
     TopOpeBRepDS_UNSHGEOMETRY: int = ...
     TopOpeBRepDS_SAMEORIENTED: int = ...
@@ -71,13 +78,6 @@ class TopOpeBRepDS_Config(IntEnum):
 TopOpeBRepDS_UNSHGEOMETRY = TopOpeBRepDS_Config.TopOpeBRepDS_UNSHGEOMETRY
 TopOpeBRepDS_SAMEORIENTED = TopOpeBRepDS_Config.TopOpeBRepDS_SAMEORIENTED
 TopOpeBRepDS_DIFFORIENTED = TopOpeBRepDS_Config.TopOpeBRepDS_DIFFORIENTED
-
-class TopOpeBRepDS_CheckStatus(IntEnum):
-    TopOpeBRepDS_OK: int = ...
-    TopOpeBRepDS_NOK: int = ...
-
-TopOpeBRepDS_OK = TopOpeBRepDS_CheckStatus.TopOpeBRepDS_OK
-TopOpeBRepDS_NOK = TopOpeBRepDS_CheckStatus.TopOpeBRepDS_NOK
 
 class TopOpeBRepDS_Kind(IntEnum):
     TopOpeBRepDS_POINT: int = ...
@@ -115,25 +115,25 @@ class topopebrepds:
     def KindToShape(K: TopOpeBRepDS_Kind) -> TopAbs_ShapeEnum: ...
     @overload
     @staticmethod
-    def SPrint(S: TopAbs_State) -> TCollection_AsciiString: ...
+    def SPrint(S: TopAbs_State) -> str: ...
     @overload
     @staticmethod
-    def SPrint(K: TopOpeBRepDS_Kind) -> TCollection_AsciiString: ...
+    def SPrint(K: TopOpeBRepDS_Kind) -> str: ...
     @overload
     @staticmethod
-    def SPrint(K: TopOpeBRepDS_Kind, I: int, B: Optional[TCollection_AsciiString] = "", A: Optional[TCollection_AsciiString] = "") -> TCollection_AsciiString: ...
+    def SPrint(K: TopOpeBRepDS_Kind, I: int, B: Optional[str] = "", A: Optional[str] = "") -> str: ...
     @overload
     @staticmethod
-    def SPrint(T: TopAbs_ShapeEnum) -> TCollection_AsciiString: ...
+    def SPrint(T: TopAbs_ShapeEnum) -> str: ...
     @overload
     @staticmethod
-    def SPrint(T: TopAbs_ShapeEnum, I: int) -> TCollection_AsciiString: ...
+    def SPrint(T: TopAbs_ShapeEnum, I: int) -> str: ...
     @overload
     @staticmethod
-    def SPrint(O: TopAbs_Orientation) -> TCollection_AsciiString: ...
+    def SPrint(O: TopAbs_Orientation) -> str: ...
     @overload
     @staticmethod
-    def SPrint(C: TopOpeBRepDS_Config) -> TCollection_AsciiString: ...
+    def SPrint(C: TopOpeBRepDS_Config) -> str: ...
     @staticmethod
     def ShapeToKind(S: TopAbs_ShapeEnum) -> TopOpeBRepDS_Kind: ...
 
@@ -442,17 +442,17 @@ class TopOpeBRepDS_DataStructure:
 class TopOpeBRepDS_Dumper:
     def __init__(self, HDS: TopOpeBRepDS_HDataStructure) -> None: ...
     @overload
-    def SDumpRefOri(self, K: TopOpeBRepDS_Kind, I: int) -> TCollection_AsciiString: ...
+    def SDumpRefOri(self, K: TopOpeBRepDS_Kind, I: int) -> str: ...
     @overload
-    def SDumpRefOri(self, S: TopoDS_Shape) -> TCollection_AsciiString: ...
+    def SDumpRefOri(self, S: TopoDS_Shape) -> str: ...
     @overload
-    def SPrintShape(self, I: int) -> TCollection_AsciiString: ...
+    def SPrintShape(self, I: int) -> str: ...
     @overload
-    def SPrintShape(self, S: TopoDS_Shape) -> TCollection_AsciiString: ...
+    def SPrintShape(self, S: TopoDS_Shape) -> str: ...
     @overload
-    def SPrintShapeRefOri(self, S: TopoDS_Shape, B: Optional[TCollection_AsciiString] = "") -> TCollection_AsciiString: ...
+    def SPrintShapeRefOri(self, S: TopoDS_Shape, B: Optional[str] = "") -> str: ...
     @overload
-    def SPrintShapeRefOri(self, L: TopTools_ListOfShape, B: Optional[TCollection_AsciiString] = "") -> TCollection_AsciiString: ...
+    def SPrintShapeRefOri(self, L: TopTools_ListOfShape, B: Optional[str] = "") -> str: ...
 
 class TopOpeBRepDS_EIR:
     def __init__(self, HDS: TopOpeBRepDS_HDataStructure) -> None: ...
@@ -756,7 +756,7 @@ class TopOpeBRepDS_TKI:
     def ChangeInterferences(self, K: TopOpeBRepDS_Kind, G: int) -> TopOpeBRepDS_ListOfInterference: ...
     def ChangeValue(self) -> Tuple[TopOpeBRepDS_ListOfInterference, TopOpeBRepDS_Kind, int]: ...
     def Clear(self) -> None: ...
-    def DumpTKIIterator(self, s1: Optional[TCollection_AsciiString] = "", s2: Optional[TCollection_AsciiString] = "") -> None: ...
+    def DumpTKIIterator(self, s1: Optional[str] = "", s2: Optional[str] = "") -> None: ...
     def FillOnGeometry(self, L: TopOpeBRepDS_ListOfInterference) -> None: ...
     def FillOnSupport(self, L: TopOpeBRepDS_ListOfInterference) -> None: ...
     def HasInterferences(self, K: TopOpeBRepDS_Kind, G: int) -> bool: ...
@@ -928,33 +928,3 @@ class TopOpeBRepDS_HArray1OfDataMapOfIntegerListOfInterference(TopOpeBRepDS_Arra
 # harray2 classes
 # hsequence classes
 
-topopebrepds_IsGeometry = topopebrepds.IsGeometry
-topopebrepds_IsTopology = topopebrepds.IsTopology
-topopebrepds_KindToShape = topopebrepds.KindToShape
-topopebrepds_Print = topopebrepds.Print
-topopebrepds_Print = topopebrepds.Print
-topopebrepds_Print = topopebrepds.Print
-topopebrepds_Print = topopebrepds.Print
-topopebrepds_Print = topopebrepds.Print
-topopebrepds_SPrint = topopebrepds.SPrint
-topopebrepds_SPrint = topopebrepds.SPrint
-topopebrepds_SPrint = topopebrepds.SPrint
-topopebrepds_SPrint = topopebrepds.SPrint
-topopebrepds_SPrint = topopebrepds.SPrint
-topopebrepds_SPrint = topopebrepds.SPrint
-topopebrepds_SPrint = topopebrepds.SPrint
-topopebrepds_ShapeToKind = topopebrepds.ShapeToKind
-TopOpeBRepDS_InterferenceTool_DuplicateCurvePointInterference = TopOpeBRepDS_InterferenceTool.DuplicateCurvePointInterference
-TopOpeBRepDS_InterferenceTool_MakeCurveInterference = TopOpeBRepDS_InterferenceTool.MakeCurveInterference
-TopOpeBRepDS_InterferenceTool_MakeEdgeInterference = TopOpeBRepDS_InterferenceTool.MakeEdgeInterference
-TopOpeBRepDS_InterferenceTool_MakeEdgeVertexInterference = TopOpeBRepDS_InterferenceTool.MakeEdgeVertexInterference
-TopOpeBRepDS_InterferenceTool_MakeFaceCurveInterference = TopOpeBRepDS_InterferenceTool.MakeFaceCurveInterference
-TopOpeBRepDS_InterferenceTool_MakeFaceEdgeInterference = TopOpeBRepDS_InterferenceTool.MakeFaceEdgeInterference
-TopOpeBRepDS_InterferenceTool_MakeSolidSurfaceInterference = TopOpeBRepDS_InterferenceTool.MakeSolidSurfaceInterference
-TopOpeBRepDS_InterferenceTool_Parameter = TopOpeBRepDS_InterferenceTool.Parameter
-TopOpeBRepDS_InterferenceTool_Parameter = TopOpeBRepDS_InterferenceTool.Parameter
-TopOpeBRepDS_TOOL_EShareG = TopOpeBRepDS_TOOL.EShareG
-TopOpeBRepDS_TOOL_GetConfig = TopOpeBRepDS_TOOL.GetConfig
-TopOpeBRepDS_TOOL_GetEsd = TopOpeBRepDS_TOOL.GetEsd
-TopOpeBRepDS_TOOL_ShareG = TopOpeBRepDS_TOOL.ShareG
-TopOpeBRepDS_TOOL_ShareSplitON = TopOpeBRepDS_TOOL.ShareSplitON

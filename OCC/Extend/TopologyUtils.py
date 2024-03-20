@@ -35,7 +35,7 @@ from OCC.Core.TopAbs import (
     TopAbs_COMPSOLID,
     TopAbs_ShapeEnum,
 )
-from OCC.Core.TopExp import TopExp_Explorer, topexp_MapShapesAndAncestors
+from OCC.Core.TopExp import TopExp_Explorer, topexp
 from OCC.Core.TopTools import (
     TopTools_ListIteratorOfListOfShape,
     TopTools_IndexedDataMapOfShapeListOfShape,
@@ -51,8 +51,6 @@ from OCC.Core.TopoDS import (
     TopoDS_Shape,
     TopoDS_Compound,
     TopoDS_CompSolid,
-    topods_Edge,
-    topods_Vertex,
     TopoDS_Iterator,
 )
 from OCC.Core.GCPnts import (
@@ -62,7 +60,21 @@ from OCC.Core.GCPnts import (
 )
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
 
-MAX_32_BIT_INT = 2 ** 31 - 1
+MAX_32_BIT_INT = 2**31 - 1
+
+
+def _number_of_topo(iterable: Iterable) -> int:
+    return sum(1 for _ in iterable)
+
+
+def ordered_vertices_from_wire(wire: TopoDS_Wire) -> Iterator[TopoDS_Vertex]:
+    wire_exp = WireExplorer(wire)
+    return wire_exp.ordered_vertices()
+
+
+def ordered_edges_from_wire(wire: TopoDS_Wire) -> Iterator[TopoDS_Edge]:
+    wire_exp = WireExplorer(wire)
+    return wire_exp.ordered_edges()
 
 
 class WireExplorer:
@@ -84,7 +96,7 @@ class WireExplorer:
     def _loop_topo(self, edges: Optional[bool] = True) -> Iterator[Any]:
         if self.done:
             self._reinitialize()
-        topology_type = topods_Edge if edges else topods_Vertex
+        topology_type = topods.Edge if edges else topods.Vertex
         seq = []
 
         while self.wire_explorer.More():
@@ -180,12 +192,12 @@ class TopologyExplorer:
             TopAbs_COMPSOLID: TopoDS_CompSolid,
         }
         topology_explorer = TopExp_Explorer()
-        if topology_type not in topo_types.keys():
+        if topology_type not in topo_types:
             raise AssertionError(f"{topology_type} not one of {topo_types.keys()}")
         # use self.my_shape if nothing is specified
         if topological_entity is None and topology_type_to_avoid is None:
             topology_explorer.Init(self.my_shape, topology_type)
-        elif topological_entity is None and topology_type_to_avoid is not None:
+        elif topological_entity is None:
             topology_explorer.Init(self.my_shape, topology_type, topology_type_to_avoid)
         elif topology_type_to_avoid is None:
             topology_explorer.Init(topological_entity, topology_type)
@@ -207,18 +219,16 @@ class TopologyExplorer:
             filter_orientation_hash_codes = {}
             for i in seq:
                 i_hash_code = i.HashCode(MAX_32_BIT_INT)
-                if not i_hash_code in filter_orientation_hash_codes:
+                if i_hash_code not in filter_orientation_hash_codes:
                     filter_orientation_seq.append(i)
                     filter_orientation_hash_codes[i_hash_code] = [
                         len(filter_orientation_seq) - 1
                     ]
                 else:
                     index_list = filter_orientation_hash_codes[i_hash_code]
-                    unique = True
-                    for j in index_list:
-                        if i.IsSame(filter_orientation_seq[j]):
-                            unique = False
-                            break
+                    unique = not any(
+                        i.IsSame(filter_orientation_seq[j]) for j in index_list
+                    )
                     if unique:
                         filter_orientation_seq.append(i)
                         index_list.append(len(filter_orientation_seq) - 1)
@@ -232,14 +242,8 @@ class TopologyExplorer:
         """
         return self._loop_topo(TopAbs_FACE)
 
-    def _number_of_topo(self, iterable: Iterable) -> int:
-        nbr_topo = 0
-        for _ in iterable:
-            nbr_topo += 1
-        return nbr_topo
-
     def number_of_faces(self) -> int:
-        return self._number_of_topo(self.faces())
+        return _number_of_topo(self.faces())
 
     def vertices(self) -> Iterator[TopoDS_Vertex]:
         """
@@ -248,7 +252,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_VERTEX)
 
     def number_of_vertices(self) -> int:
-        return self._number_of_topo(self.vertices())
+        return _number_of_topo(self.vertices())
 
     def edges(self) -> Iterator[TopoDS_Edge]:
         """
@@ -257,7 +261,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_EDGE)
 
     def number_of_edges(self) -> int:
-        return self._number_of_topo(self.edges())
+        return _number_of_topo(self.edges())
 
     def wires(self) -> Iterator[TopoDS_Wire]:
         """
@@ -266,7 +270,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_WIRE)
 
     def number_of_wires(self) -> int:
-        return self._number_of_topo(self.wires())
+        return _number_of_topo(self.wires())
 
     def shells(self) -> Iterator[TopoDS_Shell]:
         """
@@ -275,7 +279,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_SHELL, None)
 
     def number_of_shells(self) -> int:
-        return self._number_of_topo(self.shells())
+        return _number_of_topo(self.shells())
 
     def solids(self) -> Iterator[TopoDS_Solid]:
         """
@@ -284,7 +288,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_SOLID, None)
 
     def number_of_solids(self) -> int:
-        return self._number_of_topo(self.solids())
+        return _number_of_topo(self.solids())
 
     def comp_solids(self) -> Iterator[TopoDS_CompSolid]:
         """
@@ -293,7 +297,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_COMPSOLID)
 
     def number_of_comp_solids(self) -> int:
-        return self._number_of_topo(self.comp_solids())
+        return _number_of_topo(self.comp_solids())
 
     def compounds(self) -> Iterator[TopoDS_Compound]:
         """
@@ -302,27 +306,13 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_COMPOUND)
 
     def number_of_compounds(self) -> int:
-        return self._number_of_topo(self.compounds())
-
-    def ordered_vertices_from_wire(self, wire: TopoDS_Wire) -> Iterator[TopoDS_Vertex]:
-        """
-        @param wire: TopoDS_Wire
-        """
-        wire_exp = WireExplorer(wire)
-        return wire_exp.ordered_vertices()
+        return _number_of_topo(self.compounds())
 
     def number_of_ordered_vertices_from_wire(self, wire: TopoDS_Wire) -> int:
-        return self._number_of_topo(self.ordered_vertices_from_wire(wire))
-
-    def ordered_edges_from_wire(self, wire: TopoDS_Wire) -> Iterator[TopoDS_Edge]:
-        """
-        @param wire: TopoDS_Wire
-        """
-        wire_exp = WireExplorer(wire)
-        return wire_exp.ordered_edges()
+        return _number_of_topo(ordered_vertices_from_wire(wire))
 
     def number_of_ordered_edges_from_wire(self, wire: TopoDS_Wire) -> int:
-        return self._number_of_topo(self.ordered_edges_from_wire(wire))
+        return _number_of_topo(ordered_edges_from_wire(wire))
 
     def _map_shapes_and_ancestors(
         self, topology_type_1, topology_type_2, topological_entity
@@ -336,7 +326,7 @@ class TopologyExplorer:
         topo_set = set()
         topo_set_hash_codes = {}
         _map = TopTools_IndexedDataMapOfShapeListOfShape()
-        topexp_MapShapesAndAncestors(
+        topexp.MapShapesAndAncestors(
             self.my_shape, topology_type_1, topology_type_2, _map
         )
         results = _map.FindFromKey(topological_entity)
@@ -351,17 +341,16 @@ class TopologyExplorer:
             topo_entity_hash_code = topo_entity.HashCode(MAX_32_BIT_INT)
             # return the entity if not in set
             # to assure we're not returning entities several times
-            if not topo_entity in topo_set:
+            if topo_entity not in topo_set:
                 if self.ignore_orientation:
-                    if not topo_entity_hash_code in topo_set_hash_codes:
+                    if topo_entity_hash_code not in topo_set_hash_codes:
                         topo_set_hash_codes[topo_entity_hash_code] = [topo_entity]
                         yield topo_entity
                     else:
-                        unique = True
-                        for i in topo_set_hash_codes[topo_entity_hash_code]:
-                            if i.IsSame(topo_entity):
-                                unique = False
-                                break
+                        unique = not any(
+                            i.IsSame(topo_entity)
+                            for i in topo_set_hash_codes[topo_entity_hash_code]
+                        )
                         if unique:
                             topo_set_hash_codes[topo_entity_hash_code].append(
                                 topo_entity
@@ -386,7 +375,7 @@ class TopologyExplorer:
         """
         topo_set = set()
         _map = TopTools_IndexedDataMapOfShapeListOfShape()
-        topexp_MapShapesAndAncestors(
+        topexp.MapShapesAndAncestors(
             self.my_shape, topology_type_1, topology_type_2, _map
         )
         results = _map.FindFromKey(topological_entity)
@@ -426,10 +415,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_EDGE, face)
 
     def number_of_edges_from_face(self, face: TopoDS_Face) -> int:
-        cnt = 0
-        for _ in self._loop_topo(TopAbs_EDGE, face):
-            cnt += 1
-        return cnt
+        return sum(1 for _ in self._loop_topo(TopAbs_EDGE, face))
 
     # ======================================================================
     # VERTEX <-> EDGE
@@ -438,10 +424,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_VERTEX, edge)
 
     def number_of_vertices_from_edge(self, edge: TopoDS_Edge) -> int:
-        cnt = 0
-        for _ in self._loop_topo(TopAbs_VERTEX, edge):
-            cnt += 1
-        return cnt
+        return sum(1 for _ in self._loop_topo(TopAbs_VERTEX, edge))
 
     def edges_from_vertex(self, vertex):
         return self._map_shapes_and_ancestors(TopAbs_VERTEX, TopAbs_EDGE, vertex)
@@ -456,10 +439,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_EDGE, wire)
 
     def number_of_edges_from_wire(self, wire: TopoDS_Wire) -> int:
-        cnt = 0
-        for _ in self._loop_topo(TopAbs_EDGE, wire):
-            cnt += 1
-        return cnt
+        return sum(1 for _ in self._loop_topo(TopAbs_EDGE, wire))
 
     def wires_from_edge(self, edg):
         return self._map_shapes_and_ancestors(TopAbs_EDGE, TopAbs_WIRE, edg)
@@ -477,10 +457,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_WIRE, face)
 
     def number_of_wires_from_face(self, face: TopoDS_Face) -> int:
-        cnt = 0
-        for _ in self._loop_topo(TopAbs_WIRE, face):
-            cnt += 1
-        return cnt
+        return sum(1 for _ in self._loop_topo(TopAbs_WIRE, face))
 
     def faces_from_wire(self, wire):
         return self._map_shapes_and_ancestors(TopAbs_WIRE, TopAbs_FACE, wire)
@@ -501,10 +478,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_VERTEX, face)
 
     def number_of_vertices_from_face(self, face: TopoDS_Face) -> int:
-        cnt = 0
-        for _ in self._loop_topo(TopAbs_VERTEX, face):
-            cnt += 1
-        return cnt
+        return sum(1 for _ in self._loop_topo(TopAbs_VERTEX, face))
 
     # ======================================================================
     # FACE <-> SOLID
@@ -519,10 +493,7 @@ class TopologyExplorer:
         return self._loop_topo(TopAbs_FACE, solid)
 
     def number_of_faces_from_solids(self, solid: TopoDS_Solid) -> int:
-        cnt = 0
-        for _ in self._loop_topo(TopAbs_FACE, solid):
-            cnt += 1
-        return cnt
+        return sum(1 for _ in self._loop_topo(TopAbs_FACE, solid))
 
 
 def dump_topology_to_string(
@@ -534,7 +505,7 @@ def dump_topology_to_string(
     brt = BRep_Tool()
     s = shape.ShapeType()
     if s == TopAbs_VERTEX:
-        pnt = brt.Pnt(topods_Vertex(shape))
+        pnt = brt.Pnt(topods.Vertex(shape))
         print(".." * level + f"<Vertex {hash(shape)}: {pnt.X()} {pnt.Y()} {pnt.Z()}>\n")
     else:
         print(".." * level, end="")
@@ -601,7 +572,7 @@ def discretize_edge(
 
     if not discretizer.IsDone():
         raise AssertionError("Discretizer not done.")
-    if not discretizer.NbPoints() > 0:
+    if discretizer.NbPoints() <= 0:
         raise AssertionError("Discretizer nb points not > 0.")
 
     points = []
@@ -679,11 +650,20 @@ def get_type_as_string(topods_shape: TopoDS_Shape) -> str:
 
 def get_sorted_hlr_edges(
     topods_shape: TopoDS_Shape,
-    position: Optional[gp_Pnt] = gp_Pnt(),
-    direction: Optional[gp_Dir] = gp_Dir(),
+    position: Optional[gp_Pnt] = None,
+    direction: Optional[gp_Dir] = None,
     export_hidden_edges: Optional[bool] = True,
 ) -> Tuple[List, List]:
     """Return hidden and visible edges as two lists of edges"""
+    if position is None:
+        position = gp_Pnt()
+    if not isinstance(position, gp_Pnt):
+        raise TypeError("position must be a gp_Pnt")
+    if direction is None:
+        direction = gp_Dir()
+    if not isinstance(direction, gp_Dir):
+        raise TypeError("position must be a gp_Dir")
+
     hlr = HLRBRep_Algo()
     hlr.Add(topods_shape)
 
@@ -697,17 +677,11 @@ def get_sorted_hlr_edges(
 
     # visible edges
     visible = []
-    visible_sharp_edges_as_compound = hlr_shapes.VCompound()
-    if visible_sharp_edges_as_compound:
+    if visible_sharp_edges_as_compound := hlr_shapes.VCompound():
         visible += list(TopologyExplorer(visible_sharp_edges_as_compound).edges())
-    visible_smooth_edges_as_compound = hlr_shapes.Rg1LineVCompound()
-    if visible_smooth_edges_as_compound:
+    if visible_smooth_edges_as_compound := hlr_shapes.Rg1LineVCompound():
         visible += list(TopologyExplorer(visible_smooth_edges_as_compound).edges())
-    # visible_sewn_edges_as_compound = hlr_shapes.RgNLineVCompound()
-    # if visible_sewn_edges_as_compound:
-    #    visible += list(TopologyExplorer(visible_sewn_edges_as_compound).edges())
-    visible_contour_edges_as_compound = hlr_shapes.OutLineVCompound()
-    if visible_contour_edges_as_compound:
+    if visible_contour_edges_as_compound := hlr_shapes.OutLineVCompound():
         visible += list(TopologyExplorer(visible_contour_edges_as_compound).edges())
     # visible_isoparameter_edges_as_compound = hlr_shapes.IsoLineVCompound()
     # if visible_isoparameter_edges_as_compound:
@@ -715,11 +689,9 @@ def get_sorted_hlr_edges(
     # hidden edges
     hidden = []
     if export_hidden_edges:
-        hidden_sharp_edges_as_compound = hlr_shapes.HCompound()
-        if hidden_sharp_edges_as_compound:
+        if hidden_sharp_edges_as_compound := hlr_shapes.HCompound():
             hidden += list(TopologyExplorer(hidden_sharp_edges_as_compound).edges())
-        hidden_contour_edges_as_compound = hlr_shapes.OutLineHCompound()
-        if hidden_contour_edges_as_compound:
+        if hidden_contour_edges_as_compound := hlr_shapes.OutLineHCompound():
             hidden += list(TopologyExplorer(hidden_contour_edges_as_compound).edges())
 
     return visible, hidden
@@ -729,7 +701,7 @@ def list_of_shapes_to_compound(
     list_of_shapes: List[TopoDS_Shape],
 ) -> Tuple[TopoDS_Compound, bool]:
     """takes a list of shape in input, gather all shapes into one compound
-    returns the compound and a boolean, True if all shapes were added to the compund,
+    returns the compound and a boolean, True if all shapes were added to the compound,
     False otherwise
     """
     all_shapes_converted = True

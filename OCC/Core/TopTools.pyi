@@ -8,33 +8,33 @@ from OCC.Core.TopLoc import *
 from OCC.Core.TopAbs import *
 from OCC.Core.TCollection import *
 
-#the following typedef cannot be wrapped as is
-TopTools_Array2OfShape = NewType('TopTools_Array2OfShape', Any)
-#the following typedef cannot be wrapped as is
-TopTools_DataMapIteratorOfDataMapOfShapeBox = NewType('TopTools_DataMapIteratorOfDataMapOfShapeBox', Any)
-#the following typedef cannot be wrapped as is
-TopTools_IndexedDataMapOfShapeAddress = NewType('TopTools_IndexedDataMapOfShapeAddress', Any)
-#the following typedef cannot be wrapped as is
-TopTools_IndexedDataMapOfShapeListOfShape = NewType('TopTools_IndexedDataMapOfShapeListOfShape', Any)
-#the following typedef cannot be wrapped as is
-TopTools_IndexedDataMapOfShapeReal = NewType('TopTools_IndexedDataMapOfShapeReal', Any)
-#the following typedef cannot be wrapped as is
-TopTools_IndexedDataMapOfShapeShape = NewType('TopTools_IndexedDataMapOfShapeShape', Any)
-#the following typedef cannot be wrapped as is
-TopTools_IndexedMapOfOrientedShape = NewType('TopTools_IndexedMapOfOrientedShape', Any)
-#the following typedef cannot be wrapped as is
-TopTools_IndexedMapOfShape = NewType('TopTools_IndexedMapOfShape', Any)
-#the following typedef cannot be wrapped as is
-TopTools_ListIteratorOfListOfListOfShape = NewType('TopTools_ListIteratorOfListOfListOfShape', Any)
-TopTools_LocationSetPtr = NewType('TopTools_LocationSetPtr', TopTools_LocationSet)
-#the following typedef cannot be wrapped as is
-TopTools_MapIteratorOfMapOfOrientedShape = NewType('TopTools_MapIteratorOfMapOfOrientedShape', Any)
-#the following typedef cannot be wrapped as is
-TopTools_MapIteratorOfMapOfShape = NewType('TopTools_MapIteratorOfMapOfShape', Any)
-#the following typedef cannot be wrapped as is
-TopTools_MapOfOrientedShape = NewType('TopTools_MapOfOrientedShape', Any)
-#the following typedef cannot be wrapped as is
-TopTools_MapOfShape = NewType('TopTools_MapOfShape', Any)
+# the following typedef cannot be wrapped as is
+TopTools_Array2OfShape = NewType("TopTools_Array2OfShape", Any)
+# the following typedef cannot be wrapped as is
+TopTools_DataMapIteratorOfDataMapOfShapeBox = NewType("TopTools_DataMapIteratorOfDataMapOfShapeBox", Any)
+# the following typedef cannot be wrapped as is
+TopTools_IndexedDataMapOfShapeAddress = NewType("TopTools_IndexedDataMapOfShapeAddress", Any)
+# the following typedef cannot be wrapped as is
+TopTools_IndexedDataMapOfShapeListOfShape = NewType("TopTools_IndexedDataMapOfShapeListOfShape", Any)
+# the following typedef cannot be wrapped as is
+TopTools_IndexedDataMapOfShapeReal = NewType("TopTools_IndexedDataMapOfShapeReal", Any)
+# the following typedef cannot be wrapped as is
+TopTools_IndexedDataMapOfShapeShape = NewType("TopTools_IndexedDataMapOfShapeShape", Any)
+# the following typedef cannot be wrapped as is
+TopTools_IndexedMapOfOrientedShape = NewType("TopTools_IndexedMapOfOrientedShape", Any)
+# the following typedef cannot be wrapped as is
+TopTools_IndexedMapOfShape = NewType("TopTools_IndexedMapOfShape", Any)
+# the following typedef cannot be wrapped as is
+TopTools_ListIteratorOfListOfListOfShape = NewType("TopTools_ListIteratorOfListOfListOfShape", Any)
+TopTools_LocationSetPtr = NewType("TopTools_LocationSetPtr", TopTools_LocationSet)
+# the following typedef cannot be wrapped as is
+TopTools_MapIteratorOfMapOfOrientedShape = NewType("TopTools_MapIteratorOfMapOfOrientedShape", Any)
+# the following typedef cannot be wrapped as is
+TopTools_MapIteratorOfMapOfShape = NewType("TopTools_MapIteratorOfMapOfShape", Any)
+# the following typedef cannot be wrapped as is
+TopTools_MapOfOrientedShape = NewType("TopTools_MapOfOrientedShape", Any)
+# the following typedef cannot be wrapped as is
+TopTools_MapOfShape = NewType("TopTools_MapOfShape", Any)
 
 class TopTools_Array1OfListOfShape:
     @overload
@@ -127,6 +127,18 @@ class TopTools_SequenceOfShape:
     def Value(self, theIndex: int) -> TopoDS_Shape: ...
     def SetValue(self, theIndex: int, theValue: TopoDS_Shape) -> None: ...
 
+
+class TopTools_FormatVersion(IntEnum):
+    TopTools_FormatVersion_VERSION_1: int = ...
+    TopTools_FormatVersion_VERSION_2: int = ...
+    TopTools_FormatVersion_VERSION_3: int = ...
+    TopTools_FormatVersion_CURRENT: int = ...
+
+TopTools_FormatVersion_VERSION_1 = TopTools_FormatVersion.TopTools_FormatVersion_VERSION_1
+TopTools_FormatVersion_VERSION_2 = TopTools_FormatVersion.TopTools_FormatVersion_VERSION_2
+TopTools_FormatVersion_VERSION_3 = TopTools_FormatVersion.TopTools_FormatVersion_VERSION_3
+TopTools_FormatVersion_CURRENT = TopTools_FormatVersion.TopTools_FormatVersion_CURRENT
+
 class toptools:
     @staticmethod
     def Dummy(I: int) -> None: ...
@@ -166,7 +178,7 @@ class TopTools_ShapeSet:
     def Check(self, T: TopAbs_ShapeEnum, S: TopoDS_Shape) -> None: ...
     def Clear(self) -> None: ...
     @overload
-    def DumpExtent(self, S: TCollection_AsciiString) -> None: ...
+    def DumpExtent(self, S: str) -> None: ...
     def FormatNb(self) -> int: ...
     def Index(self, S: TopoDS_Shape) -> int: ...
     def Locations(self) -> TopTools_LocationSet: ...
@@ -205,9 +217,3 @@ class TopTools_HSequenceOfShape(TopTools_SequenceOfShape, Standard_Transient):
     def Append(self, theSequence: TopTools_SequenceOfShape) -> None: ...
 
 
-toptools_Dummy = toptools.Dummy
-toptools_Dump = toptools.Dump
-TopTools_OrientedShapeMapHasher_HashCode = TopTools_OrientedShapeMapHasher.HashCode
-TopTools_OrientedShapeMapHasher_IsEqual = TopTools_OrientedShapeMapHasher.IsEqual
-TopTools_ShapeMapHasher_HashCode = TopTools_ShapeMapHasher.HashCode
-TopTools_ShapeMapHasher_IsEqual = TopTools_ShapeMapHasher.IsEqual

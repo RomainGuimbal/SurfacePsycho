@@ -7,7 +7,7 @@ from OCC.Core.TColgp import *
 from OCC.Core.TColStd import *
 from OCC.Core.gp import *
 
-Convert_SequenceOfArray1OfPoles2d = NewType('Convert_SequenceOfArray1OfPoles2d', TColgp_SequenceOfArray1OfPnt2d)
+Convert_SequenceOfArray1OfPoles2d = NewType("Convert_SequenceOfArray1OfPoles2d", TColgp_SequenceOfArray1OfPnt2d)
 
 class Convert_SequenceOfArray1OfPoles:
     def __init__(self) -> None: ...

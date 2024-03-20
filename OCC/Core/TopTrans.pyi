@@ -6,8 +6,8 @@ from OCC.Core.NCollection import *
 from OCC.Core.gp import *
 from OCC.Core.TopAbs import *
 
-#the following typedef cannot be wrapped as is
-TopTrans_Array2OfOrientation = NewType('TopTrans_Array2OfOrientation', Any)
+# the following typedef cannot be wrapped as is
+TopTrans_Array2OfOrientation = NewType("TopTrans_Array2OfOrientation", Any)
 
 class TopTrans_CurveTransition:
     def __init__(self) -> None: ...
@@ -40,5 +40,3 @@ class TopTrans_SurfaceTransition:
 # harray2 classes
 # hsequence classes
 
-TopTrans_SurfaceTransition_GetAfter = TopTrans_SurfaceTransition.GetAfter
-TopTrans_SurfaceTransition_GetBefore = TopTrans_SurfaceTransition.GetBefore

@@ -14,8 +14,8 @@
 bl_info = {
     "name": "Surface Psycho",
     "author": "Romain Guimbal",
-    "version": (0, 3),
-    "blender": (4, 0, 0),
+    "version": (0, 4),
+    "blender": (4, 1, 0),
     "description": "Surface design for the mechanical industry",
     "warning": "Alpha",
     "doc_url": "https://github.com/RomainGuimbal/SurfacePsycho/wiki",
@@ -38,22 +38,22 @@ if file_dirname not in sys.path:
 import platform
 os = platform.system()
 if os=="Windows":
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeEdge2d
+    from OCC.Core.GC import GC_MakeSegment
+    from OCC.Core.GCE2d import GCE2d_MakeSegment
     from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
     from OCC.Core.Geom2d import Geom2d_BezierCurve
+    from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
+    from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
     from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Pnt2d #, gp_Vec
     from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
     from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
-    from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
-    from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
-    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeEdge2d
-    from OCC.Core.TopTools import TopTools_Array1OfShape
     from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
+    from OCC.Core.TopTools import TopTools_Array1OfShape
     from OCC.Extend.DataExchange import write_step_file
-    from OCC.Core.GC import GC_MakeSegment
-    from OCC.Core.GCE2d import GCE2d_MakeSegment
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
-filepath = addonpath + "/assets/assets.blend"
+ASSETSPATH = addonpath + "/assets/assets.blend"
 
 
 
@@ -67,7 +67,7 @@ filepath = addonpath + "/assets/assets.blend"
 ##############################
 
 def append_object_by_name(obj_name, context):# for importing from the asset file
-    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
+    with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
         data_to.objects = [name for name in data_from.objects if name==obj_name]
 
     cursor_loc = context.scene.cursor.location

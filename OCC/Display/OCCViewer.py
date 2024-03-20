@@ -30,7 +30,6 @@ from OCC.Core.AIS import (
     AIS_Shaded,
     AIS_TexturedShape,
     AIS_WireFrame,
-    AIS_Shape_SelectionMode,
 )
 from OCC.Core.gp import gp_Dir, gp_Pnt, gp_Pnt2d, gp_Vec
 from OCC.Core.BRepBuilderAPI import (
@@ -59,7 +58,6 @@ from OCC.Core.V3d import (
     V3d_Yneg,
     V3d_XposYnegZpos,
 )
-from OCC.Core.TCollection import TCollection_ExtendedString, TCollection_AsciiString
 from OCC.Core.Quantity import (
     Quantity_Color,
     Quantity_TOC_RGB,
@@ -91,18 +89,14 @@ from OCC.Core.Graphic3d import (
 )
 from OCC.Core.Aspect import Aspect_TOTP_RIGHT_LOWER, Aspect_FM_STRETCH, Aspect_FM_NONE
 
-# Shaders and Units definition must be found by occ
-# the fastest way to get done is to set the CASROOT env variable
-# it must point to the /share folder.
 if sys.platform == "win32":
-    # do the same for Units
     if "CASROOT" in os.environ:
         casroot_path = os.environ["CASROOT"]
         # raise an error, force the user to correctly set the variable
-        err_msg = "Please set the CASROOT env variable (%s is not ok)" % casroot_path
+        err_msg = f"Please set the CASROOT env variable ({casroot_path} is not ok)"
         if not os.path.isdir(casroot_path):
             raise AssertionError(err_msg)
-    else:  # on miniconda or anaconda or whatever conda
+    else:
         occ_package_path = os.path.dirname(OCC.__file__)
         casroot_path = os.path.join(
             occ_package_path, "..", "..", "..", "Library", "share", "oce"
@@ -128,20 +122,16 @@ def get_color_from_name(color_name):
     WHITE.
     color_name is the color name, case insensitive.
     """
-    enum_name = "Quantity_NOC_%s" % color_name.upper()
+    enum_name = f"Quantity_NOC_{color_name.upper()}"
     if enum_name in globals():
         color_num = globals()[enum_name]
-    elif enum_name + "1" in globals():
-        color_num = globals()[enum_name + "1"]
-        print("Many colors for color name %s, using first." % color_name)
+    elif f"{enum_name}1" in globals():
+        color_num = globals()[f"{enum_name}1"]
+        print(f"Many colors for color name {color_name}, using first.")
     else:
         color_num = Quantity_NOC_WHITE
         print("Color name not defined. Use White by default")
     return Quantity_Color(color_num)
-
-
-def to_string(_string):
-    return TCollection_ExtendedString(_string)
 
 
 # some thing we'll need later
@@ -161,14 +151,17 @@ class Viewer3d(Display3d):
         self.Context = self.GetContext()
         self.Viewer = self.GetViewer()
         self.View = self.GetView()
+        self.camera = self.GetCamera()
+        self.struc_mgr = self.GetStructureManager()
 
         self.default_drawer = None
-        self._struc_mgr = None
         self._is_offscreen = None
 
         self.selected_shapes = []
         self._select_callbacks = []
         self._overlay_items = []
+
+        self._window_handle = None
 
     def get_parent(self):
         return self._parent
@@ -186,7 +179,7 @@ class Viewer3d(Display3d):
 
     def unregister_callback(self, callback):
         """Remove a callback from the callback list"""
-        if not callback in self._select_callbacks:
+        if callback not in self._select_callbacks:
             raise AssertionError("This callback is not registered")
         self._select_callbacks.remove(callback)
 
@@ -224,23 +217,19 @@ class Viewer3d(Display3d):
             self.Viewer.SetDefaultLights()
             self.Viewer.SetLightOn()
 
-        self.camera = self.View.Camera()
         self.default_drawer = self.Context.DefaultDrawer()
 
         # draw black contour edges, like other famous CAD packages
         if draw_face_boundaries:
             self.default_drawer.SetFaceBoundaryDraw(True)
 
-        # turn up tesselation defaults, which are too conversative...
+        # turn up tessellation defaults, which are too conversative...
         chord_dev = self.default_drawer.MaximalChordialDeviation() / 10.0
         self.default_drawer.SetMaximalChordialDeviation(chord_dev)
 
         if phong_shading:
             # gouraud shading by default, prefer phong instead
             self.View.SetShadingModel(Graphic3d_TOSM_FRAGMENT)
-
-        # necessary for text rendering
-        self._struc_mgr = self.Context.MainPrsMgr().StructureManager()
 
         # turn self._inited flag to True
         self._inited = True
@@ -411,7 +400,7 @@ class Viewer3d(Display3d):
     def SetBackgroundImage(self, image_filename, stretch=True):
         """displays a background image (jpg, png etc.)"""
         if not os.path.isfile(image_filename):
-            raise IOError("image file %s not found." % image_filename)
+            raise IOError(f"image file {image_filename} not found.")
         if stretch:
             self.View.SetBackgroundImage(image_filename, Aspect_FM_STRETCH, True)
         else:
@@ -420,14 +409,18 @@ class Viewer3d(Display3d):
     def DisplayVector(self, vec, pnt, update=False):
         """displays a vector as an arrow"""
         if self._inited:
-            aStructure = Graphic3d_Structure(self._struc_mgr)
+            aStructure = Graphic3d_Structure(self.struc_mgr)
 
             pnt_as_vec = gp_Vec(pnt.X(), pnt.Y(), pnt.Z())
             start = pnt_as_vec + vec
             pnt_start = gp_Pnt(start.X(), start.Y(), start.Z())
 
             Prs3d_Arrow.Draw(
-                aStructure, pnt_start, gp_Dir(vec), math.radians(20), vec.Magnitude()
+                aStructure.CurrentGroup(),
+                pnt_start,
+                gp_Dir(vec),
+                math.radians(20),
+                vec.Magnitude(),
             )
             aStructure.Display()
             # it would be more coherent if a AIS_InteractiveObject
@@ -437,23 +430,28 @@ class Viewer3d(Display3d):
             return aStructure
 
     def DisplayMessage(
-        self, point, text_to_write, height=None, message_color=None, update=False
+        self,
+        point,
+        text_to_write,
+        height=14.0,
+        message_color=(0.0, 0.0, 0.0),
+        update=False,
     ):
         """
         :point: a gp_Pnt or gp_Pnt2d instance
         :text_to_write: a string
-        :message_color: triple with the range 0-1
+        :height: font height, 12 by defaults
+        :message_color: triple with the range 0-1, default to black
         """
-        aStructure = Graphic3d_Structure(self._struc_mgr)
-        text_aspect = Prs3d_TextAspect()
+        aStructure = Graphic3d_Structure(self.struc_mgr)
 
-        if message_color is not None:
-            text_aspect.SetColor(rgb_color(*message_color))
-        if height is not None:
-            text_aspect.SetHeight(height)
+        text_aspect = Prs3d_TextAspect()
+        text_aspect.SetColor(rgb_color(*message_color))
+        text_aspect.SetHeight(height)
         if isinstance(point, gp_Pnt2d):
             point = gp_Pnt(point.X(), point.Y(), 0)
-        Prs3d_Text.Draw(aStructure, text_aspect, to_string(text_to_write), point)
+
+        Prs3d_Text.Draw(aStructure.CurrentGroup(), text_aspect, text_to_write, point)
         aStructure.Display()
         # @TODO: it would be more coherent if a AIS_InteractiveObject
         # is be returned
@@ -498,32 +496,29 @@ class Viewer3d(Display3d):
             shapes = [shapes]
         # build AIS_Shapes list
         for shape in shapes:
-            if material or texture:
-                if texture:
-                    shape_to_display = AIS_TexturedShape(shape)
-                    (
-                        filename,
-                        toScaleU,
-                        toScaleV,
-                        toRepeatU,
-                        toRepeatV,
-                        originU,
-                        originV,
-                    ) = texture.GetProperties()
-                    shape_to_display.SetTextureFileName(
-                        TCollection_AsciiString(filename)
-                    )
-                    shape_to_display.SetTextureMapOn()
-                    shape_to_display.SetTextureScale(True, toScaleU, toScaleV)
-                    shape_to_display.SetTextureRepeat(True, toRepeatU, toRepeatV)
-                    shape_to_display.SetTextureOrigin(True, originU, originV)
-                    shape_to_display.SetDisplayMode(3)
-                elif material:
-                    shape_to_display = AIS_Shape(shape)
-                    if isinstance(material, Graphic3d_NameOfMaterial):
-                        shape_to_display.SetMaterial(Graphic3d_MaterialAspect(material))
-                    else:
-                        shape_to_display.SetMaterial(material)
+            if material and texture or not material and texture:
+                shape_to_display = AIS_TexturedShape(shape)
+                (
+                    filename,
+                    toScaleU,
+                    toScaleV,
+                    toRepeatU,
+                    toRepeatV,
+                    originU,
+                    originV,
+                ) = texture.GetProperties()
+                shape_to_display.SetTextureFileName(filename)
+                shape_to_display.SetTextureMapOn()
+                shape_to_display.SetTextureScale(True, toScaleU, toScaleV)
+                shape_to_display.SetTextureRepeat(True, toRepeatU, toRepeatV)
+                shape_to_display.SetTextureOrigin(True, originU, originV)
+                shape_to_display.SetDisplayMode(3)
+            elif material:
+                shape_to_display = AIS_Shape(shape)
+                if isinstance(material, Graphic3d_NameOfMaterial):
+                    shape_to_display.SetMaterial(Graphic3d_MaterialAspect(material))
+                else:
+                    shape_to_display.SetMaterial(material)
             else:
                 # TODO: can we use .Set to attach all TopoDS_Shapes
                 # to this AIS_Shape instance?
@@ -591,8 +586,7 @@ class Viewer3d(Display3d):
             clr = color
         else:
             raise ValueError(
-                'color should either be a string ( "BLUE" ) or a Quantity_Color(0.1, 0.8, 0.1) got %s'
-                % color
+                f'color should either be a string ( "BLUE" ) or a Quantity_Color(0.1, 0.8, 0.1) got {color}'
             )
 
         return self.DisplayShape(shapes, color=clr, update=update)
@@ -613,11 +607,12 @@ class Viewer3d(Display3d):
         self.View.Pan(dx, dy)
 
     def SetSelectionMode(self, mode=None):
+        self.Context.Deactivate()
         topo_level = next(modes)
         if mode is None:
-            self.Context.Activate(AIS_Shape_SelectionMode(topo_level), True)
+            self.Context.Activate(AIS_Shape.SelectionMode(topo_level), True)
         else:
-            self.Context.Activate(AIS_Shape_SelectionMode(mode), True)
+            self.Context.Activate(AIS_Shape.SelectionMode(mode), True)
         self.Context.UpdateSelected(True)
 
     def SetSelectionModeVertex(self):
@@ -639,10 +634,7 @@ class Viewer3d(Display3d):
         return self.selected_shapes
 
     def GetSelectedShape(self):
-        """
-        Returns the current selected shape
-        """
-        return self.selected_shape
+        return self.Context.SelectedShape()
 
     def SelectArea(self, Xmin, Ymin, Xmax, Ymax):
         self.Context.Select(Xmin, Ymin, Xmax, Ymax, self.View, True)
@@ -678,7 +670,7 @@ class Viewer3d(Display3d):
             if self.Context.HasSelectedShape():
                 self.selected_shapes.append(self.Context.SelectedShape())
             self.Context.NextSelected()
-        # hilight newly selected unhighlight those no longer selected
+        # highlight newly selected unhighlight those no longer selected
         self.Context.UpdateSelected(True)
         # callbacks
         for callback in self._select_callbacks:
@@ -705,7 +697,7 @@ class Viewer3d(Display3d):
 
 class OffscreenRenderer(Viewer3d):
     """The offscreen renderer is inherited from Viewer3d.
-    The DisplayShape method is overriden to export to image
+    The DisplayShape method is overridden to export to image
     each time it is called.
     """
 
@@ -744,12 +736,12 @@ class OffscreenRenderer(Viewer3d):
             if os.getenv("PYTHONOCC_OFFSCREEN_RENDERER_DUMP_IMAGE_PATH"):
                 path = os.getenv("PYTHONOCC_OFFSCREEN_RENDERER_DUMP_IMAGE_PATH")
                 if not os.path.isdir(path):
-                    raise IOError("%s is not a valid path" % path)
+                    raise IOError(f"{path} is not a valid path")
             else:
                 path = os.getcwd()
             image_full_name = os.path.join(path, image_filename)
             self.View.Dump(image_full_name)
             if not os.path.isfile(image_full_name):
                 raise IOError("OffscreenRenderer failed to render image to file")
-            print("OffscreenRenderer content dumped to %s" % image_full_name)
+            print(f"OffscreenRenderer content dumped to {image_full_name}")
         return r
