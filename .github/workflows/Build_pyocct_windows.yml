@@ -15,7 +15,7 @@ jobs:
         with:
            path: D:/a/SurfacePsycho/OCCT_mon_install
            key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-           lookup-only: true
+           #lookup-only: true
       
       
       - name: download occt source #- if: ${{ matrix.wind }}
@@ -101,6 +101,8 @@ jobs:
         with:
           name: occt772-wind-workflow-build
           path: D:/a/SurfacePsycho/occt772-wind-workflow-build.7z
+
+
 
 
 
