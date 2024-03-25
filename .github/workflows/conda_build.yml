@@ -11,22 +11,19 @@ jobs:
             os: ["windows-latest"]
             #"ubuntu-latest", "windows-latest", "macos-latest"]
     steps:
-      - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: pyoccenv
-          python-version: 3.10
+          python-version: 3.11
           auto-activate-base: false
-      - shell: bash -l {0}
-        run: |
+      - run: |
           conda info
           conda list
       - name: install pythonocc
-        shell: bash -l {0}
         run: |
           conda install -c conda-forge pythonocc-core=7.7.2
       - name: echo paths
-        shell: bash -l {0}
         run: |
           cd /usr/local/miniconda/envs
           ls
