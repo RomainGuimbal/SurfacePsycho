@@ -94,7 +94,9 @@ jobs:
           key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
       - name: prepare
-        run : 7z a occt772-wind-workflow-build D:/a/SurfacePsycho/OCCT_mon_install
+        run : |
+          cd D:/a/SurfacePsycho/
+          7z a occt772-wind-workflow-build D:/a/SurfacePsycho/OCCT_mon_install
       - uses: actions/upload-artifact@v4
         with:
           name: occt772-wind-workflow-build
