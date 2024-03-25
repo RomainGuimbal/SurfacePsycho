@@ -93,6 +93,12 @@ jobs:
           path: D:/a/SurfacePsycho/OCCT_mon_install
           key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
+      - name: prepare
+        run : 7z a occt772-wind-workflow-build D:/a/SurfacePsycho/OCCT_mon_install
+      - uses: actions/upload-artifact@v4
+        with:
+          name: occt772-wind-workflow-build
+          path: D:/a/SurfacePsycho/occt772-wind-workflow-build.7z
 
 
 
@@ -141,7 +147,7 @@ jobs:
           key: python-installer-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
       
           
-      - name:
+      - name: del other python
         run: |
           cd C:/hostedtoolcache/windows/Python/
           ls
