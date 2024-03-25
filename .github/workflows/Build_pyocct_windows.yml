@@ -9,13 +9,13 @@ jobs:
     steps:
       #- uses: actions/checkout@v4 
       
-      - name: Restore cached occt
-        id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-           path: D:/a/SurfacePsycho/OCCT_mon_install
-           key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-           #lookup-only: true
+      # - name: Restore cached occt
+      #   id: cache-restore
+      #   uses: actions/cache/restore@v4
+      #   with:
+      #      path: D:/a/SurfacePsycho/OCCT_mon_install
+      #      key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      #      lookup-only: true
       
       
       - name: download occt source #- if: ${{ matrix.wind }}
@@ -85,18 +85,18 @@ jobs:
       #- name: add system path
         #run : echo "D:/a/SurfacePsycho/pythonocc-core/ma_build" >> /etc/ld.so.conf.d/occt.conf
 
-      - name: Save cache occt build
-        id: cache-save
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: D:/a/SurfacePsycho/OCCT_mon_install
-          key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      # - name: Save cache occt build
+      #   id: cache-save
+      #   if: steps.cache-restore.outputs.cache-hit != 'true'
+      #   uses: actions/cache/save@v4
+      #   with:
+      #     path: D:/a/SurfacePsycho/OCCT_mon_install
+      #     key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
       - name: prepare
         run : |
           cd D:/a/SurfacePsycho/
-          7z a occt772-wind-workflow-build D:/a/SurfacePsycho/OCCT_mon_install
+          7z a occt772-wind-workflow-build D:/a/SurfacePsycho/occt-cec1ecd/ma_build
       - uses: actions/upload-artifact@v4
         with:
           name: occt772-wind-workflow-build
