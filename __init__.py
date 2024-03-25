@@ -175,7 +175,7 @@ def new_brep_bezier_face(o, context):
 
         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
         if trimmed :
-            makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, True)
+            makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, False)
             face = makeface.Face()
             print(makeface.Error)
         else :
