@@ -1,4 +1,4 @@
-name: PythonOCC conda build
+name: Python OCC conda Linux
 
 on:
   workflow_dispatch:
