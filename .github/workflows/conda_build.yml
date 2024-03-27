@@ -1,4 +1,4 @@
-name: PythonOCC conda build
+name: Python OCC conda Windows
 on:
   workflow_dispatch:
 
@@ -34,4 +34,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: OCC-wind
-          path: /usr/local/miniconda/envs/pyoccenv/lib/python3.9/site-packages/OCC/
+          path: /usr/local/miniconda/envs/pyoccenv/lib/python3.11/site-packages/OCC/
