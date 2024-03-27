@@ -33,4 +33,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: OCC-wind
-          path: C:/Miniconda/envs/pyoccenv/lib/python3.11/site-packages/OCC/
+          path: C:/Miniconda/envs/pyoccenv/Lib/site-packages/OCC/
