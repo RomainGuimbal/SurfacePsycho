@@ -15,7 +15,14 @@ jobs:
       with:
         path: /home/runner/work/SurfacePsycho/OCCT_mon_install
         key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-        lookup-only: true
+        lookup-only: false
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: OCC-linux
+        path: /home/runner/work/SurfacePsycho/OCCT_mon_install
+
+        
 
     - name: dependencies
       if: steps.cache-restore.outputs.cache-hit != 'true'
