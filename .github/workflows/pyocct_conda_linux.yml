@@ -36,4 +36,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: OCC-linux-sans-deps
-          path: /usr/share/miniconda/envs/pyoccenv/lib/python3.9/site-packages/OCC/
+          path: /usr/share/miniconda/envs/pyoccenv/lib/python3.11/site-packages/OCC/
