@@ -23,7 +23,7 @@ jobs:
       - name: echo paths
         run: |
           cd /usr/share/miniconda/envs
-          tree -d -L 2 pyoccenv
+          tree -d -L 3 pyoccenv
           
         # echo $(conda info --all)
           # echo Ceux qui match :
