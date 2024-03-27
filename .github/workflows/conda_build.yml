@@ -5,11 +5,8 @@ on:
 jobs:
   miniconda:
     name: Miniconda ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-        matrix:
-            os: ["windows-latest"]
-            #"ubuntu-latest", "windows-latest", "macos-latest"]
+    runs-on: windows-latest
+    
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
