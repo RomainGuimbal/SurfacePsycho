@@ -4,7 +4,6 @@ on:
 
 jobs:
   miniconda:
-    name: Miniconda ${{ matrix.os }}
     runs-on: windows-latest
     
     steps:
@@ -22,7 +21,7 @@ jobs:
           conda install -c conda-forge pythonocc-core=7.7.2
       - name: echo paths
         run: |
-          cd /usr/local/miniconda/envs
+          cd C:/Miniconda/envs/pyoccenv
           ls
         # tree -d 
           
@@ -34,4 +33,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: OCC-wind
-          path: pyoccenv/lib/python3.11/site-packages/OCC/
+          path: C:/Miniconda/envs/pyoccenv/lib/python3.11/site-packages/OCC/
