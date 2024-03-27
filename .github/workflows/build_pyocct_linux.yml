@@ -16,11 +16,6 @@ jobs:
         path: /home/runner/work/SurfacePsycho/OCCT_mon_install
         key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
         lookup-only: false
-        
-    - uses: actions/upload-artifact@v4
-      with:
-        name: OCC-linux
-        path: /home/runner/work/SurfacePsycho/OCCT_mon_install
 
         
 
@@ -91,6 +86,12 @@ jobs:
       with:
         path: /home/runner/work/SurfacePsycho/OCCT_mon_install
         key: occinstall-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: OCC-linux
+        path: /home/runner/work/SurfacePsycho/OCCT_mon_install
 
 
 
