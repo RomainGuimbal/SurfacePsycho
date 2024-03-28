@@ -1,11 +1,12 @@
-name: Python OCC conda Windows
+name: Python OCC conda Linux
+
 on:
   workflow_dispatch:
 
 jobs:
   miniconda:
-    runs-on: windows-latest
-    
+    name: Miniconda ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
@@ -21,9 +22,8 @@ jobs:
           conda install -c conda-forge pythonocc-core=7.7.2
       - name: echo paths
         run: |
-          cd C:/Miniconda/envs/pyoccenv
-          ls
-        # tree -d 
+          cd /usr/share/miniconda/envs
+          tree -d -L 3 pyoccenv
           
         # echo $(conda info --all)
           # echo Ceux qui match :
@@ -32,5 +32,6 @@ jobs:
           # echo "PYOCCPATH=$(conda info --all  | grep -i pythonocc-core)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v3
         with:
-          name: OCC-wind
-          path: C:/Miniconda/envs/pyoccenv/Lib/site-packages/OCC/
+          name: OCC-linux-deps
+          path: /usr/share/miniconda/envs/pyoccenv/
+          #/usr/share/miniconda/envs/pyoccenv/lib/python3.11/site-packages/OCC/
