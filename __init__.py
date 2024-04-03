@@ -55,7 +55,7 @@ if os=="Windows":
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
 
-
+from macros import *
 
 
 
@@ -432,7 +432,7 @@ def mirrors(o, shape):
     
 class SP_OT_quick_export(bpy.types.Operator):
     bl_idname = "sp.quick_export"
-    bl_label = "Add Mesh Object"
+    bl_label = "SP - Quick export"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -526,6 +526,14 @@ class SP_OT_add_biquadratic_patch(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     def execute(self, context):
         append_object_by_name("PsychoPatch Quadratic", context)
+        return {'FINISHED'}
+    
+class SP_OT_add_aop(bpy.types.Operator):
+    bl_idname = "sp.add_aop"
+    bl_label = "Add Any Order PsychoPatch"
+    bl_options = {'REGISTER', 'UNDO'}
+    def execute(self, context):
+        append_object_by_name("PsychoPatch Any Order", context)
         return {'FINISHED'}
     
 class SP_OT_add_flat_patch(bpy.types.Operator):
@@ -677,9 +685,8 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
             row = self.layout.row()
             row.operator("sp.psychopatch_to_bl_nurbs", text="Convert to internal NURBS")
-            
-            # TODO : Toggle all Control Geom
-
+            row = self.layout.row()
+            row.operator("sp.toogle_control_geom", text="Toogle Control Geometry")
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
@@ -692,8 +699,9 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
 def menu_surface(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
+        self.layout.operator("sp.add_aop", text="Any Order PsychoPatch", icon="SURFACE_NSURFACE")
         self.layout.operator("sp.add_bicubic_patch", text="Bicubic PsychoPatch", icon="SURFACE_NSURFACE")
-        self.layout.operator("sp.add_biquadratic_patch", text="Biquadratic PsychoPatch", icon="SURFACE_NSURFACE")
+        self.layout.operator("sp.add_biquadratic_patch", text="Biquadratic PsychoPatch", icon="SURFACE_NSURFACE") #almost deprecated
         self.layout.operator("sp.add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE")
 
 def menu_curve(self, context):
@@ -730,6 +738,7 @@ classes = (
     SP_OT_add_library,
     SP_AddonPreferences,
     SP_OT_psychopatch_to_bl_nurbs,
+    SP_OT_toogle_control_geom,
 )
 
 def register():
