@@ -653,9 +653,48 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
         bpy.ops.object.editmode_toggle()
         return {'FINISHED'}
 
-#TODO : nurbs to SP :  
-    # class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
-    #   cp = [p.co for p in o.data.splines[0].points]
+class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
+    bl_idname = "sp.bl_nurbs_to_psychopatch"
+    bl_label = "Convert internal NURBS to Psychopatches"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        obj_to_convert = context.selected_objects
+        first_patch_flag=True
+
+        for o in obj_to_convert:
+            if o.type == 'SURFACE':
+                for s in o.data.splines:
+                    if first_patch_flag :
+                        append_object_by_name("PsychoPatch Any Order", context)
+                        first_sp_patch = context.selected_objects[0]
+                        first_sp_patch.location = o.location
+                        sp_patch = first_sp_patch
+                        first_patch_flag = False
+                    else :
+                        sp_patch = first_sp_patch.copy()
+                        sp_patch.animation_data_clear()
+                        sp_patch.location = o.location
+                        bpy.context.collection.objects.link(sp_patch)
+
+                    spline_cp = [Vector(p.co[0:3]) for p in s.points]
+                    
+                    #create mesh grid
+                    u_count = s.order_u
+                    v_count = s.order_v
+                    
+                    faces = [(v*u_count + u, (v + 1)*u_count + u, (v + 1)*u_count + 1 + u, v*u_count + 1 + u) for v in range(v_count-1) for u in range(u_count-1)]
+                    mesh = bpy.data.meshes.new("Grid") 
+                    mesh.from_pydata(spline_cp, [], faces)
+                    sp_patch.data=mesh
+                    bpy.ops.object.shade_smooth()
+        return {'FINISHED'}
+
+
+
+
+
+
 
 
 
@@ -671,6 +710,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
 ##############################
 
 class SP_PT_MainPanel(bpy.types.Panel):
+    bl_idname = "SP_PT_MainPanel"
     bl_label = "Surface Psycho"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -678,15 +718,15 @@ class SP_PT_MainPanel(bpy.types.Panel):
     
     def draw(self, context):
         if context.mode == 'OBJECT':
-            row = self.layout.row()
             if os == "Windows" :
-                row.operator("sp.quick_export", text="Quick export as .STEP")
                 row = self.layout.row()
+                row.scale_y = 2.0
+                row.operator("sp.quick_export", text="Quick export as .STEP")
+            row = self.layout.row()
             row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
             row = self.layout.row()
-            row.operator("sp.psychopatch_to_bl_nurbs", text="Convert to internal NURBS")
-            row = self.layout.row()
             row.operator("sp.toogle_control_geom", text="Toogle Control Geometry")
+
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
@@ -711,10 +751,11 @@ def menu_curve(self, context):
         self.layout.operator("sp.add_any_order_curve", text="Any Order PsychoCurve", icon="CURVE_NCURVE")
 
 
-
-
-
-
+def menu_convert(self, context):
+    self.layout.separator()
+    if context.mode == 'OBJECT':
+        self.layout.operator("sp.bl_nurbs_to_psychopatch", text="Internal NURBS to PsychoPatch", icon="SURFACE_NSURFACE")
+        self.layout.operator("sp.psychopatch_to_bl_nurbs", text="PsychoPatch to internal NURBS", icon="SURFACE_NSURFACE")
 
 
 
@@ -727,9 +768,10 @@ def menu_curve(self, context):
 ##############################
 
 classes = (
-    SP_OT_quick_export,
     SP_PT_MainPanel,
+    SP_OT_quick_export,
     SP_OT_add_bicubic_patch,
+    SP_OT_add_aop,
     SP_OT_add_biquadratic_patch,
     SP_OT_add_flat_patch,
     SP_OT_add_cubic_bezier_chain,
@@ -738,6 +780,7 @@ classes = (
     SP_OT_add_library,
     SP_AddonPreferences,
     SP_OT_psychopatch_to_bl_nurbs,
+    SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_toogle_control_geom,
 )
 
@@ -747,12 +790,15 @@ def register():
     # bpy.utils.register_class(SP_OT_add_library)
     bpy.types.VIEW3D_MT_surface_add.append(menu_surface)
     bpy.types.VIEW3D_MT_curve_add.append(menu_curve)
+    bpy.types.VIEW3D_MT_object_convert.append(menu_convert)
+    
 
 def unregister():
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)
     bpy.types.VIEW3D_MT_surface_add.remove(menu_surface)
     bpy.types.VIEW3D_MT_curve_add.remove(menu_curve)
+    bpy.types.VIEW3D_MT_object_convert.remove(menu_convert)
 
 if __name__ == "__main__":
     register()
