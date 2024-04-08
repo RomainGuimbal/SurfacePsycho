@@ -39,6 +39,8 @@ import platform
 os = platform.system()
 if os=="Windows":
     from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeEdge2d
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
     from OCC.Core.GC import GC_MakeSegment
     from OCC.Core.GCE2d import GCE2d_MakeSegment
     from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
@@ -51,6 +53,7 @@ if os=="Windows":
     from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
     from OCC.Core.TopTools import TopTools_Array1OfShape
     from OCC.Extend.DataExchange import write_step_file
+    from OCC.Core.ShapeFix import ShapeFix_Face
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
@@ -101,6 +104,13 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
     return attribute
 
 
+
+
+
+
+
+
+
 def new_brep_bezier_face(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
 
@@ -113,6 +123,24 @@ def new_brep_bezier_face(o, context):
             id= 4*i+j
             controlPoints.SetValue(i+1, j+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
+    #Bezier surface
+    geom_surf = Geom_BezierSurface(controlPoints)
+    bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
+    bezierarray.SetValue(1, 1, geom_surf)
+    
+    bspline_param = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
+    if bspline_param.IsDone():
+        poles = bspline_param.Poles().Array2()
+        uknots = bspline_param.UKnots().Array1()
+        vknots = bspline_param.VKnots().Array1()
+        umult = bspline_param.UMultiplicities().Array1()
+        vmult = bspline_param.VMultiplicities().Array1()
+        udeg = bspline_param.UDegree()
+        vdeg = bspline_param.VDegree()
+
+        bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
+    face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+
     # Trimming wire
     trimmed = False
     try:
@@ -123,22 +151,28 @@ def new_brep_bezier_face(o, context):
         trimmed = True
         subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
         trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
-        #trim_pts*=1000 #unit correction
 
         # Create points
         points_occ = TColgp_Array1OfPnt2d(1, point_count)
         for i in range(point_count):
-            pnt= gp_Pnt2d(trim_pts[i][0], trim_pts[i][1])
+            pnt= gp_Pnt2d(trim_pts[i][1], trim_pts[i][0])
             points_occ.SetValue(i+1, pnt)
 
-        # Make wire
+        #make edges
         if subtype :#polygon mode
             edges_list = TopTools_Array1OfShape(1, point_count)
             for i in range(point_count):
                 makesegment = GCE2d_MakeSegment(points_occ[i], points_occ[(i+1)%point_count])
                 segment = makesegment.Value()
-                edge = BRepBuilderAPI_MakeEdge2d(segment).Edge()
+                # edge = BRepBuilderAPI_MakeEdge2d(segment).Edge()
+                
+                #make 3D curves
+                # adapt = BRepAdaptor_Surface(face)
+                adapt = GeomAdaptor_Surface(bsurf)
+                makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
+                edge = makeEdge.Edge()
                 edges_list.SetValue(i+1, edge)
+
         else :#bezier mode
             edges_list = TopTools_Array1OfShape(1, point_count//3)
             for i in range(point_count//3):
@@ -149,7 +183,13 @@ def new_brep_bezier_face(o, context):
                 bezier_segment_CP_array.SetValue(3, points_occ[(i*3+3)%point_count])
                 
                 segment = Geom2d_BezierCurve(bezier_segment_CP_array)
-                edge = BRepBuilderAPI_MakeEdge2d(segment).Edge()
+                # edge = BRepBuilderAPI_MakeEdge2d(segment).Edge()
+                
+                #make 3D curves
+                # adapt = BRepAdaptor_Surface(face)
+                adapt = GeomAdaptor_Surface(bsurf)
+                makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
+                edge = makeEdge.Edge()
                 edges_list.SetValue(i+1, edge)
 
         makeWire = BRepBuilderAPI_MakeWire()
@@ -157,30 +197,22 @@ def new_brep_bezier_face(o, context):
             makeWire.Add(e)
         trim_wire = TopoDS_Wire()
         trim_wire = makeWire.Wire()
+        
+        # trim_wire.Reverse()
+        
+        makeface = BRepBuilderAPI_MakeFace(bsurf,1e-6)#, trim_wire)
+        makeface.Add(trim_wire)#.Reversed())
+        face = makeface.Face()
+        fix = ShapeFix_Face(face)
+        fix.Perform()
+        face= fix.Face()
+    return face
 
-    #Bezier surface
-    geom_surf = Geom_BezierSurface(controlPoints)
-    bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
-    bezierarray.SetValue(1, 1, geom_surf)
-    
-    BB = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
-    if BB.IsDone():
-        poles = BB.Poles().Array2()
-        uknots = BB.UKnots().Array1()
-        vknots = BB.VKnots().Array1()
-        umult = BB.UMultiplicities().Array1()
-        vmult = BB.VMultiplicities().Array1()
-        udeg = BB.UDegree()
-        vdeg = BB.VDegree()
 
-        bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
-        if trimmed :
-            makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire)
-            face = makeface.Face()
-            print(makeface.Error)
-        else :
-            face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-        return face
+
+
+
+
 
 
 
@@ -201,19 +233,22 @@ def new_brep_any_order_face(o, context):
     bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
     bezierarray.SetValue(1, 1, geom_surf)
     
-    BB = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
-    if BB.IsDone():
-        poles = BB.Poles().Array2()
-        uknots = BB.UKnots().Array1()
-        vknots = BB.VKnots().Array1()
-        umult = BB.UMultiplicities().Array1()
-        vmult = BB.VMultiplicities().Array1()
-        udeg = BB.UDegree()
-        vdeg = BB.VDegree()
+    bspline_param = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
+    if bspline_param.IsDone():
+        poles = bspline_param.Poles().Array2()
+        uknots = bspline_param.UKnots().Array1()
+        vknots = bspline_param.VKnots().Array1()
+        umult = bspline_param.UMultiplicities().Array1()
+        vmult = bspline_param.VMultiplicities().Array1()
+        udeg = bspline_param.UDegree()
+        vdeg = bspline_param.VDegree()
 
         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
         face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
         return face
+
+
+
 
 
 def new_brep_any_order_curve(o, context):
@@ -674,7 +709,7 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
                     else :
                         sp_patch = first_sp_patch.copy()
                         sp_patch.animation_data_clear()
-                        sp_patch.location = o.location
+                        sp_patch.matrix_world = o.matrix_world
                         bpy.context.collection.objects.link(sp_patch)
 
                     spline_cp = [Vector(p.co[0:3]) for p in s.points]
