@@ -24,3 +24,12 @@ class SP_OT_toogle_control_geom(bpy.types.Operator):
                             m[input_id] = toogle_side
                     m.node_group.interface_update(context)
         return {'FINISHED'}
+
+
+class SP_OT_select_all_curves(bpy.types.Operator):
+    #TODO
+    pass
+
+class SP_OT_show_only_curves(bpy.types.Operator):
+    #TODO
+    pass

@@ -200,8 +200,8 @@ def new_brep_bezier_face(o, context):
         
         # trim_wire.Reverse()
         
-        makeface = BRepBuilderAPI_MakeFace(bsurf,1e-6)#, trim_wire)
-        makeface.Add(trim_wire)#.Reversed())
+        makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, False)#,1e-6)#, trim_wire)
+        # makeface.Add(trim_wire)#.Reversed())
         face = makeface.Face()
         fix = ShapeFix_Face(face)
         fix.Perform()
