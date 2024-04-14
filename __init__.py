@@ -52,7 +52,7 @@ if os=="Windows":
     from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
     from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
     from OCC.Core.TopTools import TopTools_Array1OfShape
-    from OCC.Extend.DataExchange import write_step_file
+    from OCC.Extend.DataExchange import write_step_file, write_iges_file
     from OCC.Core.ShapeFix import ShapeFix_Face
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
@@ -497,7 +497,95 @@ def mirrors(o, shape):
     return shape
 
 
+def prepare_brep(context, use_selection, axis_up, axis_forward):
+    aShape = TopoDS_Shape()
+    aSew = BRepBuilderAPI_Sewing(1e-1)
+    SPobj_count=0
 
+    if use_selection:
+        initial_selection = context.selected_objects
+    else :
+        initial_selection = context.visible_objects
+    obj_list = initial_selection
+    obj_to_del = []
+    
+    while(len(obj_list)>0): # itterate until ob_list is empty
+        obj_newly_real = []
+
+        for o in obj_list:
+            gto = geom_type_of_object(o, context)
+
+            match gto :
+                case "bezier_surf" :
+                    SPobj_count +=1
+                    bf = new_brep_bezier_face(o, context)
+                    aSew.Add(mirrors(o, bf))
+
+                case "surf_any" :
+                    SPobj_count +=1
+                    af = new_brep_any_order_face(o, context)
+                    aSew.Add(mirrors(o, af))
+
+                case "planar" :
+                    SPobj_count +=1
+                    pf = new_brep_planar_face(o, context)
+                    aSew.Add(mirrors(o, pf))
+                
+                case "curve_any" :
+                    SPobj_count +=1
+                    ce = new_brep_any_order_curve(o, context)
+                    aSew.Add(mirrors(o, ce))
+                
+                case "bezier_chain" :
+                    SPobj_count +=1
+                    bc = new_brep_cubic_bezier_chain(o, context)
+                    aSew.Add(mirrors(o, bc))
+
+                # case "collection_instance":
+                #     pass
+                    # self.report({'INFO'}, 'Collection instances will not export')
+                    # empty_mw = o.matrix_world
+                    # for co in o.instance_collection.all_objects : #select all object of collection linked to o
+                    #     dupli = co.copy()
+                    #     dupli.data = co.data.copy()
+                    #     dupli.matrix_world = empty_mw @ dupli.matrix_world # not recursive compliant? :/
+                    #     obj_newly_real.append(dupli) #flag the new objects
+                    #     context.scene.collection.objects.link(dupli)
+
+        obj_list=[]
+        for onr in obj_newly_real:
+            obj_list.append(onr)
+            obj_to_del.append(onr)
+
+    for o in obj_to_del : # clear realized objects
+        bpy.data.objects.remove(o, do_unlink=True)
+
+    aSew.SetNonManifoldMode(True)
+    aSew.Perform()
+    aShape = aSew.SewedShape()
+    
+    if SPobj_count>0 :
+        return aShape
+    else :
+        return None
+
+
+
+def export_step(context, filepath, use_selection, axis_up='Z', axis_forward='Y'):
+    brep_shapes = prepare_brep(context, use_selection, axis_up, axis_forward)
+    if brep_shapes is not None :
+        write_step_file(brep_shapes, filepath, application_protocol="AP203")
+        return True
+    else:
+        return False
+
+def export_iges(context, filepath, use_selection, axis_up='Z', axis_forward='Y'):
+    brep_shapes = prepare_brep(context, use_selection, axis_up, axis_forward)
+    if brep_shapes is not None :
+        write_iges_file(brep_shapes, filepath)
+        return True
+    else:
+        return False
 
 
 
@@ -522,67 +610,6 @@ class SP_OT_quick_export(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        aShape = TopoDS_Shape()
-        aSew = BRepBuilderAPI_Sewing(1e-1)
-        
-        SPobj_count=0
-        initial_selection = context.selected_objects
-        obj_list = initial_selection
-        obj_to_del = []
-        
-        while(len(obj_list)>0): # itterate until ob_list is empty
-            obj_newly_real = []
-
-            for o in obj_list:
-                gto = geom_type_of_object(o, context)
-
-                match gto :
-                    case "bezier_surf" :
-                        SPobj_count +=1
-                        bf = new_brep_bezier_face(o, context)
-                        aSew.Add(mirrors(o, bf))
-
-                    case "surf_any" :
-                        SPobj_count +=1
-                        af = new_brep_any_order_face(o, context)
-                        aSew.Add(mirrors(o, af))
-
-                    case "planar" :
-                        SPobj_count +=1
-                        pf = new_brep_planar_face(o, context)
-                        aSew.Add(mirrors(o, pf))
-                    
-                    case "curve_any" :
-                        SPobj_count +=1
-                        ce = new_brep_any_order_curve(o, context)
-                        aSew.Add(mirrors(o, ce))
-                    
-                    case "bezier_chain" :
-                        SPobj_count +=1
-                        bc = new_brep_cubic_bezier_chain(o, context)
-                        aSew.Add(mirrors(o, bc))
-
-                    case "collection_instance":
-                        self.report({'INFO'}, 'Collection instances will not export')
-                        # empty_mw = o.matrix_world
-                        # for co in o.instance_collection.all_objects : #select all object of collection linked to o
-                        #     dupli = co.copy()
-                        #     dupli.data = co.data.copy()
-                        #     dupli.matrix_world = empty_mw @ dupli.matrix_world # not recursive compliant? :/
-                        #     obj_newly_real.append(dupli) #flag the new objects
-                        #     context.scene.collection.objects.link(dupli)
-
-            obj_list=[]
-            for onr in obj_newly_real:
-                obj_list.append(onr)
-                obj_to_del.append(onr)
-
-        for o in obj_to_del : # clear realized objects
-            bpy.data.objects.remove(o, do_unlink=True)
-
-        aSew.SetNonManifoldMode(True)
-        aSew.Perform()
-        aShape = aSew.SewedShape()
 
         blenddir = bpy.path.abspath("//")
         if blenddir !="":#avoids exporting to root
@@ -591,8 +618,8 @@ class SP_OT_quick_export(bpy.types.Operator):
             dir = context.preferences.filepaths.temporary_directory
         pathstr = dir + str(datetime.today())[:-7].replace('-','').replace(' ','-').replace(':','')
 
-        if SPobj_count>0 :
-            write_step_file(aShape, f"{pathstr}.step", application_protocol="AP203")
+        export_isdone = export_step(context, f"{pathstr}.step", True)
+        if export_isdone:
             self.report({'INFO'}, f"Step file exported as {pathstr}.step")
         else :
             self.report({'INFO'}, 'No SurfacePsycho Objects selected')
@@ -779,6 +806,49 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
 
 
 
+from bpy.props import StringProperty, BoolProperty, EnumProperty
+from bpy_extras.io_utils import (
+    ExportHelper,
+    orientation_helper,
+    axis_conversion,
+)
+
+@orientation_helper(axis_forward='Y', axis_up='Z')
+class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
+    bl_idname = "sp.step_export"
+    bl_label = "Export STEP"
+
+    filename_ext = ".step"
+    filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255)
+    use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
+    axis_up: EnumProperty(default='Z')
+    axis_forward: EnumProperty(default='Y')
+
+    def execute(self, context):
+        return export_step(context, self.filepath, self.use_selection, self.axis_up, self.axis_forward)
+
+
+@orientation_helper(axis_forward='Y', axis_up='Z')
+class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
+    bl_idname = "sp.iges_export"
+    bl_label = "Export IGES"
+
+    filename_ext = ".iges"
+    filter_glob: StringProperty(default="*.iges", options={'HIDDEN'}, maxlen=255)
+    use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
+    axis_up: EnumProperty(default='Z')
+    axis_forward: EnumProperty(default='Y')
+
+    def execute(self, context):
+        return export_iges(context, self.filepath, self.use_selection,self.axis_up, self.axis_forward)
+
+
+
+
+
+
+
+
 
 
 
@@ -851,7 +921,11 @@ def menu_convert(self, context):
         self.layout.operator("sp.psychopatch_to_bl_nurbs", text="PsychoPatch to internal NURBS", icon="SURFACE_NSURFACE")
 
 
+def menu_export_step(self, context):
+    self.layout.operator("sp.step_export", text="SurfacePsycho CAD (.step)")
 
+def menu_export_iges(self, context):
+    self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
 
 
 
@@ -877,6 +951,8 @@ classes = (
     SP_OT_select_visible_surfaces,
     SP_OT_toogle_control_geom,
     SP_PT_MainPanel,
+    SP_OT_ExportStep,
+    SP_OT_ExportIges,
 )
 
 def register():
@@ -886,6 +962,10 @@ def register():
     bpy.types.VIEW3D_MT_surface_add.append(menu_surface)
     bpy.types.VIEW3D_MT_curve_add.append(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.append(menu_convert)
+    bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
+    bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
+
+    
     
 
 def unregister():
@@ -894,6 +974,8 @@ def unregister():
     bpy.types.VIEW3D_MT_surface_add.remove(menu_surface)
     bpy.types.VIEW3D_MT_curve_add.remove(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.remove(menu_convert)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
 
 if __name__ == "__main__":
     register()

@@ -52,11 +52,9 @@ class SP_OT_show_only_curves(bpy.types.Operator):
     #TODO
     pass
 
-
 class SP_OT_bevel_macro(bpy.types.Operator):
     #TODO
     pass
-
 
 class SP_OT_solidify(bpy.types.Operator):
     #TODO
