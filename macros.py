@@ -1,9 +1,5 @@
 import bpy
 
-class SP_OT_bevel_macro(bpy.types.Operator):
-    #TODO
-    pass
-
 class SP_OT_toogle_control_geom(bpy.types.Operator):
     bl_idname = "sp.toogle_control_geom"
     bl_label = "SP - Toogle Control Geom"
@@ -26,10 +22,44 @@ class SP_OT_toogle_control_geom(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class SP_OT_select_all_curves(bpy.types.Operator):
-    #TODO
-    pass
+class SP_OT_select_visible_curves(bpy.types.Operator):
+    bl_idname = "sp.select_visible_curves"
+    bl_label = "SP - Select Visible Curves"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        objects=[ob for ob in context.visible_objects]
+        for o in objects:
+            for m in o.modifiers :
+                if m.type == "NODES" and m.node_group is not None and m.node_group.name in ['SP -  Mesh Bezier Chain', 'SP -  Bezier Curve Any Order']:
+                        o.select_set(True)
+        return {'FINISHED'}
+
+class SP_OT_select_visible_surfaces(bpy.types.Operator):
+    bl_idname = "sp.select_visible_surfaces"
+    bl_label = "SP - Select Visible Surfaces"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        objects=[ob for ob in context.visible_objects]
+        for o in objects:
+            for m in o.modifiers :
+                if m.type == "NODES" and m.node_group is not None and m.node_group.name in ['SP - Any Order Patch Meshing', 'SP - Bicubic Patch Meshing','SP - Mesh Flat patch']:
+                    o.select_set(True)
+        return {'FINISHED'}
 
 class SP_OT_show_only_curves(bpy.types.Operator):
     #TODO
+    pass
+
+
+class SP_OT_bevel_macro(bpy.types.Operator):
+    #TODO
+    pass
+
+
+class SP_OT_solidify(bpy.types.Operator):
+    #TODO
+    # Thickness Driver ?
+    # Linked data
     pass

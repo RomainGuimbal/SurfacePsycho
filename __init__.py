@@ -39,7 +39,7 @@ import platform
 os = platform.system()
 if os=="Windows":
     from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeEdge2d
-    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    # from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
     from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
     from OCC.Core.GC import GC_MakeSegment
     from OCC.Core.GCE2d import GCE2d_MakeSegment
@@ -139,16 +139,17 @@ def new_brep_bezier_face(o, context):
         vdeg = bspline_param.VDegree()
 
         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
-    face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-
+    
     # Trimming wire
-    trimmed = False
     try:
         point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
+        trimmed = True
     except Exception:
         point_count=None
-    if point_count!=None:
-        trimmed = True
+        trimmed = False
+        face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+    
+    if trimmed:
         subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
         trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
 
@@ -164,10 +165,8 @@ def new_brep_bezier_face(o, context):
             for i in range(point_count):
                 makesegment = GCE2d_MakeSegment(points_occ[i], points_occ[(i+1)%point_count])
                 segment = makesegment.Value()
-                # edge = BRepBuilderAPI_MakeEdge2d(segment).Edge()
                 
                 #make 3D curves
-                # adapt = BRepAdaptor_Surface(face)
                 adapt = GeomAdaptor_Surface(bsurf)
                 makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
                 edge = makeEdge.Edge()
@@ -183,10 +182,8 @@ def new_brep_bezier_face(o, context):
                 bezier_segment_CP_array.SetValue(3, points_occ[(i*3+3)%point_count])
                 
                 segment = Geom2d_BezierCurve(bezier_segment_CP_array)
-                # edge = BRepBuilderAPI_MakeEdge2d(segment).Edge()
                 
                 #make 3D curves
-                # adapt = BRepAdaptor_Surface(face)
                 adapt = GeomAdaptor_Surface(bsurf)
                 makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
                 edge = makeEdge.Edge()
@@ -198,8 +195,6 @@ def new_brep_bezier_face(o, context):
         trim_wire = TopoDS_Wire()
         trim_wire = makeWire.Wire()
         
-        # trim_wire.Reverse()
-        
         makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, False)#,1e-6)#, trim_wire)
         # makeface.Add(trim_wire)#.Reversed())
         face = makeface.Face()
@@ -207,11 +202,6 @@ def new_brep_bezier_face(o, context):
         fix.Perform()
         face= fix.Face()
     return face
-
-
-
-
-
 
 
 
@@ -244,8 +234,69 @@ def new_brep_any_order_face(o, context):
         vdeg = bspline_param.VDegree()
 
         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
+    
+        # Trimming wire
+    try:
+        point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
+        trimmed = True
+    except Exception:
+        point_count=None
+        trimmed = False
         face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-        return face
+    
+    if trimmed:
+        subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
+        trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
+
+        # Create points
+        points_occ = TColgp_Array1OfPnt2d(1, point_count)
+        for i in range(point_count):
+            pnt= gp_Pnt2d(trim_pts[i][1], trim_pts[i][0])
+            points_occ.SetValue(i+1, pnt)
+
+        #make edges
+        if subtype :#polygon mode
+            edges_list = TopTools_Array1OfShape(1, point_count)
+            for i in range(point_count):
+                makesegment = GCE2d_MakeSegment(points_occ[i], points_occ[(i+1)%point_count])
+                segment = makesegment.Value()
+                
+                #make 3D curves
+                adapt = GeomAdaptor_Surface(bsurf)
+                makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
+                edge = makeEdge.Edge()
+                edges_list.SetValue(i+1, edge)
+
+        else :#bezier mode
+            edges_list = TopTools_Array1OfShape(1, point_count//3)
+            for i in range(point_count//3):
+                bezier_segment_CP_array = TColgp_Array1OfPnt2d(0,3)
+                bezier_segment_CP_array.SetValue(0, points_occ[i*3])
+                bezier_segment_CP_array.SetValue(1, points_occ[(i*3+1)%point_count])
+                bezier_segment_CP_array.SetValue(2, points_occ[(i*3+2)%point_count])
+                bezier_segment_CP_array.SetValue(3, points_occ[(i*3+3)%point_count])
+                
+                segment = Geom2d_BezierCurve(bezier_segment_CP_array)
+                
+                #make 3D curves
+                adapt = GeomAdaptor_Surface(bsurf)
+                makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
+                edge = makeEdge.Edge()
+                edges_list.SetValue(i+1, edge)
+
+        makeWire = BRepBuilderAPI_MakeWire()
+        for e in edges_list :
+            makeWire.Add(e)
+        trim_wire = TopoDS_Wire()
+        trim_wire = makeWire.Wire()
+        
+        makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, False)#,1e-6)#, trim_wire)
+        # makeface.Add(trim_wire)#.Reversed())
+        face = makeface.Face()
+        fix = ShapeFix_Face(face)
+        fix.Perform()
+        face= fix.Face()
+    return face
 
 
 
@@ -756,11 +807,18 @@ class SP_PT_MainPanel(bpy.types.Panel):
             if os == "Windows" :
                 row = self.layout.row()
                 row.scale_y = 2.0
-                row.operator("sp.quick_export", text="Quick export as .STEP")
+                row.operator("sp.quick_export", text="Quick export as .STEP", icon="EXPORT")
             row = self.layout.row()
-            row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe")
+            row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR")
             row = self.layout.row()
-            row.operator("sp.toogle_control_geom", text="Toogle Control Geometry")
+            row.operator("sp.toogle_control_geom", text="Toogle Control Geometry", icon="OUTLINER_DATA_LATTICE")
+            
+            self.layout.label(text="Select Entities")
+            row = self.layout.row()
+            row.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
+            row = self.layout.row()
+            row.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
+            
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
@@ -803,20 +861,22 @@ def menu_convert(self, context):
 ##############################
 
 classes = (
-    SP_PT_MainPanel,
-    SP_OT_quick_export,
-    SP_OT_add_bicubic_patch,
-    SP_OT_add_aop,
-    SP_OT_add_biquadratic_patch,
-    SP_OT_add_flat_patch,
-    SP_OT_add_cubic_bezier_chain,
-    SP_OT_add_any_order_curve,
-    SP_OT_add_curvatures_probe,
-    SP_OT_add_library,
     SP_AddonPreferences,
-    SP_OT_psychopatch_to_bl_nurbs,
+    SP_OT_add_any_order_curve,
+    SP_OT_add_aop,
+    SP_OT_add_bicubic_patch,
+    SP_OT_add_biquadratic_patch,
+    SP_OT_add_cubic_bezier_chain,
+    SP_OT_add_curvatures_probe,
+    SP_OT_add_flat_patch,
+    SP_OT_add_library,
     SP_OT_bl_nurbs_to_psychopatch,
+    SP_OT_psychopatch_to_bl_nurbs,
+    SP_OT_quick_export,
+    SP_OT_select_visible_curves,
+    SP_OT_select_visible_surfaces,
     SP_OT_toogle_control_geom,
+    SP_PT_MainPanel,
 )
 
 def register():
