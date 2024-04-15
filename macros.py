@@ -44,7 +44,8 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
         objects=[ob for ob in context.visible_objects]
         for o in objects:
             for m in o.modifiers :
-                if m.type == "NODES" and m.node_group is not None and m.node_group.name in ['SP - Any Order Patch Meshing', 'SP - Bicubic Patch Meshing','SP - Mesh Flat patch']:
+                if m.type == "NODES" and m.node_group is not None and m.node_group.name[:-4] in ['SP - Any Order Patch Meshing', 'SP - Bicubic Patch Meshing','SP - Mesh Flat patch',
+                                                                                                  'SP - Any Order Patch Mes', 'SP - Bicubic Patch Mes','SP - Mesh Flat p']:
                     o.select_set(True)
         return {'FINISHED'}
 
@@ -60,4 +61,9 @@ class SP_OT_solidify(bpy.types.Operator):
     #TODO
     # Thickness Driver ?
     # Linked data
+    pass
+
+class SP_OT_unify_versions(bpy.types.Operator):
+    #TODO
+    #select the one with the highest index (.00i)
     pass
