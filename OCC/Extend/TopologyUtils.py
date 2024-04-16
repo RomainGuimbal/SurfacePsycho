@@ -37,7 +37,7 @@ from OCC.Core.TopAbs import (
 )
 from OCC.Core.TopExp import TopExp_Explorer, topexp
 from OCC.Core.TopTools import (
-    TopTools_ListOfListOfShape,
+    TopTools_ListIteratorOfListOfShape,
     TopTools_IndexedDataMapOfShapeListOfShape,
 )
 from OCC.Core.TopoDS import (
@@ -333,7 +333,7 @@ class TopologyExplorer:
         if results.Size() == 0:
             yield None
 
-        topology_iterator = TopTools_ListOfListOfShape(results)
+        topology_iterator = TopTools_ListIteratorOfListOfShape(results)
         while topology_iterator.More():
             topo_entity = self.topology_factory[topology_type_2](
                 topology_iterator.Value()
@@ -381,7 +381,7 @@ class TopologyExplorer:
         results = _map.FindFromKey(topological_entity)
         if results.Size() == 0:
             return None
-        topology_iterator = TopTools_ListOfListOfShape(results)
+        topology_iterator = TopTools_ListIteratorOfListOfShape(results)
         while topology_iterator.More():
             topo_set.add(topology_iterator.Value())
             topology_iterator.Next()
