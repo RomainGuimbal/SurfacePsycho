@@ -953,6 +953,7 @@ classes = (
     SP_PT_MainPanel,
     SP_OT_ExportStep,
     SP_OT_ExportIges,
+    SP_OT_unify_versions,
 )
 
 def register():
