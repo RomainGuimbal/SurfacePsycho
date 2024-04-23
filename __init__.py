@@ -813,7 +813,7 @@ from bpy_extras.io_utils import (
     axis_conversion,
 )
 
-# @orientation_helper(axis_forward='Y', axis_up='Z')
+@orientation_helper(axis_forward='Y', axis_up='Z')
 class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
     bl_idname = "sp.step_export"
     bl_label = "Export STEP"
@@ -821,15 +821,15 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
     filename_ext = ".step"
     filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255)
     use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-    # axis_up: EnumProperty(default='Z')
-    # axis_forward: EnumProperty(default='Y')
+    axis_up: EnumProperty(default='Z')
+    axis_forward: EnumProperty(default='Y')
 
     def execute(self, context):
         export_step(context, self.filepath, self.use_selection, self.axis_up, self.axis_forward)
         return {'FINISHED'}
 
 
-# @orientation_helper(axis_forward='Y', axis_up='Z')
+@orientation_helper(axis_forward='Y', axis_up='Z')
 class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
     bl_idname = "sp.iges_export"
     bl_label = "Export IGES"
@@ -837,8 +837,8 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
     filename_ext = ".iges"
     filter_glob: StringProperty(default="*.iges", options={'HIDDEN'}, maxlen=255)
     use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-    # axis_up: EnumProperty(default='Z')
-    # axis_forward: EnumProperty(default='Y')
+    axis_up: EnumProperty(default='Z')
+    axis_forward: EnumProperty(default='Y')
 
     def execute(self, context):
         export_iges(context, self.filepath, self.use_selection,self.axis_up, self.axis_forward)
