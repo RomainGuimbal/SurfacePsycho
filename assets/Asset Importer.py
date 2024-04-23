@@ -34,7 +34,12 @@ bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursi
 
 ##############################################
 
-
+""" Avoid duplication : 
+    link = True
+    select all
+    make local
+    set location
+"""
 
 
 def is_asset(obj):
@@ -58,7 +63,7 @@ def append_node_group_by_names(filepath, gr_names):
 
 
 filepath_surf = "//..\..\Bezier Quest\Bezier_surface.blend"
-obj_surf = ["PsychoPatch", "PsychoPatch Quadratic"]
+obj_surf = ["PsychoPatch", "PsychoPatch Quadratic", "PsychoPatch Any Order"]
 
 filepath_probe = "//..\..\Bezier Quest\Principal curvature.blend"
 obj_probe = ["SP - Curvatures Probe"]
@@ -67,29 +72,53 @@ filepath_flat = "//..\..\Bezier Quest\Flat surfaces.blend"
 obj_flat = ["FlatPatch"]
 
 filepath_curve = "//..\..\Bezier Quest\Curves.blend"
-obj_curve = ["PsychoCurve Any Order"]#"Psycho Cubic Chain",
+obj_curve = ["PsychoCurve Any Order", "Psycho Cubic Chain"]
 
 gr_surf = [
-"SP - Auto mid points linear",
+"SP - Angle side",
+#"SP - AOP Continuities",
+"SP - Auto Midpoints Linear",
+#"SP - Auto Snap Continuities",
+"SP - Blend Surface",
+"SP - Connect AOP to Curve",
+"SP - Connect to Chain",
 #"SP - Continuities",
-"SP - Angle side (do not preserve surface)",
-"SP - Connect side to curve",
+"SP - Displace Bicubic Patch",
+"SP - Gradient Maps",
+"SP - Mirror Control Points",
+"SP - Mirror Control Points AOP",
+"SP - Patch Combs",
 #"SP - Quadratic to Cubic Control grid",
-"SP - Sew and Symetrise",
+"SP - Reorder Index",
+"SP - Sew and Symmetrize",
+#"SP - Straighten Rows",
+"SP - Sweep",
 "SP - Sweep Linear",
 #"SP - Trim 4 sides",
-"SP - Patch Combs",
-"SP - Continuities (Auto Snap)",
-"SP - Sew and Symmetrize",
-"SP - Straighten Rows"
+"SP - Patch Normals",
+
 ]
+
 gr_flat = [
-"SP - Connect to Flat patch"
+"SP - Connect to Flat Patch",
+"SP - Copy Mesh Face",
+"SP - Flat Patch Circle",
+"SP - Project on Flat Patch",
 ]
+
 gr_curve = [
-"SP - Raise Order",
-"SP - Bezier Curve Curvature combs",
+"SP - Raise or Lower Order",
+"SP - Straight Curve On Surface",
 #"SP - Trim Range Any Order Curve",
+"SP - Blend Curve",
+"SP - Bezier Chain Circle",
+#"SP - Align Handles",
+"SP - Chain to Chain Continuities",
+"SP - Straighten Segment",
+"SP - Displace Chain Handles",
+#"SP - Trim Chain",
+#"SP - Continuities Any Order Curve",
+"SP - Copy Patch Side",
 ]
 
 append_objs_by_names(filepath_surf, obj_surf)
