@@ -124,7 +124,7 @@ class SP_OT_unify_versions(bpy.types.Operator):
                         m.node_group = bpy.data.node_groups[found_name]
                         effect_counter+=1
         if effect_counter>0:
-            self.report({'INFO'}, effect_counter+" modifiers replaced")
+            self.report({'INFO'}, str(effect_counter)+" modifiers replaced")
         else :
             self.report({'INFO'}, "No SP modifiers replaced")
 
