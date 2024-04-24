@@ -58,6 +58,7 @@ if os=="Windows":
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
 
+import macros
 from macros import *
 
 
@@ -955,6 +956,7 @@ classes = (
     SP_PT_MainPanel,
     SP_OT_ExportStep,
     SP_OT_ExportIges,
+    SP_OT_unify_versions,
 )
 
 def register():
