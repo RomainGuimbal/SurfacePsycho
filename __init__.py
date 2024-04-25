@@ -95,6 +95,13 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
             attribute = ge.attributes[name].data[0].value
         case 'second_int':
             attribute = ge.attributes[name].data[1].value
+        case 'int':
+            len_raw = len(ge.attributes[name].data)
+            if len_attr==None :
+                len_attr = len_raw
+            attribute = np.zeros(len_raw)
+            ge.attributes[name].data.foreach_get("value", attribute)
+            attribute = attribute[0:len_attr]
         case 'vec3':
             len_raw = len(ge.attributes[name].data)
             if len_attr==None :
@@ -349,6 +356,56 @@ def new_brep_cubic_bezier_chain(o, context):
     return chain
 
 
+
+def new_brep_curve(o, context):
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    point_count = get_attribute_by_name(ob, 'CP_count', 'int')
+    point_count = [int(p) for p in point_count]
+    total_p_count = 1
+    segment_count = 0
+    p_count_accumulate = point_count
+    for i, p in enumerate(point_count):
+        if p>0:
+            total_p_count += p-1
+            segment_count += 1
+        if i>0:
+            p_count_accumulate[i] += p_count_accumulate[i-1]-1
+
+    index_of_first_segment_count = [0] + [p-1 for p in p_count_accumulate[:segment_count]]
+    points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
+    points *= 1000 #unit correction
+
+    # Create CP
+    controlPoints = TColgp_Array1OfPnt(1, total_p_count)
+    for i in range(total_p_count):
+        print(points[i])
+        controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
+
+    #init sewing
+    ms = BRepBuilderAPI_Sewing(1e-7)
+    ms.SetNonManifoldMode(True)
+
+    #create segments
+    for i in range(segment_count):
+        segment_point_array = TColgp_Array1OfPnt(index_of_first_segment_count[i], index_of_first_segment_count[i+1])
+        for j in range(index_of_first_segment_count[i], index_of_first_segment_count[i+1]+1):
+            segment_point_array.SetValue(j, controlPoints.Value(j+1))
+            
+        segment = Geom_BezierCurve(segment_point_array)
+        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+        ms.Add(edge)
+
+    #sew segments
+    ms.Perform()
+    curve = ms.SewedShape()
+    return curve
+
+
+
+
+
+
+
 def new_brep_planar_face(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
@@ -415,6 +472,7 @@ def geom_type_of_object(o, context):
     else : 
         ob = o.evaluated_get(context.evaluated_depsgraph_get())
         if hasattr(ob.data, "attributes") :
+
             for k in ob.data.attributes.keys() :
                 match k:
                     case 'CP_bezier_surf' :
@@ -431,6 +489,9 @@ def geom_type_of_object(o, context):
                         break
                     case 'CP_bezier_chain':
                         type = 'bezier_chain'
+                        break
+                    case 'CP_curve':
+                        type = 'curve'
                         break
     return type
 
@@ -498,6 +559,7 @@ def mirrors(o, shape):
     return shape
 
 
+
 def prepare_brep(context, use_selection, axis_up, axis_forward):
     aShape = TopoDS_Shape()
     aSew = BRepBuilderAPI_Sewing(1e-1)
@@ -510,7 +572,7 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
     obj_list = initial_selection
     obj_to_del = []
     
-    while(len(obj_list)>0): # itterate until ob_list is empty
+    while(len(obj_list)>0): # itterates until ob_list is empty
         obj_newly_real = []
 
         for o in obj_list:
@@ -541,6 +603,11 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
                     SPobj_count +=1
                     bc = new_brep_cubic_bezier_chain(o, context)
                     aSew.Add(mirrors(o, bc))
+
+                case "curve" :
+                    SPobj_count +=1
+                    cu = new_brep_curve(o, context)
+                    aSew.Add(mirrors(o, cu))
 
                 # case "collection_instance":
                 #     pass
@@ -804,131 +871,9 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
                     bpy.ops.object.shade_smooth()
         return {'FINISHED'}
 
+import gui
+from gui import *
 
-
-
-from bpy.props import StringProperty, BoolProperty, EnumProperty
-from bpy_extras.io_utils import (
-    ExportHelper,
-    orientation_helper,
-    axis_conversion,
-)
-
-@orientation_helper(axis_forward='Y', axis_up='Z')
-class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
-    bl_idname = "sp.step_export"
-    bl_label = "Export STEP"
-
-    filename_ext = ".step"
-    filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255)
-    use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-    axis_up: EnumProperty(default='Z')
-    axis_forward: EnumProperty(default='Y')
-
-    def execute(self, context):
-        export_step(context, self.filepath, self.use_selection, self.axis_up, self.axis_forward)
-        return {'FINISHED'}
-
-
-@orientation_helper(axis_forward='Y', axis_up='Z')
-class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
-    bl_idname = "sp.iges_export"
-    bl_label = "Export IGES"
-
-    filename_ext = ".iges"
-    filter_glob: StringProperty(default="*.iges", options={'HIDDEN'}, maxlen=255)
-    use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-    axis_up: EnumProperty(default='Z')
-    axis_forward: EnumProperty(default='Y')
-
-    def execute(self, context):
-        export_iges(context, self.filepath, self.use_selection,self.axis_up, self.axis_forward)
-        return {'FINISHED'}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##############################
-##          MENUES          ##
-##############################
-
-class SP_PT_MainPanel(bpy.types.Panel):
-    bl_idname = "SP_PT_MainPanel"
-    bl_label = "Surface Psycho"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Edit"
-    
-    def draw(self, context):
-        if context.mode == 'OBJECT':
-            if os == "Windows" :
-                row = self.layout.row()
-                row.scale_y = 2.0
-                row.operator("sp.quick_export", text="Quick export as .STEP", icon="EXPORT")
-            row = self.layout.row()
-            row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR")
-            row = self.layout.row()
-            row.operator("sp.toogle_control_geom", text="Toogle Control Geometry", icon="OUTLINER_DATA_LATTICE")
-            
-            self.layout.label(text="Select Entities")
-            row = self.layout.row()
-            row.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
-            row = self.layout.row()
-            row.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
-            
-
-
-class SP_AddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = __name__
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.operator("sp.add_library", text="Add Assets Path")
-
-def menu_surface(self, context):
-    self.layout.separator()
-    if context.mode == 'OBJECT':
-        self.layout.operator("sp.add_aop", text="Any Order PsychoPatch", icon="SURFACE_NSURFACE")
-        self.layout.operator("sp.add_bicubic_patch", text="Bicubic PsychoPatch", icon="SURFACE_NSURFACE")
-        self.layout.operator("sp.add_biquadratic_patch", text="Biquadratic PsychoPatch", icon="SURFACE_NSURFACE") #almost deprecated
-        self.layout.operator("sp.add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE")
-
-def menu_curve(self, context):
-    self.layout.separator()
-    if context.mode == 'OBJECT':
-        self.layout.operator("sp.add_cubic_bezier_chain", text="Cubic Bezier Chain", icon="CURVE_BEZCURVE")
-        self.layout.operator("sp.add_any_order_curve", text="Any Order PsychoCurve", icon="CURVE_NCURVE")
-
-
-def menu_convert(self, context):
-    self.layout.separator()
-    if context.mode == 'OBJECT':
-        self.layout.operator("sp.bl_nurbs_to_psychopatch", text="Internal NURBS to PsychoPatch", icon="SURFACE_NSURFACE")
-        self.layout.operator("sp.psychopatch_to_bl_nurbs", text="PsychoPatch to internal NURBS", icon="SURFACE_NSURFACE")
-
-
-def menu_export_step(self, context):
-    self.layout.operator("sp.step_export", text="SurfacePsycho CAD (.step)")
-
-def menu_export_iges(self, context):
-    self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
 
 
 
@@ -968,9 +913,6 @@ def register():
     bpy.types.VIEW3D_MT_object_convert.append(menu_convert)
     bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
     bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
-
-    
-    
 
 def unregister():
     for c in classes[::-1]:

@@ -49,19 +49,6 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
                     o.select_set(True)
         return {'FINISHED'}
 
-class SP_OT_show_only_curves(bpy.types.Operator):
-    #TODO
-    pass
-
-class SP_OT_bevel_macro(bpy.types.Operator):
-    #TODO
-    pass
-
-class SP_OT_solidify(bpy.types.Operator):
-    #TODO
-    # Thickness Driver ?
-    # Linked data
-    pass
 
 
 
@@ -132,3 +119,20 @@ class SP_OT_unify_versions(bpy.types.Operator):
     
 
 
+class SP_OT_show_only_curves(bpy.types.Operator):
+    #TODO
+    #Store the state before ?
+    pass
+
+class SP_OT_bevel_macro(bpy.types.Operator):
+    #TODO
+    # Select two CONNECTED patches
+    # Trim them 
+    # Add a blend surface between (origin at mean of patches origins)
+    pass
+
+class SP_OT_solidify(bpy.types.Operator):
+    #TODO
+    # Thickness Driver ?
+    # Linked data
+    pass
