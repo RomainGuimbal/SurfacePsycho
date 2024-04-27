@@ -1,10 +1,18 @@
 ##############################
 ##            GUI           ##
 ##############################
+import sys
+from os.path import dirname
+file_dirname = dirname(__file__)
+if file_dirname not in sys.path:
+    sys.path.append(file_dirname)
 
 import bpy
 import platform
 os = platform.system()
+
+from importer import *
+from exporter import export_step, export_iges
 
 from bpy.props import StringProperty, BoolProperty, EnumProperty
 from bpy_extras.io_utils import (
@@ -12,6 +20,9 @@ from bpy_extras.io_utils import (
     orientation_helper,
     axis_conversion,
 )
+
+
+
 
 @orientation_helper(axis_forward='Y', axis_up='Z')
 class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
