@@ -65,7 +65,9 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
 
 
 
-
+##############################
+##  Brep from SP entities   ##
+##############################
 
 def new_brep_bezier_face(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -110,16 +112,16 @@ def new_brep_bezier_face(o, context):
         trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
 
         # Create points
-        points_occ = TColgp_Array1OfPnt2d(1, point_count)
+        controlPoints = TColgp_Array1OfPnt2d(1, point_count)
         for i in range(point_count):
             pnt= gp_Pnt2d(trim_pts[i][1], trim_pts[i][0])
-            points_occ.SetValue(i+1, pnt)
+            controlPoints.SetValue(i+1, pnt)
 
         #make edges
         if subtype :#polygon mode
             edges_list = TopTools_Array1OfShape(1, point_count)
             for i in range(point_count):
-                makesegment = GCE2d_MakeSegment(points_occ[i], points_occ[(i+1)%point_count])
+                makesegment = GCE2d_MakeSegment(controlPoints[i], controlPoints[(i+1)%point_count])
                 segment = makesegment.Value()
                 
                 #make 3D curves
@@ -132,10 +134,10 @@ def new_brep_bezier_face(o, context):
             edges_list = TopTools_Array1OfShape(1, point_count//3)
             for i in range(point_count//3):
                 bezier_segment_CP_array = TColgp_Array1OfPnt2d(0,3)
-                bezier_segment_CP_array.SetValue(0, points_occ[i*3])
-                bezier_segment_CP_array.SetValue(1, points_occ[(i*3+1)%point_count])
-                bezier_segment_CP_array.SetValue(2, points_occ[(i*3+2)%point_count])
-                bezier_segment_CP_array.SetValue(3, points_occ[(i*3+3)%point_count])
+                bezier_segment_CP_array.SetValue(0, controlPoints[i*3])
+                bezier_segment_CP_array.SetValue(1, controlPoints[(i*3+1)%point_count])
+                bezier_segment_CP_array.SetValue(2, controlPoints[(i*3+2)%point_count])
+                bezier_segment_CP_array.SetValue(3, controlPoints[(i*3+3)%point_count])
                 
                 segment = Geom2d_BezierCurve(bezier_segment_CP_array)
                 
@@ -158,7 +160,6 @@ def new_brep_bezier_face(o, context):
         fix.Perform()
         face= fix.Face()
     return face
-
 
 
 
@@ -191,54 +192,107 @@ def new_brep_any_order_face(o, context):
 
         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
     
-        # Trimming wire
-    try:
+    # Check if trimmed
+    try: # Old
         point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
         trimmed = True
+        old_version = True
     except Exception:
-        point_count=None
-        trimmed = False
-        face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-    
-    if trimmed:
+        try : # New
+            point_count = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
+            point_count = [int(p) for p in point_count]
+            trimmed = True
+            old_version = False
+            
+        except Exception: # No trim
+            point_count=None
+            trimmed = False
+            face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+
+    # old behaviour
+    try :
         subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
-        trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
+    except Exception:
+        pass
+    else :
+        if subtype :
+            point_count = [2]*point_count
+        elif not subtype :
+            point_count = [4]*(point_count//3)
+        else :
+            raise Exception("Invalid subtype attribute")
 
-        # Create points
-        points_occ = TColgp_Array1OfPnt2d(1, point_count)
-        for i in range(point_count):
+
+    # Build trim contour
+    if trimmed:
+        total_p_count = 0
+        segment_count = 0
+        p_count_accumulate = point_count[:]
+        for i, p in enumerate(point_count):
+            if p>0:
+                total_p_count += p-1
+                segment_count += 1
+            if i>0:
+                p_count_accumulate[i] += p_count_accumulate[i-1]-1
+
+        first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
+
+
+        if old_version :
+            subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
+            trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
+        else :
+            trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
+
+        # Create 2D points
+        controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
+        for i in range(total_p_count):
             pnt= gp_Pnt2d(trim_pts[i][1], trim_pts[i][0])
-            points_occ.SetValue(i+1, pnt)
+            controlPoints.SetValue(i+1, pnt)
 
-        #make edges
-        if subtype :#polygon mode
-            edges_list = TopTools_Array1OfShape(1, point_count)
-            for i in range(point_count):
-                makesegment = GCE2d_MakeSegment(points_occ[i], points_occ[(i+1)%point_count])
-                segment = makesegment.Value()
-                
-                #make 3D curves
-                adapt = GeomAdaptor_Surface(bsurf)
-                makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
-                edge = makeEdge.Edge()
-                edges_list.SetValue(i+1, edge)
+        # Create edge list
+        edges_list = TopTools_Array1OfShape(1, segment_count)
+        for i in range(segment_count):
+            segment_point_array = TColgp_Array1OfPnt2d(1, point_count[i])
+            for j in range(point_count[i]):
+                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
+            segment = Geom2d_BezierCurve(segment_point_array)
 
-        else :#bezier mode
-            edges_list = TopTools_Array1OfShape(1, point_count//3)
-            for i in range(point_count//3):
-                bezier_segment_CP_array = TColgp_Array1OfPnt2d(0,3)
-                bezier_segment_CP_array.SetValue(0, points_occ[i*3])
-                bezier_segment_CP_array.SetValue(1, points_occ[(i*3+1)%point_count])
-                bezier_segment_CP_array.SetValue(2, points_occ[(i*3+2)%point_count])
-                bezier_segment_CP_array.SetValue(3, points_occ[(i*3+3)%point_count])
+            # make curve 3D
+            adapt = GeomAdaptor_Surface(bsurf)
+            makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
+            edge = makeEdge.Edge()
+            edges_list.SetValue(i+1, edge)
+
+    #     # make edges
+    #     if subtype : # polygon mode
+    #         edges_list = TopTools_Array1OfShape(1, point_count)
+    #         for i in range(point_count):
+    #             makesegment = GCE2d_MakeSegment(controlPoints[i], controlPoints[(i+1)%point_count])
+    #             segment = makesegment.Value()
                 
-                segment = Geom2d_BezierCurve(bezier_segment_CP_array)
+    #             # make 3D curves
+    #             adapt = GeomAdaptor_Surface(bsurf)
+    #             makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
+    #             edge = makeEdge.Edge()
+    #             edges_list.SetValue(i+1, edge)
+
+    #     else : # bezier mode
+    #         edges_list = TopTools_Array1OfShape(1, point_count//3)
+    #         for i in range(point_count//3):
+    #             bezier_segment_CP_array = TColgp_Array1OfPnt2d(0,3)
+    #             bezier_segment_CP_array.SetValue(0, controlPoints[i*3])
+    #             bezier_segment_CP_array.SetValue(1, controlPoints[(i*3+1)%point_count])
+    #             bezier_segment_CP_array.SetValue(2, controlPoints[(i*3+2)%point_count])
+    #             bezier_segment_CP_array.SetValue(3, controlPoints[(i*3+3)%point_count])
                 
-                #make 3D curves
-                adapt = GeomAdaptor_Surface(bsurf)
-                makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
-                edge = makeEdge.Edge()
-                edges_list.SetValue(i+1, edge)
+    #             segment = Geom2d_BezierCurve(bezier_segment_CP_array)
+                
+    #             # make 3D curves
+    #             adapt = GeomAdaptor_Surface(bsurf)
+    #             makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
+    #             edge = makeEdge.Edge()
+    #             edges_list.SetValue(i+1, edge)
 
         makeWire = BRepBuilderAPI_MakeWire()
         for e in edges_list :
@@ -252,7 +306,45 @@ def new_brep_any_order_face(o, context):
         fix = ShapeFix_Face(face)
         fix.Perform()
         face= fix.Face()
+
     return face
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -271,6 +363,7 @@ def new_brep_any_order_curve(o, context):
     geom_curve = Geom_BezierCurve(controlPoints)
     curve = BRepBuilderAPI_MakeEdge(geom_curve).Edge()
     return curve
+
 
 
 def new_brep_cubic_bezier_chain(o, context):
@@ -319,14 +412,13 @@ def new_brep_curve(o, context):
         if i>0:
             p_count_accumulate[i] += p_count_accumulate[i-1]-1
 
-    index_of_first_segment_count = [0] + [p-1 for p in p_count_accumulate[:segment_count]]
+    first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count]]
     points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
     points *= 1000 #unit correction
 
     # Create CP
     controlPoints = TColgp_Array1OfPnt(1, total_p_count)
     for i in range(total_p_count):
-        print(points[i])
         controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
 
     #init sewing
@@ -335,8 +427,8 @@ def new_brep_curve(o, context):
 
     #create segments
     for i in range(segment_count):
-        segment_point_array = TColgp_Array1OfPnt(index_of_first_segment_count[i], index_of_first_segment_count[i+1])
-        for j in range(index_of_first_segment_count[i], index_of_first_segment_count[i+1]+1):
+        segment_point_array = TColgp_Array1OfPnt(first_segment_p_id[i], first_segment_p_id[i+1])
+        for j in range(first_segment_p_id[i], first_segment_p_id[i+1]+1):
             segment_point_array.SetValue(j, controlPoints.Value(j+1))
             
         segment = Geom_BezierCurve(segment_point_array)
@@ -350,17 +442,41 @@ def new_brep_curve(o, context):
 
 
 
-
-
-
-
 def new_brep_planar_face(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
-    subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
-    points = get_attribute_by_name(ob, 'CP_planar', 'vec3', point_count)
-    points*=1000 #unit correction
+    try:
+        point_count = get_attribute_by_name(ob, 'CP_count', 'int')
+    except Exception:
+        point_count = get_attribute_by_name(ob, 'P_count', 'int')
+        
+    point_count = [int(p) for p in point_count]
+    
+    # Old behaviour
+    try :
+        subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
+    except Exception:
+        pass
+    else :
+        if subtype :
+            point_count = [2]*point_count[0]
+        else :
+            point_count = [4]*(point_count[0]//3)
 
+    total_p_count = 0
+    segment_count = 0
+    p_count_accumulate = point_count[:]
+    for i, p in enumerate(point_count):
+        if p>0:
+            total_p_count += p-1
+            segment_count += 1
+        if i>0:
+            p_count_accumulate[i] += p_count_accumulate[i-1]-1
+
+    first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
+    points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
+    points*=1000 # Unit correction
+
+    # Orient and place
     loc, rot, scale = o.matrix_world.decompose()
     try :
         offset = get_attribute_by_name(ob, 'planar_offset', 'vec3', 1)[0]
@@ -375,34 +491,30 @@ def new_brep_planar_face(o, context):
     geom_pl = Geom_Plane(pl)
 
     # Create CP
-    points_occ = TColgp_Array1OfPnt(1, point_count)
-    for i in range(point_count):
-        pnt= gp_Pnt(points[i][0], points[i][1], points[i][2])
-        pnt= GeomAPI_ProjectPointOnSurf(pnt, geom_pl).Point(1)
-        points_occ.SetValue(i+1, pnt)
+    controlPoints = TColgp_Array1OfPnt(1, total_p_count)
+    for i in range(total_p_count):
+        pnt = gp_Pnt(points[i][0], points[i][1], points[i][2])
+        pnt = GeomAPI_ProjectPointOnSurf(pnt, geom_pl).Point(1)
+        controlPoints.SetValue(i+1, pnt)
+    
+    # Create segments
+    edges_list = TopTools_Array1OfShape(1, segment_count)
+    for i in range(segment_count):
+        if point_count[i] == 2: # straight edges
+            makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
+                                         controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
+            segment = makesegment.Value()
+        else:
+            segment_point_array = TColgp_Array1OfPnt(1, point_count[i])
+
+            for j in range(point_count[i]):
+                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
+            segment = Geom_BezierCurve(segment_point_array)
+
+        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+        edges_list.SetValue(i+1, edge)
 
     # Make contour
-    if subtype :#polygon mode
-        edges_list = TopTools_Array1OfShape(1, point_count)
-        for i in range(point_count):
-            makesegment = GC_MakeSegment(points_occ[i], points_occ[(i+1)%point_count])
-            segment = makesegment.Value()
-            edge = BRepBuilderAPI_MakeEdge(segment).Edge()
-            edges_list.SetValue(i+1, edge)
-
-    else :#bezier mode
-        edges_list = TopTools_Array1OfShape(1, point_count//3)
-        for i in range(point_count//3):
-            bezier_segment_CP_array = TColgp_Array1OfPnt(0,3)
-            bezier_segment_CP_array.SetValue(0, points_occ[i*3])
-            bezier_segment_CP_array.SetValue(1, points_occ[(i*3+1)%point_count])
-            bezier_segment_CP_array.SetValue(2, points_occ[(i*3+2)%point_count])
-            bezier_segment_CP_array.SetValue(3, points_occ[(i*3+3)%point_count])
-            
-            segment = Geom_BezierCurve(bezier_segment_CP_array)
-            edge = BRepBuilderAPI_MakeEdge(segment).Edge()
-            edges_list.SetValue(i+1, edge)
-
     makeWire = BRepBuilderAPI_MakeWire()
     for e in edges_list :
         makeWire.Add(e)
@@ -411,6 +523,14 @@ def new_brep_planar_face(o, context):
 
     aface = BRepBuilderAPI_MakeFace(w, True).Face()
     return aface
+
+
+
+
+
+
+
+
 
 
 def geom_type_of_object(o, context):
@@ -444,7 +564,8 @@ def geom_type_of_object(o, context):
     return type
 
 
-def mirrors(o, shape):
+
+def mirror_brep(o, shape):
     ms = BRepBuilderAPI_Sewing(1e-1)
     ms.SetNonManifoldMode(True)
     ms.Add(shape)
@@ -530,32 +651,32 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
                 case "bezier_surf" :
                     SPobj_count +=1
                     bf = new_brep_bezier_face(o, context)
-                    aSew.Add(mirrors(o, bf))
+                    aSew.Add(mirror_brep(o, bf))
 
                 case "surf_any" :
                     SPobj_count +=1
                     af = new_brep_any_order_face(o, context)
-                    aSew.Add(mirrors(o, af))
+                    aSew.Add(mirror_brep(o, af))
 
                 case "planar" :
                     SPobj_count +=1
                     pf = new_brep_planar_face(o, context)
-                    aSew.Add(mirrors(o, pf))
+                    aSew.Add(mirror_brep(o, pf))
                 
                 case "curve_any" :
                     SPobj_count +=1
                     ce = new_brep_any_order_curve(o, context)
-                    aSew.Add(mirrors(o, ce))
+                    aSew.Add(mirror_brep(o, ce))
                 
                 case "bezier_chain" :
                     SPobj_count +=1
                     bc = new_brep_cubic_bezier_chain(o, context)
-                    aSew.Add(mirrors(o, bc))
+                    aSew.Add(mirror_brep(o, bc))
 
                 case "curve" :
                     SPobj_count +=1
                     cu = new_brep_curve(o, context)
-                    aSew.Add(mirrors(o, cu))
+                    aSew.Add(mirror_brep(o, cu))
 
                 # case "collection_instance":
                 #     pass
