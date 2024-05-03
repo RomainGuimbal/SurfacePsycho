@@ -232,6 +232,8 @@ def new_brep_any_order_face(o, context):
             if p>0:
                 total_p_count += p-1
                 segment_count += 1
+            if p==0 :
+                break
             if i>0:
                 p_count_accumulate[i] += p_count_accumulate[i-1]-1
 
