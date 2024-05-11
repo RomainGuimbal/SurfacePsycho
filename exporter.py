@@ -582,7 +582,7 @@ def mirror_brep(o, shape):
     loc, rot, scale = o.matrix_world.decompose()
 
     for m in o.modifiers :
-        if m.type == 'MIRROR':
+        if m.type == 'MIRROR' and m.show_viewport :
             if m.mirror_object==None:
                 mirror_offset = loc*1000
             else :
