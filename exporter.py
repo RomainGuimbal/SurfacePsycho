@@ -609,6 +609,11 @@ def mirror_brep(o, shape):
             zscales = [ 0, 0, 1, 1, 1, 1, 0]
             symtype = [x+y+z for x,y,z in zip(xscales,yscales,zscales)]
 
+
+            ms2 = BRepBuilderAPI_Sewing(1e-1)
+            ms2.SetNonManifoldMode(True)
+
+
             for i in range(7): # 7 = 8 mirror configs -1 original config
                 if configurations[i]:
                     if symtype[i]==1:#sym planaire
@@ -624,13 +629,18 @@ def mirror_brep(o, shape):
                         atrsf.SetMirror(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]))
                     
                     mshape = BRepBuilderAPI_Transform(shape, atrsf).Shape()
-                    ms.Add(mshape)
-            
-            ms.Perform()
-            shape = ms.SewedShape()
+                    ms2.Add(shape)
+                    ms2.Add(mshape)
+                    # mshape = BRepBuilderAPI_Transform(shape, atrsf).Shape()
+                    # ms.Add(mshape)
+
+            ms2.Perform()
+            shape = ms2.SewedShape()
+            # ms.Perform()
+            # shape = ms.SewedShape()
             
     # ms.Perform()
-    shape = ms.SewedShape()
+    # shape = ms.SewedShape()
     return shape
 
 
