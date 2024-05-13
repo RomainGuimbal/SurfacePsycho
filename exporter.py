@@ -4,13 +4,11 @@ import numpy as np
 from mathutils import Vector
 from datetime import datetime
 from os.path import dirname, abspath
+from utils import *
 
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
-
-addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
-ASSETSPATH = addonpath + "/assets/assets.blend"
 
 
 import platform
@@ -32,33 +30,6 @@ if os=="Windows":
     from OCC.Core.TopTools import TopTools_Array1OfShape
     from OCC.Extend.DataExchange import write_step_file, write_iges_file
     from OCC.Core.ShapeFix import ShapeFix_Face
-
-
-
-
-def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
-    ge = ob_deps_graph.data
-    match type :
-        case 'first_int':
-            attribute = ge.attributes[name].data[0].value
-        case 'second_int':
-            attribute = ge.attributes[name].data[1].value
-        case 'int':
-            len_raw = len(ge.attributes[name].data)
-            if len_attr==None :
-                len_attr = len_raw
-            attribute = np.zeros(len_raw)
-            ge.attributes[name].data.foreach_get("value", attribute)
-            attribute = attribute[0:len_attr]
-        case 'vec3':
-            len_raw = len(ge.attributes[name].data)
-            if len_attr==None :
-                len_attr = len_raw
-            attribute = np.empty(3 * len_raw)
-            ge.attributes[name].data.foreach_get("vector", attribute)
-            attribute = attribute.reshape((-1, 3))[0:len_attr]
-    return attribute
-
 
 
 
@@ -539,35 +510,7 @@ def new_brep_planar_face(o, context):
 
 
 
-def geom_type_of_object(o, context):
-    type = None
-    if o.type == 'EMPTY' and o.instance_collection != None :
-        type = 'collection_instance'
-    else : 
-        ob = o.evaluated_get(context.evaluated_depsgraph_get())
-        if hasattr(ob.data, "attributes") :
 
-            for k in ob.data.attributes.keys() :
-                match k:
-                    case 'CP_bezier_surf' :
-                        type = 'bezier_surf'
-                        break
-                    case 'CP_any_order_surf' :
-                        type = 'surf_any'
-                        break
-                    case 'CP_planar' :
-                        type = 'planar'
-                        break
-                    case 'CP_any_order_curve':
-                        type = 'curve_any'
-                        break
-                    case 'CP_bezier_chain':
-                        type = 'bezier_chain'
-                        break
-                    case 'CP_curve':
-                        type = 'curve'
-                        break
-    return type
 
 
 
