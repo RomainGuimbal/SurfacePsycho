@@ -101,7 +101,6 @@ def menu_surface(self, context):
     if context.mode == 'OBJECT':
         self.layout.operator("sp.add_aop", text="Any Order PsychoPatch", icon="SURFACE_NSURFACE")
         self.layout.operator("sp.add_bicubic_patch", text="Bicubic PsychoPatch", icon="SURFACE_NSURFACE")
-        self.layout.operator("sp.add_biquadratic_patch", text="Biquadratic PsychoPatch", icon="SURFACE_NSURFACE") #almost deprecated
         self.layout.operator("sp.add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE")
 
 def menu_curve(self, context):
@@ -114,8 +113,10 @@ def menu_curve(self, context):
 def menu_convert(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
-        self.layout.operator("sp.bl_nurbs_to_psychopatch", text="Internal NURBS to PsychoPatch", icon="SURFACE_NSURFACE")
-        self.layout.operator("sp.psychopatch_to_bl_nurbs", text="PsychoPatch to internal NURBS", icon="SURFACE_NSURFACE")
+        if context.active_object.type == 'SURFACE':
+            self.layout.operator("sp.bl_nurbs_to_psychopatch", text="Internal NURBS to PsychoPatch", icon="SURFACE_NSURFACE")
+        if context.active_object.type == 'MESH':
+            self.layout.operator("sp.psychopatch_to_bl_nurbs", text="PsychoPatch to internal NURBS", icon="SURFACE_NSURFACE")
 
 
 def menu_export_step(self, context):
