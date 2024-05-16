@@ -169,6 +169,8 @@ classes = (
     SP_OT_ExportIges,
     SP_OT_unify_versions,
     SP_OT_import_step_file,
+    SP_OT_assign_as_endpoint,
+    SP_OT_remove_from_endpoints,
 )
 
 def register():

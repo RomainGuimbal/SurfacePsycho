@@ -81,10 +81,23 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row.operator("sp.toogle_control_geom", text="Toogle Control Geometry", icon="OUTLINER_DATA_LATTICE")
             
             self.layout.label(text="Select Entities")
-            row = self.layout.row()
-            row.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
-            row = self.layout.row()
-            row.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
+            layout = self.layout
+            split = layout.split(factor=0.5, align=True)
+            col1 = split.column(align=True)
+            col2 = split.column(align=True)
+
+            col1.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
+            col2.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
+        if context.mode == 'EDIT_MESH':
+            self.layout.label(text="Bezier Segments Endpoints")
+            layout = self.layout
+            split = layout.split(factor=0.5, align=True)
+            col1 = split.column(align=True)
+            col2 = split.column(align=True)
+            
+            col1.operator("sp.assign_as_endpoint", text="Assign")
+            col2.operator("sp.remove_from_endpoints", text="Remove")
+
             
 
 
@@ -124,3 +137,5 @@ def menu_export_step(self, context):
 
 def menu_export_iges(self, context):
     self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
+
+

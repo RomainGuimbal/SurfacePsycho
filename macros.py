@@ -222,6 +222,57 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
 
 
 
+
+
+
+class SP_OT_assign_as_endpoint(bpy.types.Operator):
+    bl_idname = "sp.assign_as_endpoint"
+    bl_label = "Assign as Endpoint"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        objs = context.objects_in_mode
+
+        for o in objs :
+            bpy.ops.object.mode_set(mode='OBJECT')  # Switch to object mode to modify vertex groups
+            # Ensure "Endpoints" vertex group exists
+            if "Endpoints" not in o.vertex_groups:
+                o.vertex_groups.new(name="Endpoints")
+            
+            vg = o.vertex_groups["Endpoints"]
+            
+            # Add selected vertices to the vertex group
+            for v in o.data.vertices:
+                if v.select:
+                    vg.add([v.index], 1.0, 'ADD')
+            bpy.ops.object.mode_set(mode='EDIT') 
+        return {'FINISHED'}
+    
+
+class SP_OT_remove_from_endpoints(bpy.types.Operator):
+    bl_idname = "sp.remove_from_endpoints"
+    bl_label = "Remove from Endpoints"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        objs = context.objects_in_mode
+        for o in objs :
+            bpy.ops.object.mode_set(mode='OBJECT')
+            # Ensure "Endpoints" vertex group exists
+            if "Endpoints" in o.vertex_groups:
+                vg = o.vertex_groups["Endpoints"]
+                
+                # Remove selected vertices to the vertex group
+                for v in o.data.vertices:
+                    if v.select:
+                        vg.remove([v.index])
+                bpy.ops.object.mode_set(mode='EDIT')
+        return {'FINISHED'}
+
+
+
+
+
 class SP_OT_show_only_curves(bpy.types.Operator):
     #TODO
     #Store the state before ?
