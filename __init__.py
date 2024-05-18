@@ -171,6 +171,7 @@ classes = (
     SP_OT_import_step_file,
     SP_OT_assign_as_endpoint,
     SP_OT_remove_from_endpoints,
+    SP_OT_add_trim_contour,
 )
 
 def register():

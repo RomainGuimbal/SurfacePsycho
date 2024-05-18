@@ -1,4 +1,5 @@
 import bpy
+import bmesh
 from utils import *
 from mathutils import Vector
 
@@ -234,7 +235,8 @@ class SP_OT_assign_as_endpoint(bpy.types.Operator):
         objs = context.objects_in_mode
 
         for o in objs :
-            bpy.ops.object.mode_set(mode='OBJECT')  # Switch to object mode to modify vertex groups
+            # Switch to object mode to modify vertex groups
+            bpy.ops.object.mode_set(mode='OBJECT')  
             # Ensure "Endpoints" vertex group exists
             if "Endpoints" not in o.vertex_groups:
                 o.vertex_groups.new(name="Endpoints")
@@ -270,6 +272,91 @@ class SP_OT_remove_from_endpoints(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class SP_OT_add_trim_contour(bpy.types.Operator):
+    bl_idname = "sp.add_trim_contour"
+    bl_label = "Add Trim Contour"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        original_mode = bpy.context.mode
+        
+        if original_mode == 'EDIT_MESH':
+            selected_objects = context.objects_in_mode
+        else:
+            selected_objects = context.selected_objects
+        
+        for obj in selected_objects:
+            is_AOP=False
+            try :
+                if original_mode=='EDIT_MESH':
+                    bpy.ops.object.mode_set(mode='OBJECT')
+                ob = obj.evaluated_get(context.evaluated_depsgraph_get())
+                points = get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', 1)
+                is_AOP = True
+            except :
+                pass
+            if obj.type == 'MESH' and is_AOP:
+                self.add_square_inside_mesh(context, obj)
+
+        # Restore the original mode
+        if original_mode=='EDIT_MESH':
+            original_mode='EDIT'
+        bpy.ops.object.mode_set(mode=original_mode)
+
+
+
+
+        return {'FINISHED'}
+    
+    def add_square_inside_mesh(self, context, obj):
+        
+        # Ensure the object is active and enter Edit mode
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.mode_set(mode='EDIT')
+        
+        # Create bmesh from the object
+        bm = bmesh.from_edit_mesh(obj.data)
+        
+        # Create vertices of the square
+        verts = [
+            bm.verts.new(Vector((0, 0, 0))),
+            bm.verts.new(Vector((1, 0, 0))),
+            bm.verts.new(Vector((1, 1, 0))),
+            bm.verts.new(Vector((0, 1, 0))),
+        ]
+        
+        # Create edges and faces for the square
+        bm.edges.new(verts[0:2])
+        bm.edges.new(verts[1:3])
+        bm.edges.new(verts[2:])
+        bm.edges.new([verts[3],verts[0]])
+        
+        # Update the mesh
+        bmesh.update_edit_mesh(obj.data)
+        
+        # Ensure the new vertices are selected
+        for vert in verts:
+            vert.select = True
+        
+        # Assign to Trim contour groups
+
+        # Switch to object mode to modify vertex groups
+        bpy.ops.object.mode_set(mode='OBJECT')  
+        # Ensure "Endpoints" vertex group exists
+        if "Endpoints" not in obj.vertex_groups:
+            obj.vertex_groups.new(name="Endpoints")
+        if "Trim Contour" not in obj.vertex_groups:
+            obj.vertex_groups.new(name="Trim Contour")
+        vg1 = obj.vertex_groups["Endpoints"]
+        vg2 = obj.vertex_groups["Trim Contour"]
+        
+        # Add selected vertices to the vertex group
+        for v in obj.data.vertices[-4:]:
+            if v.select:
+                vg1.add([v.index], 1.0, 'ADD')
+                vg2.add([v.index], 1.0, 'ADD')
+
+    
 
 
 
@@ -290,3 +377,6 @@ class SP_OT_solidify(bpy.types.Operator):
     # Thickness Driver ?
     # Linked data
     pass
+
+#TODO
+# Patch contour to curve(s) (selector for either 1 multiple span curve or several single)
