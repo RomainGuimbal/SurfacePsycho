@@ -12,4 +12,6 @@ The long term goal is a full class A surfacing tool accessible by anyone.
 
 [>>> Alpha release and test file here <<<](https://acideromineh.gumroad.com/l/SurfacePsycho)
 
+[Track donations here](https://docs.google.com/spreadsheets/d/e/2PACX-1vSxLjZFKB_In59aL-jqhKI4hz9x9iTr9e3ktCJtKcCdtQetlwUYqcbVy3mg4I1trv1SnS97Nnu_PNEO/pubhtml?gid=0&single=true)
+
 Experiment with it and share feedback !
