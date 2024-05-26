@@ -105,14 +105,6 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
     def execute(self, context):
         append_object_by_name("FlatPatch", context)
         return {'FINISHED'}
-
-class SP_OT_add_cubic_bezier_chain(bpy.types.Operator):
-    bl_idname = "sp.add_cubic_bezier_chain"
-    bl_label = "Add Cubic Bezier Chain"
-    bl_options = {'REGISTER', 'UNDO'}
-    def execute(self, context):
-        append_object_by_name("Psycho Cubic Chain", context)
-        return {'FINISHED'}
     
 class SP_OT_add_any_order_curve(bpy.types.Operator):
     bl_idname = "sp.add_any_order_curve"
@@ -154,7 +146,6 @@ classes = (
     SP_OT_add_any_order_curve,
     SP_OT_add_aop,
     SP_OT_add_bicubic_patch,
-    SP_OT_add_cubic_bezier_chain,
     SP_OT_add_curvatures_probe,
     SP_OT_add_flat_patch,
     SP_OT_add_library,
