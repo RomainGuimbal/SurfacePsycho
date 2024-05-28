@@ -112,6 +112,6 @@ def highest_suffix_of_each_object_name(names):
 
 
 def create_grid(vertices):
-    vertices_flat = vertices.reshape((-1, 3))
-    n,m,l = np.shape(vertices)
+    n,m = np.shape(vertices)
+    vertices_flat = vertices.reshape(-1)
     return vertices_flat, [], [(i, i + 1, i + m + 1, i + m) for i in range((n - 1) * m) if (i + 1) % m != 0]

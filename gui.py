@@ -11,17 +11,11 @@ import bpy
 import platform
 os = platform.system()
 
-from importer import *
+from importer import import_step
 from exporter import export_step, export_iges
 
 from bpy.props import StringProperty, BoolProperty, EnumProperty
-from bpy_extras.io_utils import (
-    ExportHelper,
-    orientation_helper,
-    axis_conversion,
-)
-
-
+from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
 
 
 @orientation_helper(axis_forward='Y', axis_up='Z')
@@ -53,6 +47,19 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
 
     def execute(self, context):
         export_iges(context, self.filepath, self.use_selection,self.axis_up, self.axis_forward)
+        return {'FINISHED'}
+
+
+class SP_OT_ImportStep(bpy.types.Operator, ImportHelper):
+    bl_idname = "sp.step_import"
+    bl_label = "Import STEP"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    filename_ext = ".step"
+    filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255,)
+
+    def execute(self, context):
+        import_step(self.filepath, context)
         return {'FINISHED'}
 
 
@@ -143,4 +150,6 @@ def menu_export_step(self, context):
 def menu_export_iges(self, context):
     self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
 
+def menu_func_import(self, context):
+    self.layout.operator(SP_OT_ImportStep.bl_idname, text="SurfacePsycho (.step)")
 

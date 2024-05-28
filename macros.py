@@ -379,4 +379,4 @@ class SP_OT_solidify(bpy.types.Operator):
     pass
 
 #TODO
-# Patch contour to curve(s) (selector for either 1 multiple span curve or several single)
+# Bridge patches
