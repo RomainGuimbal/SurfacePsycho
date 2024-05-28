@@ -159,7 +159,7 @@ classes = (
     SP_OT_ExportStep,
     SP_OT_ExportIges,
     SP_OT_unify_versions,
-    SP_OT_ImportStep,
+    SP_OT_ImportCAD,
     SP_OT_assign_as_endpoint,
     SP_OT_remove_from_endpoints,
     SP_OT_add_trim_contour,

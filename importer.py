@@ -4,21 +4,21 @@ from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
 from OCC.Extend.DataExchange import read_step_file
 from OCC.Core.BRep import BRep_Tool
 from OCC.Core.STEPControl import STEPControl_Reader
+from OCC.Core.IGESControl import IGESControl_Reader
 from OCC.Core.IFSelect import IFSelect_RetDone
 from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
 from OCC.Core.TopoDS import TopoDS_Iterator
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
-from OCC.Core.GeomAdaptor import GeomAdaptor_Curve
-from OCC.Core.Geom import Geom_BezierSurface
+# from OCC.Core.GeomAdaptor import GeomAdaptor_Curve, GeomAdaptor_Surface
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve
 from mathutils import Vector
-from os.path import abspath
+from os.path import abspath, splitext, split
 from utils import *
 
 
 
 
-
-def build_SP_curve(brepEdge, context) :
+def build_SP_curve(brepEdge, collection, context) :
     # curve info
     curve_adaptator = BRepAdaptor_Curve(brepEdge)
     first = curve_adaptator.FirstParameter()
@@ -32,57 +32,140 @@ def build_SP_curve(brepEdge, context) :
         gp_pnt=curve_adaptator.Value(t)
         vector_pts+=[Vector((gp_pnt.X()/1000, gp_pnt.Y()/1000, gp_pnt.Z()/1000))]
     
+    
+    status =""
+    # edge, _, _ = BRep_Tool.Curve(brepEdge)
+    # print(type(edge))
+
+    # if isinstance(edge, Geom_BezierCurve):
+    #     bezier_curve = Geom_BezierCurve.DownCast(edge)
+    #     count = bezier_curve.NbPoles()
+        
+    #     vector_pts = np.zeros(count, dtype=Vector)
+    #     for u in range(1, count + 1):
+    #         pole = bezier_curve.Pole(u)
+    #         vector_pts[u-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
+
+    # elif isinstance(edge, Geom_BSplineCurve):
+    #     bspline_curve = Geom_BSplineCurve.DownCast(edge)
+    #     count = bspline_curve.NbPoles()
+
+    #     knots = [bspline_curve.Knot(i+1) for i in range(bspline_curve.NbKnots())]
+    #     if not any(x not in {0., 1.} for x in knots) :
+    #         status = "Unsupported NURBS feature present, imported step will not be exact"
+
+    #     vector_pts = np.zeros(count, dtype=Vector)
+    #     for u in range(1, count + 1):
+    #         pole = bspline_curve.Pole(u)
+    #         vector_pts[u-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
+
+    #         weight = bspline_curve.Weight(u)
+    #         if weight!=1.0:
+    #             status = "Weighted NURBS present, SP doesn't currently support them"
+    # else:
+    #     print("error on edge type")
+    #     return False
+
     # create object
     mesh = bpy.data.meshes.new("Curve CP")
     vert = vector_pts
     edges = [(i,i+1) for i in range(len(vector_pts)-1)]
     mesh.from_pydata(vert, edges, [])
     ob = bpy.data.objects.new('STEP curve', mesh)
+
+    # add_modifier(ob, "SP - Curve Meshing")
     context.scene.collection.objects.link(ob)
+    bpy.context.view_layer.objects.active = ob
+
+    bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
+                                        asset_library_identifier="SurfacePsycho",
+                                        relative_asset_identifier="assets.blend\\NodeTree\\SP - Curve Through Points")
+    bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
+                                        asset_library_identifier="SurfacePsycho",
+                                        relative_asset_identifier="assets.blend\\NodeTree\\SP - Curve Meshing")
+    
+    collection.objects.link(ob)
+
+    if status != "":
+        print(status)
     return True
 
 
-def build_SP_patch(brepFace, context) :
-    # curve info
-    surf_adaptator = BRepAdaptor_Surface(brepFace)
-    firstU = surf_adaptator.FirstUParameter()
-    lastU = surf_adaptator.LastUParameter()
-    firstV = surf_adaptator.FirstVParameter()
-    lastV = surf_adaptator.LastVParameter()
-    degreeU = surf_adaptator.UDegree()
-    degreeV = surf_adaptator.VDegree()
-    
-    # #### Retrieve poles ##### 
-    # the surface adaptor seems to lose the poles :/
-
-    # u_count, v_count = surf_adaptator.NbUPoles(), surf_adaptator.NbVPoles()
-    # print("Poles of the Bézier surface:")
-    # for u in range(1, u_count + 1):
-    #     for v in range(1, v_count + 1):
-    #         pole = surf_adaptator.Pole(u, v)
-    #         print(f"Pole ({u}, {v}): ({pole.X()}, {pole.Y()}, {pole.Z()})")
 
 
-    #retrieve CP
-    us = np.linspace(firstU, lastU, degreeU+1)
-    vs = np.linspace(firstV, lastV, degreeV+1)
-    
-    vector_pts = np.zeros((degreeU+1, degreeV+1), dtype=Vector)
-    for i,u in enumerate(us):
-        for j,v in enumerate(vs):
-            gp_pnt=surf_adaptator.Value(u,v)
-            vector_pts[i, j] = Vector((gp_pnt.X()/1000, gp_pnt.Y()/1000, gp_pnt.Z()/1000))
+def build_SP_patch(brepFace, collection, context) :
+    status =""
+    face = BRep_Tool.Surface(brepFace)
+
+    if face.DynamicType().Name() == "Geom_BezierSurface":
+        bezier_surface = Geom_BezierSurface.DownCast(face)
+        u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
+        
+        vector_pts = np.zeros((u_count, v_count), dtype=Vector)
+        for u in range(1, u_count + 1):
+            for v in range(1, v_count + 1):
+                pole = bezier_surface.Pole(u, v)
+                vector_pts[u-1, v-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
+
+    elif face.DynamicType().Name() == "Geom_BSplineSurface":
+        bspline_surface = Geom_BSplineSurface.DownCast(face)
+        u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
+
+        u_knots = [bspline_surface.UKnot(i+1) for i in range(bspline_surface.NbUKnots())]
+        v_knots = [bspline_surface.VKnot(i+1) for i in range(bspline_surface.NbVKnots())]
+        if not any(x not in {0., 1.} for x in u_knots) or not any(x not in {0., 1.} for x in v_knots):
+            status = "Unsupported NURBS feature present, imported step will not be exact"
+
+        vector_pts = np.zeros((u_count, v_count), dtype=Vector)
+        for u in range(1, u_count + 1):
+            for v in range(1, v_count + 1):
+                pole = bspline_surface.Pole(u, v)
+                vector_pts[u-1, v-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
+
+                weight = bspline_surface.Weight(u, v)
+                if weight!=1.0:
+                    status = "Weighted NURBS present, SP doesn't currently support them"
+    else:
+        print("error on face type")
+        return False
 
     # create object
     mesh = bpy.data.meshes.new("Patch CP")
     vert, edges, faces = create_grid(vector_pts)
     mesh.from_pydata(vert, edges, faces)
     ob = bpy.data.objects.new('STEP Patch', mesh)
+    
+    # set smooth
+    mesh = ob.data
+    values = [True] * len(mesh.polygons)
+    mesh.polygons.foreach_set("use_smooth", values)
+
+    # add_modifier(ob, "SP - Any Order Patch Meshing")
     context.scene.collection.objects.link(ob)
+    bpy.context.view_layer.objects.active = ob
+    
+    bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
+                                        asset_library_identifier="SurfacePsycho",
+                                        relative_asset_identifier="assets.blend\\NodeTree\\SP - Any Order Patch Meshing")
+    
+    collection.objects.link(ob)
+
+    if status != "":
+        print(status)
     return True
 
 
-def recursive_SP_from_brep_shape(shape, context, level=0):
+
+
+def recursive_SP_from_brep_shape(shape, collection, context, visited_shapes=None, level=0):
+    if visited_shapes is None:
+        visited_shapes = set()
+
+    shape_id = hash(shape.__hash__())
+    if shape_id in visited_shapes:
+        return
+    visited_shapes.add(shape_id)
+
     tab = "  " * level
     shape_type = shape.ShapeType()
     if shape_type == TopAbs_COMPOUND:
@@ -97,43 +180,60 @@ def recursive_SP_from_brep_shape(shape, context, level=0):
     elif shape_type == TopAbs_FACE:
         print(f"{tab}Face")
         try :
-            build_SP_patch(shape, context)
+            build_SP_patch(shape, collection, context)
         except Exception:
             pass
     elif shape_type == TopAbs_WIRE:
         print(f"{tab}Wire")
     elif shape_type == TopAbs_EDGE:
-        build_SP_curve(shape, context)
         print(f"{tab}Edge")
+        try :
+            build_SP_curve(shape, collection, context)
+        except Exception:
+            pass
     elif shape_type == TopAbs_VERTEX:
-        print(f"{tab}Vertex")
+        pass# print(f"{tab}Vertex")
     else:
         print(f"{tab}Unknown shape type")
 
     explorer = TopoDS_Iterator(shape)
     while explorer.More():
         sub_shape = explorer.Value()
-        recursive_SP_from_brep_shape(sub_shape, context, level + 1)
+        recursive_SP_from_brep_shape(sub_shape, collection, context, visited_shapes, level + 1)
         explorer.Next()
 
 
-def build_SP_from_brep(shape, context):
+def build_SP_from_brep(shape, collection, context):
     #Add SP entities
-    recursive_SP_from_brep_shape(shape, context)
+    recursive_SP_from_brep_shape(shape, collection, context)
 
     #TODO : Add brep relations (face connections...)
 
     return True
 
 
-def import_step(filepath, context):
-    step_reader = STEPControl_Reader()
-    status = step_reader.ReadFile(filepath)
-    if status != IFSelect_RetDone:
-        raise ValueError("Error reading STEP file")
-    step_reader.TransferRoots()
-    shape = step_reader.OneShape()
+def import_cad(filepath, context):
+    if splitext(split(filepath)[1])[1] in ['.step','.stp','.STEP', '.STP']:
+        step_reader = STEPControl_Reader()
+        status = step_reader.ReadFile(filepath)
+        if status != IFSelect_RetDone:
+            raise ValueError("Error reading STEP file")
+        step_reader.TransferRoots()
+        shape = step_reader.OneShape()
 
-    build_SP_from_brep(shape, context)
+    elif splitext(split(filepath)[1])[1] in ['.igs','.iges','.IGES', '.IGS']:
+        iges_reader = IGESControl_Reader()
+        status = iges_reader.ReadFile(filepath)
+        if status != IFSelect_RetDone:
+            raise ValueError("Error reading IGES file")
+        iges_reader.TransferRoots()
+        shape = iges_reader.OneShape()
     
+    # Create container collection
+    collection_name = splitext(split(filepath)[1])[0]
+    new_collection = bpy.data.collections.new(collection_name)
+    context.scene.collection.children.link(new_collection)
+    context.view_layer.active_layer_collection = context.view_layer.layer_collection.children[collection_name]
+
+    build_SP_from_brep(shape, new_collection, context)
 

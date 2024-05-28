@@ -11,7 +11,7 @@ import bpy
 import platform
 os = platform.system()
 
-from importer import import_step
+from importer import import_cad
 from exporter import export_step, export_iges
 
 from bpy.props import StringProperty, BoolProperty, EnumProperty
@@ -50,16 +50,16 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
-class SP_OT_ImportStep(bpy.types.Operator, ImportHelper):
-    bl_idname = "sp.step_import"
-    bl_label = "Import STEP"
+class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
+    bl_idname = "sp.cad_import"
+    bl_label = "Import CAD"
     bl_options = {'REGISTER', 'UNDO'}
 
-    filename_ext = ".step"
-    filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255,)
+    filename_ext = ".step;.stp;.iges;.igs"
+    filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
 
     def execute(self, context):
-        import_step(self.filepath, context)
+        import_cad(self.filepath, context)
         return {'FINISHED'}
 
 
@@ -151,5 +151,5 @@ def menu_export_iges(self, context):
     self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
 
 def menu_func_import(self, context):
-    self.layout.operator(SP_OT_ImportStep.bl_idname, text="SurfacePsycho (.step)")
+    self.layout.operator(SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)")
 
