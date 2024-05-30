@@ -1,16 +1,18 @@
 import bpy
 import numpy as np
-from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
-from OCC.Extend.DataExchange import read_step_file
 from OCC.Core.BRep import BRep_Tool
-from OCC.Core.STEPControl import STEPControl_Reader
-from OCC.Core.IGESControl import IGESControl_Reader
-from OCC.Core.IFSelect import IFSelect_RetDone
-from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
-from OCC.Core.TopoDS import TopoDS_Iterator
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
-# from OCC.Core.GeomAdaptor import GeomAdaptor_Curve, GeomAdaptor_Surface
 from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve
+from OCC.Core.GeomAbs import GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_Plane, GeomAbs_Torus, GeomAbs_Sphere, GeomAbs_Cone, GeomAbs_Cylinder
+from OCC.Core.GeomAdaptor import GeomAdaptor_Curve, GeomAdaptor_Surface
+from OCC.Core.IFSelect import IFSelect_RetDone
+from OCC.Core.IGESControl import IGESControl_Reader
+from OCC.Core.STEPControl import STEPControl_Reader
+from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
+from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopoDS import TopoDS_Iterator
+from OCC.Extend.DataExchange import read_step_file
+from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
 from mathutils import Vector
 from os.path import abspath, splitext, split
 from utils import *
@@ -95,6 +97,7 @@ def build_SP_patch(brepFace, collection, context) :
     status =""
     face = BRep_Tool.Surface(brepFace)
 
+
     if face.DynamicType().Name() == "Geom_BezierSurface":
         bezier_surface = Geom_BezierSurface.DownCast(face)
         u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
@@ -154,6 +157,52 @@ def build_SP_patch(brepFace, collection, context) :
 
 
 
+def build_SP_flat(brepFace, collection, context):
+    vector_pts = []
+
+    explorer = TopExp_Explorer(brepFace, TopAbs_VERTEX)
+    visited_vert = set()  
+
+    while explorer.More():
+        vertex = explorer.Current()
+        vert_hash = hash(vertex.__hash__())
+        if vert_hash not in visited_vert:      
+            visited_vert.add(vert_hash)
+            pnt = BRep_Tool.Pnt(vertex)
+            vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
+        explorer.Next()
+
+    # create object
+    mesh = bpy.data.meshes.new("FlatPatch CP")
+    vert = vector_pts
+    edges = [(i,(i+1)%len(vector_pts)) for i in range(len(vector_pts))]
+    mesh.from_pydata(vert, edges, [])
+    ob = bpy.data.objects.new('STEP FlatPatch', mesh)
+
+    # Assign endpoints
+    if "Endpoints" not in ob.vertex_groups:
+        ob.vertex_groups.new(name="Endpoints")
+    vg = ob.vertex_groups["Endpoints"]
+
+    for v in ob.data.vertices:
+        if True : # Mask to implement
+            vg.add([v.index], 1.0, 'ADD')
+    
+    # add_modifier(ob, "SP - Any Order Patch Meshing")
+    collection.objects.link(ob)
+    bpy.context.view_layer.objects.active = ob
+    
+    bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
+                                        asset_library_identifier="SurfacePsycho",
+                                        relative_asset_identifier="assets.blend\\NodeTree\\SP - FlatPatch Meshing")
+    # Enable Orient option
+    change_node_socket_value(ob, True, ['Orient'], 'NodeSocketBool', context)
+
+    return True
+
+
+
+
 
 def recursive_SP_from_brep_shape(shape, collection, context, enabled_entities, visited_shapes=None, level=0):
     if visited_shapes is None:
@@ -175,15 +224,21 @@ def recursive_SP_from_brep_shape(shape, collection, context, enabled_entities, v
         print(f"{tab}Solid")
     elif shape_type == TopAbs_SHELL:
         print(f"{tab}Shell")
+    
     elif shape_type == TopAbs_FACE:
         print(f"{tab}Face")
         if enabled_entities["faces"]:
-            try :
+            ft= face_type(shape)
+            if ft=="Bezier" or ft=="NURBS":
                 build_SP_patch(shape, collection, context)
-            except Exception:
-                pass
+            elif ft=="Plane":
+                build_SP_flat(shape, collection, context)
+            else :
+                print("Unsupported Face Type")
+
     elif shape_type == TopAbs_WIRE:
         print(f"{tab}Wire")
+    
     elif shape_type == TopAbs_EDGE:
         print(f"{tab}Edge")
         if enabled_entities["curves"]:
@@ -237,3 +292,24 @@ def import_cad(filepath, context, enabled_entities):
 
     build_SP_from_brep(shape, new_collection, context, enabled_entities)
 
+
+def face_type(face):
+    surface_adaptor = GeomAdaptor_Surface(BRep_Tool.Surface(face))
+    surface_type = surface_adaptor.GetType()
+
+    if surface_type == GeomAbs_Plane:
+        return "Plane"
+    elif surface_type == GeomAbs_Cylinder:
+        return "Cylindrical"
+    elif surface_type == GeomAbs_Cone:
+        return "Conical"
+    elif surface_type == GeomAbs_Sphere:
+        return "Spherical"
+    elif surface_type == GeomAbs_Torus:
+        return "Toroidal"
+    elif surface_type == GeomAbs_BezierSurface:
+        return "Bezier"
+    elif surface_type == GeomAbs_BSplineSurface:
+        return "NURBS"
+    else:
+        return "Other"

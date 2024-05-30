@@ -1,7 +1,7 @@
 import bpy
 import bmesh
 import numpy as np
-from multiprocessing import Process
+# from multiprocessing import Process
 import sys
 from os.path import dirname, abspath
 file_dirname = dirname(__file__)
@@ -152,11 +152,20 @@ def progress_bar(self, context):
     row.scale_x = 1
 
 
-def runInParallel(fns):
-  proc = []
-  for fn in fns:
-    p = Process(target=fn)
-    p.start()
-    proc.append(p)
-  for p in proc:
-    p.join()
+# def runInParallel(fns):
+#   proc = []
+#   for fn in fns:
+#     p = Process(target=fn)
+#     p.start()
+#     proc.append(p)
+#   for p in proc:
+#     p.join()
+
+def change_node_socket_value(ob, value, potential_names, socket_type, context):
+    for m in ob.modifiers :
+        if m.type == "NODES" and m.node_group.name[:5]=='SP - ':
+            for it in m.node_group.interface.items_tree :
+                if it.name in potential_names and it.socket_type == socket_type:
+                    input_id = it.identifier
+                    m[input_id] = value
+                    m.node_group.interface_update(context)

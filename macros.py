@@ -34,8 +34,8 @@ class SP_OT_select_visible_curves(bpy.types.Operator):
         objects=[ob for ob in context.visible_objects]
         for o in objects:
             for m in o.modifiers :
-                if m.type == "NODES" and m.node_group is not None and m.node_group.name[:-4] in ['SP - Mesh Bezier Chain', 'SP - Bezier Curve Any Order', 'SP -  Mesh Bezier Chain', 'SP -  Bezier Curve Any Order', 
-                                                                                                 'SP - Mesh Bezier C', 'SP - Bezier Curve Any O', 'SP -  Mesh Bezier C', 'SP -  Bezier Curve Any O']:
+                if m.type == "NODES" and m.node_group is not None and m.node_group.name[:-4] in ['SP - Mesh Bezier Chain', 'SP - Bezier Curve Any Order', 'SP -  Mesh Bezier Chain', 'SP -  Bezier Curve Any Order', 'SP - Curve Meshing', 
+                                                                                                 'SP - Mesh Bezier C', 'SP - Bezier Curve Any O', 'SP -  Mesh Bezier C', 'SP -  Bezier Curve Any O', 'SP - Curve Mes']:
                     o.select_set(True)
                     break
         return {'FINISHED'}
@@ -49,8 +49,8 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
         objects=[ob for ob in context.visible_objects]
         for o in objects:
             for m in o.modifiers :
-                if m.type == "NODES" and m.node_group is not None and m.node_group.name[:-4] in ['SP - Any Order Patch Meshing', 'SP - Bicubic Patch Meshing','SP - Mesh Flat patch', 'SP - Patch meshing',
-                                                                                                 'SP - Any Order Patch Mes', 'SP - Bicubic Patch Mes','SP - Mesh Flat p', 'SP - Patch mes']:
+                if m.type == "NODES" and m.node_group is not None and m.node_group.name[:-4] in ['SP - Any Order Patch Meshing', 'SP - Bicubic Patch Meshing','SP - Mesh Flat patch', 'SP - Patch meshing', 'SP - FlatPatch Meshing'
+                                                                                                 'SP - Any Order Patch Mes', 'SP - Bicubic Patch Mes','SP - Mesh Flat p', 'SP - Patch mes', 'SP - FlatPatch Mes']:
                     o.select_set(True)
                     break
         return {'FINISHED'}
