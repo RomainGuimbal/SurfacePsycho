@@ -51,7 +51,7 @@ def build_SP_curve(brepEdge, collection, context) :
     #     count = bspline_curve.NbPoles()
 
     #     knots = [bspline_curve.Knot(i+1) for i in range(bspline_curve.NbKnots())]
-    #     if not any(x not in {0., 1.} for x in knots) :
+    #     if any(x not in [0.0, 1.0] for x in knots) :
     #         status = "Unsupported NURBS feature present, imported step will not be exact"
 
     #     vector_pts = np.zeros(count, dtype=Vector)
@@ -74,7 +74,7 @@ def build_SP_curve(brepEdge, collection, context) :
     ob = bpy.data.objects.new('STEP curve', mesh)
 
     # add_modifier(ob, "SP - Curve Meshing")
-    context.scene.collection.objects.link(ob)
+    collection.objects.link(ob)
     bpy.context.view_layer.objects.active = ob
 
     bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
@@ -83,8 +83,6 @@ def build_SP_curve(brepEdge, collection, context) :
     bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
                                         asset_library_identifier="SurfacePsycho",
                                         relative_asset_identifier="assets.blend\\NodeTree\\SP - Curve Meshing")
-    
-    collection.objects.link(ob)
 
     if status != "":
         print(status)
@@ -113,8 +111,10 @@ def build_SP_patch(brepFace, collection, context) :
 
         u_knots = [bspline_surface.UKnot(i+1) for i in range(bspline_surface.NbUKnots())]
         v_knots = [bspline_surface.VKnot(i+1) for i in range(bspline_surface.NbVKnots())]
-        if not any(x not in {0., 1.} for x in u_knots) or not any(x not in {0., 1.} for x in v_knots):
+        if any(x not in [0.0, 1.0] for x in u_knots) or any(x not in [0.0, 1.0] for x in v_knots):
             status = "Unsupported NURBS feature present, imported step will not be exact"
+            print(u_knots)
+            print(v_knots)
 
         vector_pts = np.zeros((u_count, v_count), dtype=Vector)
         for u in range(1, u_count + 1):
@@ -141,15 +141,13 @@ def build_SP_patch(brepFace, collection, context) :
     mesh.polygons.foreach_set("use_smooth", values)
 
     # add_modifier(ob, "SP - Any Order Patch Meshing")
-    context.scene.collection.objects.link(ob)
+    collection.objects.link(ob)
     bpy.context.view_layer.objects.active = ob
     
     bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
                                         asset_library_identifier="SurfacePsycho",
                                         relative_asset_identifier="assets.blend\\NodeTree\\SP - Any Order Patch Meshing")
     
-    collection.objects.link(ob)
-
     if status != "":
         print(status)
     return True
@@ -157,7 +155,7 @@ def build_SP_patch(brepFace, collection, context) :
 
 
 
-def recursive_SP_from_brep_shape(shape, collection, context, visited_shapes=None, level=0):
+def recursive_SP_from_brep_shape(shape, collection, context, enabled_entities, visited_shapes=None, level=0):
     if visited_shapes is None:
         visited_shapes = set()
 
@@ -179,18 +177,20 @@ def recursive_SP_from_brep_shape(shape, collection, context, visited_shapes=None
         print(f"{tab}Shell")
     elif shape_type == TopAbs_FACE:
         print(f"{tab}Face")
-        try :
-            build_SP_patch(shape, collection, context)
-        except Exception:
-            pass
+        if enabled_entities["faces"]:
+            try :
+                build_SP_patch(shape, collection, context)
+            except Exception:
+                pass
     elif shape_type == TopAbs_WIRE:
         print(f"{tab}Wire")
     elif shape_type == TopAbs_EDGE:
         print(f"{tab}Edge")
-        try :
-            build_SP_curve(shape, collection, context)
-        except Exception:
-            pass
+        if enabled_entities["curves"]:
+            try :
+                build_SP_curve(shape, collection, context)
+            except Exception:
+                pass
     elif shape_type == TopAbs_VERTEX:
         pass# print(f"{tab}Vertex")
     else:
@@ -199,20 +199,20 @@ def recursive_SP_from_brep_shape(shape, collection, context, visited_shapes=None
     explorer = TopoDS_Iterator(shape)
     while explorer.More():
         sub_shape = explorer.Value()
-        recursive_SP_from_brep_shape(sub_shape, collection, context, visited_shapes, level + 1)
+        recursive_SP_from_brep_shape(sub_shape, collection, context, enabled_entities, visited_shapes, level + 1)
         explorer.Next()
 
 
-def build_SP_from_brep(shape, collection, context):
+def build_SP_from_brep(shape, collection, context, enabled_entities):
     #Add SP entities
-    recursive_SP_from_brep_shape(shape, collection, context)
+    recursive_SP_from_brep_shape(shape, collection, context, enabled_entities)
 
     #TODO : Add brep relations (face connections...)
 
     return True
 
 
-def import_cad(filepath, context):
+def import_cad(filepath, context, enabled_entities):
     if splitext(split(filepath)[1])[1] in ['.step','.stp','.STEP', '.STP']:
         step_reader = STEPControl_Reader()
         status = step_reader.ReadFile(filepath)
@@ -235,5 +235,5 @@ def import_cad(filepath, context):
     context.scene.collection.children.link(new_collection)
     context.view_layer.active_layer_collection = context.view_layer.layer_collection.children[collection_name]
 
-    build_SP_from_brep(shape, new_collection, context)
+    build_SP_from_brep(shape, new_collection, context, enabled_entities)
 

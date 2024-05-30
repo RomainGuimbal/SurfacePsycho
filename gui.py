@@ -13,6 +13,7 @@ os = platform.system()
 
 from importer import import_cad
 from exporter import export_step, export_iges
+from utils import  progress_bar
 
 from bpy.props import StringProperty, BoolProperty, EnumProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
@@ -50,17 +51,48 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
+# class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
+#     bl_idname = "sp.cad_import"
+#     bl_label = "Import CAD"
+#     bl_options = {'REGISTER', 'UNDO'}
+
+#     filename_ext = ".step;.stp;.iges;.igs"
+#     filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
+
+#     def execute(self, context):
+#         import_cad(self.filepath, context)
+#         self.report({'WARNING'}, 'Only Bezier surfaces are supported at the moment')
+#         return {'FINISHED'}
+
 class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     bl_idname = "sp.cad_import"
     bl_label = "Import CAD"
     bl_options = {'REGISTER', 'UNDO'}
 
+    _timer = None
     filename_ext = ".step;.stp;.iges;.igs"
     filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
+    faces: BoolProperty(name="Faces", description="Import Faces", default=True)
+    curves: BoolProperty(name="Curves", description="Import Curves", default=False)
+
+    def modal(self, context, event):
+        [a.tag_redraw() for a in context.screen.areas]
+        if self._timer.time_duration > 3:
+            context.window_manager.progress = 1
+            return {'FINISHED'}
+        context.window_manager.progress = self._timer.time_duration / 3
+        return {'PASS_THROUGH'}
 
     def execute(self, context):
-        import_cad(self.filepath, context)
-        return {'FINISHED'}
+        import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves})
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.1, window=context.window)
+        wm.modal_handler_add(self)
+        self.report({'WARNING'}, 'Only Bezier surfaces are supported at the moment')
+        return {'RUNNING_MODAL'}
+
+
+
 
 
 

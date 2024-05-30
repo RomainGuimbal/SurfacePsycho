@@ -1,6 +1,7 @@
 import bpy
 import bmesh
 import numpy as np
+from multiprocessing import Process
 import sys
 from os.path import dirname, abspath
 file_dirname = dirname(__file__)
@@ -117,27 +118,45 @@ def create_grid(vertices):
     return vertices_flat, [], [(i, i + 1, i + m + 1, i + m) for i in range((n - 1) * m) if (i + 1) % m != 0]
 
 
-def modifier_exists_in_file(modifier_name):
-    for mod in bpy.data.modifiers:
-        if mod.name == modifier_name:
-            return True
-    return False
+# def modifier_exists_in_file(modifier_name):
+#     for mod in bpy.data.modifiers:
+#         if mod.name == modifier_name:
+#             return True
+#     return False
 
 
-def add_modifier(object, modifier_name):
-    if not modifier_exists_in_file(modifier_name):
-        append_modifier_from_sp_lib(modifier_name)
+# def add_modifier(object, modifier_name):
+#     if not modifier_exists_in_file(modifier_name):
+#         append_modifier_from_sp_lib(modifier_name)
 
-    for mod in bpy.data.modifiers:
-        if mod.name == modifier_name:
-            appended_modifier = mod
-            break
+#     for mod in bpy.data.modifiers:
+#         if mod.name == modifier_name:
+#             appended_modifier = mod
+#             break
 
-    object.modifiers.new(name=modifier_name, type=appended_modifier.type)
+#     object.modifiers.new(name=modifier_name, type=appended_modifier.type)
 
 
-def append_modifier_from_sp_lib(modifier_name):
-    with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
-        if modifier_name in data_from.modifiers:
-            data_to.modifiers.append(modifier_name)
-    
+# def append_modifier_from_sp_lib(modifier_name):
+#     with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
+#         if modifier_name in data_from.modifiers:
+#             data_to.modifiers.append(modifier_name)
+
+def progress_bar(self, context):
+    row = self.layout.row()
+    row.progress(
+        factor=context.window_manager.progress,
+        type="BAR",
+        text="Import in progress..." if context.window_manager.progress < 1 else "Import Successful"
+    )
+    row.scale_x = 1
+
+
+def runInParallel(fns):
+  proc = []
+  for fn in fns:
+    p = Process(target=fn)
+    p.start()
+    proc.append(p)
+  for p in proc:
+    p.join()
