@@ -265,7 +265,7 @@ def new_brep_bezier_face(o, context):
 
 
 
-def new_brep_any_order_curve(o, context):
+def new_brep_any_order_curve(o, context): # LEGACY
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     point_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
     points = get_attribute_by_name(ob, 'CP_any_order_curve', 'vec3', point_count)
@@ -278,38 +278,6 @@ def new_brep_any_order_curve(o, context):
     geom_curve = Geom_BezierCurve(controlPoints)
     curve = BRepBuilderAPI_MakeEdge(geom_curve).Edge()
     return curve
-
-
-
-# def new_brep_cubic_bezier_chain(o, context):
-#     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-#     point_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
-#     points = get_attribute_by_name(ob, 'CP_bezier_chain', 'vec3', point_count)
-#     points *= 1000 #unit correction
-
-#     # Create CP
-#     controlPoints = TColgp_Array1OfPnt(1, point_count)
-#     for i in range(point_count):
-#         pnt= gp_Pnt(points[i][0], points[i][1], points[i][2])
-#         controlPoints.SetValue(i+1, pnt)
-
-#     ms = BRepBuilderAPI_Sewing(1e-1)
-#     ms.SetNonManifoldMode(True)
-    
-#     for i in range(point_count//3):
-#         bezier_segment_CP_array = TColgp_Array1OfPnt(0,3)
-#         bezier_segment_CP_array.SetValue(0, controlPoints[i*3])
-#         bezier_segment_CP_array.SetValue(1, controlPoints[(i*3+1)%point_count])
-#         bezier_segment_CP_array.SetValue(2, controlPoints[(i*3+2)%point_count])
-#         bezier_segment_CP_array.SetValue(3, controlPoints[(i*3+3)%point_count])
-        
-#         segment = Geom_BezierCurve(bezier_segment_CP_array)
-#         edge = BRepBuilderAPI_MakeEdge(segment).Edge()
-#         ms.Add(edge)
-
-#     ms.Perform()
-#     chain = ms.SewedShape()
-#     return chain
 
 
 
@@ -549,7 +517,7 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
             gto = geom_type_of_object(o, context)
 
             match gto :
-                case "bezier_surf" :
+                case "bicubic_surf" :
                     SPobj_count +=1
                     bf = new_brep_bicubic_face(o, context)
                     aSew.Add(mirror_brep(o, bf))
@@ -564,15 +532,10 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
                     pf = new_brep_planar_face(o, context)
                     aSew.Add(mirror_brep(o, pf))
                 
-                case "curve_any" :
+                case "curve_any" : # LEGACY
                     SPobj_count +=1
                     ce = new_brep_any_order_curve(o, context)
                     aSew.Add(mirror_brep(o, ce))
-                
-                case "bezier_chain" :
-                    SPobj_count +=1
-                    bc = new_brep_cubic_bezier_chain(o, context)
-                    aSew.Add(mirror_brep(o, bc))
 
                 case "curve" :
                     SPobj_count +=1

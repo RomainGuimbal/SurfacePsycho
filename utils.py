@@ -24,7 +24,7 @@ def geom_type_of_object(o, context):
             for k in ob.data.attributes.keys() :
                 match k:
                     case 'CP_bezier_surf' :
-                        type = 'bezier_surf'
+                        type = 'bicubic_surf'
                         break
                     case 'CP_any_order_surf' :
                         type = 'surf_any'
@@ -34,9 +34,6 @@ def geom_type_of_object(o, context):
                         break
                     case 'CP_any_order_curve':
                         type = 'curve_any'
-                        break
-                    case 'CP_bezier_chain':
-                        type = 'bezier_chain'
                         break
                     case 'CP_curve':
                         type = 'curve'
@@ -75,16 +72,21 @@ def append_object_by_name(obj_name, context):# for importing from the asset file
 
     cursor_loc = context.scene.cursor.location
 
-    for o in data_to.objects:
-        if o is not None:
-            if context.mode != 'OBJECT':
-                bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.ops.object.select_all(action='DESELECT')
-            context.collection.objects.link(o)
-            o.location = cursor_loc
-            o.asset_clear()
-            o.select_set(True)
-            bpy.context.view_layer.objects.active = o
+    o = data_to.objects[0]
+    if o is not None:
+        if context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
+        context.collection.objects.link(o)
+        o.location = cursor_loc
+        o.asset_clear()
+        o.select_set(True)
+        bpy.context.view_layer.objects.active = o
+
+        # Iterate through all objects and their geometry node modifiers
+        for mod in o.modifiers:
+            if mod.type == 'NODES' and mod.node_group:
+                mod.node_group.asset_clear()
 
 
 def classify_strings_by_prefix(strings):

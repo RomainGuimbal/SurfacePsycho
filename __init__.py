@@ -82,14 +82,6 @@ class SP_OT_add_bicubic_patch(bpy.types.Operator):
         append_object_by_name("PsychoPatch", context)
         return {'FINISHED'}
     
-class SP_OT_add_biquadratic_patch(bpy.types.Operator):
-    bl_idname = "sp.add_biquadratic_patch"
-    bl_label = "Add Biquadratic PsychoPatch"
-    bl_options = {'REGISTER', 'UNDO'}
-    def execute(self, context):
-        append_object_by_name("PsychoPatch Quadratic", context)
-        return {'FINISHED'}
-    
 class SP_OT_add_aop(bpy.types.Operator):
     bl_idname = "sp.add_aop"
     bl_label = "Add Any Order PsychoPatch"
@@ -106,12 +98,12 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
         append_object_by_name("FlatPatch", context)
         return {'FINISHED'}
     
-class SP_OT_add_any_order_curve(bpy.types.Operator):
-    bl_idname = "sp.add_any_order_curve"
-    bl_label = "Add Any Order PsychoCurve"
+class SP_OT_add_curve(bpy.types.Operator):
+    bl_idname = "sp.add_curve"
+    bl_label = "Add PsychoCurve"
     bl_options = {'REGISTER', 'UNDO'}
     def execute(self, context):
-        append_object_by_name("PsychoCurve Any Order", context)
+        append_object_by_name("PsychoCurve", context)
         return {'FINISHED'}
 
 class SP_OT_add_curvatures_probe(bpy.types.Operator):
@@ -143,7 +135,7 @@ class SP_OT_add_library(bpy.types.Operator):
 
 classes = (
     SP_AddonPreferences,
-    SP_OT_add_any_order_curve,
+    SP_OT_add_curve,
     SP_OT_add_aop,
     SP_OT_add_bicubic_patch,
     SP_OT_add_curvatures_probe,
@@ -194,3 +186,12 @@ def unregister():
 if __name__ == "__main__":
     register()
     bpy.ops.sp.cad_import()
+
+
+
+
+
+
+
+
+

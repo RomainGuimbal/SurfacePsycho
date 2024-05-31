@@ -69,26 +69,26 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     bl_label = "Import CAD"
     bl_options = {'REGISTER', 'UNDO'}
 
-    _timer = None
+    # _timer = None
     filename_ext = ".step;.stp;.iges;.igs"
     filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
     faces: BoolProperty(name="Faces", description="Import Faces", default=True)
     curves: BoolProperty(name="Curves", description="Import Curves", default=False)
 
     def modal(self, context, event):
-        [a.tag_redraw() for a in context.screen.areas]
-        if self._timer.time_duration > 3:
-            context.window_manager.progress = 1
-            return {'FINISHED'}
-        context.window_manager.progress = self._timer.time_duration / 3
+        # [a.tag_redraw() for a in context.screen.areas]
+        # if self._timer.time_duration > 3:
+        #     context.window_manager.progress = 1
+        #     return {'FINISHED'}
+        # context.window_manager.progress = self._timer.time_duration / 3
         return {'PASS_THROUGH'}
 
     def execute(self, context):
         import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves})
-        wm = context.window_manager
-        self._timer = wm.event_timer_add(0.1, window=context.window)
-        wm.modal_handler_add(self)
-        self.report({'WARNING'}, 'Only Bezier surfaces are supported at the moment')
+        # wm = context.window_manager
+        # self._timer = wm.event_timer_add(0.1, window=context.window)
+        # wm.modal_handler_add(self)
+        # self.report({'WARNING'}, 'Only Bezier surfaces are supported at the moment')
         return {'RUNNING_MODAL'}
 
 
@@ -164,7 +164,7 @@ def menu_surface(self, context):
 def menu_curve(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
-        self.layout.operator("sp.add_any_order_curve", text="Any Order PsychoCurve", icon="CURVE_NCURVE")
+        self.layout.operator("sp.add_curve", text="PsychoCurve", icon="CURVE_NCURVE")
 
 
 def menu_convert(self, context):
