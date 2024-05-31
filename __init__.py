@@ -168,8 +168,8 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
     bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-    bpy.types.WindowManager.progress = bpy.props.FloatProperty()
-    bpy.types.TEXT_HT_header.append(progress_bar)
+    # bpy.types.WindowManager.progress = bpy.props.FloatProperty()
+    # bpy.types.TEXT_HT_header.append(progress_bar)
 
 def unregister():
     for c in classes[::-1]:
@@ -181,7 +181,7 @@ def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-    bpy.types.TEXT_HT_header.remove(progress_bar)
+    # bpy.types.TEXT_HT_header.remove(progress_bar)
 
 if __name__ == "__main__":
     register()
