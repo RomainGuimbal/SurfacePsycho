@@ -144,14 +144,14 @@ def create_grid(vertices):
 #         if modifier_name in data_from.modifiers:
 #             data_to.modifiers.append(modifier_name)
 
-def progress_bar(self, context):
-    row = self.layout.row()
-    row.progress(
-        factor=context.window_manager.progress,
-        type="BAR",
-        text="Import in progress..." if context.window_manager.progress < 1 else "Import Successful"
-    )
-    row.scale_x = 1
+# def progress_bar(self, context):
+#     row = self.layout.row()
+#     row.progress(
+#         factor=context.window_manager.progress,
+#         type="BAR",
+#         text="Import in progress..." if context.window_manager.progress < 1 else "Import Successful"
+#     )
+#     row.scale_x = 1
 
 
 # def runInParallel(fns):

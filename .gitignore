@@ -1,4 +1,6 @@
 *.blend1
 *.pyc
 
+__pycache__/
+
 TODELETE.py

@@ -13,7 +13,7 @@ os = platform.system()
 
 from importer import import_cad
 from exporter import export_step, export_iges
-from utils import  progress_bar
+# from utils import  progress_bar
 
 from bpy.props import StringProperty, BoolProperty, EnumProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
