@@ -2,6 +2,100 @@ import bpy
 import bmesh
 from utils import *
 from mathutils import Vector
+from datetime import datetime
+from os.path import dirname, abspath, join
+
+#Local Packages
+import platform
+os = platform.system()
+
+if os=="Windows":
+    from importer import *
+    from exporter import *
+
+    class SP_OT_quick_export(bpy.types.Operator):
+        bl_idname = "sp.quick_export"
+        bl_label = "SP - Quick export"
+        bl_options = {'REGISTER', 'UNDO'}
+
+        def execute(self, context):
+
+            blenddir = bpy.path.abspath("//")
+            if blenddir !="":#avoids exporting to root
+                dir =  blenddir
+            else :
+                dir = context.preferences.filepaths.temporary_directory
+            pathstr = dir + str(datetime.today())[:-7].replace('-','').replace(' ','-').replace(':','')
+
+            export_isdone = export_step(context, f"{pathstr}.step", True)
+            if export_isdone:
+                self.report({'INFO'}, f"Step file exported as {pathstr}.step")
+            else :
+                self.report({'INFO'}, 'No SurfacePsycho Objects selected')
+            return {'FINISHED'}
+
+class SP_OT_add_bicubic_patch(bpy.types.Operator):
+    bl_idname = "sp.add_bicubic_patch"
+    bl_label = "Add Bicubic PsychoPatch"
+    bl_options = {'REGISTER', 'UNDO'}
+    def execute(self, context):
+        append_object_by_name("PsychoPatch", context)
+        return {'FINISHED'}
+    
+class SP_OT_add_aop(bpy.types.Operator):
+    bl_idname = "sp.add_aop"
+    bl_label = "Add Any Order PsychoPatch"
+    bl_options = {'REGISTER', 'UNDO'}
+    def execute(self, context):
+        append_object_by_name("PsychoPatch Any Order", context)
+        return {'FINISHED'}
+    
+class SP_OT_add_flat_patch(bpy.types.Operator):
+    bl_idname = "sp.add_flat_patch"
+    bl_label = "Add flat PsychoPatch"
+    bl_options = {'REGISTER', 'UNDO'}
+    def execute(self, context):
+        append_object_by_name("FlatPatch", context)
+        return {'FINISHED'}
+    
+class SP_OT_add_curve(bpy.types.Operator):
+    bl_idname = "sp.add_curve"
+    bl_label = "Add PsychoCurve"
+    bl_options = {'REGISTER', 'UNDO'}
+    def execute(self, context):
+        append_object_by_name("PsychoCurve", context)
+        return {'FINISHED'}
+
+class SP_OT_add_curvatures_probe(bpy.types.Operator):
+    bl_idname = "sp.add_curvatures_probe"
+    bl_label = "Add Curvatures Probe"
+    bl_options = {'REGISTER', 'UNDO'}
+    def execute(self, context):
+        append_object_by_name("SP - Curvatures Probe", context)
+        return {'FINISHED'}
+
+class SP_OT_add_library(bpy.types.Operator):
+    bl_idname = "sp.add_library"
+    bl_label = "Add Library"
+    bl_options = {'REGISTER', 'UNDO'}
+    def execute(self, context):
+
+        #create lib
+        asset_lib_path = join(dirname(abspath(__file__)),"assets")
+        paths = [a.path for a in bpy.context.preferences.filepaths.asset_libraries]
+        if asset_lib_path not in paths :
+            bpy.ops.preferences.asset_library_add(directory=asset_lib_path)
+        
+        #Rename lib
+        asset_library = bpy.context.preferences.filepaths.asset_libraries.get("assets")
+        if asset_library:
+            asset_library.name = "SurfacePsycho"
+
+        return {'FINISHED'}
+
+
+
+
 
 class SP_OT_toogle_control_geom(bpy.types.Operator):
     bl_idname = "sp.toogle_control_geom"

@@ -11,25 +11,23 @@ if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
 
-import platform
-os = platform.system()
-if os=="Windows":
-    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeEdge2d
-    # from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
-    from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
-    from OCC.Core.GC import GC_MakeSegment
-    from OCC.Core.GCE2d import GCE2d_MakeSegment
-    from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
-    from OCC.Core.Geom2d import Geom2d_BezierCurve
-    from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
-    from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
-    from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Pnt2d #, gp_Vec
-    from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
-    from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
-    from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
-    from OCC.Core.TopTools import TopTools_Array1OfShape
-    from OCC.Extend.DataExchange import write_step_file, write_iges_file
-    from OCC.Core.ShapeFix import ShapeFix_Face
+
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeEdge2d
+# from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
+from OCC.Core.GC import GC_MakeSegment
+from OCC.Core.GCE2d import GCE2d_MakeSegment
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
+from OCC.Core.Geom2d import Geom2d_BezierCurve
+from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
+from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
+from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Pnt2d #, gp_Vec
+from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
+from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
+from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
+from OCC.Core.TopTools import TopTools_Array1OfShape
+from OCC.Extend.DataExchange import write_step_file, write_iges_file
+from OCC.Core.ShapeFix import ShapeFix_Face
 
 
 

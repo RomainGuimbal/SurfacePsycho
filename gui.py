@@ -11,85 +11,87 @@ import bpy
 import platform
 os = platform.system()
 
-from importer import import_cad
-from exporter import export_step, export_iges
-# from utils import  progress_bar
+if os=="Windows":
+    from importer import import_cad
+    from exporter import export_step, export_iges
+    # from utils import  progress_bar
+    from macros import *
 
-from bpy.props import StringProperty, BoolProperty, EnumProperty
-from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
-
-
-@orientation_helper(axis_forward='Y', axis_up='Z')
-class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
-    bl_idname = "sp.step_export"
-    bl_label = "Export STEP"
-
-    filename_ext = ".step"
-    filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255)
-    use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-    axis_up: EnumProperty(default='Z')
-    axis_forward: EnumProperty(default='Y')
-
-    def execute(self, context):
-        export_step(context, self.filepath, self.use_selection, self.axis_up, self.axis_forward)
-        return {'FINISHED'}
+    from bpy.props import StringProperty, BoolProperty, EnumProperty
+    from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
 
 
-@orientation_helper(axis_forward='Y', axis_up='Z')
-class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
-    bl_idname = "sp.iges_export"
-    bl_label = "Export IGES"
+    @orientation_helper(axis_forward='Y', axis_up='Z')
+    class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
+        bl_idname = "sp.step_export"
+        bl_label = "Export STEP"
 
-    filename_ext = ".iges"
-    filter_glob: StringProperty(default="*.iges", options={'HIDDEN'}, maxlen=255)
-    use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-    axis_up: EnumProperty(default='Z')
-    axis_forward: EnumProperty(default='Y')
+        filename_ext = ".step"
+        filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255)
+        use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
+        axis_up: EnumProperty(default='Z')
+        axis_forward: EnumProperty(default='Y')
 
-    def execute(self, context):
-        export_iges(context, self.filepath, self.use_selection,self.axis_up, self.axis_forward)
-        return {'FINISHED'}
+        def execute(self, context):
+            export_step(context, self.filepath, self.use_selection, self.axis_up, self.axis_forward)
+            return {'FINISHED'}
 
 
-# class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
-#     bl_idname = "sp.cad_import"
-#     bl_label = "Import CAD"
-#     bl_options = {'REGISTER', 'UNDO'}
+    @orientation_helper(axis_forward='Y', axis_up='Z')
+    class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
+        bl_idname = "sp.iges_export"
+        bl_label = "Export IGES"
 
-#     filename_ext = ".step;.stp;.iges;.igs"
-#     filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
+        filename_ext = ".iges"
+        filter_glob: StringProperty(default="*.iges", options={'HIDDEN'}, maxlen=255)
+        use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
+        axis_up: EnumProperty(default='Z')
+        axis_forward: EnumProperty(default='Y')
 
-#     def execute(self, context):
-#         import_cad(self.filepath, context)
-#         self.report({'WARNING'}, 'Only Bezier surfaces are supported at the moment')
-#         return {'FINISHED'}
+        def execute(self, context):
+            export_iges(context, self.filepath, self.use_selection,self.axis_up, self.axis_forward)
+            return {'FINISHED'}
 
-class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
-    bl_idname = "sp.cad_import"
-    bl_label = "Import CAD"
-    bl_options = {'REGISTER', 'UNDO'}
 
-    # _timer = None
-    filename_ext = ".step;.stp;.iges;.igs"
-    filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
-    faces: BoolProperty(name="Faces", description="Import Faces", default=True)
-    curves: BoolProperty(name="Curves", description="Import Curves", default=False)
+    # class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
+    #     bl_idname = "sp.cad_import"
+    #     bl_label = "Import CAD"
+    #     bl_options = {'REGISTER', 'UNDO'}
 
-    def modal(self, context, event):
-        # [a.tag_redraw() for a in context.screen.areas]
-        # if self._timer.time_duration > 3:
-        #     context.window_manager.progress = 1
-        #     return {'FINISHED'}
-        # context.window_manager.progress = self._timer.time_duration / 3
-        return {'PASS_THROUGH'}
+    #     filename_ext = ".step;.stp;.iges;.igs"
+    #     filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
 
-    def execute(self, context):
-        import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves})
-        # wm = context.window_manager
-        # self._timer = wm.event_timer_add(0.1, window=context.window)
-        # wm.modal_handler_add(self)
-        # self.report({'WARNING'}, 'Only Bezier surfaces are supported at the moment')
-        return {'RUNNING_MODAL'}
+    #     def execute(self, context):
+    #         import_cad(self.filepath, context)
+    #         self.report({'WARNING'}, 'Only Bezier surfaces are supported at the moment')
+    #         return {'FINISHED'}
+
+    class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
+        bl_idname = "sp.cad_import"
+        bl_label = "Import CAD"
+        bl_options = {'REGISTER', 'UNDO'}
+
+        # _timer = None
+        filename_ext = ".step;.stp;.iges;.igs"
+        filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
+        faces: BoolProperty(name="Faces", description="Import Faces", default=True)
+        curves: BoolProperty(name="Curves", description="Import Curves", default=False)
+
+        def modal(self, context, event):
+            # [a.tag_redraw() for a in context.screen.areas]
+            # if self._timer.time_duration > 3:
+            #     context.window_manager.progress = 1
+            #     return {'FINISHED'}
+            # context.window_manager.progress = self._timer.time_duration / 3
+            return {'PASS_THROUGH'}
+
+        def execute(self, context):
+            import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves})
+            # wm = context.window_manager
+            # self._timer = wm.event_timer_add(0.1, window=context.window)
+            # wm.modal_handler_add(self)
+            self.report({'WARNING'}, 'Only Bezier surfaces are supported at the moment')
+            return {'RUNNING_MODAL'}
 
 
 
@@ -146,13 +148,12 @@ class SP_PT_MainPanel(bpy.types.Panel):
             
 
 
-class SP_AddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = __name__
 
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.operator("sp.add_library", text="Add Assets Path")
+
+
+
+
+
 
 def menu_surface(self, context):
     self.layout.separator()
@@ -175,13 +176,13 @@ def menu_convert(self, context):
         if context.active_object.type == 'MESH':
             self.layout.operator("sp.psychopatch_to_bl_nurbs", text="PsychoPatch to internal NURBS", icon="SURFACE_NSURFACE")
 
+if os=="Windows":
+    def menu_export_step(self, context):
+        self.layout.operator("sp.step_export", text="SurfacePsycho CAD (.step)")
 
-def menu_export_step(self, context):
-    self.layout.operator("sp.step_export", text="SurfacePsycho CAD (.step)")
+    def menu_export_iges(self, context):
+        self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
 
-def menu_export_iges(self, context):
-    self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
-
-def menu_func_import(self, context):
-    self.layout.operator(SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)")
+    def menu_func_import(self, context):
+        self.layout.operator(SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)")
 
