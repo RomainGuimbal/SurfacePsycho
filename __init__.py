@@ -59,23 +59,22 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
 
 classes = [
     SP_AddonPreferences,
-    SP_OT_add_curve,
     SP_OT_add_aop,
     SP_OT_add_bicubic_patch,
     SP_OT_add_curvatures_probe,
+    SP_OT_add_curve,
     SP_OT_add_flat_patch,
     SP_OT_add_library,
+    SP_OT_add_trim_contour,
+    SP_OT_assign_as_endpoint,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_psychopatch_to_bl_nurbs,
+    SP_OT_remove_from_endpoints,
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,
     SP_OT_toogle_control_geom,
-    SP_PT_MainPanel,
     SP_OT_unify_versions,
-    SP_OT_assign_as_endpoint,
-    SP_OT_remove_from_endpoints,
-    SP_OT_add_trim_contour,
-    
+    SP_PT_MainPanel,
 ]
 
 if os!="Darwin":
@@ -115,7 +114,8 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-    bpy.ops.sp.cad_import()
+    if os!="Darwin":
+        bpy.ops.sp.cad_import()
 
 
 
