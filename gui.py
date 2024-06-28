@@ -112,7 +112,7 @@ class SP_PT_MainPanel(bpy.types.Panel):
     
     def draw(self, context):
         if context.mode == 'OBJECT':
-            if os == "Windows" :
+            if os!="Darwin" :
                 row = self.layout.row()
                 row.scale_y = 2.0
                 row.operator("sp.quick_export", text="Quick export as .STEP", icon="EXPORT")
