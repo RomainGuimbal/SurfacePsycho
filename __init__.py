@@ -59,26 +59,25 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
 
 classes = [
     SP_AddonPreferences,
-    SP_OT_add_curve,
     SP_OT_add_aop,
     SP_OT_add_bicubic_patch,
     SP_OT_add_curvatures_probe,
+    SP_OT_add_curve,
     SP_OT_add_flat_patch,
     SP_OT_add_library,
+    SP_OT_add_trim_contour,
+    SP_OT_assign_as_endpoint,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_psychopatch_to_bl_nurbs,
+    SP_OT_remove_from_endpoints,
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,
     SP_OT_toogle_control_geom,
-    SP_PT_MainPanel,
     SP_OT_unify_versions,
-    SP_OT_assign_as_endpoint,
-    SP_OT_remove_from_endpoints,
-    SP_OT_add_trim_contour,
-    
+    SP_PT_MainPanel,
 ]
 
-if os=="Windows":
+if os!="Darwin":
     classes+= [
         SP_OT_quick_export,
         SP_OT_ExportStep,
@@ -93,7 +92,7 @@ def register():
     bpy.types.VIEW3D_MT_curve_add.append(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.append(menu_convert)
     # bpy.types.VIEW3D_MT_object_context_menu_convert.append(menu_convert)
-    if os=="Windows":
+    if os!="Darwin":
         bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
         bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
@@ -107,7 +106,7 @@ def unregister():
     bpy.types.VIEW3D_MT_curve_add.remove(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.remove(menu_convert)
     # bpy.types.VIEW3D_MT_object_context_menu_convert.remove(menu_convert)
-    if os=="Windows":
+    if os!="Darwin":
         bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
         bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
@@ -115,7 +114,8 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-    bpy.ops.sp.cad_import()
+    if os!="Darwin":
+        bpy.ops.sp.cad_import()
 
 
 
