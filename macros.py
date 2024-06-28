@@ -9,7 +9,7 @@ from os.path import dirname, abspath, join
 import platform
 os = platform.system()
 
-if os=="Windows":
+if os!="Darwin":
     from importer import *
     from exporter import *
 

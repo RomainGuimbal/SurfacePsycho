@@ -11,7 +11,7 @@ import bpy
 import platform
 os = platform.system()
 
-if os=="Windows":
+if os!="Darwin":
     from importer import import_cad
     from exporter import export_step, export_iges
     # from utils import  progress_bar
@@ -176,7 +176,7 @@ def menu_convert(self, context):
         if context.active_object.type == 'MESH':
             self.layout.operator("sp.psychopatch_to_bl_nurbs", text="PsychoPatch to internal NURBS", icon="SURFACE_NSURFACE")
 
-if os=="Windows":
+if os!="Darwin":
     def menu_export_step(self, context):
         self.layout.operator("sp.step_export", text="SurfacePsycho CAD (.step)")
 

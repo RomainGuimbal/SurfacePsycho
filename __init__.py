@@ -78,7 +78,7 @@ classes = [
     
 ]
 
-if os=="Windows":
+if os!="Darwin":
     classes+= [
         SP_OT_quick_export,
         SP_OT_ExportStep,
@@ -93,7 +93,7 @@ def register():
     bpy.types.VIEW3D_MT_curve_add.append(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.append(menu_convert)
     # bpy.types.VIEW3D_MT_object_context_menu_convert.append(menu_convert)
-    if os=="Windows":
+    if os!="Darwin":
         bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
         bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
@@ -107,7 +107,7 @@ def unregister():
     bpy.types.VIEW3D_MT_curve_add.remove(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.remove(menu_convert)
     # bpy.types.VIEW3D_MT_object_context_menu_convert.remove(menu_convert)
-    if os=="Windows":
+    if os!="Darwin":
         bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
         bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
