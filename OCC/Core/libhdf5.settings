@@ -1,0 +1,94 @@
+	    SUMMARY OF THE HDF5 CONFIGURATION
+	    =================================
+
+General Information:
+-------------------
+                   HDF5 Version: 1.12.2
+                  Configured on: Wed Dec 21 12:00:19 UTC 2022
+                  Configured by: conda@90d91bf01786
+                    Host system: x86_64-conda-linux-gnu
+              Uname information: Linux 90d91bf01786 5.15.0-1024-azure #30-Ubuntu SMP Wed Nov 16 23:37:59 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+                       Byte sex: little-endian
+             Installation point: /home/romain/Downloads/PREFIX/envs/pyoccenv
+
+Compiling Options:
+------------------
+                     Build Mode: production
+              Debugging Symbols: no
+                        Asserts: no
+                      Profiling: no
+             Optimization Level: high
+
+Linking Options:
+----------------
+                      Libraries: static, shared
+  Statically Linked Executables: 
+                        LDFLAGS: -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/home/romain/Downloads/PREFIX/envs/pyoccenv/lib -Wl,-rpath-link,/home/romain/Downloads/PREFIX/envs/pyoccenv/lib -L/home/romain/Downloads/PREFIX/envs/pyoccenv/lib
+                     H5_LDFLAGS: 
+                     AM_LDFLAGS:  -L/home/romain/Downloads/PREFIX/envs/pyoccenv/lib -L/home/romain/Downloads/PREFIX/envs/pyoccenv/lib
+                Extra libraries: -lcrypto -lcurl -lrt -lpthread -lsz -lz -ldl -lm 
+                       Archiver: /home/conda/feedstock_root/build_artifacts/hdf5_split_1671623896720/_build_env/bin/x86_64-conda-linux-gnu-ar
+                       AR_FLAGS: cr
+                         Ranlib: /home/conda/feedstock_root/build_artifacts/hdf5_split_1671623896720/_build_env/bin/x86_64-conda-linux-gnu-ranlib
+
+Languages:
+----------
+                              C: yes
+                     C Compiler: /home/conda/feedstock_root/build_artifacts/hdf5_split_1671623896720/_build_env/bin/x86_64-conda-linux-gnu-cc
+                       CPPFLAGS: -DNDEBUG -D_FORTIFY_SOURCE=2 -O2 -isystem /home/romain/Downloads/PREFIX/envs/pyoccenv/include
+                    H5_CPPFLAGS: -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L   -DNDEBUG -UH5_DEBUG_API
+                    AM_CPPFLAGS:  -I/home/romain/Downloads/PREFIX/envs/pyoccenv/include -I/home/romain/Downloads/PREFIX/envs/pyoccenv/include
+                        C Flags: -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/romain/Downloads/PREFIX/envs/pyoccenv/include -fdebug-prefix-map=/home/conda/feedstock_root/build_artifacts/hdf5_split_1671623896720/work=/usr/local/src/conda/hdf5_split-1.12.2 -fdebug-prefix-map=/home/romain/Downloads/PREFIX/envs/pyoccenv=/usr/local/src/conda-prefix
+                     H5 C Flags:  -std=c99  -Wall -Wcast-qual -Wconversion -Wextra -Wfloat-equal -Wformat=2 -Winit-self -Winvalid-pch -Wmissing-include-dirs -Wshadow -Wundef -Wwrite-strings -pedantic -Wno-c++-compat -Wlarger-than=2560 -Wlogical-op -Wframe-larger-than=16384 -Wpacked-bitfield-compat -Wsync-nand -Wstrict-overflow=5 -Wno-unsuffixed-float-constants -Wdouble-promotion -Wtrampolines -Wstack-usage=8192 -Wmaybe-uninitialized -Wdate-time -Warray-bounds=2 -Wc99-c11-compat -Wduplicated-cond -Whsa -Wnormalized -Wnull-dereference -Wunused-const-variable -Walloca -Walloc-zero -Wduplicated-branches -Wformat-overflow=2 -Wformat-truncation=1 -Wrestrict -Wattribute-alias -Wcast-align=strict -Wshift-overflow=2 -Wattribute-alias=2 -Wmissing-profile -Wc11-c2x-compat -fstdarg-opt -fdiagnostics-urls=never -fno-diagnostics-color -s  -Wbad-function-cast -Wimplicit-function-declaration -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wpacked -Wpointer-sign -Wpointer-to-int-cast -Wint-to-pointer-cast -Wredundant-decls -Wstrict-prototypes -Wswitch -Wunused-function -Wunused-variable -Wunused-parameter -Wcast-align -Wunused-but-set-variable -Wformat -Wincompatible-pointer-types -Wint-conversion -Wshadow -Wcast-function-type -Wmaybe-uninitialized -Wno-aggregate-return -Wno-inline -Wno-missing-format-attribute -Wno-missing-noreturn -Wno-overlength-strings -Wno-jump-misses-init -Wno-suggest-attribute=const -Wno-suggest-attribute=noreturn -Wno-suggest-attribute=pure -Wno-suggest-attribute=format -Wno-suggest-attribute=cold -Wno-suggest-attribute=malloc -O3
+                     AM C Flags: 
+               Shared C Library: yes
+               Static C Library: yes
+
+
+                        Fortran: yes
+               Fortran Compiler: /home/conda/feedstock_root/build_artifacts/hdf5_split_1671623896720/_build_env/bin/x86_64-conda-linux-gnu-gfortran
+                  Fortran Flags: 
+               H5 Fortran Flags:  -std=f2008  -Waliasing -Wall -Wcharacter-truncation -Wextra -Wimplicit-interface -Wsurprising -Wunderflow -pedantic -Warray-temporaries -Wintrinsics-std -Wimplicit-procedure -Wreal-q-constant -Wfunction-elimination -Wrealloc-lhs -Wrealloc-lhs-all -Wno-c-binding-type -Winteger-division -Wfrontend-loop-interchange  -fdiagnostics-urls=never -fno-diagnostics-color -s -O3
+               AM Fortran Flags: 
+         Shared Fortran Library: yes
+         Static Fortran Library: yes
+
+                            C++: yes
+                   C++ Compiler: /home/conda/feedstock_root/build_artifacts/hdf5_split_1671623896720/_build_env/bin/x86_64-conda-linux-gnu-c++
+                      C++ Flags: -fvisibility-inlines-hidden -std=c++17 -fmessage-length=0 -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/romain/Downloads/PREFIX/envs/pyoccenv/include -fdebug-prefix-map=/home/conda/feedstock_root/build_artifacts/hdf5_split_1671623896720/work=/usr/local/src/conda/hdf5_split-1.12.2 -fdebug-prefix-map=/home/romain/Downloads/PREFIX/envs/pyoccenv=/usr/local/src/conda-prefix
+                   H5 C++ Flags:   -Wall -Wcast-qual -Wconversion -Wctor-dtor-privacy -Weffc++ -Wextra -Wfloat-equal -Wformat=2 -Winit-self -Winvalid-pch -Wmissing-include-dirs -Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual -Wreorder -Wshadow -Wsign-promo -Wundef -Wwrite-strings -pedantic -Wlarger-than=2560 -Wlogical-op -Wframe-larger-than=16384 -Wpacked-bitfield-compat -Wsync-nand -Wstrict-overflow=5 -Wdouble-promotion -Wtrampolines -Wstack-usage=8192 -Wmaybe-uninitialized -Wdate-time -Wopenmp-simd -Warray-bounds=2 -Wduplicated-cond -Whsa -Wnormalized -Wnull-dereference -Wunused-const-variable -Walloca -Walloc-zero -Wduplicated-branches -Wformat-overflow=2 -Wformat-truncation=1 -Wrestrict -Wattribute-alias -Wcast-align=strict -Wshift-overflow=2 -Wattribute-alias=2 -Wmissing-profile -Wno-deprecated-copy -fstdarg-opt -fdiagnostics-urls=never -fno-diagnostics-color -s  -Wcast-align -Wmissing-declarations -Wpacked -Wredundant-decls -Wswitch -Wunused-but-set-variable -Wunused-function -Wunused-variable -Wunused-parameter -Wshadow -O3
+                   AM C++ Flags: 
+             Shared C++ Library: yes
+             Static C++ Library: yes
+
+                           Java: no
+
+
+Features:
+---------
+                     Parallel HDF5: no
+  Parallel Filtered Dataset Writes: no
+                Large Parallel I/O: no
+                High-level library: yes
+Dimension scales w/ new references: no
+                  Build HDF5 Tests: yes
+                  Build HDF5 Tools: yes
+                      Threadsafety: yes
+               Default API mapping: v112
+    With deprecated public symbols: yes
+            I/O filters (external): deflate(zlib),szip(encoder)
+                               MPE: no
+                     Map (H5M) API: no
+                        Direct VFD: yes
+                        Mirror VFD: no
+                (Read-Only) S3 VFD: yes
+              (Read-Only) HDFS VFD: no
+                           dmalloc: no
+    Packages w/ extra debug output: none
+                       API tracing: no
+              Using memory checker: yes
+   Memory allocation sanity checks: no
+            Function stack tracing: no
+                  Use file locking: best-effort
+         Strict file format checks: no
+      Optimization instrumentation: no

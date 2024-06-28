@@ -1,0 +1,38 @@
+	    SUMMARY OF THE HDF4 CONFIGURATION
+	    =================================
+
+General Information:
+-------------------
+		   HDF4 Version: 4.2.15
+		  Configured on: Wed Mar  8 16:23:13 UTC 2023
+		  Configured by: conda@93f94d202a01
+		 Configure mode: production
+		    Host system: x86_64-conda-linux-gnu
+              Uname information: Linux 93f94d202a01 5.15.0-1034-azure #41-Ubuntu SMP Fri Feb 10 19:59:45 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux
+		      Libraries: 
+	     Installation point: /home/romain/Downloads/PREFIX/envs/pyoccenv
+
+Compiling Options:
+------------------
+               Compilation Mode: production
+                     C compiler: /home/conda/feedstock_root/build_artifacts/hdf4_1678292406568/_build_env/bin/x86_64-conda-linux-gnu-cc
+                         CFLAGS:  -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/romain/Downloads/PREFIX/envs/pyoccenv/include -fdebug-prefix-map=/home/conda/feedstock_root/build_artifacts/hdf4_1678292406568/work=/usr/local/src/conda/hdf4-4.2.15 -fdebug-prefix-map=/home/romain/Downloads/PREFIX/envs/pyoccenv=/usr/local/src/conda-prefix -O
+                       CPPFLAGS: -DNDEBUG -D_FORTIFY_SOURCE=2 -O2 -isystem /home/romain/Downloads/PREFIX/envs/pyoccenv/include 
+               Shared Libraries: yes
+               Static Libraries: yes
+  Statically Linked Executables: no
+                        LDFLAGS: -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/home/romain/Downloads/PREFIX/envs/pyoccenv/lib -Wl,-rpath-link,/home/romain/Downloads/PREFIX/envs/pyoccenv/lib -L/home/romain/Downloads/PREFIX/envs/pyoccenv/lib
+ 	 	Extra libraries: -ljpeg -lz 
+ 		       Archiver: /home/conda/feedstock_root/build_artifacts/hdf4_1678292406568/_build_env/bin/x86_64-conda-linux-gnu-ar
+ 		 	 Ranlib: /home/conda/feedstock_root/build_artifacts/hdf4_1678292406568/_build_env/bin/x86_64-conda-linux-gnu-ranlib
+
+Languages:
+----------
+                        Fortran: no
+
+                           Java: no
+
+Features:
+---------
+               SZIP compression: disabled
+   Support for netCDF API 2.3.2: no

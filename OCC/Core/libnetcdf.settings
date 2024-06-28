@@ -1,0 +1,59 @@
+# NetCDF C Configuration Summary
+==============================
+
+# General
+-------
+NetCDF Version:		4.9.1
+Dispatch Version:       5
+Configured On:		Wed Mar  8 20:45:36 UTC 2023
+Host System:		x86_64-Linux-5.15.0-1034-azure
+Build Directory: 	/home/conda/feedstock_root/build_artifacts/libnetcdf_1678308194990/work/build-shared
+Install Prefix:         /home/romain/Downloads/PREFIX/envs/pyoccenv
+Plugin Install Prefix:  N.A.
+
+# Compiling Options
+-----------------
+C Compiler:		/home/conda/feedstock_root/build_artifacts/libnetcdf_1678308194990/_build_env/bin/x86_64-conda-linux-gnu-cc
+CFLAGS:			-march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/romain/Downloads/PREFIX/envs/pyoccenv/include -fdebug-prefix-map=/home/conda/feedstock_root/build_artifacts/libnetcdf_1678308194990/work=/usr/local/src/conda/libnetcdf-4.9.1 -fdebug-prefix-map=/home/romain/Downloads/PREFIX/envs/pyoccenv=/usr/local/src/conda-prefix -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG
+CPPFLAGS:		 
+LDFLAGS:		-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/home/romain/Downloads/PREFIX/envs/pyoccenv/lib -Wl,-rpath-link,/home/romain/Downloads/PREFIX/envs/pyoccenv/lib -L/home/romain/Downloads/PREFIX/envs/pyoccenv/lib 
+AM_CFLAGS:		
+AM_CPPFLAGS:		
+AM_LDFLAGS:		
+Shared Library:		yes
+Static Library:		no
+Extra libraries:	-lmfhdf -ldf -lhdf5_hl -lhdf5 -lm -lz -lzip -lzstd -lbz2 -lcurl -lxml2
+XML Parser:             libxml2
+
+# Features
+--------
+Benchmarks:		no
+NetCDF-2 API:		yes
+HDF4 Support:		yes
+HDF5 Support:		yes
+NetCDF-4 API:		yes
+CDF5 Support:		yes
+NC-4 Parallel Support:	no
+PnetCDF Support:	no
+
+DAP2 Support:		yes
+DAP4 Support:		yes
+Byte-Range Support:	yes
+NCZarr Support:		yes
+NCZarr S3 Support:      no
+
+Diskless Support:	yes
+MMap Support:		yes
+JNA Support:		no
+ERANGE Fill Support:	yes
+Relaxed Boundary Check:	yes
+
+NCZarr Support:		yes
+Multi-Filter Support:	yes
+Quantization:		yes
+Logging:     		no
+SZIP Write Support:     yes
+Standard Filters:       deflate szip zstd bz2
+ZSTD Support:           yes
+Parallel Filters:       yes
+
