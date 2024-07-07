@@ -38,6 +38,9 @@ def geom_type_of_object(o, context):
                     case 'CP_curve':
                         type = 'curve'
                         break
+                    case 'CP_NURBS_curve' :
+                        type = 'NURBS_curve'
+                        break
     return type
 
 
@@ -46,8 +49,10 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
     match type :
         case 'first_int':
             attribute = ge.attributes[name].data[0].value
+
         case 'second_int':
             attribute = ge.attributes[name].data[1].value
+
         case 'int':
             len_raw = len(ge.attributes[name].data)
             if len_attr==None :
@@ -55,6 +60,15 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
             attribute = np.zeros(len_raw)
             ge.attributes[name].data.foreach_get("value", attribute)
             attribute = attribute[0:len_attr]
+
+        case 'float':
+            len_raw = len(ge.attributes[name].data)
+            if len_attr==None :
+                len_attr = len_raw
+            attribute = np.zeros(len_raw)
+            ge.attributes[name].data.foreach_get("value", attribute)
+            attribute = attribute[0:len_attr]
+            
         case 'vec3':
             len_raw = len(ge.attributes[name].data)
             if len_attr==None :
@@ -62,6 +76,7 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
             attribute = np.empty(3 * len_raw)
             ge.attributes[name].data.foreach_get("vector", attribute)
             attribute = attribute.reshape((-1, 3))[0:len_attr]
+            
     return attribute
 
 

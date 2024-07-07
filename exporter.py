@@ -17,13 +17,14 @@ from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Make
 from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
 from OCC.Core.GC import GC_MakeSegment
 from OCC.Core.GCE2d import GCE2d_MakeSegment
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve, Geom_BSplineCurve
 from OCC.Core.Geom2d import Geom2d_BezierCurve
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
 from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Pnt2d #, gp_Vec
 from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
 from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
+from OCC.Core.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
 from OCC.Core.TopTools import TopTools_Array1OfShape
 from OCC.Extend.DataExchange import write_step_file, write_iges_file
@@ -253,6 +254,125 @@ def new_brep_bezier_face(o, context):
 
 
 
+# def new_brep_NURBS_face(o, context):
+#     ob = o.evaluated_get(context.evaluated_depsgraph_get())
+#     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+#     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
+#     points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', u_count*v_count)
+#     points *= 1000 #unit correction
+
+#     controlPoints = TColgp_Array2OfPnt(1, u_count, 1, v_count)
+#     for i in range(v_count):
+#         for j in range(u_count):
+#             id= u_count*i +j
+#             controlPoints.SetValue(j+1, i+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
+
+#     geom_surf = Geom_BezierSurface(controlPoints)
+#     bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
+#     bezierarray.SetValue(1, 1, geom_surf)
+    
+#     bspline_param = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
+#     if bspline_param.IsDone():
+#         poles = bspline_param.Poles().Array2()
+#         uknots = bspline_param.UKnots().Array1()
+#         vknots = bspline_param.VKnots().Array1()
+#         umult = bspline_param.UMultiplicities().Array1()
+#         vmult = bspline_param.VMultiplicities().Array1()
+#         udeg = bspline_param.UDegree()
+#         vdeg = bspline_param.VDegree()
+
+#         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
+    
+#     # Check if trimmed
+#     try: # Old
+#         point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
+#         trimmed = True
+#         old_version = True
+#     except Exception:
+#         try : # New
+#             point_count = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
+#             point_count = [int(p) for p in point_count]
+#             trimmed = True
+#             old_version = False
+            
+#         except Exception: # No trim
+#             point_count=None
+#             trimmed = False
+#             face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+
+#     # old behaviour
+#     try :
+#         subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
+#     except Exception:
+#         pass
+#     else :
+#         if subtype :
+#             point_count = [2]*point_count
+#         elif not subtype :
+#             point_count = [4]*(point_count//3)
+#         else :
+#             raise Exception("Invalid subtype attribute")
+
+
+#     # Build trim contour
+#     if trimmed:
+#         total_p_count = 0
+#         segment_count = 0
+#         p_count_accumulate = point_count[:]
+#         for i, p in enumerate(point_count):
+#             if p>0:
+#                 total_p_count += p-1
+#                 segment_count += 1
+#             if p==0 :
+#                 break
+#             if i>0:
+#                 p_count_accumulate[i] += p_count_accumulate[i-1]-1
+
+#         first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
+
+
+#         if old_version :
+#             subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
+#             trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
+#         else :
+#             trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
+
+#         # Create 2D points
+#         controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
+#         for i in range(total_p_count):
+#             pnt= gp_Pnt2d(trim_pts[i][1], trim_pts[i][0])
+#             controlPoints.SetValue(i+1, pnt)
+
+#         # Create edge list
+#         edges_list = TopTools_Array1OfShape(1, segment_count)
+#         for i in range(segment_count):
+#             segment_point_array = TColgp_Array1OfPnt2d(1, point_count[i])
+#             for j in range(point_count[i]):
+#                 segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
+#             segment = Geom2d_BezierCurve(segment_point_array)
+
+#             # make curve 3D
+#             adapt = GeomAdaptor_Surface(bsurf)
+#             makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
+#             edge = makeEdge.Edge()
+#             edges_list.SetValue(i+1, edge)
+
+#         makeWire = BRepBuilderAPI_MakeWire()
+#         for e in edges_list :
+#             makeWire.Add(e)
+#         trim_wire = TopoDS_Wire()
+#         trim_wire = makeWire.Wire()
+        
+#         makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, False)#,1e-6)#, trim_wire)
+#         # makeface.Add(trim_wire)#.Reversed())
+#         face = makeface.Face()
+#         fix = ShapeFix_Face(face)
+#         fix.Perform()
+#         face= fix.Face()
+
+#     return face
+
+
 
 
 
@@ -321,6 +441,51 @@ def new_brep_curve(o, context):
     #sew segments
     ms.Perform()
     curve = ms.SewedShape()
+    return curve
+
+
+
+def new_brep_NURBS_curve(o, context):
+    #get attributes
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    point_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+    print(point_count)
+    order = get_attribute_by_name(ob, 'Order', 'first_int')
+    print(order)
+    points = get_attribute_by_name(ob, 'CP_NURBS_curve', 'vec3', point_count)
+    knot_length = order+point_count+1 - order*2
+    print(knot_length)
+    knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
+    weight_attr = get_attribute_by_name(ob, 'Weight', 'float', point_count)
+    print(knot_attr)
+    points *= 1000 #unit correction
+
+    #poles
+    controlPoints = TColgp_Array1OfPnt(1, point_count)
+    for i in range(point_count):
+        controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
+
+    #weights
+    weights = TColStd_Array1OfReal(1, point_count)
+    for i in range(point_count):
+        weights.SetValue(i+1, weight_attr[i])
+
+    #knots
+    knots = TColStd_Array1OfReal(1,knot_length)
+    for i in range(knot_length):
+        knots.SetValue(i+1, knot_attr[i])
+    
+    #Multiplicities
+    mult = TColStd_Array1OfInteger(1, knot_length)
+    for i in range(knot_length):
+        if i == 0 or i == knot_length-1:
+            mult.SetValue(i+1, order+1)
+        else :
+            mult.SetValue(i+1, 1)
+
+    #create curve
+    geom_curve = Geom_BSplineCurve(controlPoints, weights, knots, mult, order)
+    curve = BRepBuilderAPI_MakeEdge(geom_curve).Edge()
     return curve
 
 
@@ -538,6 +703,11 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
                 case "curve" :
                     SPobj_count +=1
                     cu = new_brep_curve(o, context)
+                    aSew.Add(mirror_brep(o, cu))
+
+                case "NURBS_curve" :
+                    SPobj_count +=1
+                    cu = new_brep_NURBS_curve(o, context)
                     aSew.Add(mirror_brep(o, cu))
 
                 # case "collection_instance":
