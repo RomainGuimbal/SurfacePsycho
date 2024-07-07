@@ -34,9 +34,7 @@ if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
 from utils import *
-import macros
 from macros import *
-import gui
 from gui import *
 
 import platform
