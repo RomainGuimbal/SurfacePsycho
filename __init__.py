@@ -14,7 +14,7 @@
 bl_info = {
     "name": "Surface Psycho",
     "author": "Romain Guimbal",
-    "version": (0, 5),
+    "version": (0, 6),
     "blender": (4, 1, 0),
     "description": "Surface design for the mechanical industry",
     "warning": "Alpha",
@@ -22,10 +22,6 @@ bl_info = {
     "category": "3D View",
     "location": "View3D > Add > Surface/Curve  |  View3D > N Panel > Edit"
 }
-
-#Packages From Blender
-import bpy
-import numpy as np
 
 import sys
 from os.path import dirname, abspath

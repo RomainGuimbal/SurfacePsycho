@@ -116,7 +116,7 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
 class SP_PT_MainPanel(bpy.types.Panel):
     bl_idname = "SP_PT_MainPanel"
     bl_label = "Surface Psycho"
-    bl_spce_type = "VIEW_3D"
+    bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Edit"
     
