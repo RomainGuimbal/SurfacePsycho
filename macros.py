@@ -474,3 +474,37 @@ class SP_OT_solidify(bpy.types.Operator):
 
 #TODO
 # Bridge patches
+
+
+classes = [
+    SP_OT_add_aop,
+    SP_OT_add_bicubic_patch,
+    SP_OT_add_curvatures_probe,
+    SP_OT_add_curve,
+    SP_OT_add_flat_patch,
+    SP_OT_add_library,
+    SP_OT_add_trim_contour,
+    SP_OT_assign_as_endpoint,
+    SP_OT_bl_nurbs_to_psychopatch,
+    SP_OT_psychopatch_to_bl_nurbs,
+    SP_OT_remove_from_endpoints,
+    SP_OT_select_visible_curves,
+    SP_OT_select_visible_surfaces,
+    SP_OT_toogle_control_geom,
+    SP_OT_unify_versions,
+]
+if os!="Darwin":
+    classes+= [
+        SP_OT_quick_export,
+    ]
+
+def register():
+    for c in classes:
+        bpy.utils.register_class(c)
+
+def unregister():
+    for c in classes[::-1]:
+        bpy.utils.unregister_class(c)
+
+if __name__ == "__main__":
+    register()

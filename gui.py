@@ -103,10 +103,20 @@ if os!="Darwin":
 
 
 
+class SP_AddonPreferences(bpy.types.AddonPreferences):
+    bl_idname = __name__
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.operator("sp.add_library", text="Add Assets Path")
+
+
+
 class SP_PT_MainPanel(bpy.types.Panel):
     bl_idname = "SP_PT_MainPanel"
     bl_label = "Surface Psycho"
-    bl_space_type = "VIEW_3D"
+    bl_spce_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Edit"
     
@@ -186,3 +196,50 @@ if os!="Darwin":
     def menu_func_import(self, context):
         self.layout.operator(SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)")
 
+
+
+classes = [
+    SP_AddonPreferences,
+    SP_PT_MainPanel,
+]
+
+if os!="Darwin":
+    classes+= [
+        SP_OT_quick_export,
+        SP_OT_ExportStep,
+        SP_OT_ExportIges,
+        SP_OT_ImportCAD,
+    ]
+
+
+def register():
+    for c in classes:
+        bpy.utils.register_class(c)
+    bpy.types.VIEW3D_MT_surface_add.append(menu_surface)
+    bpy.types.VIEW3D_MT_curve_add.append(menu_curve)
+    bpy.types.VIEW3D_MT_object_convert.append(menu_convert)
+    # bpy.types.VIEW3D_MT_object_context_menu_convert.append(menu_convert)
+    if os!="Darwin":
+        bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
+        bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
+        bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
+    # bpy.types.WindowManager.progress = bpy.props.FloatProperty()
+    # bpy.types.TEXT_HT_header.append(progress_bar)
+
+def unregister():
+    for c in classes[::-1]:
+        bpy.utils.unregister_class(c)
+    bpy.types.VIEW3D_MT_surface_add.remove(menu_surface)
+    bpy.types.VIEW3D_MT_curve_add.remove(menu_curve)
+    bpy.types.VIEW3D_MT_object_convert.remove(menu_convert)
+    # bpy.types.VIEW3D_MT_object_context_menu_convert.remove(menu_convert)
+    if os!="Darwin":
+        bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
+        bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
+        bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
+    # bpy.types.TEXT_HT_header.remove(progress_bar)
+
+if __name__ == "__main__":
+    register()
+    if os!="Darwin":
+        bpy.ops.sp.cad_import()
