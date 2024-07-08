@@ -1,0 +1,43 @@
+schema_version = "1.0.0"
+
+id = "surfacepsycho"
+version = "0.6"
+name = "Surface Psycho"
+tagline = "Surface Design in Blender"
+maintainer = "Romain Guimbal"
+type = "add-on"
+
+# Optional link to documentation, support, source files, etc
+website = "https://extensions.blender.org/add-ons/my-example-package/"
+
+# Optional list defined by Blender and server, see:
+# https://docs.blender.org/manual/en/dev/advanced/extensions/tags.html
+tags = ["Modeling", "Import-Export", "Geometry Nodes"]
+
+blender_version_min = "4.2.0"
+
+# License conforming to https://spdx.org/licenses/ (use "SPDX: prefix)
+# https://docs.blender.org/manual/en/dev/advanced/extensions/licenses.html
+license = [
+  "SPDX:GPL-3.0-or-later"
+]
+
+# Optional: bundle 3rd party Python modules.
+# https://docs.blender.org/manual/en/dev/advanced/extensions/python_wheels.html
+wheels = [
+  "./wheels/six-1.16.0-py3-none-any.whl",
+]
+
+[permissions]
+files = "Import/export CAD files"
+
+# Optional: build settings.
+# https://docs.blender.org/manual/en/dev/advanced/extensions/command_line_arguments.html#command-line-args-extension-build
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "/.git/",
+  "/*.zip",
+  "/*.blend1",
+  "Asset Importer.py",
+]

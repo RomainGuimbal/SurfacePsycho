@@ -11,17 +11,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-bl_info = {
-    "name": "Surface Psycho",
-    "author": "Romain Guimbal",
-    "version": (0, 5),
-    "blender": (4, 1, 0),
-    "description": "Surface design for the mechanical industry",
-    "warning": "Alpha",
-    "doc_url": "https://github.com/RomainGuimbal/SurfacePsycho/wiki",
-    "category": "3D View",
-    "location": "View3D > Add > Surface/Curve  |  View3D > N Panel > Edit"
-}
+# bl_info = {
+#     "name": "Surface Psycho",
+#     "author": "Romain Guimbal",
+#     "version": (0, 5),
+#     "blender": (4, 1, 0),
+#     "description": "Surface design for the mechanical industry",
+#     "warning": "Alpha",
+#     "doc_url": "https://github.com/RomainGuimbal/SurfacePsycho/wiki",
+#     "category": "3D View",
+#     "location": "View3D > Add > Surface/Curve  |  View3D > N Panel > Edit"
+# }
 
 #Packages From Blender
 import bpy
