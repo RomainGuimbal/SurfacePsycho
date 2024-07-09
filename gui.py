@@ -7,6 +7,7 @@ os = platform.system()
 
 # from utils import *
 from macros import *
+from . import macros
 
 if os!="Darwin":
     from importer import import_cad
@@ -129,6 +130,10 @@ class SP_PT_MainPanel(bpy.types.Panel):
             col1.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
             col2.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
 
+        if context.mode == 'OBJECT' or context.mode == 'EDIT_MESH' :
+            row = self.layout.row()
+            row.operator("sp.add_trim_contour", text="Add Trim Contour", icon="MOD_MESHDEFORM")
+
         if context.mode == 'EDIT_MESH':
             self.layout.label(text="Bezier Segments Endpoints")
             layout = self.layout
@@ -139,9 +144,7 @@ class SP_PT_MainPanel(bpy.types.Panel):
             col1.operator("sp.assign_as_endpoint", text="Assign")
             col2.operator("sp.remove_from_endpoints", text="Remove")
             
-        if context.mode == 'OBJECT' or context.mode == 'EDIT_MESH' :
-            row = self.layout.row()
-            row.operator("sp.add_trim_contour", text="Add Trim Contour", icon="MOD_MESHDEFORM")
+        
 
 
             
@@ -201,6 +204,7 @@ if os!="Darwin":
 
 
 def register():
+    macros.register()
     for c in classes:
         bpy.utils.register_class(c)
     bpy.types.VIEW3D_MT_surface_add.append(menu_surface)
@@ -215,17 +219,18 @@ def register():
     # bpy.types.TEXT_HT_header.append(progress_bar)
 
 def unregister():
-    for c in classes[::-1]:
-        bpy.utils.unregister_class(c)
-    bpy.types.VIEW3D_MT_surface_add.remove(menu_surface)
-    bpy.types.VIEW3D_MT_curve_add.remove(menu_curve)
-    bpy.types.VIEW3D_MT_object_convert.remove(menu_convert)
-    # bpy.types.VIEW3D_MT_object_context_menu_convert.remove(menu_convert)
     if os!="Darwin":
         bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
         bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-    # bpy.types.TEXT_HT_header.remove(progress_bar)
+    bpy.types.VIEW3D_MT_surface_add.remove(menu_surface)
+    bpy.types.VIEW3D_MT_curve_add.remove(menu_curve)
+    bpy.types.VIEW3D_MT_object_convert.remove(menu_convert)
+    # bpy.types.VIEW3D_MT_object_context_menu_convert.remove(menu_convert)
+    # bpy.types.TEXT_HT_header.remove(progress_bar)    
+    for c in classes[::-1]:
+        bpy.utils.unregister_class(c)
+    macros.unregister()
 
 if __name__ == "__main__":
     register()

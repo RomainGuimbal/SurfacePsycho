@@ -29,9 +29,8 @@ file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
-from utils import *
-from macros import *
-from gui import *
+import bpy
+from . import gui
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
@@ -44,10 +43,12 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
 
 
 def register():
+    gui.register()
     bpy.utils.register_class(SP_AddonPreferences)
 
 def unregister():
     bpy.utils.unregister_class(SP_AddonPreferences)
+    gui.unregister()
 
 if __name__ == "__main__":
     register()
