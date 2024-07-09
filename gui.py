@@ -1,21 +1,18 @@
 ##############################
 ##            GUI           ##
 ##############################
-import sys
-from os.path import dirname
-file_dirname = dirname(__file__)
-if file_dirname not in sys.path:
-    sys.path.append(file_dirname)
-
 import bpy
 import platform
 os = platform.system()
+
+# from utils import *
+from macros import *
 
 if os!="Darwin":
     from importer import import_cad
     from exporter import export_step, export_iges
     # from utils import  progress_bar
-    from macros import *
+
 
     from bpy.props import StringProperty, BoolProperty, EnumProperty
     from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
@@ -102,14 +99,6 @@ if os!="Darwin":
 
 
 
-
-class SP_AddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = __name__
-
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.operator("sp.add_library", text="Add Assets Path")
 
 
 
@@ -199,7 +188,6 @@ if os!="Darwin":
 
 
 classes = [
-    SP_AddonPreferences,
     SP_PT_MainPanel,
 ]
 

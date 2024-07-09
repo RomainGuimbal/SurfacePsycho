@@ -4,8 +4,6 @@ from utils import *
 from mathutils import Vector
 from datetime import datetime
 from os.path import dirname, abspath, join
-
-#Local Packages
 import platform
 os = platform.system()
 
@@ -505,6 +503,3 @@ def register():
 def unregister():
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)
-
-if __name__ == "__main__":
-    register()
