@@ -29,6 +29,7 @@ file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
+from utils import *
 from macros import *
 from gui import *
 
