@@ -15,6 +15,7 @@ if os!="Darwin":
         bl_idname = "sp.quick_export"
         bl_label = "SP - Quick export"
         bl_options = {'REGISTER', 'UNDO'}
+        bl_description =  "Exports selection as .STEP at current .blend location."
 
         def execute(self, context):
 
@@ -32,8 +33,6 @@ if os!="Darwin":
                 self.report({'INFO'}, 'No SurfacePsycho Objects selected')
             return {'FINISHED'}
 
-        def get_description(self):
-            return "Exports selection as .STEP at current .blend location."
 
 class SP_OT_add_bicubic_patch(bpy.types.Operator):
     bl_idname = "sp.add_bicubic_patch"
@@ -71,16 +70,11 @@ class SP_OT_add_curvatures_probe(bpy.types.Operator):
     bl_idname = "sp.add_curvatures_probe"
     bl_label = "Add Curvatures Probe"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Object inspect curvature. Bind to surface in modifier's properties"
 
     def execute(self, context):
         append_object_by_name("SP - Curvatures Probe", context)
         return {'FINISHED'}
-    
-    def get_url(self):
-        return "https://github.com/RomainGuimbal/SurfacePsycho/wiki/Curvature-Probes"
-
-    def get_description(self):
-        return "Use a probe object to inspect curvature"
 
 
 class SP_OT_add_library(bpy.types.Operator):
@@ -110,6 +104,7 @@ class SP_OT_toogle_control_geom(bpy.types.Operator):
     bl_idname = "sp.toogle_control_geom"
     bl_label = "SP - Toogle Control Geom"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Toogle the control geometry of selected object. The active object determines whether to show or hide"
 
     def execute(self, context):
         objects=[ob for ob in context.selected_objects]
@@ -125,15 +120,13 @@ class SP_OT_toogle_control_geom(bpy.types.Operator):
                                 toogle_side = not m[input_id]
                             m[input_id] = toogle_side
                     m.node_group.interface_update(context)
-        return {'FINISHED'}
-    
-    def get_description(self):
-        return "Toogle the control geometry of selected object. The active object determines whether to show or hide"
+        return {'FINISHED'}    
 
 
 class SP_OT_select_visible_curves(bpy.types.Operator):
     bl_idname = "sp.select_visible_curves"
     bl_label = "SP - Select Visible Curves"
+    bl_description = "Select Visible Curves"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -149,6 +142,7 @@ class SP_OT_select_visible_curves(bpy.types.Operator):
 class SP_OT_select_visible_surfaces(bpy.types.Operator):
     bl_idname = "sp.select_visible_surfaces"
     bl_label = "SP - Select Visible Surfaces"
+    bl_description = "Select Visible Surfaces"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -381,6 +375,7 @@ class SP_OT_remove_from_endpoints(bpy.types.Operator):
 class SP_OT_add_trim_contour(bpy.types.Operator):
     bl_idname = "sp.add_trim_contour"
     bl_label = "Add Trim Contour"
+    bl_description = "Add Trim Contour to selected patch"
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
