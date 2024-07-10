@@ -196,7 +196,6 @@ classes = [
 
 if os!="Darwin":
     classes+= [
-        SP_OT_quick_export,
         SP_OT_ExportStep,
         SP_OT_ExportIges,
         SP_OT_ImportCAD,

@@ -32,6 +32,9 @@ if os!="Darwin":
                 self.report({'INFO'}, 'No SurfacePsycho Objects selected')
             return {'FINISHED'}
 
+        def get_description(self):
+            return "Exports selection as .STEP at current .blend location."
+
 class SP_OT_add_bicubic_patch(bpy.types.Operator):
     bl_idname = "sp.add_bicubic_patch"
     bl_label = "Add Bicubic PsychoPatch"
@@ -68,9 +71,17 @@ class SP_OT_add_curvatures_probe(bpy.types.Operator):
     bl_idname = "sp.add_curvatures_probe"
     bl_label = "Add Curvatures Probe"
     bl_options = {'REGISTER', 'UNDO'}
+
     def execute(self, context):
         append_object_by_name("SP - Curvatures Probe", context)
         return {'FINISHED'}
+    
+    def get_url(self):
+        return "https://github.com/RomainGuimbal/SurfacePsycho/wiki/Curvature-Probes"
+
+    def get_description(self):
+        return "Use a probe object to inspect curvature"
+
 
 class SP_OT_add_library(bpy.types.Operator):
     bl_idname = "sp.add_library"
@@ -115,6 +126,9 @@ class SP_OT_toogle_control_geom(bpy.types.Operator):
                             m[input_id] = toogle_side
                     m.node_group.interface_update(context)
         return {'FINISHED'}
+    
+    def get_description(self):
+        return "Toogle the control geometry of selected object. The active object determines whether to show or hide"
 
 
 class SP_OT_select_visible_curves(bpy.types.Operator):
