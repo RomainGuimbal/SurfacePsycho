@@ -130,9 +130,7 @@ def build_SP_bezier_patch(brepFace, collection, context) :
     collection.objects.link(ob)
     bpy.context.view_layer.objects.active = ob
     
-    bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
-                                        asset_library_identifier="SurfacePsycho",
-                                        relative_asset_identifier="assets.blend\\NodeTree\\SP - Any Order Patch Meshing")
+    add_sp_modifier("SP - Any Order Patch Meshing")
     
     if status != "":
         print(status)
@@ -150,21 +148,29 @@ def build_SP_NURBS_patch(brepFace, collection, context):
         bspline_surface = Geom_BSplineSurface.DownCast(face)
         u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
 
+        udeg = bspline_surface.UDegree()
+        vdeg = bspline_surface.VDegree()
+        u_knots = [0.0]*udeg + normalize_array([bspline_surface.UKnot(i+1) for i in range(bspline_surface.NbUKnots())]) + [1.0]*udeg
+        v_knots = [0.0]*vdeg + normalize_array([bspline_surface.VKnot(i+1) for i in range(bspline_surface.NbVKnots())]) + [1.0]*vdeg
+
+        print(u_knots)
+        print(v_knots)
+
         custom_knot = False
-        u_knots = [bspline_surface.UKnot(i+1) for i in range(bspline_surface.NbUKnots())]
-        v_knots = [bspline_surface.VKnot(i+1) for i in range(bspline_surface.NbVKnots())]
         if any(x not in [0.0, 1.0] for x in u_knots) or any(x not in [0.0, 1.0] for x in v_knots):
             custom_knot = True
 
         custom_weight = False
         vector_pts = np.zeros((u_count, v_count), dtype=Vector)
+        weights = np.zeros((u_count, v_count), dtype=float)
         for u in range(1, u_count + 1):
             for v in range(1, v_count + 1):
                 pole = bspline_surface.Pole(u, v)
                 vector_pts[u-1, v-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
-
+                
                 weight = bspline_surface.Weight(u, v)
-                if weight!=1.0:
+                weights[u-1, v-1] = weight
+                if weight!=1.0 :
                     custom_weight = True
     else:
         print("error on face type")
@@ -181,24 +187,24 @@ def build_SP_NURBS_patch(brepFace, collection, context):
     values = [True] * len(mesh.polygons)
     mesh.polygons.foreach_set("use_smooth", values)
 
-    # add_modifier(ob, "SP - NURBS Patch Meshing")
+    # add_modifiers
     collection.objects.link(ob)
     bpy.context.view_layer.objects.active = ob
 
-    # TODO
-    # if custom_knot:
-        # Add vertex groups
-        # add modifier
-        # assign vertex groups to modifier
+    if custom_knot:
+        add_vertex_group(ob, "Knot U", u_knots)
+        add_vertex_group(ob, "Knot V", v_knots)
 
-    # if custom_weight:
-        # Add vertex group
-        # add modifier
-        # assign vertex group to modifier
+    if custom_weight:
+        add_vertex_group(ob, "Weight", weights)
+        add_sp_modifier("SP - NURBS Weighting")
+        # assign vertex group to modifier # change_node_socket_value
     
-    bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
-                                        asset_library_identifier="SurfacePsycho",
-                                        relative_asset_identifier="assets.blend\\NodeTree\\SP - NURBS Patch Meshing")
+    # Meshing
+    add_sp_modifier("SP - NURBS Patch Meshing")
+    # Set order
+    change_node_socket_value(ob, udeg, ["Order V"], 'NodeSocketInt', context)
+    change_node_socket_value(ob, vdeg, ["Order U"], 'NodeSocketInt', context)
     
     if status != "":
         print(status)
@@ -231,13 +237,7 @@ def build_SP_flat(brepFace, collection, context):
     ob = bpy.data.objects.new('STEP FlatPatch', mesh)
 
     # Assign endpoints
-    if "Endpoints" not in ob.vertex_groups:
-        ob.vertex_groups.new(name="Endpoints")
-    vg = ob.vertex_groups["Endpoints"]
-
-    for v in ob.data.vertices:
-        if True : # Mask to implement
-            vg.add([v.index], 1.0, 'ADD')
+    add_vertex_group(ob, "Endpoints", [1.0, 1.0, 1.0, 1.0])
     
     # add_modifier(ob, "SP - Any Order Patch Meshing")
     collection.objects.link(ob)

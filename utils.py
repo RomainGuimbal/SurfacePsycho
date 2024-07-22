@@ -186,3 +186,31 @@ def change_node_socket_value(ob, value, potential_names, socket_type, context):
                     input_id = it.identifier
                     m[input_id] = value
                     m.node_group.interface_update(context)
+
+def add_vertex_group(object, name, values):
+    if name not in object.vertex_groups:
+        object.vertex_groups.new(name=name)
+    vg = object.vertex_groups[name]
+
+    if len(object.data.vertices) < len(values):
+        print(len(object.data.vertices))
+        print(values)
+        return False
+
+    for i,v in enumerate(values):
+        object.data.vertices
+        vg.add([i], v, 'ADD')
+    
+    return True
+
+def add_sp_modifier(name):
+    try :
+        bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
+                                            asset_library_identifier="SurfacePsycho",
+                                            relative_asset_identifier="assets.blend\\NodeTree\\"+name)
+        return True
+    except Exception:
+        return False
+
+def normalize_array(array):
+    return (np.array(array)/max(array)).tolist()
