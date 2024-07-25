@@ -3,7 +3,7 @@ import bmesh
 import numpy as np
 # from multiprocessing import Process
 import sys
-from os.path import dirname, abspath
+from os.path import dirname, abspath, join
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
@@ -187,6 +187,12 @@ def change_node_socket_value(ob, value, potential_names, socket_type, context):
                     m[input_id] = value
                     m.node_group.interface_update(context)
 
+def change_GN_modifier_settings(modifier, settings_dict):
+    for key, value in settings_dict.items():
+        id = modifier.node_group.interface.items_tree[key].identifier
+        modifier[id]=value
+
+
 def add_vertex_group(object, name, values):
     if name not in object.vertex_groups:
         object.vertex_groups.new(name=name)
@@ -198,19 +204,62 @@ def add_vertex_group(object, name, values):
         return False
 
     for i,v in enumerate(values):
+        if v>1. :
+            v=1
+            print("vertex group value clamped to 1")
         object.data.vertices
         vg.add([i], v, 'ADD')
     
     return True
 
-def add_sp_modifier(name):
-    try :
-        bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
-                                            asset_library_identifier="SurfacePsycho",
-                                            relative_asset_identifier="assets.blend\\NodeTree\\"+name)
-        return True
-    except Exception:
-        return False
+
 
 def normalize_array(array):
-    return (np.array(array)/max(array)).tolist()
+    mini = min(array)
+    return ((np.array(array)-mini)/(max(array)-mini)).tolist()
+
+
+APPENDED_ASSETS = []
+# TODO
+# To not lose the list at each close>open fill APPENDED_ASSETS with a list of all modifiers of the file ?
+# Alternatively : store properly in the blend file (need a way to be reseted)
+
+def add_node_group_modifier_from_asset(obj, library_name, asset_name, settings_dict={}):
+    if asset_name not in APPENDED_ASSETS :
+        APPENDED_ASSETS.append(asset_name)
+    
+        # Get the asset library
+        library = bpy.context.preferences.filepaths.asset_libraries.get(library_name)
+        if not library:
+            print(f"Asset library '{library_name}' not found")
+            return
+
+        # Construct the full path to the asset file
+        asset_file = join(library.path, "assets.blend")
+
+        # Load the asset file
+        with bpy.data.libraries.load(asset_file, link=False) as (data_from, data_to):
+            # Find the node group in the file
+            if asset_name in data_from.node_groups:
+                data_to.node_groups = [asset_name]
+            else:
+                print(f"Asset '{asset_name}' not found in library '{library_name}'")
+                return
+
+    # Create the modifier and assign the loaded node group
+    modifier = obj.modifiers.new(name="GeometryNodes", type='NODES')
+    modifier.node_group = bpy.data.node_groups.get(asset_name)
+    
+    #Change settings
+    change_GN_modifier_settings(modifier, settings_dict)
+
+
+def add_sp_modifier(ob, name, settings_dict={}):
+    add_node_group_modifier_from_asset(ob, "SurfacePsycho", name, settings_dict)
+    # try :
+        # bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
+        #                                     asset_library_identifier="SurfacePsycho",
+        #                                     relative_asset_identifier="assets.blend\\NodeTree\\"+name)
+    #     return True
+    # except Exception:
+    #     return False
