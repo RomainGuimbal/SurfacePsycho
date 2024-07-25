@@ -1,18 +1,20 @@
 import bpy
 import numpy as np
 from OCC.Core.BRep import BRep_Tool
+from OCC.Core.BRepTools import breptools
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve
-from OCC.Core.GeomAbs import GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_Plane, GeomAbs_Torus, GeomAbs_Sphere, GeomAbs_Cone, GeomAbs_Cylinder
+from OCC.Core.GeomAbs import GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_Plane, GeomAbs_Torus, GeomAbs_Sphere, GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Line, GeomAbs_BSplineCurve
 from OCC.Core.GeomAdaptor import GeomAdaptor_Curve, GeomAdaptor_Surface
+from OCC.Core.GeomConvert import geomconvert_CurveToBSplineCurve
 from OCC.Core.TopoDS import topods
 from OCC.Core.TopTools import TopTools_IndexedMapOfShape
 from OCC.Core.IFSelect import IFSelect_RetDone
 from OCC.Core.IGESControl import IGESControl_Reader
 from OCC.Core.STEPControl import STEPControl_Reader
-from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
+from OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
 from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopoDS import TopoDS_Iterator
+from OCC.Core.TopoDS import TopoDS_Iterator, TopoDS_Edge, TopoDS_Face, TopoDS_Wire
 from OCC.Extend.DataExchange import read_step_file
 from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
 from mathutils import Vector
@@ -77,10 +79,8 @@ def build_SP_curve(brepEdge, collection, context) :
     mesh.from_pydata(vert, edges, [])
     ob = bpy.data.objects.new('STEP curve', mesh)
 
-    # add_modifier(ob, "SP - Curve Meshing")
+    # add modifier
     collection.objects.link(ob)
-    bpy.context.view_layer.objects.active = ob
-
     add_sp_modifier(ob, "SP - Curve Through Points")
     add_sp_modifier(ob, "SP - Curve Meshing")
 
@@ -124,10 +124,8 @@ def build_SP_bezier_patch(brepFace, collection, context) :
     values = [True] * len(mesh.polygons)
     mesh.polygons.foreach_set("use_smooth", values)
 
-    # add_modifier(ob, "SP - Any Order Patch Meshing")
-    collection.objects.link(ob)
-    # bpy.context.view_layer.objects.active = ob
-    
+    # add modifier
+    collection.objects.link(ob)    
     add_sp_modifier(ob, "SP - Any Order Patch Meshing")
     
     if status != "":
@@ -215,18 +213,73 @@ def build_SP_NURBS_patch(brepFace, collection, context):
 
 def build_SP_flat(brepFace, collection, context):
     vector_pts = []
+    
+    # explorer = TopExp_Explorer(brepFace, TopAbs_VERTEX)
+    # visited_vert = set()  
 
-    explorer = TopExp_Explorer(brepFace, TopAbs_VERTEX)
-    visited_vert = set()  
+    # while explorer.More():
+    #     vertex = explorer.Current()
+    #     vert_hash = hash(vertex.__hash__())
+    #     if vert_hash not in visited_vert:      
+    #         visited_vert.add(vert_hash)
+    #         pnt = BRep_Tool.Pnt(vertex)
+    #         vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
+    #     explorer.Next()
 
+    # Get the outer wire
+    wire = breptools.OuterWire(brepFace)
+
+    control_points = []
+    endpoints = []
+    
+    # Create an edge explorer
+    explorer = TopExp_Explorer(wire, TopAbs_EDGE)
+    
     while explorer.More():
-        vertex = explorer.Current()
-        vert_hash = hash(vertex.__hash__())
-        if vert_hash not in visited_vert:      
-            visited_vert.add(vert_hash)
-            pnt = BRep_Tool.Pnt(vertex)
-            vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
+        # Get the current edge
+        edge = topods.Edge(explorer.Current())
+        
+        # Create a BRepAdaptor curve from the edge
+        curve_adaptor = BRepAdaptor_Curve(edge)
+        curve_type = curve_adaptor.GetType()
+        
+        if curve_type == GeomAbs_Line:
+            start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
+            end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
+            edge_control_points = [start_point, end_point]
+        
+        elif curve_type == GeomAbs_BSplineCurve:
+            bspline = curve_adaptor.BSpline()
+            edge_control_points = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
+        
+        # elif curve_type == GeomAbs_Circle:
+        #     # center = curve_adaptor.Circle().Location()
+        #     # radius = curve_adaptor.Circle().Radius()
+        #     # start_angle = curve_adaptor.FirstParameter()
+        #     # end_angle = curve_adaptor.LastParameter()
+        #     # mid_angle = (start_angle + end_angle) / 2
+        #     # start_point = curve_adaptor.Value(start_angle)
+        #     # mid_point = curve_adaptor.Value(mid_angle)
+        #     # end_point = curve_adaptor.Value(end_angle)
+        #     # control_points = [start_point, mid_point, end_point]
+        
+        else:
+            print("Unsupported curve type. Expect inaccurate results")
+            # For other curve types, we'll use a simple approximation
+            num_points = 5
+            params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
+            edge_control_points = [curve_adaptor.Value(param) for param in params]
+            
+        # Reverse the order if the edge orientation is reversed
+        if edge.Orientation() != TopAbs_FORWARD:
+            edge_control_points.reverse()
+        control_points.extend(edge_control_points[:-1])
+        endpoints.extend([1.0]+[0.0]*(len(edge_control_points)-1))
         explorer.Next()
+
+    for pnt in control_points :
+        vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
+
 
     # create object
     mesh = bpy.data.meshes.new("FlatPatch CP")
@@ -236,18 +289,12 @@ def build_SP_flat(brepFace, collection, context):
     ob = bpy.data.objects.new('STEP FlatPatch', mesh)
 
     # Assign endpoints
-    add_vertex_group(ob, "Endpoints", [1.0, 1.0, 1.0, 1.0])
+    add_vertex_group(ob, "Endpoints", endpoints)
     
     # add_modifier(ob, "SP - Any Order Patch Meshing")
     collection.objects.link(ob)
-    bpy.context.view_layer.objects.active = ob
+    add_sp_modifier(ob, "SP - FlatPatch Meshing", {'Orient': True})
     
-    bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
-                                        asset_library_identifier="SurfacePsycho",
-                                        relative_asset_identifier="assets.blend\\NodeTree\\SP - FlatPatch Meshing")
-    # Enable Orient option
-    change_node_socket_value(ob, True, ['Orient'], 'NodeSocketBool', context)
-
     return True
 
 
@@ -472,7 +519,7 @@ def surface_type(face):
     elif surface_type == GeomAbs_BSplineSurface:
         return "NURBS"
     else:
-        return "Other"
+        return str(surface_type)
 
 
 
