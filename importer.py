@@ -14,7 +14,6 @@ from OCC.Core.IGESControl import IGESControl_Reader
 from OCC.Core.STEPControl import STEPControl_Reader
 from OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
 from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopoDS import TopoDS_Iterator, TopoDS_Edge, TopoDS_Face, TopoDS_Wire
 from OCC.Extend.DataExchange import read_step_file
 from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
 from mathutils import Vector
@@ -171,10 +170,27 @@ def build_SP_NURBS_patch(brepFace, collection, context):
     else:
         print("error on face type")
         return False
+    
+    # control grid
+    # vert, edges, faces = create_grid(vector_pts)
+    CPvert, CPedges, CPfaces = create_grid(vector_pts)
+    
+    # Add trim contour
+    wires_verts, wires_edges, wires_endpoints = get_face_uv_contours(brepFace)
 
-    # create object
+    contour_verts, contour_edges = wires_verts[0], wires_edges[0]
+    for i in range(1, len(wires_verts)) :
+        contour_verts, contour_edges, f = join_mesh_entities(contour_verts, contour_edges, [], wires_verts[i], wires_edges[i], [])
+    
+    vert, edges, faces = join_mesh_entities(CPvert.tolist(), CPedges, CPfaces, contour_verts, contour_edges, [])
+    
+    # TODO assign vertex groups
+
+    
+
+    # Create object and add mesh
     mesh = bpy.data.meshes.new("Patch CP")
-    vert, edges, faces = create_grid(vector_pts)
+
     mesh.from_pydata(vert, edges, faces)
     ob = bpy.data.objects.new('STEP Patch', mesh)
     
@@ -195,6 +211,7 @@ def build_SP_NURBS_patch(brepFace, collection, context):
 
     if custom_weight:
         add_vertex_group(ob, "Weight", weights.flatten())
+        print("weights are not fully supported yet")
         #add_sp_modifier(ob, "SP - NURBS Weighting")
         #TO NORMALIZE + factor
 
@@ -213,7 +230,6 @@ def build_SP_NURBS_patch(brepFace, collection, context):
 
 def build_SP_flat(brepFace, collection, context):
     vector_pts = []
-    
     # explorer = TopExp_Explorer(brepFace, TopAbs_VERTEX)
     # visited_vert = set()  
 
@@ -226,65 +242,33 @@ def build_SP_flat(brepFace, collection, context):
     #         vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
     #     explorer.Next()
 
-    # Get the outer wire
     wire = breptools.OuterWire(brepFace)
-
     control_points = []
     endpoints = []
-    
-    # Create an edge explorer
     explorer = TopExp_Explorer(wire, TopAbs_EDGE)
     
     while explorer.More():
         # Get the current edge
         edge = topods.Edge(explorer.Current())
-        
-        # Create a BRepAdaptor curve from the edge
         curve_adaptor = BRepAdaptor_Curve(edge)
-        curve_type = curve_adaptor.GetType()
         
-        if curve_type == GeomAbs_Line:
-            start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
-            end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
-            edge_control_points = [start_point, end_point]
-        
-        elif curve_type == GeomAbs_BSplineCurve:
-            bspline = curve_adaptor.BSpline()
-            edge_control_points = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
-        
-        # elif curve_type == GeomAbs_Circle:
-        #     # center = curve_adaptor.Circle().Location()
-        #     # radius = curve_adaptor.Circle().Radius()
-        #     # start_angle = curve_adaptor.FirstParameter()
-        #     # end_angle = curve_adaptor.LastParameter()
-        #     # mid_angle = (start_angle + end_angle) / 2
-        #     # start_point = curve_adaptor.Value(start_angle)
-        #     # mid_point = curve_adaptor.Value(mid_angle)
-        #     # end_point = curve_adaptor.Value(end_angle)
-        #     # control_points = [start_point, mid_point, end_point]
-        
-        else:
-            print("Unsupported curve type. Expect inaccurate results")
-            # For other curve types, we'll use a simple approximation
-            num_points = 5
-            params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
-            edge_control_points = [curve_adaptor.Value(param) for param in params]
+        edge_control_points = get_poles_from_geom_curve(curve_adaptor)
             
         # Reverse the order if the edge orientation is reversed
         if edge.Orientation() != TopAbs_FORWARD:
             edge_control_points.reverse()
         control_points.extend(edge_control_points[:-1])
-        endpoints.extend([1.0]+[0.0]*(len(edge_control_points)-1))
+        endpoints.extend([1.0]+[0.0]*(len(edge_control_points)-2))
         explorer.Next()
 
+    #prepare mesh
     for pnt in control_points :
         vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
-
-
-    # create object
-    mesh = bpy.data.meshes.new("FlatPatch CP")
     vert = vector_pts
     edges = [(i,(i+1)%len(vector_pts)) for i in range(len(vector_pts))]
+    
+    # create object
+    mesh = bpy.data.meshes.new("FlatPatch CP")
     mesh.from_pydata(vert, edges, [])
     ob = bpy.data.objects.new('STEP FlatPatch', mesh)
 
@@ -296,7 +280,6 @@ def build_SP_flat(brepFace, collection, context):
     add_sp_modifier(ob, "SP - FlatPatch Meshing", {'Orient': True})
     
     return True
-
 
 
 
@@ -364,25 +347,35 @@ def build_SP_flat(brepFace, collection, context):
 
 
 
-
-
-
-
 class ShapeHierarchy:
     def __init__(self):
         self.faces = {}
         self.edges = {}
         self.hierarchy = {}
 
+    # def add_face(self, face):
+    #     if face not in self.faces :
+    #         face_id = f"Face_{id(face)}"
+    #         self.faces[face_id] = face
+    #         return face_id
+
+    # def add_edge(self, edge):
+    #     if edge not in self.edges :
+    #         edge_id = f"Edge_{id(edge)}"
+    #         self.edges[edge_id] = edge
+    #         return edge_id
+
     def add_face(self, face):
-        face_id = f"Face_{id(face)}"
-        self.faces[face_id] = face
-        return face_id
+        face_id = hash(face.__hash__())
+        if face_id not in self.faces:
+            self.faces[face_id] = face
+        return f"Face_{face_id}"
 
     def add_edge(self, edge):
-        edge_id = f"Edge_{id(edge)}"
-        self.edges[edge_id] = edge
-        return edge_id
+        edge_id = hash(edge.__hash__())
+        if edge_id not in self.edges:
+            self.edges[edge_id] = edge
+        return f"Edge_{edge_id}"
 
     def create_shape_hierarchy(self, shape):
         hierarchy = {}
@@ -523,6 +516,8 @@ def surface_type(face):
 
 
 
+
+
 def import_cad(filepath, context, enabled_entities):
     if splitext(split(filepath)[1])[1] in ['.step','.stp','.STEP', '.STP']:
         step_reader = STEPControl_Reader()
@@ -547,11 +542,11 @@ def import_cad(filepath, context, enabled_entities):
     context.view_layer.active_layer_collection = context.view_layer.layer_collection.children[collection_name]
 
 
-    import cProfile
-    profiler = cProfile.Profile()
-    profiler.enable()
+    # import cProfile
+    # profiler = cProfile.Profile()
+    # profiler.enable()
     build_SP_from_brep(shape, new_collection, context, enabled_entities)
-    profiler.disable()
-    profiler.print_stats()
+    # profiler.disable()
+    # profiler.print_stats()
 
 

@@ -1,6 +1,11 @@
 import bpy
 import bmesh
 import numpy as np
+from OCC.Core.BRep import BRep_Tool
+from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopAbs import TopAbs_EDGE
+from OCC.Core.TopoDS import topods_Edge
+from OCC.Core.Geom2d import Geom2d_BSplineCurve, Geom2d_Line
 # from multiprocessing import Process
 import sys
 from os.path import dirname, abspath, join
@@ -263,3 +268,151 @@ def add_sp_modifier(ob, name, settings_dict={}):
     #     return True
     # except Exception:
     #     return False
+
+
+
+
+def join_mesh_entities(verts1, edges1, faces1, verts2, edges2, faces2):
+    verts1.extend(verts2)
+
+    len1 = len(verts1)
+    edges1.extend([(e[0]+len1, e[1]+len1) for e in edges2])
+    
+    faces1.extend([[i+len1 for i in f] for f in faces2])
+    
+    return verts1, edges1, faces1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopAbs import TopAbs_WIRE
+from OCC.Core.BRep import BRep_Tool
+from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_EDGE
+from OCC.Core.GeomAbs import GeomAbs_CurveType, GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line
+from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
+from OCC.Core.TopoDS import topods
+from mathutils import Vector
+
+
+def get_wires_from_face(face):
+    # face type = TopoDS_Face
+    wires = []
+    explorer = TopExp_Explorer(face, TopAbs_WIRE)
+
+    while explorer.More():
+        wire = explorer.Current()
+        if wire.ShapeType() == TopAbs_WIRE:
+            wires.append(topods.Wire(wire))
+        explorer.Next()
+
+    return wires
+
+
+
+def get_edges_from_wire(wire):
+    edges = []
+    explorer = TopExp_Explorer(wire, TopAbs_EDGE)
+
+    while explorer.More():
+        edge = explorer.Current()
+        if edge.ShapeType() == TopAbs_EDGE:
+            edges.append(topods.Edge(edge))
+        explorer.Next()
+
+    return edges
+
+
+
+def get_poles_from_geom_curve(curve_adaptor):
+    curve_type = curve_adaptor.GetType()
+            
+    if curve_type == GeomAbs_Line:
+        start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
+        end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
+        poles = [start_point, end_point]
+
+    elif curve_type == GeomAbs_BezierCurve:
+        bezier = curve_adaptor.Bezier()
+        poles = [bezier.Pole(i) for i in range(1, bezier.NbPoles() + 1)]
+        # Should also output weights
+
+    elif curve_type == GeomAbs_BSplineCurve:
+        bspline = curve_adaptor.BSpline()
+        poles = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
+        # Should also output the order, knot, multiplicities and weights
+    else :
+        print("Unsupported curve type. Expect inaccurate results")
+        # For other curve types, we'll use a sampling approximation
+        num_points = 5
+        params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
+        poles = [curve_adaptor.Value(param) for param in params]
+    
+    # elif curve_type == GeomAbs_Circle:
+    #     # center = curve_adaptor.Circle().Location()
+    #     # radius = curve_adaptor.Circle().Radius()
+    #     # start_angle = curve_adaptor.FirstParameter()
+    #     # end_angle = curve_adaptor.LastParameter()
+    #     # mid_angle = (start_angle + end_angle) / 2
+    #     # start_point = curve_adaptor.Value(start_angle)
+    #     # mid_point = curve_adaptor.Value(mid_angle)
+    #     # end_point = curve_adaptor.Value(end_angle)
+    #     # control_points = [start_point, mid_point, end_point]
+    return poles
+
+
+
+
+def get_face_uv_contours(face):
+    wires = get_wires_from_face(face)
+    wires_verts, wires_edges, wires_endpoints  = [], [], []
+
+    for w in wires :
+        edges = get_edges_from_wire(w)
+        wire_poles, endpoints, wire_vert = [], [], []
+
+        for e in edges :
+            # Get the 2D curve on the surface
+            curve2d, u0, u1 = BRep_Tool.CurveOnSurface(e, face)
+            adaptor = Geom2dAdaptor_Curve(curve2d)
+            curve_type = adaptor.GetType()
+
+            poles = get_poles_from_geom_curve(adaptor)
+
+            # Reverse the order if the edge orientation is reversed
+            if e.Orientation() != TopAbs_FORWARD:
+                poles.reverse()
+            
+            wire_poles.extend(poles[:-1])
+            endpoints.extend([1.0]+[0.0]*(len(poles)-2))
+
+        for p in wire_poles :
+            wire_vert.append(Vector((p.X()/1000, p.Y()/1000, 0)))
+
+        wire_edge = [(i,(i+1)%len(wire_vert)) for i in range(len(wire_vert))]
+    
+        wires_verts.append(wire_vert)
+        wires_edges.append(wire_edge)
+        wires_endpoints.append(endpoints)
+
+    return wires_verts, wires_edges, wires_endpoints
+
+
+
+
+
+        
+    

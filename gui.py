@@ -88,7 +88,7 @@ if os!="Darwin":
             # wm = context.window_manager
             # self._timer = wm.event_timer_add(0.1, window=context.window)
             # wm.modal_handler_add(self)
-            self.report({'WARNING'}, 'Only Bezier surfaces are supported at the moment')
+            self.report({'WARNING'}, 'Some surfaces may not be supported')
             return {'RUNNING_MODAL'}
 
 

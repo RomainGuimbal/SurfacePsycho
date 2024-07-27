@@ -379,24 +379,37 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
-        original_mode = bpy.context.mode
         
+        # set mode
+        original_mode = bpy.context.mode
         if original_mode == 'EDIT_MESH':
             selected_objects = context.objects_in_mode
         else:
             selected_objects = context.selected_objects
         
+        # loop through selection
         for obj in selected_objects:
-            is_AOP=False
+
+            #check if supported object
+            is_patch=False
             try :
                 if original_mode=='EDIT_MESH':
                     bpy.ops.object.mode_set(mode='OBJECT')
                 ob = obj.evaluated_get(context.evaluated_depsgraph_get())
                 points = get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', 1)
-                is_AOP = True
+                is_patch = True
             except :
-                pass
-            if obj.type == 'MESH' and is_AOP:
+                try :
+                    if original_mode=='EDIT_MESH':
+                        bpy.ops.object.mode_set(mode='OBJECT')
+                    ob = obj.evaluated_get(context.evaluated_depsgraph_get())
+                    points = get_attribute_by_name(ob, 'CP_NURBS_patch', 'vec3', 1)
+                    is_patch = True
+                except :
+                    pass
+            
+            #add contour
+            if obj.type == 'MESH' and is_patch:
                 self.add_square_inside_mesh(context, obj)
 
         # Restore the original mode
@@ -426,7 +439,7 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
             bm.verts.new(Vector((0, 1, 0))),
         ]
         
-        # Create edges and faces for the square
+        # Create edges
         bm.edges.new(verts[0:2])
         bm.edges.new(verts[1:3])
         bm.edges.new(verts[2:])
@@ -441,21 +454,24 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
         
         # Assign to Trim contour groups
 
+
         # Switch to object mode to modify vertex groups
-        bpy.ops.object.mode_set(mode='OBJECT')  
-        # Ensure "Endpoints" vertex group exists
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Add vertex groups
         if "Endpoints" not in obj.vertex_groups:
             obj.vertex_groups.new(name="Endpoints")
         if "Trim Contour" not in obj.vertex_groups:
             obj.vertex_groups.new(name="Trim Contour")
-        vg1 = obj.vertex_groups["Endpoints"]
-        vg2 = obj.vertex_groups["Trim Contour"]
+
+        vg_endpoint = obj.vertex_groups["Endpoints"]
+        vg_contour = obj.vertex_groups["Trim Contour"]
         
         # Add selected vertices to the vertex group
         for v in obj.data.vertices[-4:]:
             if v.select:
-                vg1.add([v.index], 1.0, 'ADD')
-                vg2.add([v.index], 1.0, 'ADD')
+                vg_endpoint.add([v.index], 1.0, 'ADD')
+                vg_contour.add([v.index], 1.0, 'ADD')
 
     
 
