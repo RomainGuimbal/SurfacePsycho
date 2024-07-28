@@ -181,11 +181,7 @@ def build_SP_NURBS_patch(brepFace, collection, context):
     contour_verts, contour_edges = wires_verts[0], wires_edges[0]
     for i in range(1, len(wires_verts)) :
         contour_verts, contour_edges, f = join_mesh_entities(contour_verts, contour_edges, [], wires_verts[i], wires_edges[i], [])
-    
-    vert, edges, faces = join_mesh_entities(CPvert.tolist(), CPedges, CPfaces, contour_verts, contour_edges, [])
-    
-    # TODO assign vertex groups
-
+    vert, edges, faces = join_mesh_entities(CPvert.tolist(), CPedges, CPfaces, contour_verts, [], [])#contour_edges
     
 
     # Create object and add mesh
@@ -194,6 +190,10 @@ def build_SP_NURBS_patch(brepFace, collection, context):
     mesh.from_pydata(vert, edges, faces)
     ob = bpy.data.objects.new('STEP Patch', mesh)
     
+    # # TODO assign vertex groups
+    add_vertex_group(ob, "Trim Contour", [0.0]*len(CPvert)+[1.0]*len(contour_verts))
+    # # wires_endpoints
+
     # set smooth
     mesh = ob.data
     values = [True] * len(mesh.polygons)

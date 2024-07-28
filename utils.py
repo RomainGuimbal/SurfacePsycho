@@ -356,10 +356,10 @@ def get_poles_from_geom_curve(curve_adaptor):
         # Should also output the order, knot, multiplicities and weights
     else :
         print("Unsupported curve type. Expect inaccurate results")
-        # For other curve types, we'll use a sampling approximation
-        num_points = 5
-        params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
-        poles = [curve_adaptor.Value(param) for param in params]
+        # # For other curve types, we'll use a sampling approximation
+        # num_points = 5
+        # params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
+        # poles = [curve_adaptor.Value(param) for param in params]
     
     # elif curve_type == GeomAbs_Circle:
     #     # center = curve_adaptor.Circle().Location()
@@ -407,7 +407,7 @@ def get_face_uv_contours(face):
         wires_verts.append(wire_vert)
         wires_edges.append(wire_edge)
         wires_endpoints.append(endpoints)
-
+        
     return wires_verts, wires_edges, wires_endpoints
 
 
