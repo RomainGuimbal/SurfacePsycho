@@ -254,19 +254,6 @@ def new_brep_bezier_face(o, context):
             trimmed = False
             face = create_face(bsurf)
 
-    # old behaviour
-    try :
-        subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
-    except Exception:
-        pass
-    else :
-        if subtype :
-            point_count = [2]*point_count
-        elif not subtype :
-            point_count = [4]*(point_count//3)
-        else :
-            raise Exception("Invalid subtype attribute")
-
 
     # Build trim contour
     if trimmed:
@@ -349,19 +336,6 @@ def new_brep_bezier_face(o, context):
 #             point_count=None
 #             trimmed = False
 #             face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-
-#     # old behaviour
-#     try :
-#         subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
-#     except Exception:
-#         pass
-#     else :
-#         if subtype :
-#             point_count = [2]*point_count
-#         elif not subtype :
-#             point_count = [4]*(point_count//3)
-#         else :
-#             raise Exception("Invalid subtype attribute")
 
 
 #     # Build trim contour
@@ -549,16 +523,6 @@ def new_brep_planar_face(o, context):
         
     point_count = [int(p) for p in point_count]
     
-    # Old behaviour
-    try :
-        subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
-    except Exception:
-        pass
-    else :
-        if subtype :
-            point_count = [2]*point_count[0]
-        else :
-            point_count = [4]*(point_count[0]//3)
 
     total_p_count = 0
     segment_count = 0
