@@ -65,9 +65,10 @@ def create_face(geom_surf = None, outer_wire = None, inner_wires=[]):
 
 
 
-def create_wire(vector_points, segment_count, seg_p_count, first_segment_p_id, geom_plane=None):
+def create_wire(vector_points, seg_p_count, first_segment_p_id, geom_plane=None):
     total_p_count=len(vector_points)
     dim= len(vector_points[0])
+    segment_count = len(seg_p_count)
 
     # Create CP
     if dim == 2:
@@ -281,7 +282,7 @@ def new_brep_bezier_face(o, context):
         for i,t in enumerate(trim_pts):
             trim_pts[i]=Vector(t[1], t[0]) # INVERTED FOR DEBUG
         
-        trim_wire = create_wire(trim_pts, segment_count, point_count, first_segment_p_id)
+        trim_wire = create_wire(trim_pts, point_count, first_segment_p_id)
         
         # Make face
         face = create_face(bsurf, trim_wire)
@@ -520,8 +521,13 @@ def new_brep_planar_face(o, context):
         point_count = get_attribute_by_name(ob, 'CP_count', 'int')
     except Exception:
         point_count = get_attribute_by_name(ob, 'P_count', 'int')
-        
-    point_count = [int(p) for p in point_count]
+    
+    l=0
+    for i,p in enumerate(point_count):
+        if p ==0:
+            l=i
+            break
+    point_count = [int(p) for p in point_count[:l]]
     
 
     # total_p_count = 0
@@ -539,70 +545,6 @@ def new_brep_planar_face(o, context):
     # first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
     # points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
     # points*=1000 # Unit correction
-
-
-
-
-
-
-
-    # separate wires
-    try:
-        wire_index = get_attribute_by_name(ob, 'Wire', 'int')
-        multi_wires=True
-    except Exception:
-        multi_wires=False
-    
-    # fill points in wires and count wire points
-    wire_points = {}
-    wire_p_counts = {}
-
-    for i,w in enumerate(wire_index):
-        if w==0:
-            break
-        if w not in points.keys():
-            wire_points[w] = []
-
-        wire_points[w].append(points[i])
-        wire_p_counts[w]+=1
-
-    # fill p_count_accumulate
-    wire_accumulate = [0]
-    for _, value in wire_p_counts.items():
-        wire_accumulate.append(value + wire_accumulate[-1])
-    
-    p_count_accumulate = point_count[:]
-    for i, p in enumerate(point_count):
-        if p>0:
-            total_p_count += p-1
-            segment_count += 1
-        if p==0:
-            break
-        if i>0:
-            p_count_accumulate[i] += p_count_accumulate[i-1]-1
-
-    p_count_accumulate_per_wire = wire_p_counts.copy()
-    first_seg_pt_id = wire_p_counts.copy()
-    cursor=0
-    for i, w in enumerate(p_count_accumulate_per_wire.keys()):
-        cursor_prev = cursor
-        for p in p_count_accumulate :
-            cursor = p
-            if p >= wire_accumulate[i]:
-                break
-        p_count_accumulate_per_wire[w]= (np.array(p_count_accumulate[cursor_prev, cursor])-p_count_accumulate[cursor_prev]).tolist()
-        first_seg_pt_id[w] = p_count_accumulate[cursor_prev]
-    
-    print(p_count_accumulate_per_wire)
-
-    points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
-    points*=1000 # Unit correction
-        
-
-
-
-
-
 
     # # separate wires
     # try:
@@ -623,6 +565,60 @@ def new_brep_planar_face(o, context):
     # except Exception:
     #     pass
 
+    # fill p_count_accumulate, total_p_count
+    total_p_count = 0
+    p_count_accumulate = point_count[:]
+    for i, p in enumerate(point_count):
+        if p>0:
+            total_p_count += p-1
+        if p==0:
+            break
+        if i>0:
+            p_count_accumulate[i] += p_count_accumulate[i-1]-1
+
+    # wire index
+    try:
+        wire_index = get_attribute_by_name(ob, 'Wire', 'int')[:total_p_count]
+        # wire_index = [int(w) for w in wire_index]
+    except Exception:
+        wire_index = [-1]*total_p_count
+    
+    points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
+    points*=1000 # Unit correction
+
+    # fill points in wires and count wire points
+    wire_points, wire_p_counts = {}, {}
+    for i,w in enumerate(wire_index):
+        if w==0:
+            break
+        if w not in wire_points.keys():
+            wire_points[w] = []
+            wire_p_counts[w] = 0
+
+        wire_points[w].append(points[i])
+        wire_p_counts[w]+=1
+
+    # fill wire_accumulate
+    wire_accumulate = [0]
+    for _, value in wire_p_counts.items():
+        wire_accumulate.append(value + wire_accumulate[-1])
+
+    # p_count_accumulate_per_wire, seg_first_pt_id
+    wire_seg_p_count = wire_p_counts.copy()
+    p_count_accumulate_per_wire = wire_p_counts.copy()
+    seg_first_pt_id = wire_p_counts.copy()
+    cursor=0
+    for i, w in enumerate(p_count_accumulate_per_wire.keys()):
+        cursor_prev = cursor
+        for p in p_count_accumulate :
+            cursor = p
+            if p >= wire_accumulate[i]:
+                break
+        wire_seg_p_count[w] = point_count[cursor_prev:cursor]
+        p_count_accumulate_per_wire[w]= (np.array(p_count_accumulate[cursor_prev:cursor])-p_count_accumulate[cursor_prev]).tolist()
+        seg_first_pt_id[w] = [0] + [p-1 for p in p_count_accumulate_per_wire[w][:len(wire_seg_p_count[w])-1]]
+
+
     # Orient and place
     loc, rot, scale = o.matrix_world.decompose()
     try :
@@ -638,14 +634,15 @@ def new_brep_planar_face(o, context):
     geom_pl = Geom_Plane(pl)
 
     # wires
-    wire = create_wire(points, segment_count, point_count, first_segment_p_id, geom_pl)    
+    outer_wire = create_wire(wire_points[-1], wire_seg_p_count[-1], seg_first_pt_id[-1], geom_pl)    
     inner_wires=[]
-    # for k in outer_points.keys():
-    #     create_wire(points, segment_count, inner_p_counts[k], first_segment_p_id)
+    for k in wire_points.keys():
+        if k!=-1:
+            inner_wires.append(create_wire(wire_points[k], wire_seg_p_count[k], seg_first_pt_id[k], geom_pl))
 
-    aface = create_face(None, wire, inner_wires)
+    face = create_face(None, outer_wire, inner_wires)
 
-    return aface
+    return face
 
 
 
