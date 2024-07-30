@@ -194,8 +194,11 @@ def change_node_socket_value(ob, value, potential_names, socket_type, context):
 
 def change_GN_modifier_settings(modifier, settings_dict):
     for key, value in settings_dict.items():
-        id = modifier.node_group.interface.items_tree[key].identifier
-        modifier[id]=value
+        try :
+            id = modifier.node_group.interface.items_tree[key].identifier
+            modifier[id]=value
+        except Exception:
+            print("Modifier settings failed to apply")
 
 
 def add_vertex_group(object, name, values):
@@ -213,7 +216,8 @@ def add_vertex_group(object, name, values):
             v=1
             print("vertex group value clamped to 1")
         object.data.vertices
-        vg.add([i], v, 'ADD')
+        if v!=0.0 :
+            vg.add([i], v, 'ADD')
     
     return True
 
@@ -273,17 +277,20 @@ def add_sp_modifier(ob, name, settings_dict={}):
 
 
 def join_mesh_entities(verts1, edges1, faces1, verts2, edges2, faces2):
-    verts1.extend(verts2)
-
     len1 = len(verts1)
+    verts1.extend(verts2)
     edges1.extend([(e[0]+len1, e[1]+len1) for e in edges2])
-    
     faces1.extend([[i+len1 for i in f] for f in faces2])
     
     return verts1, edges1, faces1
 
 
 
+def flatten_list_of_lists(list_of_lists):
+    flat_list = []
+    for row in list_of_lists:
+        flat_list.extend(row)
+    return flat_list
 
 
 
@@ -315,7 +322,7 @@ def get_wires_from_face(face):
 
     while explorer.More():
         wire = explorer.Current()
-        if wire.ShapeType() == TopAbs_WIRE:
+        if wire.ShapeType() == TopAbs_WIRE and wire.Closed():
             wires.append(topods.Wire(wire))
         explorer.Next()
 
@@ -337,7 +344,7 @@ def get_edges_from_wire(wire):
 
 
 
-def get_poles_from_geom_curve(curve_adaptor):
+def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve):
     curve_type = curve_adaptor.GetType()
             
     if curve_type == GeomAbs_Line:
@@ -353,7 +360,9 @@ def get_poles_from_geom_curve(curve_adaptor):
     elif curve_type == GeomAbs_BSplineCurve:
         bspline = curve_adaptor.BSpline()
         poles = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
+        print(bspline.Degree())
         # Should also output the order, knot, multiplicities and weights
+    
     else :
         print("Unsupported curve type. Expect inaccurate results")
         # # For other curve types, we'll use a sampling approximation
@@ -400,19 +409,16 @@ def get_face_uv_contours(face):
             endpoints.extend([1.0]+[0.0]*(len(poles)-2))
 
         for p in wire_poles :
-            wire_vert.append(Vector((p.X()/1000, p.Y()/1000, 0)))
+            wire_vert.append(Vector((p.X(), p.Y(), 0)))
 
         wire_edge = [(i,(i+1)%len(wire_vert)) for i in range(len(wire_vert))]
     
-        wires_verts.append(wire_vert)
-        wires_edges.append(wire_edge)
-        wires_endpoints.append(endpoints)
+        wires_verts.extend(wire_vert)
+        wires_edges.extend(wire_edge)
+        wires_endpoints.extend(endpoints)
         
     return wires_verts, wires_edges, wires_endpoints
 
 
 
 
-
-        
-    

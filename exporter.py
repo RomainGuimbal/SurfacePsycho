@@ -39,6 +39,35 @@ from OCC.Core.ShapeFix import ShapeFix_Face
 ##  Brep from SP entities   ##
 ##############################
 
+def create_face(geom_surf = None, outer_wire = None, inner_wires=[]):
+    # Make face
+    if geom_surf != None:
+        if outer_wire == None :
+            makeface = BRepBuilderAPI_MakeFace(geom_surf, 1e-6)
+            return makeface.Face()
+        else :
+            makeface = BRepBuilderAPI_MakeFace(geom_surf, outer_wire, False)#,1e-6)
+    else :
+        makeface = BRepBuilderAPI_MakeFace(outer_wire, True)
+
+    # Add inner wires (holes)
+    for inner_wire in inner_wires:
+        makeface.Add(inner_wire)
+    
+    # Build the face
+    makeface.Build()
+
+    # makeface.Add(trim_wire)#.Reversed())
+    face = makeface.Face()
+    fix = ShapeFix_Face(face)
+    fix.Perform()
+
+    return fix.Face()
+
+
+
+
+
 def new_brep_bicubic_face(o, context):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
 
@@ -123,12 +152,7 @@ def new_brep_bicubic_face(o, context):
         trim_wire = TopoDS_Wire()
         trim_wire = makeWire.Wire()
         
-        makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, False)#,1e-6)#, trim_wire)
-        # makeface.Add(trim_wire)#.Reversed())
-        face = makeface.Face()
-        fix = ShapeFix_Face(face)
-        fix.Perform()
-        face= fix.Face()
+        face = create_face(bsurf, trim_wire)
     return face
 
 
@@ -177,7 +201,7 @@ def new_brep_bezier_face(o, context):
         except Exception: # No trim
             point_count=None
             trimmed = False
-            face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+            face = create_face(bsurf)
 
     # old behaviour
     try :
@@ -236,18 +260,15 @@ def new_brep_bezier_face(o, context):
             edge = makeEdge.Edge()
             edges_list.SetValue(i+1, edge)
 
+        # Make wire
         makeWire = BRepBuilderAPI_MakeWire()
         for e in edges_list :
             makeWire.Add(e)
         trim_wire = TopoDS_Wire()
         trim_wire = makeWire.Wire()
         
-        makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, False)#,1e-6)#, trim_wire)
-        # makeface.Add(trim_wire)#.Reversed())
-        face = makeface.Face()
-        fix = ShapeFix_Face(face)
-        fix.Perform()
-        face= fix.Face()
+        # Make face
+        face = create_face(bsurf, trim_wire)
 
     return face
 
@@ -446,7 +467,7 @@ def new_brep_curve(o, context):
 
 
 def new_brep_NURBS_curve(o, context):
-    #get attributes
+    # get attributes
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     point_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
     print(point_count)
@@ -460,22 +481,22 @@ def new_brep_NURBS_curve(o, context):
     print(knot_attr)
     points *= 1000 #unit correction
 
-    #poles
+    # poles
     controlPoints = TColgp_Array1OfPnt(1, point_count)
     for i in range(point_count):
         controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
 
-    #weights
+    # weights
     weights = TColStd_Array1OfReal(1, point_count)
     for i in range(point_count):
         weights.SetValue(i+1, weight_attr[i])
 
-    #knots
+    # knots
     knots = TColStd_Array1OfReal(1,knot_length)
     for i in range(knot_length):
         knots.SetValue(i+1, knot_attr[i])
     
-    #Multiplicities
+    # Multiplicities
     mult = TColStd_Array1OfInteger(1, knot_length)
     for i in range(knot_length):
         if i == 0 or i == knot_length-1:
@@ -568,10 +589,10 @@ def new_brep_planar_face(o, context):
     makeWire = BRepBuilderAPI_MakeWire()
     for e in edges_list :
         makeWire.Add(e)
-    w = TopoDS_Wire()
-    w = makeWire.Wire()
+    wire = TopoDS_Wire()
+    wire = makeWire.Wire()
 
-    aface = BRepBuilderAPI_MakeFace(w, True).Face()
+    aface = create_face(None, wire)
     return aface
 
 
@@ -672,7 +693,9 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
         initial_selection = context.visible_objects
     obj_list = initial_selection
     obj_to_del = []
-    
+
+    #TODO replace with recursive version
+
     while(len(obj_list)>0): # itterates until ob_list is empty
         obj_newly_real = []
 
