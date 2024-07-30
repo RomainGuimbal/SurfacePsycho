@@ -2,7 +2,6 @@ import bpy
 import sys
 import numpy as np
 from mathutils import Vector
-from datetime import datetime
 from os.path import dirname, abspath
 from utils import *
 
@@ -64,6 +63,58 @@ def create_face(geom_surf = None, outer_wire = None, inner_wires=[]):
 
     return fix.Face()
 
+
+
+def create_wire(vector_points, segment_count, point_count, first_segment_p_id, geom_plane=None):
+    total_p_count=len(vector_points)
+    dim= len(vector_points[0])
+
+    # Create CP
+    if dim == 2:
+        controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
+    else :
+        controlPoints = TColgp_Array1OfPnt(1, total_p_count)
+
+    for i in range(total_p_count):
+        if dim == 2:
+            pnt= gp_Pnt2d(vector_points[i][1], vector_points[i][0])
+        else :
+            pnt = gp_Pnt(vector_points[i][0], vector_points[i][1], vector_points[i][2])
+            if geom_plane != None:
+                pnt = GeomAPI_ProjectPointOnSurf(pnt, geom_plane).Point(1)
+        controlPoints.SetValue(i+1, pnt)
+    
+    # Create segments
+    edges_list = TopTools_Array1OfShape(1, segment_count)
+    for i in range(segment_count):
+        if dim == 2:
+            segment_point_array = TColgp_Array1OfPnt2d(1, point_count[i])
+        else :
+            if point_count[i] == 2: # straight edges
+                makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
+                                            controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
+                segment = makesegment.Value()
+            else:
+                segment_point_array = TColgp_Array1OfPnt(1, point_count[i])
+
+        for j in range(point_count[i]):
+            segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
+        if dim == 2 :
+            segment = Geom2d_BezierCurve(segment_point_array)
+        else :
+            segment = Geom_BezierCurve(segment_point_array)
+
+        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+        edges_list.SetValue(i+1, edge)
+
+    # Make contour
+    makeWire = BRepBuilderAPI_MakeWire()
+    for e in edges_list :
+        makeWire.Add(e)
+    wire = TopoDS_Wire()
+    wire = makeWire.Wire()
+
+    return wire
 
 
 
@@ -240,32 +291,10 @@ def new_brep_bezier_face(o, context):
         else :
             trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
 
-        # Create 2D points
-        controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
-        for i in range(total_p_count):
-            pnt= gp_Pnt2d(trim_pts[i][1], trim_pts[i][0])
-            controlPoints.SetValue(i+1, pnt)
-
-        # Create edge list
-        edges_list = TopTools_Array1OfShape(1, segment_count)
-        for i in range(segment_count):
-            segment_point_array = TColgp_Array1OfPnt2d(1, point_count[i])
-            for j in range(point_count[i]):
-                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
-            segment = Geom2d_BezierCurve(segment_point_array)
-
-            # make curve 3D
-            adapt = GeomAdaptor_Surface(bsurf)
-            makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
-            edge = makeEdge.Edge()
-            edges_list.SetValue(i+1, edge)
-
-        # Make wire
-        makeWire = BRepBuilderAPI_MakeWire()
-        for e in edges_list :
-            makeWire.Add(e)
-        trim_wire = TopoDS_Wire()
-        trim_wire = makeWire.Wire()
+        for i,t in enumerate(trim_pts):
+            trim_pts[i]=Vector(t[1], t[0]) # INVERTED FOR DEBUG
+        
+        trim_wire = create_wire(trim_pts, segment_count, point_count, first_segment_p_id)
         
         # Make face
         face = create_face(bsurf, trim_wire)
@@ -547,6 +576,21 @@ def new_brep_planar_face(o, context):
     points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
     points*=1000 # Unit correction
 
+    # separate main countour
+    try:
+        inner_points, outer_points= {}, []
+        wire_index = get_attribute_by_name(ob, 'Wire', 'int', total_p_count)
+        for i,w in enumerate(wire_index):
+            if w not in outer_points.keys():
+                inner_points[w]= []
+            if w==-1:
+                outer_points.append(points[i])
+            else:
+                inner_points[w].append(points[i])
+        points = outer_points
+    except Exception:
+        pass
+
     # Orient and place
     loc, rot, scale = o.matrix_world.decompose()
     try :
@@ -561,38 +605,14 @@ def new_brep_planar_face(o, context):
     pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z),gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
     geom_pl = Geom_Plane(pl)
 
-    # Create CP
-    controlPoints = TColgp_Array1OfPnt(1, total_p_count)
-    for i in range(total_p_count):
-        pnt = gp_Pnt(points[i][0], points[i][1], points[i][2])
-        pnt = GeomAPI_ProjectPointOnSurf(pnt, geom_pl).Point(1)
-        controlPoints.SetValue(i+1, pnt)
+    wire = create_wire(points, segment_count, point_count, first_segment_p_id, geom_pl)
     
-    # Create segments
-    edges_list = TopTools_Array1OfShape(1, segment_count)
-    for i in range(segment_count):
-        if point_count[i] == 2: # straight edges
-            makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
-                                         controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
-            segment = makesegment.Value()
-        else:
-            segment_point_array = TColgp_Array1OfPnt(1, point_count[i])
+    inner_wires=[]
+    # for k in outer_points.keys():
+    #     create_wire(points, segment_count, point_count, first_segment_p_id)
+    
 
-            for j in range(point_count[i]):
-                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
-            segment = Geom_BezierCurve(segment_point_array)
-
-        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
-        edges_list.SetValue(i+1, edge)
-
-    # Make contour
-    makeWire = BRepBuilderAPI_MakeWire()
-    for e in edges_list :
-        makeWire.Add(e)
-    wire = TopoDS_Wire()
-    wire = makeWire.Wire()
-
-    aface = create_face(None, wire)
+    aface = create_face(None, wire, inner_wires)
     return aface
 
 

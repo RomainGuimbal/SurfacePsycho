@@ -39,7 +39,7 @@ class SP_OT_add_bicubic_patch(bpy.types.Operator):
     bl_label = "Add Bicubic PsychoPatch"
     bl_options = {'REGISTER', 'UNDO'}
     def execute(self, context):
-        append_object_by_name("PsychoPatch", context)
+        append_object_by_name("Bicubic Bezier Patch", context)
         return {'FINISHED'}
     
 class SP_OT_add_aop(bpy.types.Operator):
@@ -47,7 +47,7 @@ class SP_OT_add_aop(bpy.types.Operator):
     bl_label = "Add Any Order PsychoPatch"
     bl_options = {'REGISTER', 'UNDO'}
     def execute(self, context):
-        append_object_by_name("PsychoPatch Any Order", context)
+        append_object_by_name("Bezier Patch", context)
         return {'FINISHED'}
     
 class SP_OT_add_flat_patch(bpy.types.Operator):
