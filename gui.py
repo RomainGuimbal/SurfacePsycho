@@ -136,13 +136,14 @@ class SP_PT_MainPanel(bpy.types.Panel):
 
         if context.mode == 'EDIT_MESH':
             self.layout.label(text="Bezier Segments Endpoints")
-            layout = self.layout
-            split = layout.split(factor=0.5, align=True)
-            col1 = split.column(align=True)
-            col2 = split.column(align=True)
-            
-            col1.operator("sp.assign_as_endpoint", text="Assign")
-            col2.operator("sp.remove_from_endpoints", text="Remove")
+            row = self.layout.row()
+
+            sub = row.row(align=True)
+            sub.operator("sp.assign_as_endpoint", text="Assign")
+            sub.operator("sp.remove_from_endpoints", text="Remove")
+
+            sub = row.row(align=True)
+            sub.operator("sp.select_endpoints", text="Select")
             
         
 
@@ -160,7 +161,7 @@ class SP_PT_MainPanel(bpy.types.Panel):
 def menu_surface(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
-        self.layout.operator("sp.add_aop", text="Bezier PsychoPatch", icon="SURFACE_NSURFACE")
+        self.layout.operator("sp.add_bezier_patch", text="Bezier PsychoPatch", icon="SURFACE_NSURFACE")
         self.layout.operator("sp.add_bicubic_patch", text="Bicubic Bezier PsychoPatch", icon="SURFACE_NSURFACE")
         self.layout.operator("sp.add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE")
 

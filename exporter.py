@@ -280,7 +280,7 @@ def new_brep_bezier_face(o, context):
             trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
 
         for i,t in enumerate(trim_pts):
-            trim_pts[i]=Vector(t[1], t[0]) # INVERTED FOR DEBUG
+            trim_pts[i]=Vector((t[1], t[0], 0)) # INVERTED FOR DEBUG
         
         trim_wire = create_wire(trim_pts, point_count, first_segment_p_id)
         
@@ -530,93 +530,75 @@ def new_brep_planar_face(o, context):
     point_count = [int(p) for p in point_count[:l]]
     
 
-    # total_p_count = 0
-    # segment_count = 0
-    # p_count_accumulate = point_count[:]
-    # for i, p in enumerate(point_count):
-    #     if p>0:
-    #         total_p_count += p-1
-    #         segment_count += 1
-    #     if p==0:
-    #         break
-    #     if i>0:
-    #         p_count_accumulate[i] += p_count_accumulate[i-1]-1
-
-    # first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
-    # points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
-    # points*=1000 # Unit correction
-
-    # # separate wires
-    # try:
-    #     inner_points, outer_points, inner_p_counts = {}, [], {}
-    #     wire_index = get_attribute_by_name(ob, 'Wire', 'int', total_p_count)
-    #     for i,w in enumerate(wire_index):
-    #         if w not in outer_points.keys():
-    #             inner_points[w] = []
-    #             inner_p_counts[w] = 0
-    #         if w==-1:
-    #             outer_points.append(points[i])
-    #         else:
-    #             inner_points[w].append(points[i])
-    #             inner_p_counts[w]+=1
-    #             total_p_count-=1
-
-    #     points = outer_points
-    # except Exception:
-    #     pass
-
-    # fill p_count_accumulate, total_p_count
     total_p_count = 0
+    segment_count = 0
     p_count_accumulate = point_count[:]
     for i, p in enumerate(point_count):
         if p>0:
             total_p_count += p-1
+            segment_count += 1
         if p==0:
             break
         if i>0:
             p_count_accumulate[i] += p_count_accumulate[i-1]-1
 
-    # wire index
-    try:
-        wire_index = get_attribute_by_name(ob, 'Wire', 'int')[:total_p_count]
-        # wire_index = [int(w) for w in wire_index]
-    except Exception:
-        wire_index = [-1]*total_p_count
-    
+    seg_first_pt_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
     points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
     points*=1000 # Unit correction
 
-    # fill points in wires and count wire points
-    wire_points, wire_p_counts = {}, {}
-    for i,w in enumerate(wire_index):
-        if w==0:
-            break
-        if w not in wire_points.keys():
-            wire_points[w] = []
-            wire_p_counts[w] = 0
 
-        wire_points[w].append(points[i])
-        wire_p_counts[w]+=1
+    # # fill p_count_accumulate, total_p_count
+    # total_p_count = 0
+    # p_count_accumulate = point_count[:]
+    # for i, p in enumerate(point_count):
+    #     if p>0:
+    #         total_p_count += p-1
+    #     if p==0:
+    #         break
+    #     if i>0:
+    #         p_count_accumulate[i] += p_count_accumulate[i-1]-1
 
-    # fill wire_accumulate
-    wire_accumulate = [0]
-    for _, value in wire_p_counts.items():
-        wire_accumulate.append(value + wire_accumulate[-1])
+    # # wire index
+    # try:
+    #     wire_index = get_attribute_by_name(ob, 'Wire', 'int')[:total_p_count]
+    #     # wire_index = [int(w) for w in wire_index]
+    # except Exception:
+    #     wire_index = [-1]*total_p_count
+    
+    # points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
+    # points*=1000 # Unit correction
 
-    # p_count_accumulate_per_wire, seg_first_pt_id
-    wire_seg_p_count = wire_p_counts.copy()
-    p_count_accumulate_per_wire = wire_p_counts.copy()
-    seg_first_pt_id = wire_p_counts.copy()
-    cursor=0
-    for i, w in enumerate(p_count_accumulate_per_wire.keys()):
-        cursor_prev = cursor
-        for p in p_count_accumulate :
-            cursor = p
-            if p >= wire_accumulate[i]:
-                break
-        wire_seg_p_count[w] = point_count[cursor_prev:cursor]
-        p_count_accumulate_per_wire[w]= (np.array(p_count_accumulate[cursor_prev:cursor])-p_count_accumulate[cursor_prev]).tolist()
-        seg_first_pt_id[w] = [0] + [p-1 for p in p_count_accumulate_per_wire[w][:len(wire_seg_p_count[w])-1]]
+    # # fill points in wires and count wire points
+    # wire_points, wire_p_counts = {}, {}
+    # for i,w in enumerate(wire_index):
+    #     if w==0:
+    #         break
+    #     if w not in wire_points.keys():
+    #         wire_points[w] = []
+    #         wire_p_counts[w] = 0
+
+    #     wire_points[w].append(points[i])
+    #     wire_p_counts[w]+=1
+
+    # # fill wire_accumulate
+    # wire_accumulate = [0]
+    # for _, value in wire_p_counts.items():
+    #     wire_accumulate.append(value + wire_accumulate[-1])
+
+    # # p_count_accumulate_per_wire, seg_first_pt_id
+    # wire_seg_p_count = wire_p_counts.copy()
+    # p_count_accumulate_per_wire = wire_p_counts.copy()
+    # seg_first_pt_id = wire_p_counts.copy()
+    # cursor=0
+    # for i, w in enumerate(p_count_accumulate_per_wire.keys()):
+    #     cursor_prev = cursor
+    #     for p in p_count_accumulate :
+    #         cursor = p
+    #         if p >= wire_accumulate[i]:
+    #             break
+    #     wire_seg_p_count[w] = point_count[cursor_prev:cursor]
+    #     p_count_accumulate_per_wire[w]= (np.array(p_count_accumulate[cursor_prev:cursor])-p_count_accumulate[cursor_prev]).tolist()
+    #     seg_first_pt_id[w] = [0] + [p-1 for p in p_count_accumulate_per_wire[w][:len(wire_seg_p_count[w])-1]]
 
 
     # Orient and place
@@ -630,24 +612,22 @@ def new_brep_planar_face(o, context):
     loc += rot@ Vector(offset)
     loc *= 1000
     pl_normal = rot@ Vector(orient)
-    pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z),gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
+    pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z), gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
     geom_pl = Geom_Plane(pl)
 
     # wires
-    outer_wire = create_wire(wire_points[-1], wire_seg_p_count[-1], seg_first_pt_id[-1], geom_pl)    
-    inner_wires=[]
-    for k in wire_points.keys():
-        if k!=-1:
-            inner_wires.append(create_wire(wire_points[k], wire_seg_p_count[k], seg_first_pt_id[k], geom_pl))
+    # outer_wire = create_wire(wire_points[-1], wire_seg_p_count[-1], seg_first_pt_id[-1], geom_pl)
+    outer_wire = create_wire(points, point_count, seg_first_pt_id, geom_pl)
+    
+    # inner_wires=[]
+    # for k in wire_points.keys():
+    #     if k!=-1:
+    #         inner_wires.append(create_wire(wire_points[k], wire_seg_p_count[k], seg_first_pt_id[k], geom_pl))
 
-    face = create_face(None, outer_wire, inner_wires)
-
+    # face = create_face(None, outer_wire, inner_wires)
+    face = create_face(None, outer_wire)
+    
     return face
-
-
-
-
-
 
 
 

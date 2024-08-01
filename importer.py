@@ -126,8 +126,8 @@ def build_SP_bezier_patch(brepFace, collection, context) :
     mesh.polygons.foreach_set("use_smooth", values)
 
     # add modifier
-    collection.objects.link(ob)    
-    add_sp_modifier(ob, "SP - Any Order Patch Meshing")
+    collection.objects.link(ob)
+    add_sp_modifier(ob, "SP - Bezier Patch Meshing")
     
     if status != "":
         print(status)

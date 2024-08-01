@@ -231,12 +231,12 @@ def normalize_array(array):
 APPENDED_ASSETS = []
 # TODO
 # To not lose the list at each close>open fill APPENDED_ASSETS with a list of all modifiers of the file ?
-# Alternatively : store properly in the blend file (need a way to be reseted)
+# Alternatively : store properly in the blend file (need a way to be reset)
 
-def add_node_group_modifier_from_asset(obj, library_name, asset_name, settings_dict={}):
+def append_asset(asset_name, library_name = "SurfacePsycho"):
     if asset_name not in APPENDED_ASSETS :
         APPENDED_ASSETS.append(asset_name)
-    
+
         # Get the asset library
         library = bpy.context.preferences.filepaths.asset_libraries.get(library_name)
         if not library:
@@ -255,16 +255,20 @@ def add_node_group_modifier_from_asset(obj, library_name, asset_name, settings_d
                 print(f"Asset '{asset_name}' not found in library '{library_name}'")
                 return
 
+def add_node_group_modifier_from_asset(obj, asset_name, library_name = "SurfacePsycho", settings_dict={}, append_to_list=True):
+    if append_to_list:
+        append_asset(asset_name, library_name)
+
     # Create the modifier and assign the loaded node group
-    modifier = obj.modifiers.new(name="GeometryNodes", type='NODES')
+    modifier = obj.modifiers.new(name=asset_name, type='NODES')
     modifier.node_group = bpy.data.node_groups.get(asset_name)
     
     #Change settings
     change_GN_modifier_settings(modifier, settings_dict)
 
 
-def add_sp_modifier(ob, name, settings_dict={}):
-    add_node_group_modifier_from_asset(ob, "SurfacePsycho", name, settings_dict)
+def add_sp_modifier(ob, name, settings_dict={}, append_to_list=True):
+    add_node_group_modifier_from_asset(ob, name, "SurfacePsycho", settings_dict, append_to_list)
     # try :
         # bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
         #                                     asset_library_identifier="SurfacePsycho",

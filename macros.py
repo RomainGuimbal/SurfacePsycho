@@ -42,13 +42,89 @@ class SP_OT_add_bicubic_patch(bpy.types.Operator):
         append_object_by_name("Bicubic Bezier Patch", context)
         return {'FINISHED'}
     
-class SP_OT_add_aop(bpy.types.Operator):
-    bl_idname = "sp.add_aop"
-    bl_label = "Add Any Order PsychoPatch"
+
+class SP_OT_add_bezier_patch(bpy.types.Operator):
+    bl_idname = "sp.add_bezier_patch"
+    bl_label = "Add Bezier Patch"
     bl_options = {'REGISTER', 'UNDO'}
+
+    def invoke(self, context, event):
+        append_asset("SP - Bezier Patch Meshing")
+        return self.execute(context)
+
+    order_u : bpy.props.IntProperty(
+        name="Order U",
+        description="Number of control points in U direction -1",
+        default=3,
+        min=1,
+    )
+
+    order_v : bpy.props.IntProperty(
+        name="Order V",
+        description="Number of control points in V direction -1",
+        default=3,
+        min=1
+    )
+
     def execute(self, context):
-        append_object_by_name("Bezier Patch", context)
+        # Create a new mesh and a new object
+        mesh = bpy.data.meshes.new(name="Grid")
+        obj = bpy.data.objects.new("Bezier Patch", mesh)
+
+        # Link the object to the scene
+        bpy.context.collection.objects.link(obj)
+        
+        # Create a new bmesh
+        bm = bmesh.new()
+
+        step_x = 2 / self.order_v
+        step_y = 2 / self.order_u
+
+        # Create vertices
+        for i in range(self.order_u + 1):
+            for j in range(self.order_v + 1):
+                x = j * step_x - 1  # Subtract 1 to center
+                y = i * step_y - 1  # Subtract 1 to center
+                bm.verts.new((x, y, 0))
+
+        bm.verts.ensure_lookup_table()
+
+        # Create faces
+        for i in range(self.order_u):
+            for j in range(self.order_v):
+                v1 = bm.verts[i * (self.order_v + 1) + j]
+                v2 = bm.verts[i * (self.order_v + 1) + j + 1]
+                v3 = bm.verts[(i + 1) * (self.order_v + 1) + j + 1]
+                v4 = bm.verts[(i + 1) * (self.order_v + 1) + j]
+                bm.faces.new((v1, v2, v3, v4))
+
+        # Update bmesh
+        bm.to_mesh(mesh)
+        bm.free()
+
+        # set smooth
+        mesh = obj.data
+        values = [True] * len(mesh.polygons)
+        mesh.polygons.foreach_set("use_smooth", values)
+
+        # Update mesh
+        mesh.update()
+
+        add_sp_modifier(obj, "SP - Bezier Patch Meshing", {}, False)
+        
+
+        # Set object location to 3D cursor
+        obj.location = bpy.context.scene.cursor.location
+
+        # Select the new object and make it active
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+
         return {'FINISHED'}
+        
+        
+
     
 class SP_OT_add_flat_patch(bpy.types.Operator):
     bl_idname = "sp.add_flat_patch"
@@ -368,8 +444,48 @@ class SP_OT_remove_from_endpoints(bpy.types.Operator):
                 for v in o.data.vertices:
                     if v.select:
                         vg.remove([v.index])
-                bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.object.mode_set(mode='EDIT')
         return {'FINISHED'}
+    
+
+
+class SP_OT_select_endpoints(bpy.types.Operator):
+    bl_idname = "sp.select_endpoints"
+    bl_label = "Select Endpoints"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        obj = context.active_object
+        
+        if obj.type != 'MESH':
+            self.report({'ERROR'}, "Active object must be a mesh")
+            return {'CANCELLED'}
+        
+        # Ensure we're in edit mode, Switch to object mode to access mesh data
+        bpy.ops.object.mode_set(mode='EDIT') 
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        vertex_group = obj.vertex_groups.get("Endpoints")
+        if not vertex_group:
+            self.report({'INFO'}, "No Endpoints")
+            bpy.ops.object.mode_set(mode='EDIT')
+            return {'CANCELLED'}
+        
+        for v in obj.data.vertices:
+            try:
+                weight = vertex_group.weight(v.index)
+                if weight > 0.6:
+                    v.select = True
+            except RuntimeError:
+                # Vertex is not in the group, skip it
+                pass
+        
+        # Switch back to edit mode to show the selection
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        return {'FINISHED'}
+
+
 
 
 class SP_OT_add_trim_contour(bpy.types.Operator):
@@ -500,7 +616,7 @@ class SP_OT_solidify(bpy.types.Operator):
 
 
 classes = [
-    SP_OT_add_aop,
+    SP_OT_add_bezier_patch,
     SP_OT_add_bicubic_patch,
     SP_OT_add_curvatures_probe,
     SP_OT_add_curve,
@@ -515,6 +631,7 @@ classes = [
     SP_OT_select_visible_surfaces,
     SP_OT_toogle_control_geom,
     SP_OT_unify_versions,
+    SP_OT_select_endpoints,
 ]
 if os!="Darwin":
     classes+= [
