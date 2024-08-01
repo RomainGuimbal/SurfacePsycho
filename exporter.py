@@ -66,6 +66,11 @@ def create_face(geom_surf = None, outer_wire = None, inner_wires=[]):
 
 
 def create_wire(vector_points, seg_p_count, first_segment_p_id, geom_plane=None):
+    #
+    # seg_p_count : for each segment, the point count
+    # first_segment_p_id : for each segment, the id of the first point
+    # geom_plane : to project (for flat patch)
+    #
     total_p_count=len(vector_points)
     dim= len(vector_points[0])
     segment_count = len(seg_p_count)
@@ -239,21 +244,16 @@ def new_brep_bezier_face(o, context):
         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
     
     # Check if trimmed
-    try: # Old
-        point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
+    try :
+        point_count = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
+        point_count = [int(p) for p in point_count]
         trimmed = True
-        old_version = True
-    except Exception:
-        try : # New
-            point_count = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
-            point_count = [int(p) for p in point_count]
-            trimmed = True
-            old_version = False
-            
-        except Exception: # No trim
-            point_count=None
-            trimmed = False
-            face = create_face(bsurf)
+        old_version = False
+        
+    except Exception: # No trim
+        point_count=None
+        trimmed = False
+        face = create_face(bsurf)
 
 
     # Build trim contour
@@ -273,11 +273,7 @@ def new_brep_bezier_face(o, context):
         first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
 
 
-        if old_version :
-            subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
-            trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
-        else :
-            trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
+        trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
 
         for i,t in enumerate(trim_pts):
             trim_pts[i]=Vector((t[1], t[0], 0)) # INVERTED FOR DEBUG
