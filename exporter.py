@@ -46,7 +46,7 @@ def create_face(geom_surf = None, outer_wire = None, inner_wires=[]):
             return makeface.Face()
         else :
             makeface = BRepBuilderAPI_MakeFace(geom_surf, outer_wire, False)#,1e-6)
-    else :
+    else : # Flat face
         makeface = BRepBuilderAPI_MakeFace(outer_wire, True)
 
     # Add inner wires (holes)
@@ -65,51 +65,31 @@ def create_face(geom_surf = None, outer_wire = None, inner_wires=[]):
 
 
 
-def create_wire(vector_points, seg_p_count, first_segment_p_id, geom_plane=None):
-    #
-    # seg_p_count : for each segment, the point count
-    # first_segment_p_id : for each segment, the id of the first point
-    # geom_plane : to project (for flat patch)
-    #
+def create_wire_flat_patch(vector_points, seg_p_counts, first_segment_p_id, geom_plane):
     total_p_count=len(vector_points)
-    dim= len(vector_points[0])
-    segment_count = len(seg_p_count)
+    segment_count = len(seg_p_counts)
 
     # Create CP
-    if dim == 2:
-        controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
-    else :
-        controlPoints = TColgp_Array1OfPnt(1, total_p_count)
-
+    controlPoints = TColgp_Array1OfPnt(1, total_p_count)
     for i in range(total_p_count):
-        if dim == 2:
-            pnt= gp_Pnt2d(vector_points[i][1], vector_points[i][0])
-        else :
-            pnt = gp_Pnt(vector_points[i][0], vector_points[i][1], vector_points[i][2])
-            if geom_plane != None:
-                pnt = GeomAPI_ProjectPointOnSurf(pnt, geom_plane).Point(1)
+        pnt = gp_Pnt(vector_points[i][0], vector_points[i][1], vector_points[i][2])
+        if geom_plane != None:
+            pnt = GeomAPI_ProjectPointOnSurf(pnt, geom_plane).Point(1)
         controlPoints.SetValue(i+1, pnt)
     
     # Create segments
     edges_list = TopTools_Array1OfShape(1, segment_count)
     for i in range(segment_count):
-        if dim == 2:
-            segment_point_array = TColgp_Array1OfPnt2d(1, seg_p_count[i])
-        else :
-            if seg_p_count[i] == 2: # straight edges
-                makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
-                                            controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
-                segment = makesegment.Value()
-            else:
-                segment_point_array = TColgp_Array1OfPnt(1, seg_p_count[i])
-
-        for j in range(seg_p_count[i]):
-            segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
-        if dim == 2 :
-            segment = Geom2d_BezierCurve(segment_point_array)
-        else :
+        if seg_p_counts[i] == 2: # straight edges
+            makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
+                                        controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
+            segment = makesegment.Value()
+        else:
+            segment_point_array = TColgp_Array1OfPnt(1, seg_p_counts[i])
+            for j in range(seg_p_counts[i]):
+                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
             segment = Geom_BezierCurve(segment_point_array)
-
+            
         edge = BRepBuilderAPI_MakeEdge(segment).Edge()
         edges_list.SetValue(i+1, edge)
 
@@ -121,6 +101,41 @@ def create_wire(vector_points, seg_p_count, first_segment_p_id, geom_plane=None)
     wire = makeWire.Wire()
 
     return wire
+
+
+def create_wire_curved_patch(pts_2d, seg_p_counts, first_segment_p_id, geom_surf):
+    wire_p_count = len(pts_2d)
+    segment_count = len(seg_p_counts)
+
+    # Create 2D points
+    controlPoints = TColgp_Array1OfPnt2d(1, wire_p_count)
+    for i in range(wire_p_count):
+        pnt= gp_Pnt2d(pts_2d[i][1], pts_2d[i][0])
+        controlPoints.SetValue(i+1, pnt)
+
+    # Create edge list
+    edges_list = TopTools_Array1OfShape(1, segment_count)
+    for i in range(segment_count):
+        segment_point_array = TColgp_Array1OfPnt2d(1, seg_p_counts[i])
+        for j in range(seg_p_counts[i]):
+            segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%wire_p_count+1))
+        segment = Geom2d_BezierCurve(segment_point_array)
+
+        # make curve 3D
+        adapt = GeomAdaptor_Surface(geom_surf)
+        makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())
+        edge = makeEdge.Edge()
+        edges_list.SetValue(i+1, edge)
+
+    makeWire = BRepBuilderAPI_MakeWire()
+    for e in edges_list :
+        makeWire.Add(e)
+    wire = TopoDS_Wire()
+    wire = makeWire.Wire()
+
+    return wire
+
+
 
 
 
@@ -245,23 +260,20 @@ def new_brep_bezier_face(o, context):
     
     # Check if trimmed
     try :
-        point_count = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
-        point_count = [int(p) for p in point_count]
+        seg_p_counts = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
+        seg_p_counts = [int(p) for p in seg_p_counts]
         trimmed = True
-        old_version = False
-        
     except Exception: # No trim
-        point_count=None
+        seg_p_counts=None
         trimmed = False
         face = create_face(bsurf)
-
 
     # Build trim contour
     if trimmed:
         total_p_count = 0
         segment_count = 0
-        p_count_accumulate = point_count[:]
-        for i, p in enumerate(point_count):
+        p_count_accumulate = seg_p_counts[:]
+        for i, p in enumerate(seg_p_counts):
             if p>0:
                 total_p_count += p-1
                 segment_count += 1
@@ -271,14 +283,20 @@ def new_brep_bezier_face(o, context):
                 p_count_accumulate[i] += p_count_accumulate[i-1]-1
 
         first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
+        seg_p_counts=seg_p_counts[:segment_count]
 
+        trim_attr = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
+        trim_pts = []
+        for i,t in enumerate(trim_attr):
+            trim_pts.append(Vector((t[1], t[0]))) # INVERTED FOR DEBUG
 
-        trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
+        print("\n")
+        print(trim_pts)
+        print(seg_p_counts)
+        print(first_segment_p_id)
+        print(geom_surf)
 
-        for i,t in enumerate(trim_pts):
-            trim_pts[i]=Vector((t[1], t[0], 0)) # INVERTED FOR DEBUG
-        
-        trim_wire = create_wire(trim_pts, point_count, first_segment_p_id)
+        trim_wire = create_wire_curved_patch(trim_pts, seg_p_counts, first_segment_p_id, geom_surf)
         
         # Make face
         face = create_face(bsurf, trim_wire)
@@ -612,13 +630,13 @@ def new_brep_planar_face(o, context):
     geom_pl = Geom_Plane(pl)
 
     # wires
-    # outer_wire = create_wire(wire_points[-1], wire_seg_p_count[-1], seg_first_pt_id[-1], geom_pl)
-    outer_wire = create_wire(points, point_count, seg_first_pt_id, geom_pl)
+    # outer_wire = create_wire_flat_patch(wire_points[-1], wire_seg_p_count[-1], seg_first_pt_id[-1], geom_pl)
+    outer_wire = create_wire_flat_patch(points, point_count, seg_first_pt_id, geom_pl)
     
     # inner_wires=[]
     # for k in wire_points.keys():
     #     if k!=-1:
-    #         inner_wires.append(create_wire(wire_points[k], wire_seg_p_count[k], seg_first_pt_id[k], geom_pl))
+    #         inner_wires.append(create_wire_flat_patch(wire_points[k], wire_seg_p_count[k], seg_first_pt_id[k], geom_pl))
 
     # face = create_face(None, outer_wire, inner_wires)
     face = create_face(None, outer_wire)
