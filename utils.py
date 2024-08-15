@@ -369,6 +369,7 @@ def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve):
     
     else :
         print("Unsupported curve type. Expect inaccurate results")
+        poles = []
         # # For other curve types, we'll use a sampling approximation
         # num_points = 5
         # params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]

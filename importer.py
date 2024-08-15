@@ -215,7 +215,7 @@ def build_SP_NURBS_patch(brepFace, collection, context):
         # assign vertex group to modifier # change_node_socket_value
     
     # Meshing
-    add_sp_modifier(ob, "SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg})# TO FIX U AND V INVERTED FOR DEBUG
+    add_sp_modifier(ob, "SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Fit / UV": True})# TO FIX U AND V INVERTED FOR DEBUG
 
     if status != "":
         print(status)
@@ -250,7 +250,7 @@ def build_SP_flat(brepFace, collection, context):
         curve_adaptor = BRepAdaptor_Curve(edge)
         
         edge_control_points = get_poles_from_geom_curve(curve_adaptor)
-            
+        
         # Reverse the order if the edge orientation is reversed
         if edge.Orientation() != TopAbs_FORWARD:
             edge_control_points.reverse()
