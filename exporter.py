@@ -103,6 +103,7 @@ def create_wire_flat_patch(vector_points, seg_p_counts, first_segment_p_id, geom
     return wire
 
 
+
 def create_wire_curved_patch(pts_2d, seg_p_counts, first_segment_p_id, geom_surf):
     wire_p_count = len(pts_2d)
     segment_count = len(seg_p_counts)
@@ -152,7 +153,7 @@ def new_brep_bicubic_face(o, context):
             id= 4*i+j
             controlPoints.SetValue(i+1, j+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
-    #Bezier surface
+    # Bezier surface
     geom_surf = Geom_BezierSurface(controlPoints)
     bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
     bezierarray.SetValue(1, 1, geom_surf)
@@ -188,7 +189,7 @@ def new_brep_bicubic_face(o, context):
             pnt= gp_Pnt2d(trim_pts[i][1], trim_pts[i][0])
             controlPoints.SetValue(i+1, pnt)
 
-        #make edges
+        # Make edges
         if subtype :#polygon mode
             edges_list = TopTools_Array1OfShape(1, point_count)
             for i in range(point_count):

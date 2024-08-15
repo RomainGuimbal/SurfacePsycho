@@ -389,9 +389,12 @@ def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve):
 
 
 
-def get_face_uv_contours(face):
+def get_face_uv_contours(face, bounds=(0,1,0,1)):
     wires = get_wires_from_face(face)
     wires_verts, wires_edges, wires_endpoints  = [], [], []
+
+    min_u, max_u, min_v, max_v = bounds[0], bounds[1], bounds[2], bounds[3]
+    range_u, range_v = max_u - min_u, max_v - min_v
 
     for w in wires :
         edges = get_edges_from_wire(w)
@@ -413,7 +416,9 @@ def get_face_uv_contours(face):
             endpoints.extend([1.0]+[0.0]*(len(poles)-2))
 
         for p in wire_poles :
-            wire_vert.append(Vector((p.X(), p.Y(), 0)))
+            x=(p.X()-min_u)/range_u
+            y=(p.Y()-min_v)/range_v
+            wire_vert.append(Vector((x, y, 0)))
 
         wire_edge = [(i,(i+1)%len(wire_vert)) for i in range(len(wire_vert))]
     

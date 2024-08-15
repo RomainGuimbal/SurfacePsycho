@@ -144,9 +144,9 @@ def build_SP_NURBS_patch(brepFace, collection, context):
     if face.DynamicType().Name() == "Geom_BSplineSurface":
         bspline_surface = Geom_BSplineSurface.DownCast(face)
         u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
-
         udeg = bspline_surface.UDegree()
         vdeg = bspline_surface.VDegree()
+        uv_bounds = bspline_surface.Bounds()
         u_knots = normalize_array(bspline_surface.UKnots())
         v_knots = normalize_array(bspline_surface.VKnots())
         u_mult = bspline_surface.UMultiplicities()
@@ -178,7 +178,7 @@ def build_SP_NURBS_patch(brepFace, collection, context):
     CPvert, _, CPfaces = create_grid(vector_pts)
 
     # Add trim contour
-    wires_verts, wires_edges, wires_endpoints = get_face_uv_contours(brepFace)
+    wires_verts, wires_edges, wires_endpoints = get_face_uv_contours(brepFace, uv_bounds)
     vert, edges, faces = join_mesh_entities(CPvert.tolist(), [], CPfaces, wires_verts, wires_edges, [])
 
     # Create object and add mesh
