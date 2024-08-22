@@ -2,15 +2,12 @@ import bpy
 import bmesh
 import numpy as np
 # from multiprocessing import Process
-import sys
-from os.path import dirname, abspath
-file_dirname = dirname(__file__)
-if file_dirname not in sys.path:
-    sys.path.append(file_dirname)
+# import sys
+# from os.path import dirname, abspath
 
-addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
-ASSETSPATH = addonpath + "/assets/assets.blend"
-
+# addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
+# ASSETSPATH = addonpath + "/assets/assets.blend"
+ASSETSPATH = None
 
 
 def geom_type_of_object(o, context):
