@@ -461,6 +461,9 @@ class ShapeHierarchy:
                     self.print_hierarchy(item, level + 2)
             else:
                 print(f"{indent}{key}: {value}")
+    
+    def get_face_count(self) :
+        return len(self.faces)
 
 
 
@@ -468,12 +471,20 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
     # Create the hierarchy
     shape_hierarchy = ShapeHierarchy()
     shape_hierarchy.process_shape(shape)
-
+    
+    
     # shape_hierarchy.print_hierarchy()
     
+    # progress cursor
+    wm = bpy.context.window_manager
+    face_count = shape_hierarchy.get_face_count()
+    wm.progress_begin(0, face_count)
+    progress = 0
+
     #Create SP faces
     if enabled_entities["faces"]:
         for face_id, face in shape_hierarchy.faces.items():
+
             ft= surface_type(face)
             if ft=="Bezier":
                 build_SP_bezier_patch(face, collection, context)
@@ -483,9 +494,12 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
                 build_SP_flat(face, collection, context)
             else :
                 print("Unsupported Face Type : " + ft)
+            progress+=1
+            wm.progress_update(progress)
 
     #recursive_SP_from_brep_shape(shape, collection, context, enabled_entities)
     #TODO : Add brep relations (face connections...)
+    wm.progress_end()
 
     return True
 
@@ -539,12 +553,10 @@ def import_cad(filepath, context, enabled_entities):
     context.scene.collection.children.link(new_collection)
     context.view_layer.active_layer_collection = context.view_layer.layer_collection.children[collection_name]
 
-
     # import cProfile
     # profiler = cProfile.Profile()
     # profiler.enable()
     build_SP_from_brep(shape, new_collection, context, enabled_entities)
     # profiler.disable()
     # profiler.print_stats()
-
 
