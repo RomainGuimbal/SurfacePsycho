@@ -752,10 +752,15 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
                     bf = new_brep_bicubic_face(o, context)
                     aSew.Add(mirror_brep(o, bf))
 
-                case "surf_any" :
+                case "bezier_surf" :
                     SPobj_count +=1
                     af = new_brep_bezier_face(o, context)
                     aSew.Add(mirror_brep(o, af))
+
+                case "NURBS_surf" :
+                    SPobj_count +=1
+                    nf = new_brep_NURBS_face(o, context)
+                    aSew.Add(mirror_brep(o, nf))
 
                 case "planar" :
                     SPobj_count +=1

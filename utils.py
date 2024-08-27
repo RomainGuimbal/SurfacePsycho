@@ -16,37 +16,25 @@ if file_dirname not in sys.path:
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
 
-
+TYPES_FROM_CP_ATTR = {    'CP_bezier_surf':'bicubic_surf',
+                           'CP_any_order_surf':'bezier_surf',
+                               'CP_NURBS_surf':'NURBS_surf',
+                                   'CP_planar':'planar',
+                          'CP_any_order_curve':'curve_any',
+                                    'CP_curve':'curve',
+                              'CP_NURBS_curve':'NURBS_curve',
+                                 'CP_cylinder':'cylinder',
+                                    'CP_torus':'torus',}
 
 def geom_type_of_object(o, context):
-    type = None
     if o.type == 'EMPTY' and o.instance_collection != None :
-        type = 'collection_instance'
+        return 'collection_instance'
     else : 
         ob = o.evaluated_get(context.evaluated_depsgraph_get())
         if hasattr(ob.data, "attributes") :
-
             for k in ob.data.attributes.keys() :
-                match k:
-                    case 'CP_bezier_surf' :
-                        type = 'bicubic_surf'
-                        break
-                    case 'CP_any_order_surf' :
-                        type = 'surf_any'
-                        break
-                    case 'CP_planar' :
-                        type = 'planar'
-                        break
-                    case 'CP_any_order_curve':
-                        type = 'curve_any'
-                        break
-                    case 'CP_curve':
-                        type = 'curve'
-                        break
-                    case 'CP_NURBS_curve' :
-                        type = 'NURBS_curve'
-                        break
-    return type
+                if k in TYPES_FROM_CP_ATTR.keys():
+                    return TYPES_FROM_CP_ATTR[k]
 
 
 def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
@@ -317,6 +305,7 @@ from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
 from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
 from OCC.Core.TopoDS import topods
 from mathutils import Vector
+from math import isclose
 
 
 def get_wires_from_face(face):
@@ -350,7 +339,7 @@ def get_edges_from_wire(wire):
 
 def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve):
     curve_type = curve_adaptor.GetType()
-            
+    
     if curve_type == GeomAbs_Line:
         start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
         end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
@@ -364,7 +353,7 @@ def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve):
     elif curve_type == GeomAbs_BSplineCurve:
         bspline = curve_adaptor.BSpline()
         poles = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
-        print(bspline.Degree())
+        # print(bspline.Degree())
         # Should also output the order, knot, multiplicities and weights
     
     else :
@@ -396,39 +385,80 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
 
     min_u, max_u, min_v, max_v = bounds[0], bounds[1], bounds[2], bounds[3]
     range_u, range_v = max_u - min_u, max_v - min_v
+    print("UV Range : (" + str(range_u) + ", " + str(range_v) + ")")
 
     for w in wires :
         edges = get_edges_from_wire(w)
-        wire_poles, endpoints, wire_vert = [], [], []
+        wire_poles, endpoints, wire_verts, verts_of_edges = [], [], [], []
 
+        print(str(len(edges)) + " Edges")
+        poles_of_edges = []
         for e in edges :
             # Get the 2D curve on the surface
             curve2d, u0, u1 = BRep_Tool.CurveOnSurface(e, face)
             adaptor = Geom2dAdaptor_Curve(curve2d)
-            curve_type = adaptor.GetType()
-
             poles = get_poles_from_geom_curve(adaptor)
 
             # Reverse the order if the edge orientation is reversed
-            if e.Orientation() != TopAbs_FORWARD:
+            if e.Orientation() != TopAbs_FORWARD :
                 poles.reverse()
+            # if len(poles) == 2 :
+            #     poles.reverse()
             
-            wire_poles.extend(poles[:-1])
-            endpoints.extend([1.0]+[0.0]*(len(poles)-2))
+            e_vert = []
+            for p in poles :
+                x=max(0, min(1, (p.X()-min_u)/range_u))
+                y=max(0, min(1, (p.Y()-min_v)/range_v))
+                e_vert.append(Vector((x, y, 0)))
+                if p == poles[0] or p == poles[-1]:
+                    print(str((x, y)) + " | " + str((p.X(),p.Y())) )
+            print("\n")
 
-        for p in wire_poles :
-            x=(p.X()-min_u)/range_u
-            y=(p.Y()-min_v)/range_v
-            wire_vert.append(Vector((x, y, 0)))
+            verts_of_edges.append(e_vert)
+            wire_verts.extend(e_vert[:-1])
+            endpoints.extend([1.0]+[0.0]*(len(e_vert)-2))
 
-        wire_edge = [(i,(i+1)%len(wire_vert)) for i in range(len(wire_vert))]
-    
-        wires_verts.extend(wire_vert)
+
+        # for e in poles_of_edges:
+        #     print(str(id(e[ 0]))[-4:-1])
+        #     print(str(id(e[-1]))[-4:-1])
+        
+        # reorder verts_of_edges
+        # e_cur = verts_of_edges[0]
+        # wire_verts.extend(e_cur[:-1])
+        # endpoints.extend([1.0]+[0.0]*(len(e_cur)-2))
+        # verts_of_edges[0]=None
+        # for i in range(len(verts_of_edges)) :
+        #     x_to_match, y_to_match, _ = e_cur[-1]
+        #     # print(e_cur[-1])
+        #     for j,e_nxt in enumerate(verts_of_edges) :
+        #         if e_nxt != None :
+        #             if isclose(e_nxt[0][0], x_to_match, rel_tol=1e-04, abs_tol=0.0) and isclose(e_nxt[0][1], y_to_match, rel_tol=1e-04, abs_tol=0.0):
+        #                 print("Yes")
+        #                 e_nxt.reverse()
+        #                 e_cur = e_nxt
+        #                 wire_verts.extend(e_nxt[:-1])
+        #                 endpoints.extend([1.0]+[0.0]*(len(e_nxt)-2))
+        #                 verts_of_edges[j]=None
+        #                 break
+        #             elif isclose(e_nxt[-1][0], x_to_match, rel_tol=1e-04, abs_tol=0.0) and isclose(e_nxt[-1][1], y_to_match, rel_tol=1e-04, abs_tol=0.0) :
+        #                 print("Yes")
+        #                 e_cur = e_nxt
+        #                 wire_verts.extend(e_nxt[:-1])
+        #                 endpoints.extend([1.0]+[0.0]*(len(e_nxt)-2))
+        #                 verts_of_edges[j]=None
+        #                 break
+        # for n in verts_of_edges :
+        #     if n != None :
+        #         print("No D:<")
+
+        if verts_of_edges[-1][-1]!=verts_of_edges[0][0]:
+            print(verts_of_edges[-1][-1])
+            print(verts_of_edges[0][0])
+
+        wire_edge = [(i,(i+1)%len(wire_verts)) for i in range(len(wire_verts))]
+        wires_verts.extend(wire_verts)
         wires_edges.extend(wire_edge)
         wires_endpoints.extend(endpoints)
         
     return wires_verts, wires_edges, wires_endpoints
-
-
-
-

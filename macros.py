@@ -291,7 +291,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
             type = geom_type_of_object(o, context)
             ob = o.evaluated_get(context.evaluated_depsgraph_get())
             match type :
-                case "bezier_surf":
+                case "bicubic_surf":
                     cp=get_attribute_by_name(ob, 'CP_bezier_surf', 'vec3', 16)
                     bpy.ops.surface.primitive_nurbs_surface_surface_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
                     i+=1
@@ -305,7 +305,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                     for j,p in enumerate(spline.points): 
                         p.co = (cp[j][0], cp[j][1], cp[j][2], 1)
                     
-                case "surf_any":
+                case "bezier_surf":
                     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
                     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
                     cp=get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', u_count*v_count)
@@ -519,7 +519,7 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
                     if original_mode=='EDIT_MESH':
                         bpy.ops.object.mode_set(mode='OBJECT')
                     ob = obj.evaluated_get(context.evaluated_depsgraph_get())
-                    points = get_attribute_by_name(ob, 'CP_NURBS_patch', 'vec3', 1)
+                    points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', 1)
                     is_patch = True
                 except :
                     pass
