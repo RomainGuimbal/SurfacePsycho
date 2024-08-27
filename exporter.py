@@ -307,55 +307,56 @@ def new_brep_bezier_face(o, context):
 
 
 
-# def new_brep_NURBS_face(o, context):
-#     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-#     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
-#     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
-#     points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', u_count*v_count)
-#     points *= 1000 #unit correction
+def new_brep_NURBS_face(o, context):
+    # Get attributes
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+    v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
+    points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', u_count*v_count)
+    points *= 1000 #unit correction
+    order_u, order_v = get_attribute_by_name(ob, 'Orders', 'int', 2)
 
-#     controlPoints = TColgp_Array2OfPnt(1, u_count, 1, v_count)
-#     for i in range(v_count):
-#         for j in range(u_count):
-#             id= u_count*i +j
-#             controlPoints.SetValue(j+1, i+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
+    # Trim Attributes
+    try : 
+        trim_p_count = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
+        trim_p_count = [int(p) for p in trim_p_count]
+        trimmed = True
+    except Exception: # No trim
+        trim_p_count=None
+        trimmed = False
 
-#     geom_surf = Geom_BezierSurface(controlPoints)
-#     bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
-#     bezierarray.SetValue(1, 1, geom_surf)
-    
-#     bspline_param = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
-#     if bspline_param.IsDone():
-#         poles = bspline_param.Poles().Array2()
-#         uknots = bspline_param.UKnots().Array1()
-#         vknots = bspline_param.VKnots().Array1()
-#         umult = bspline_param.UMultiplicities().Array1()
-#         vmult = bspline_param.VMultiplicities().Array1()
-#         udeg = bspline_param.UDegree()
-#         vdeg = bspline_param.VDegree()
+    # Knots
+    try : 
+        uknots = get_attribute_by_name(ob, 'Knot U', 'int')
+        vknots = get_attribute_by_name(ob, 'Knot V', 'int')
+        uknots, vknots = None, None
+    except Exception: # No trim
+        pass
 
-#         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
-    
-#     # Check if trimmed
-#     try: # Old
-#         point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
-#         trimmed = True
-#         old_version = True
-#     except Exception:
-#         try : # New
-#             point_count = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
-#             point_count = [int(p) for p in point_count]
-#             trimmed = True
-#             old_version = False
-            
-#         except Exception: # No trim
-#             point_count=None
-#             trimmed = False
-#             face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+    # Multiplicities
+    try : 
+        mult_u = get_attribute_by_name(ob, 'Multiplicity U', 'int')
+        mult_v = get_attribute_by_name(ob, 'Multiplicity V', 'int')
+        umult, vmult = None, None
+    except Exception: # No trim
+        pass
 
+    # Poles grid
+    poles = TColgp_Array2OfPnt(1, u_count, 1, v_count)
+    for i in range(v_count):
+        for j in range(u_count):
+            id= u_count*i +j
+            poles.SetValue(j+1, i+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
-#     # Build trim contour
-#     if trimmed:
+    # Compose Geom
+    bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, order_u, order_v, False, False)
+
+    # Make Face
+    if not trimmed:
+        face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
+    else :
+        pass
+        # Build trim contour
 #         total_p_count = 0
 #         segment_count = 0
 #         p_count_accumulate = point_count[:]
@@ -410,7 +411,7 @@ def new_brep_bezier_face(o, context):
 #         fix.Perform()
 #         face= fix.Face()
 
-#     return face
+    return face
 
 
 

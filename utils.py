@@ -16,7 +16,7 @@ if file_dirname not in sys.path:
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
 
-TYPES_FROM_CP_ATTR = {    'CP_bezier_surf':'bicubic_surf',
+TYPES_FROM_CP_ATTR = {        'CP_bezier_surf':'bicubic_surf',
                            'CP_any_order_surf':'bezier_surf',
                                'CP_NURBS_surf':'NURBS_surf',
                                    'CP_planar':'planar',
@@ -24,7 +24,13 @@ TYPES_FROM_CP_ATTR = {    'CP_bezier_surf':'bicubic_surf',
                                     'CP_curve':'curve',
                               'CP_NURBS_curve':'NURBS_curve',
                                  'CP_cylinder':'cylinder',
-                                    'CP_torus':'torus',}
+                                    'CP_torus':'torus',
+                                   'CP_circle':'circle',
+                                    'CP_conic':'conic',
+                                  'CP_ellipse':'ellipse',
+                                   'CP_sphere':'sphere',
+                               'CP_swept_surf':'swept_surf',
+                          'CP_revolution_surf':'revolution_surf',}
 
 def geom_type_of_object(o, context):
     if o.type == 'EMPTY' and o.instance_collection != None :
@@ -337,13 +343,44 @@ def get_edges_from_wire(wire):
 
 
 
-def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve):
+from OCC.Core.TopoDS import TopoDS_Vertex
+from OCC.Core.BRep import BRep_Tool
+from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopAbs import TopAbs_VERTEX
+
+def get_edge_endpoints(edge):
+    explorer = TopExp_Explorer(edge, TopAbs_VERTEX)
+    vertices = []
+    while explorer.More():
+        vertex = explorer.Current()
+        point = BRep_Tool.Pnt(TopoDS_Vertex(vertex))
+        vertices.append(point)
+        explorer.Next()
+    return vertices[0], vertices[-1]
+
+
+
+
+
+def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve, edge=None):
     curve_type = curve_adaptor.GetType()
+    order = None
     
     if curve_type == GeomAbs_Line:
-        start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
-        end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
-        poles = [start_point, end_point]
+        if edge!=None :
+            start_point, end_point = get_edge_endpoints(edge)
+            # start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
+            # end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
+            poles = [start_point, end_point]
+            print(str(start_point.X()) + "  |  " + str(start_point.Y()))
+            print(str(end_point.X()) + "  |  " + str(end_point.Y()))
+        else:
+            # start_point, end_point = get_edge_endpoints(edge)
+            start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
+            end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
+            poles = [start_point, end_point]
+            print(str(start_point.X()) + "  |  " + str(start_point.Y()))
+            print(str(end_point.X()) + "  |  " + str(end_point.Y()))
 
     elif curve_type == GeomAbs_BezierCurve:
         bezier = curve_adaptor.Bezier()
@@ -353,6 +390,7 @@ def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve):
     elif curve_type == GeomAbs_BSplineCurve:
         bspline = curve_adaptor.BSpline()
         poles = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
+        order = bspline.Degree()
         # print(bspline.Degree())
         # Should also output the order, knot, multiplicities and weights
     
@@ -374,7 +412,7 @@ def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve):
     #     # mid_point = curve_adaptor.Value(mid_angle)
     #     # end_point = curve_adaptor.Value(end_angle)
     #     # control_points = [start_point, mid_point, end_point]
-    return poles
+    return poles, order
 
 
 
@@ -389,7 +427,7 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
 
     for w in wires :
         edges = get_edges_from_wire(w)
-        wire_poles, endpoints, wire_verts, verts_of_edges = [], [], [], []
+        wire_orders, endpoints, wire_verts, verts_of_edges, order_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
 
         print(str(len(edges)) + " Edges")
         poles_of_edges = []
@@ -397,7 +435,7 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
             # Get the 2D curve on the surface
             curve2d, u0, u1 = BRep_Tool.CurveOnSurface(e, face)
             adaptor = Geom2dAdaptor_Curve(curve2d)
-            poles = get_poles_from_geom_curve(adaptor)
+            poles, edge_order = get_poles_from_geom_curve(adaptor, e)
 
             # Reverse the order if the edge orientation is reversed
             if e.Orientation() != TopAbs_FORWARD :
@@ -410,13 +448,19 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
                 x=max(0, min(1, (p.X()-min_u)/range_u))
                 y=max(0, min(1, (p.Y()-min_v)/range_v))
                 e_vert.append(Vector((x, y, 0)))
-                if p == poles[0] or p == poles[-1]:
-                    print(str((x, y)) + " | " + str((p.X(),p.Y())) )
+                # if p == poles[0] or p == poles[-1]:
+                #     print(str((x, y)) + " | " + str((p.X(),p.Y())) )
             print("\n")
 
             verts_of_edges.append(e_vert)
             wire_verts.extend(e_vert[:-1])
             endpoints.extend([1.0]+[0.0]*(len(e_vert)-2))
+            if edge_order!=None:
+                order_att.extend([edge_order/10]+[0.0]*(len(e_vert)-2))
+            else :
+                order_att.extend([0.0]*(len(e_vert)-1))
+
+            
 
 
         # for e in poles_of_edges:
@@ -452,13 +496,10 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
         #     if n != None :
         #         print("No D:<")
 
-        if verts_of_edges[-1][-1]!=verts_of_edges[0][0]:
-            print(verts_of_edges[-1][-1])
-            print(verts_of_edges[0][0])
-
         wire_edge = [(i,(i+1)%len(wire_verts)) for i in range(len(wire_verts))]
         wires_verts.extend(wire_verts)
         wires_edges.extend(wire_edge)
         wires_endpoints.extend(endpoints)
+        wire_orders.extend(order_att)
         
-    return wires_verts, wires_edges, wires_endpoints
+    return wires_verts, wires_edges, wires_endpoints, wire_orders

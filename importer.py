@@ -178,7 +178,7 @@ def build_SP_NURBS_patch(brepFace, collection, context):
     CPvert, _, CPfaces = create_grid(vector_pts)
 
     # Add trim contour
-    wires_verts, wires_edges, wires_endpoints = get_face_uv_contours(brepFace, uv_bounds)
+    wires_verts, wires_edges, wires_endpoints, wire_orders = get_face_uv_contours(brepFace, uv_bounds)
     vert, edges, faces = join_mesh_entities(CPvert.tolist(), [], CPfaces, wires_verts, wires_edges, [])
 
     # Create object and add mesh
@@ -190,6 +190,7 @@ def build_SP_NURBS_patch(brepFace, collection, context):
     # assign vertex groups
     add_vertex_group(ob, "Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
     add_vertex_group(ob, "Endpoints", [0.0]*len(CPvert) + wires_endpoints)
+    add_vertex_group(ob, "Order", [0.0]*len(CPvert) + wire_orders)
 
     # set smooth
     mesh = ob.data
@@ -249,7 +250,7 @@ def build_SP_flat(brepFace, collection, context):
         edge = topods.Edge(explorer.Current())
         curve_adaptor = BRepAdaptor_Curve(edge)
         
-        edge_control_points = get_poles_from_geom_curve(curve_adaptor)
+        edge_control_points, _ = get_poles_from_geom_curve(curve_adaptor) # Order to implement
         
         # Reverse the order if the edge orientation is reversed
         if edge.Orientation() != TopAbs_FORWARD:
@@ -258,7 +259,7 @@ def build_SP_flat(brepFace, collection, context):
         endpoints.extend([1.0]+[0.0]*(len(edge_control_points)-2))
         explorer.Next()
 
-    #prepare mesh
+    # prepare mesh
     for pnt in control_points :
         vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
     vert = vector_pts
@@ -494,21 +495,21 @@ def surface_type(face):
     surface_adaptor = GeomAdaptor_Surface(BRep_Tool.Surface(face))
     surface_type = surface_adaptor.GetType()
 
-    if surface_type == GeomAbs_Plane:
+    if surface_type == GeomAbs_Plane :
         return "Plane"
-    elif surface_type == GeomAbs_Cylinder:
+    elif surface_type == GeomAbs_Cylinder :
         return "Cylindrical"
-    elif surface_type == GeomAbs_Cone:
+    elif surface_type == GeomAbs_Cone :
         return "Conical"
-    elif surface_type == GeomAbs_Sphere:
+    elif surface_type == GeomAbs_Sphere :
         return "Spherical"
-    elif surface_type == GeomAbs_Torus:
+    elif surface_type == GeomAbs_Torus :
         return "Toroidal"
-    elif surface_type == GeomAbs_BezierSurface:
+    elif surface_type == GeomAbs_BezierSurface :
         return "Bezier"
-    elif surface_type == GeomAbs_BSplineSurface:
+    elif surface_type == GeomAbs_BSplineSurface :
         return "NURBS"
-    else:
+    else :
         return str(surface_type)
 
 
