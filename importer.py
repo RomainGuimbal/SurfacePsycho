@@ -227,40 +227,31 @@ def build_SP_NURBS_patch(brepFace, collection, context):
 
 
 def build_SP_flat(brepFace, collection, context):
-    vector_pts = []
-    # explorer = TopExp_Explorer(brepFace, TopAbs_VERTEX)
-    # visited_vert = set()  
-
-    # while explorer.More():
-    #     vertex = explorer.Current()
-    #     vert_hash = hash(vertex.__hash__())
-    #     if vert_hash not in visited_vert:      
-    #         visited_vert.add(vert_hash)
-    #         pnt = BRep_Tool.Pnt(vertex)
-    #         vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
-    #     explorer.Next()
-
+    vector_pts, poles, endpoints, order_att = [], [], [], []
     wire = breptools.OuterWire(brepFace)
-    control_points = []
-    endpoints = []
     explorer = TopExp_Explorer(wire, TopAbs_EDGE)
     
     while explorer.More():
         # Get the current edge
         edge = topods.Edge(explorer.Current())
         curve_adaptor = BRepAdaptor_Curve(edge)
+        edge_poles, edge_order = get_poles_from_geom_curve(curve_adaptor, edge)
         
-        edge_control_points, _ = get_poles_from_geom_curve(curve_adaptor) # Order to implement
-        
-        # Reverse the order if the edge orientation is reversed
+        # Reverse
         if edge.Orientation() != TopAbs_FORWARD:
-            edge_control_points.reverse()
-        control_points.extend(edge_control_points[:-1])
-        endpoints.extend([1.0]+[0.0]*(len(edge_control_points)-2))
+            edge_poles.reverse()
+
+        poles.extend(edge_poles[:-1])
+        endpoints.extend([1.0]+[0.0]*(len(edge_poles)-2))
+        if edge_order!=None:
+            order_att.extend([edge_order/10]+[0.0]*(len(edge_poles)-2))
+        else :
+            order_att.extend([0.0]*(len(edge_poles)-1))
+
         explorer.Next()
 
     # prepare mesh
-    for pnt in control_points :
+    for pnt in poles :
         vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
     vert = vector_pts
     edges = [(i,(i+1)%len(vector_pts)) for i in range(len(vector_pts))]
@@ -272,6 +263,7 @@ def build_SP_flat(brepFace, collection, context):
 
     # Assign endpoints
     add_vertex_group(ob, "Endpoints", endpoints)
+    add_vertex_group(ob, "Order", order_att)
     
     # add_modifier(ob, "SP - Any Order Patch Meshing")
     collection.objects.link(ob)
@@ -281,64 +273,6 @@ def build_SP_flat(brepFace, collection, context):
 
 
 
-
-# def recursive_SP_from_brep_shape(shape, collection, context, enabled_entities, visited_shapes=None, level=0, shape_lists=[]):
-    
-#     #Avoid duplicates
-#     if visited_shapes is None:
-#         visited_shapes = set()
-
-#     shape_id = hash(shape.__hash__())
-#     if shape_id in visited_shapes:
-#         return
-#     visited_shapes.add(shape_id)
-
-#     # Types
-#     tab = "  " * level
-#     shape_type = shape.ShapeType()
-#     if shape_type == TopAbs_COMPOUND:
-#         print(f"{tab}Compound")
-#         # MAKE COLLECTION
-#     elif shape_type == TopAbs_COMPSOLID:
-#         print(f"{tab}CompSolid")
-#     elif shape_type == TopAbs_SOLID:
-#         print(f"{tab}Solid")
-#     elif shape_type == TopAbs_SHELL:
-#         print(f"{tab}Shell")
-    
-#     elif shape_type == TopAbs_FACE:
-#         print(f"{tab}Face")
-#         if enabled_entities["faces"]:
-#             ft= surface_type(shape)
-#             if ft=="Bezier":
-#                 build_SP_bezier_patch(shape, collection, context)
-#             elif ft=="NURBS":
-#                 build_SP_NURBS_patch(shape, collection, context)
-#             elif ft=="Plane":
-#                 build_SP_flat(shape, collection, context)
-#             else :
-#                 print("Unsupported Face Type")
-
-#     elif shape_type == TopAbs_WIRE:
-#         print(f"{tab}Wire")
-    
-#     elif shape_type == TopAbs_EDGE:
-#         print(f"{tab}Edge")
-#         if enabled_entities["curves"]:
-#             try :
-#                 build_SP_curve(shape, collection, context)
-#             except Exception:
-#                 pass
-#     elif shape_type == TopAbs_VERTEX:
-#         pass# print(f"{tab}Vertex")
-#     else:
-#         print(f"{tab}Unknown shape type")
-
-#     explorer = TopoDS_Iterator(shape)
-#     while explorer.More():
-#         sub_shape = explorer.Value()
-#         recursive_SP_from_brep_shape(sub_shape, collection, context, enabled_entities, visited_shapes, level + 1, shape_lists)
-#         explorer.Next()
 
 
 
@@ -350,18 +284,6 @@ class ShapeHierarchy:
         self.faces = {}
         self.edges = {}
         self.hierarchy = {}
-
-    # def add_face(self, face):
-    #     if face not in self.faces :
-    #         face_id = f"Face_{id(face)}"
-    #         self.faces[face_id] = face
-    #         return face_id
-
-    # def add_edge(self, edge):
-    #     if edge not in self.edges :
-    #         edge_id = f"Edge_{id(edge)}"
-    #         self.edges[edge_id] = edge
-    #         return edge_id
 
     def add_face(self, face):
         face_id = hash(face.__hash__())
@@ -471,10 +393,7 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
     # Create the hierarchy
     shape_hierarchy = ShapeHierarchy()
     shape_hierarchy.process_shape(shape)
-    
-    
-    # shape_hierarchy.print_hierarchy()
-    
+        
     # progress cursor
     wm = bpy.context.window_manager
     face_count = shape_hierarchy.get_face_count()
@@ -499,8 +418,8 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
 
     #recursive_SP_from_brep_shape(shape, collection, context, enabled_entities)
     #TODO : Add brep relations (face connections...)
+    
     wm.progress_end()
-
     return True
 
 
