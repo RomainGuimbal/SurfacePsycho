@@ -18,7 +18,7 @@ from OCC.Extend.DataExchange import read_step_file
 from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
 from mathutils import Vector
 from os.path import abspath, splitext, split
-from utils import *
+from .utils import *
 
 
 

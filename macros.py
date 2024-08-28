@@ -1,6 +1,6 @@
 import bpy
 import bmesh
-from utils import *
+from .utils import *
 from mathutils import Vector
 from datetime import datetime
 from os.path import dirname, abspath, join
@@ -8,8 +8,8 @@ import platform
 os = platform.system()
 
 if os!="Darwin":
-    from importer import *
-    from exporter import *
+    from .importer import *
+    from .exporter import *
 
     class SP_OT_quick_export(bpy.types.Operator):
         bl_idname = "sp.quick_export"

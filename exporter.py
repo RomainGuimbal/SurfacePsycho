@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from mathutils import Vector
 from os.path import dirname, abspath
-from utils import *
+from .utils import *
 
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:

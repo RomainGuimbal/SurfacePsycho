@@ -1,17 +1,19 @@
 import bpy
 import bmesh
 import numpy as np
-from OCC.Core.BRep import BRep_Tool
-from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopAbs import TopAbs_EDGE
-from OCC.Core.TopoDS import topods_Edge
-from OCC.Core.Geom2d import Geom2d_BSplineCurve, Geom2d_Line
+from mathutils import Vector
+from math import isclose
+from .OCC.Core.BRep import BRep_Tool
+from .OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+from .OCC.Core.Geom2d import Geom2d_BSplineCurve, Geom2d_Line
+from .OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
+from .OCC.Core.GeomAbs import GeomAbs_CurveType, GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line
+from .OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
+from .OCC.Core.TopExp import TopExp_Explorer
+from .OCC.Core.TopoDS import topods, TopoDS_Vertex
 # from multiprocessing import Process
-import sys
+
 from os.path import dirname, abspath, join
-file_dirname = dirname(__file__)
-if file_dirname not in sys.path:
-    sys.path.append(file_dirname)
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
@@ -301,17 +303,7 @@ def flatten_list_of_lists(list_of_lists):
 
 
 
-from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopAbs import TopAbs_WIRE
-from OCC.Core.BRep import BRep_Tool
-from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_EDGE
-from OCC.Core.GeomAbs import GeomAbs_CurveType, GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line
-from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
-from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
-from OCC.Core.TopoDS import topods
-from mathutils import Vector
-from math import isclose
+
 
 
 def get_wires_from_face(face):
@@ -343,10 +335,7 @@ def get_edges_from_wire(wire):
 
 
 
-from OCC.Core.TopoDS import TopoDS_Vertex
-from OCC.Core.BRep import BRep_Tool
-from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopAbs import TopAbs_VERTEX
+
 
 def get_edge_endpoints(edge):
     explorer = TopExp_Explorer(edge, TopAbs_VERTEX)

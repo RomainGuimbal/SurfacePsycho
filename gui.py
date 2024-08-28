@@ -6,12 +6,12 @@ import platform
 os = platform.system()
 
 # from utils import *
-from macros import *
+# from macros import *
 from . import macros
 
 if os!="Darwin":
-    from importer import import_cad
-    from exporter import export_step, export_iges
+    from .importer import import_cad
+    from .exporter import export_step, export_iges
     # from utils import  progress_bar
 
 
