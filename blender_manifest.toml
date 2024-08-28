@@ -1,20 +1,25 @@
 schema_version = "1.0.0"
+
 id = "surfacepsycho"
 version = "0.6.0"
 name = "Surface Psycho"
 tagline = "Surface Design in Blender"
 maintainer = "Romain Guimbal"
 type = "add-on"
+
 website = "https://github.com/RomainGuimbal/SurfacePsycho/wiki"
+
 tags = ["Modeling", "Import-Export", "Geometry Nodes"]
+
 blender_version_min = "4.2.0"
+
 license = ["SPDX:GPL-3.0-or-later"]
+
 copyright = ["2024 Romain Guimbal"]
-wheels = [
-  "./wheels/six-1.16.0-py3-none-any.whl",
-]
+
 [permissions]
 files = "Import/export CAD files"
+
 [build]
 paths_exclude_pattern = [
   "__pycache__/",
