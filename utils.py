@@ -3,14 +3,14 @@ import bmesh
 import numpy as np
 from mathutils import Vector
 from math import isclose
-from .OCC.Core.BRep import BRep_Tool
-from .OCC.Core.BRepAdaptor import BRepAdaptor_Curve
-from .OCC.Core.Geom2d import Geom2d_BSplineCurve, Geom2d_Line
-from .OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
-from .OCC.Core.GeomAbs import GeomAbs_CurveType, GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line
-from .OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
-from .OCC.Core.TopExp import TopExp_Explorer
-from .OCC.Core.TopoDS import topods, TopoDS_Vertex
+from OCC.Core.BRep import BRep_Tool
+from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+from OCC.Core.Geom2d import Geom2d_BSplineCurve, Geom2d_Line
+from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
+from OCC.Core.GeomAbs import GeomAbs_CurveType, GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line
+from OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
+from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopoDS import topods, TopoDS_Vertex
 # from multiprocessing import Process
 
 from os.path import dirname, abspath, join

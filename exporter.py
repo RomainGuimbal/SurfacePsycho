@@ -574,12 +574,12 @@ def new_brep_planar_face(o, context):
     #     if i>0:
     #         p_count_accumulate[i] += p_count_accumulate[i-1]-1
 
-    # # wire index
-    # try:
-    #     wire_index = get_attribute_by_name(ob, 'Wire', 'int')[:total_p_count]
-    #     # wire_index = [int(w) for w in wire_index]
-    # except Exception:
-    #     wire_index = [-1]*total_p_count
+    # wire index
+    try:
+        wire_index = get_attribute_by_name(ob, 'Wire', 'int')[:total_p_count]
+        wire_index = [int(w) for w in wire_index]
+    except Exception:
+        wire_index = [-1]*total_p_count
     
     # points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
     # points*=1000 # Unit correction

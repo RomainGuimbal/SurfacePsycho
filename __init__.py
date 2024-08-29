@@ -23,6 +23,12 @@ bl_info = {
     "location": "View3D > Add > Surface/Curve  |  Viewport > N Panel > Edit"
 }
 
+import sys
+from os.path import dirname
+file_dirname = dirname(__file__)
+if file_dirname not in sys.path:
+    sys.path.append(file_dirname)
+
 import bpy
 from . import gui
 

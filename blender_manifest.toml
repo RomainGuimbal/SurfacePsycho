@@ -17,13 +17,11 @@ license = ["SPDX:GPL-3.0-or-later"]
 
 copyright = ["2024 Romain Guimbal"]
 
-platforms = ["any", "windows-x64"]
+# platforms = ["any", "windows-x64"]
 wheels = [
   "./wheels/six-1.16.0-py3-none-any.whl",
-  "./wheels/occt-7.7.2-cp311-none-win_.whl",
+  "./wheels/OCC-7.7.2-py3-none-any.whl",
 ]
-
-
 
 [permissions]
 files = "Import/export CAD files"
