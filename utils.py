@@ -15,8 +15,9 @@ from OCC.Core.TopoDS import topods, TopoDS_Vertex
 
 from os.path import dirname, abspath, join
 
-addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
-ASSETSPATH = addonpath + "/assets/assets.blend"
+# addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
+ASSETSPATH = "./assets/assets.blend"
+# addonpath + "
 
 TYPES_FROM_CP_ATTR = {        'CP_bezier_surf':'bicubic_surf',
                            'CP_any_order_surf':'bezier_surf',

@@ -531,91 +531,82 @@ def new_brep_NURBS_curve(o, context):
 
 
 
-def new_brep_planar_face(o, context):
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    try:
-        point_count = get_attribute_by_name(ob, 'CP_count', 'int')
-    except Exception:
-        point_count = get_attribute_by_name(ob, 'P_count', 'int')
-    
-    l=0
-    for i,p in enumerate(point_count):
-        if p ==0:
-            l=i
-            break
-    point_count = [int(p) for p in point_count[:l]]
-    
 
-    total_p_count = 0
-    segment_count = 0
-    p_count_accumulate = point_count[:]
-    for i, p in enumerate(point_count):
+class Wire :
+    def __init__(self, CP, segs_p_counts):
+        self.CP = CP
+        self.segs_p_counts = segs_p_counts
+        
+        p_count = 0 #(total)
+        p_count_accumulate = self.segs_p_counts[:]
+        for i, p in enumerate(self.segs_p_counts):
+            if p>0:
+                p_count += p-1
+            elif p==0:
+                break
+            if i>0:
+                p_count_accumulate[i] += p_count_accumulate[i-1]-1
+        
+        self.seg_first_P_id = [0] + [p-1 for p in p_count_accumulate[:len(segs_p_counts)-1]]
+
+    def get_occ_wire(self, geom_plane):
+        wire = create_wire_flat_patch(self.CP, self.segs_p_counts, self.seg_first_P_id, geom_plane)
+        return wire
+
+
+        
+
+
+
+def new_brep_planar_face(o, context):
+    # Get point count attr
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    try :
+        segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
+    except Exception :
+        segs_p_counts = get_attribute_by_name(ob, 'P_count', 'int')
+    segs_p_counts=[int(p) for p in segs_p_counts]
+    
+    # get total_p_count
+    total_p_count=0
+    for p in segs_p_counts:
         if p>0:
             total_p_count += p-1
-            segment_count += 1
-        if p==0:
-            break
-        if i>0:
-            p_count_accumulate[i] += p_count_accumulate[i-1]-1
 
-    seg_first_pt_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
+    # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
     points*=1000 # Unit correction
 
-
-    # # fill p_count_accumulate, total_p_count
-    # total_p_count = 0
-    # p_count_accumulate = point_count[:]
-    # for i, p in enumerate(point_count):
-    #     if p>0:
-    #         total_p_count += p-1
-    #     if p==0:
-    #         break
-    #     if i>0:
-    #         p_count_accumulate[i] += p_count_accumulate[i-1]-1
-
-    # wire index
-    try:
-        wire_index = get_attribute_by_name(ob, 'Wire', 'int')[:total_p_count]
+    # wire index attr
+    try :
+        wire_index = get_attribute_by_name(ob, 'Wire', 'int', total_p_count)
         wire_index = [int(w) for w in wire_index]
-    except Exception:
+    except Exception :
         wire_index = [-1]*total_p_count
-    
-    # points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
-    # points*=1000 # Unit correction
 
-    # # fill points in wires and count wire points
-    # wire_points, wire_p_counts = {}, {}
-    # for i,w in enumerate(wire_index):
-    #     if w==0:
-    #         break
-    #     if w not in wire_points.keys():
-    #         wire_points[w] = []
-    #         wire_p_counts[w] = 0
+    # Make wires
+    wires = {}
+    w_prev = wire_index[0]
+    build_CP, build_segs_p_counts = [], []
+    seg_p_added = 0
+    seg_curr_id = 0
+    seg_p_count_curr = segs_p_counts[0]
+    for i, w_cur in enumerate(wire_index) :
+        if w_cur != w_prev :
+            wires[w_prev] = Wire(build_CP, build_segs_p_counts)
+            build_CP, build_segs_p_counts = [], []
 
-    #     wire_points[w].append(points[i])
-    #     wire_p_counts[w]+=1
+        build_CP.append(points[i])
+        seg_p_added+=1
+        
+        if seg_p_added == seg_p_count_curr-1 :
+            build_segs_p_counts.append(seg_p_count_curr)
+            seg_curr_id+=1
+            seg_p_count_curr = segs_p_counts[seg_curr_id]
+            seg_p_added = 0
 
-    # # fill wire_accumulate
-    # wire_accumulate = [0]
-    # for _, value in wire_p_counts.items():
-    #     wire_accumulate.append(value + wire_accumulate[-1])
-
-    # # p_count_accumulate_per_wire, seg_first_pt_id
-    # wire_seg_p_count = wire_p_counts.copy()
-    # p_count_accumulate_per_wire = wire_p_counts.copy()
-    # seg_first_pt_id = wire_p_counts.copy()
-    # cursor=0
-    # for i, w in enumerate(p_count_accumulate_per_wire.keys()):
-    #     cursor_prev = cursor
-    #     for p in p_count_accumulate :
-    #         cursor = p
-    #         if p >= wire_accumulate[i]:
-    #             break
-    #     wire_seg_p_count[w] = point_count[cursor_prev:cursor]
-    #     p_count_accumulate_per_wire[w]= (np.array(p_count_accumulate[cursor_prev:cursor])-p_count_accumulate[cursor_prev]).tolist()
-    #     seg_first_pt_id[w] = [0] + [p-1 for p in p_count_accumulate_per_wire[w][:len(wire_seg_p_count[w])-1]]
-
+        w_prev = w_cur
+    wires[w_prev] = Wire(build_CP, build_segs_p_counts)
 
     # Orient and place
     loc, rot, scale = o.matrix_world.decompose()
@@ -631,21 +622,15 @@ def new_brep_planar_face(o, context):
     pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z), gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
     geom_pl = Geom_Plane(pl)
 
-    # wires
-    # outer_wire = create_wire_flat_patch(wire_points[-1], wire_seg_p_count[-1], seg_first_pt_id[-1], geom_pl)
-    outer_wire = create_wire_flat_patch(points, point_count, seg_first_pt_id, geom_pl)
-    
-    # inner_wires=[]
-    # for k in wire_points.keys():
-    #     if k!=-1:
-    #         inner_wires.append(create_wire_flat_patch(wire_points[k], wire_seg_p_count[k], seg_first_pt_id[k], geom_pl))
+    # Get occ wires
+    outer_wire = wires[-1].get_occ_wire(geom_pl)
+    inner_wires=[]
+    for k in wires.keys():
+        if k!=-1:
+            inner_wires.append(wires[k].get_occ_wire(geom_pl))
 
-    # face = create_face(None, outer_wire, inner_wires)
-    face = create_face(None, outer_wire)
-    
+    face = create_face(None, outer_wire, inner_wires)
     return face
-
-
 
 
 
