@@ -15,9 +15,8 @@ from OCC.Core.TopoDS import topods, TopoDS_Vertex
 
 from os.path import dirname, abspath, join
 
-# addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
-ASSETSPATH = "./assets/assets.blend"
-# addonpath + "
+addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
+ASSETSPATH = addonpath + "./assets/assets.blend"
 
 TYPES_FROM_CP_ATTR = {        'CP_bezier_surf':'bicubic_surf',
                            'CP_any_order_surf':'bezier_surf',
@@ -225,15 +224,20 @@ def normalize_array(array):
     return ((np.array(array)-mini)/(max(array)-mini)).tolist()
 
 
-APPENDED_ASSETS = []
-# TODO
-# To not lose the list at each close>open fill APPENDED_ASSETS with a list of all modifiers of the file ?
-# Alternatively : store properly in the blend file (need a way to be reset)
+
+def list_geometry_node_groups():
+    geometry_node_groups = []
+    
+    for node_group in bpy.data.node_groups:
+        if node_group.type == 'GEOMETRY':
+            geometry_node_groups.append(node_group.name)
+    return geometry_node_groups
+
+
 
 def append_asset(asset_name, library_name = "SurfacePsycho"):
-    if asset_name not in APPENDED_ASSETS :
-        APPENDED_ASSETS.append(asset_name)
-
+    groups_list = list_geometry_node_groups()
+    if asset_name not in groups_list :
         # Get the asset library
         library = bpy.context.preferences.filepaths.asset_libraries.get(library_name)
         if not library:
@@ -252,6 +256,8 @@ def append_asset(asset_name, library_name = "SurfacePsycho"):
                 print(f"Asset '{asset_name}' not found in library '{library_name}'")
                 return
 
+
+
 def add_node_group_modifier_from_asset(obj, asset_name, library_name = "SurfacePsycho", settings_dict={}, append_to_list=True):
     if append_to_list:
         append_asset(asset_name, library_name)
@@ -264,16 +270,8 @@ def add_node_group_modifier_from_asset(obj, asset_name, library_name = "SurfaceP
     change_GN_modifier_settings(modifier, settings_dict)
 
 
-def add_sp_modifier(ob, name, settings_dict={}, append_to_list=True):
-    add_node_group_modifier_from_asset(ob, name, "SurfacePsycho", settings_dict, append_to_list)
-    # try :
-        # bpy.ops.object.modifier_add_node_group(asset_library_type='CUSTOM',
-        #                                     asset_library_identifier="SurfacePsycho",
-        #                                     relative_asset_identifier="assets.blend\\NodeTree\\"+name)
-    #     return True
-    # except Exception:
-    #     return False
-
+def add_sp_modifier(ob, name, settings_dict={}):
+    add_node_group_modifier_from_asset(ob, name, "SurfacePsycho", settings_dict)
 
 
 

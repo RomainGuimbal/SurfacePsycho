@@ -34,23 +34,26 @@ if os!="Darwin":
             return {'FINISHED'}
 
 
-class SP_OT_add_bicubic_patch(bpy.types.Operator):
-    bl_idname = "sp.add_bicubic_patch"
-    bl_label = "Add Bicubic PsychoPatch"
+class SP_OT_add_NURBS_patch(bpy.types.Operator):
+    bl_idname = "sp.add_nurbs_patch"
+    bl_label = "Add NURBS PsychoPatch"
     bl_options = {'REGISTER', 'UNDO'}
     def execute(self, context):
-        append_object_by_name("Bicubic Bezier Patch", context)
+        append_object_by_name("NURBS Patch", context)
         return {'FINISHED'}
-    
+
 
 class SP_OT_add_bezier_patch(bpy.types.Operator):
     bl_idname = "sp.add_bezier_patch"
     bl_label = "Add Bezier Patch"
     bl_options = {'REGISTER', 'UNDO'}
 
-    def invoke(self, context, event):
-        append_asset("SP - Bezier Patch Meshing")
-        return self.execute(context)
+    # def invoke(self, context, event):
+    #     # Create a new mesh and a new object
+
+
+    #     return self.execute(context)
+
 
     order_u : bpy.props.IntProperty(
         name="Order U",
@@ -67,16 +70,15 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
     )
 
     def execute(self, context):
-        # Create a new mesh and a new object
-        mesh = bpy.data.meshes.new(name="Grid")
-        obj = bpy.data.objects.new("Bezier Patch", mesh)
-
-        # Link the object to the scene
-        bpy.context.collection.objects.link(obj)
         
-        # Create a new bmesh
-        bm = bmesh.new()
+        mesh = bpy.data.meshes.new(name="Grid")
+        self.obj = bpy.data.objects.new("Bezier Patch", mesh)
 
+
+        # Create a new bmesh
+        self.bm = bmesh.new()
+
+        # divide grid
         step_x = 2 / self.order_v
         step_y = 2 / self.order_u
 
@@ -85,43 +87,51 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
             for j in range(self.order_v + 1):
                 x = j * step_x - 1  # Subtract 1 to center
                 y = i * step_y - 1  # Subtract 1 to center
-                bm.verts.new((x, y, 0))
+                self.bm.verts.new((x, y, 0))
 
-        bm.verts.ensure_lookup_table()
+        self.bm.verts.ensure_lookup_table()
 
         # Create faces
         for i in range(self.order_u):
             for j in range(self.order_v):
-                v1 = bm.verts[i * (self.order_v + 1) + j]
-                v2 = bm.verts[i * (self.order_v + 1) + j + 1]
-                v3 = bm.verts[(i + 1) * (self.order_v + 1) + j + 1]
-                v4 = bm.verts[(i + 1) * (self.order_v + 1) + j]
-                bm.faces.new((v1, v2, v3, v4))
+                v1 = self.bm.verts[i * (self.order_v + 1) + j]
+                v2 = self.bm.verts[i * (self.order_v + 1) + j + 1]
+                v3 = self.bm.verts[(i + 1) * (self.order_v + 1) + j + 1]
+                v4 = self.bm.verts[(i + 1) * (self.order_v + 1) + j]
+                self.bm.faces.new((v1, v2, v3, v4))
+
+        mesh = self.obj.data
 
         # Update bmesh
-        bm.to_mesh(mesh)
-        bm.free()
+        self.bm.to_mesh(mesh)
+        self.bm.free()
 
-        # set smooth
-        mesh = obj.data
+        # # set smooth
+        # mesho = self.obj.data
         values = [True] * len(mesh.polygons)
         mesh.polygons.foreach_set("use_smooth", values)
 
         # Update mesh
         mesh.update()
 
-        add_sp_modifier(obj, "SP - Bezier Patch Meshing", {}, False)
-        
+
+        # Link the object to the scene
+        bpy.context.collection.objects.link(self.obj)
+
+        add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", {})
 
         # Set object location to 3D cursor
-        obj.location = bpy.context.scene.cursor.location
+        self.obj.location = bpy.context.scene.cursor.location
 
         # Select the new object and make it active
         bpy.ops.object.select_all(action='DESELECT')
-        obj.select_set(True)
-        bpy.context.view_layer.objects.active = obj
+        self.obj.select_set(True)
+        bpy.context.view_layer.objects.active = self.obj
 
+        
         return {'FINISHED'}
+    
+
         
         
 
@@ -533,10 +543,8 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
             original_mode='EDIT'
         bpy.ops.object.mode_set(mode=original_mode)
 
-
-
-
         return {'FINISHED'}
+    
     
     def add_square_inside_mesh(self, context, obj):
         
@@ -616,8 +624,8 @@ class SP_OT_solidify(bpy.types.Operator):
 
 
 classes = [
+    SP_OT_add_NURBS_patch,
     SP_OT_add_bezier_patch,
-    SP_OT_add_bicubic_patch,
     SP_OT_add_curvatures_probe,
     SP_OT_add_curve,
     SP_OT_add_flat_patch,

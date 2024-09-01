@@ -162,7 +162,7 @@ def menu_surface(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
         self.layout.operator("sp.add_bezier_patch", text="Bezier PsychoPatch", icon="SURFACE_NSURFACE")
-        self.layout.operator("sp.add_bicubic_patch", text="Bicubic Bezier PsychoPatch", icon="SURFACE_NSURFACE")
+        self.layout.operator("sp.add_nurbs_patch", text="NURBS PsychoPatch", icon="SURFACE_NSURFACE")
         self.layout.operator("sp.add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE")
 
 def menu_curve(self, context):

@@ -552,10 +552,7 @@ class Wire :
     def get_occ_wire(self, geom_plane):
         wire = create_wire_flat_patch(self.CP, self.segs_p_counts, self.seg_first_P_id, geom_plane)
         return wire
-
-
         
-
 
 
 def new_brep_planar_face(o, context):
