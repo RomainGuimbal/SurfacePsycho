@@ -1,13 +1,13 @@
 import bpy
-import bmesh
+# import bmesh
 import numpy as np
 from mathutils import Vector
 from math import isclose
 from OCC.Core.BRep import BRep_Tool
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
-from OCC.Core.Geom2d import Geom2d_BSplineCurve, Geom2d_Line
+# from OCC.Core.Geom2d import Geom2d_BSplineCurve, Geom2d_Line
 from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
-from OCC.Core.GeomAbs import GeomAbs_CurveType, GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line
+from OCC.Core.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line #, GeomAbs_CurveType
 from OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Core.TopoDS import topods, TopoDS_Vertex
@@ -17,6 +17,7 @@ from os.path import dirname, abspath, join
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "./assets/assets.blend"
+
 
 TYPES_FROM_CP_ATTR = {        'CP_bezier_surf':'bicubic_surf',
                            'CP_any_order_surf':'bezier_surf',
@@ -136,48 +137,6 @@ def create_grid(vertices):
     return vertices_flat, [], [(i, i + 1, i + m + 1, i + m) for i in range((n - 1) * m) if (i + 1) % m != 0]
 
 
-# def modifier_exists_in_file(modifier_name):
-#     for mod in bpy.data.modifiers:
-#         if mod.name == modifier_name:
-#             return True
-#     return False
-
-
-# def add_modifier(object, modifier_name):
-#     if not modifier_exists_in_file(modifier_name):
-#         append_modifier_from_sp_lib(modifier_name)
-
-#     for mod in bpy.data.modifiers:
-#         if mod.name == modifier_name:
-#             appended_modifier = mod
-#             break
-
-#     object.modifiers.new(name=modifier_name, type=appended_modifier.type)
-
-
-# def append_modifier_from_sp_lib(modifier_name):
-#     with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
-#         if modifier_name in data_from.modifiers:
-#             data_to.modifiers.append(modifier_name)
-
-# def progress_bar(self, context):
-#     row = self.layout.row()
-#     row.progress(
-#         factor=context.window_manager.progress,
-#         type="BAR",
-#         text="Import in progress..." if context.window_manager.progress < 1 else "Import Successful"
-#     )
-#     row.scale_x = 1
-
-
-# def runInParallel(fns):
-#   proc = []
-#   for fn in fns:
-#     p = Process(target=fn)
-#     p.start()
-#     proc.append(p)
-#   for p in proc:
-#     p.join()
 
 def change_node_socket_value(ob, value, potential_names, socket_type, context):
     for m in ob.modifiers :
@@ -234,44 +193,33 @@ def list_geometry_node_groups():
     return geometry_node_groups
 
 
-
-def append_asset(asset_name, library_name = "SurfacePsycho"):
+def append_asset(asset_name):
     groups_list = list_geometry_node_groups()
     if asset_name not in groups_list :
-        # Get the asset library
-        library = bpy.context.preferences.filepaths.asset_libraries.get(library_name)
-        if not library:
-            print(f"Asset library '{library_name}' not found")
-            return
-
-        # Construct the full path to the asset file
-        asset_file = join(library.path, "assets.blend")
-
-        # Load the asset file
-        with bpy.data.libraries.load(asset_file, link=False) as (data_from, data_to):
+         # Load the asset file
+        with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
             # Find the node group in the file
             if asset_name in data_from.node_groups:
                 data_to.node_groups = [asset_name]
             else:
-                print(f"Asset '{asset_name}' not found in library '{library_name}'")
+                print(f"Asset '{asset_name}' not found")
                 return
 
 
-
-def add_node_group_modifier_from_asset(obj, asset_name, library_name = "SurfacePsycho", settings_dict={}, append_to_list=True):
-    if append_to_list:
-        append_asset(asset_name, library_name)
+def add_node_group_modifier_from_asset(obj, asset_name, settings_dict={}, pin = False):
+    append_asset(asset_name)
 
     # Create the modifier and assign the loaded node group
     modifier = obj.modifiers.new(name=asset_name, type='NODES')
     modifier.node_group = bpy.data.node_groups.get(asset_name)
-    
+    modifier.use_pin_to_last = pin
+
     #Change settings
     change_GN_modifier_settings(modifier, settings_dict)
 
 
-def add_sp_modifier(ob, name, settings_dict={}):
-    add_node_group_modifier_from_asset(ob, name, "SurfacePsycho", settings_dict)
+def add_sp_modifier(ob, name, settings_dict={}, pin=False):
+    add_node_group_modifier_from_asset(ob, name, settings_dict, pin = pin)
 
 
 

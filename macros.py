@@ -48,13 +48,6 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
     bl_label = "Add Bezier Patch"
     bl_options = {'REGISTER', 'UNDO'}
 
-    # def invoke(self, context, event):
-    #     # Create a new mesh and a new object
-
-
-    #     return self.execute(context)
-
-
     order_u : bpy.props.IntProperty(
         name="Order U",
         description="Number of control points in U direction -1",
@@ -65,12 +58,11 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
     order_v : bpy.props.IntProperty(
         name="Order V",
         description="Number of control points in V direction -1",
-        default=1,
+        default=2,
         min=1
     )
 
     def execute(self, context):
-        
         mesh = bpy.data.meshes.new(name="Grid")
         self.obj = bpy.data.objects.new("Bezier Patch", mesh)
 
@@ -100,25 +92,23 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
                 v4 = self.bm.verts[(i + 1) * (self.order_v + 1) + j]
                 self.bm.faces.new((v1, v2, v3, v4))
 
-        mesh = self.obj.data
-
         # Update bmesh
         self.bm.to_mesh(mesh)
         self.bm.free()
 
         # # set smooth
-        # mesho = self.obj.data
         values = [True] * len(mesh.polygons)
         mesh.polygons.foreach_set("use_smooth", values)
 
         # Update mesh
         mesh.update()
 
-
         # Link the object to the scene
         bpy.context.collection.objects.link(self.obj)
 
-        add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", {})
+        add_sp_modifier(self.obj, "SP - Reorder Grid Index")
+        add_sp_modifier(self.obj, "SP - Bezier Patch Continuities")
+        add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", pin=True)
 
         # Set object location to 3D cursor
         self.obj.location = bpy.context.scene.cursor.location
@@ -127,13 +117,9 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         bpy.ops.object.select_all(action='DESELECT')
         self.obj.select_set(True)
         bpy.context.view_layer.objects.active = self.obj
-
         
         return {'FINISHED'}
     
-
-        
-        
 
     
 class SP_OT_add_flat_patch(bpy.types.Operator):
