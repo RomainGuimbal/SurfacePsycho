@@ -3,14 +3,30 @@ import bpy
 import numpy as np
 from mathutils import Vector
 from math import isclose
+
 from OCC.Core.BRep import BRep_Tool
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
-# from OCC.Core.Geom2d import Geom2d_BSplineCurve, Geom2d_Line
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
+from OCC.Core.GC import GC_MakeSegment
+from OCC.Core.GCE2d import GCE2d_MakeSegment
+from OCC.Core.Geom import Geom_BezierCurve
+from OCC.Core.Geom2d import Geom2d_BezierCurve # Geom2d_BSplineCurve, Geom2d_Line
 from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
 from OCC.Core.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line #, GeomAbs_CurveType
+from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
+from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
+from OCC.Core.gp import gp_Pnt, gp_Pnt2d
+from OCC.Core.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
 from OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
 from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopoDS import TopoDS_Wire
 from OCC.Core.TopoDS import topods, TopoDS_Vertex
+from OCC.Core.TopTools import TopTools_Array1OfShape
+
+
+
+
+
 # from multiprocessing import Process
 
 from os.path import dirname, abspath, join
@@ -439,3 +455,208 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
         wire_orders.extend(order_att)
         
     return wires_verts, wires_edges, wires_endpoints, wire_orders
+
+
+
+
+
+
+
+
+
+
+
+
+
+def create_wire_flat_patch(vector_points, seg_p_counts, first_segment_p_id, geom_plane):
+    total_p_count=len(vector_points)
+    segment_count = len(seg_p_counts)
+
+    # Create CP
+    controlPoints = TColgp_Array1OfPnt(1, total_p_count)
+    for i in range(total_p_count):
+        pnt = gp_Pnt(vector_points[i][0], vector_points[i][1], vector_points[i][2])
+        if geom_plane != None:
+            pnt = GeomAPI_ProjectPointOnSurf(pnt, geom_plane).Point(1)
+        controlPoints.SetValue(i+1, pnt)
+    
+    # Create segments
+    edges_list = TopTools_Array1OfShape(1, segment_count)
+    for i in range(segment_count):
+        if seg_p_counts[i] == 2: # straight edges
+            makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
+                                        controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
+            segment = makesegment.Value()
+        else:
+            segment_point_array = TColgp_Array1OfPnt(1, seg_p_counts[i])
+            for j in range(seg_p_counts[i]):
+                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
+            segment = Geom_BezierCurve(segment_point_array)
+        
+        # append edge
+        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+        edges_list.SetValue(i+1, edge)
+
+    # Make contour
+    makeWire = BRepBuilderAPI_MakeWire()
+    for e in edges_list :
+        makeWire.Add(e)
+    wire = TopoDS_Wire()
+    wire = makeWire.Wire()
+
+    return wire
+
+
+
+def create_wire_curved_patch(pts_2d, seg_p_counts, first_segment_p_id, geom_surf):
+    total_p_count = len(pts_2d)
+    segment_count = len(seg_p_counts)
+
+    # Create 2D points
+    controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
+    for i in range(total_p_count):
+        pnt = gp_Pnt2d(pts_2d[i][1], pts_2d[i][0]) # INVERTED
+        print(str((pts_2d[i][1], pts_2d[i][0]))+ ',')
+        controlPoints.SetValue(i+1, pnt)
+
+    # Create segments
+    edges_list = TopTools_Array1OfShape(1, segment_count)
+    for i in range(segment_count):
+        if seg_p_counts[i] == 2: # straight edges
+            makesegment = GCE2d_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
+                                        controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
+            segment = makesegment.Value()
+        else :
+            segment_point_array = TColgp_Array1OfPnt2d(1, seg_p_counts[i])
+            for j in range(seg_p_counts[i]):
+                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
+            segment = Geom2d_BezierCurve(segment_point_array)
+
+        # make curve 3D
+        adapt = GeomAdaptor_Surface(geom_surf)
+        makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())
+        
+        # append edge
+        edge = makeEdge.Edge()
+        edges_list.SetValue(i+1, edge)
+
+    # Make contour
+    makeWire = BRepBuilderAPI_MakeWire()
+    for e in edges_list :
+        makeWire.Add(e)
+    wire = TopoDS_Wire()
+    wire = makeWire.Wire()
+
+    return wire
+
+
+
+
+
+
+
+
+class Wire :
+    def __init__(self, CP, segs_p_counts):
+        self.CP = CP
+        self.segs_p_counts = segs_p_counts
+        
+        p_count = 0 #(total)
+        p_count_accumulate = self.segs_p_counts[:]
+        for i, p in enumerate(self.segs_p_counts):
+            if p>0:
+                p_count += p-1
+            elif p==0:
+                break
+            if i>0:
+                p_count_accumulate[i] += p_count_accumulate[i-1]-1
+        
+        self.seg_first_P_id = [0] + [p-1 for p in p_count_accumulate[:len(segs_p_counts)-1]]
+
+    def get_occ_wire_flat(self, geom_plane):
+        wire = create_wire_flat_patch(self.CP, self.segs_p_counts, self.seg_first_P_id, geom_plane)
+        return wire
+    
+    def get_occ_wire_curved(self, geom_plane):
+        wire = create_wire_curved_patch(self.CP, self.segs_p_counts, self.seg_first_P_id, geom_plane)
+        return wire
+
+
+
+
+
+
+
+def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts):
+    # wire index attr
+    try :
+        wire_index = get_attribute_by_name(ob, 'Wire', 'int', total_p_count)
+        wire_index = [int(w) for w in wire_index]
+    except Exception :
+        wire_index = [-1]*total_p_count
+
+    # Make wires
+    wires = {}
+    w_prev = wire_index[0]
+    build_CP, build_segs_p_counts = [], []
+    seg_p_added = 0
+    seg_curr_id = 0
+    seg_p_count_curr = segs_p_counts[0]
+    for i, w_cur in enumerate(wire_index) :
+        if w_cur != w_prev :
+            wires[w_prev] = Wire(build_CP, build_segs_p_counts)
+            build_CP, build_segs_p_counts = [], []
+
+        build_CP.append(points[i])
+        seg_p_added+=1
+        
+        if seg_p_added == seg_p_count_curr-1 :
+            build_segs_p_counts.append(seg_p_count_curr)
+            seg_curr_id+=1
+            seg_p_count_curr = segs_p_counts[seg_curr_id]
+            seg_p_added = 0
+
+        w_prev = w_cur
+    wires[w_prev] = Wire(build_CP, build_segs_p_counts)
+
+    return wires # dictionary
+
+
+
+
+
+from OCC.Core.TopoDS import TopoDS_Face
+from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopAbs import TopAbs_WIRE
+from OCC.Core.TopoDS import topods_Wire
+from OCC.Core.BRepCheck import BRepCheck_Wire, BRepCheck_NoError
+
+def check_trim_wires_for_face(face: TopoDS_Face):
+    if not isinstance(face, TopoDS_Face):
+        raise TypeError("Input must be a TopoDS_Face")
+
+    issues_found = False
+    wire_explorer = TopExp_Explorer(face, TopAbs_WIRE)
+
+    while wire_explorer.More():
+        wire = topods_Wire(wire_explorer.Current())
+        wire_checker = BRepCheck_Wire(wire)
+        
+        # Check if the wire is valid on the face
+        if wire_checker.InContext(face) != BRepCheck_NoError:
+            print(f"Wire is invalid on the given face")
+            issues_found = True
+        
+        # Check wire closure
+        if wire_checker.Closed() != BRepCheck_NoError:
+            print(f"Wire is not closed on the given face")
+            issues_found = True
+        
+        wire_explorer.Next()
+
+    if not issues_found:
+        print("All trim wires on the face are valid")
+
+# Usage example
+# Assuming you have a face object named 'my_face'
+# check_trim_wires_for_face(my_face)
