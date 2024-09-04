@@ -209,17 +209,46 @@ def list_geometry_node_groups():
     return geometry_node_groups
 
 
-def append_asset(asset_name):
-    groups_list = list_geometry_node_groups()
-    if asset_name not in groups_list :
+def append_asset(asset_name, force=False):
+    if force :
+        asset_already = False
+    else :
+        groups_list = list_geometry_node_groups()
+        asset_already = asset_name in groups_list
+    if not asset_already :
          # Load the asset file
         with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
             # Find the node group in the file
             if asset_name in data_from.node_groups:
                 data_to.node_groups = [asset_name]
+                return True
             else:
                 print(f"Asset '{asset_name}' not found")
-                return
+                return False
+
+
+def append_multiple_node_groups(ng_names):
+    # Get the current node group names
+    existing_node_groups = set(bpy.data.node_groups.keys())
+
+    # Append the new node groups
+    with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
+        # Filter the node groups that exist in the asset file
+        valid_node_groups = [name for name in ng_names if name in data_from.node_groups]
+
+        # Append the valid node groups
+        data_to.node_groups = valid_node_groups
+
+    # Find the newly added node groups
+    new_node_groups=[]
+    new_node_groups_keys = set(bpy.data.node_groups.keys()) - existing_node_groups
+    for k in new_node_groups_keys:
+        new_node_groups.append(bpy.data.node_groups[k])
+
+    return new_node_groups
+
+
+
 
 
 def add_node_group_modifier_from_asset(obj, asset_name, settings_dict={}, pin = False):
@@ -660,3 +689,29 @@ def check_trim_wires_for_face(face: TopoDS_Face):
 # Usage example
 # Assuming you have a face object named 'my_face'
 # check_trim_wires_for_face(my_face)
+
+
+def replace_all_instances_of_node_group(old_name, new_name):
+    target_node_group_name = old_name
+    new_node_group_name = new_name
+
+    # Get the target node group
+    target_node_group = bpy.data.node_groups.get(target_node_group_name)
+
+    if target_node_group:
+        # Get the new node group
+        new_node_group = bpy.data.node_groups.get(new_node_group_name)
+        
+        if new_node_group:
+            # Replace the node group data
+            target_node_group.user_remap(new_node_group)
+            
+            # Remove the old node group
+            bpy.data.node_groups.remove(target_node_group)
+            
+            return 1
+        else:
+            return 0
+    else:
+        return -1
+        

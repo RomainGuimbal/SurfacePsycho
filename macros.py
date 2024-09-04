@@ -277,6 +277,76 @@ class SP_OT_unify_versions(bpy.types.Operator):
 
 
 
+class SP_OT_update_modifiers(bpy.types.Operator):
+    bl_idname = "sp.update_modifiers"
+    bl_label = "SP - Update Modifiers"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        old_new_pairs = {}
+        for node_group in bpy.data.node_groups:
+            if node_group.type == 'GEOMETRY' and node_group.name[:5]=="SP - ":
+                print(node_group.name)
+                if node_group not in old_new_pairs.keys():
+                    old_new_pairs[node_group] = None
+        print("\n")
+        names = []
+        for p in old_new_pairs.keys():
+            names.append(p.name)
+            print(p.name)
+        
+        new_ng = append_multiple_node_groups(names)
+        
+
+        self.report({'INFO'}, "Not Implemented")
+
+        return {'FINISHED'}
+    
+
+
+
+
+class SP_OT_Invoke_replace_node_panel(bpy.types.Operator):
+    bl_idname = "sp.invoke_replace_node_panel"
+    bl_label = "Invoker for SP - Replace Node Group"
+    bl_options = {'INTERNAL'}
+    
+    def execute(self, context):
+        bpy.ops.sp.replace_node_group
+        return {'FINISHED'}
+
+
+class SP_OT_replace_node_group(bpy.types.Operator):
+    bl_idname = "sp.replace_node_group"
+    bl_label = "SP - Replace Node Group"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    target_name : bpy.props.StringProperty(name='Target', description="", default="")
+    new_name : bpy.props.StringProperty(name='New', description="", default="")
+
+    def execute(self, context):
+        target_node_group_name = self.target_name
+        new_node_group_name = self.new_name
+        
+        r = replace_all_instances_of_node_group(target_node_group_name, new_node_group_name)
+        if r==1:
+            self.report({'INFO'}, f"Successfully replaced")
+        elif r==0:
+            self.report({'ERROR'}, f"{new_node_group_name} not found")
+        elif r==-1:
+            self.report({'ERROR'}, f"{target_node_group_name} not found")
+        return {'FINISHED'}
+
+    # Display panel
+    def invoke(self, context, event):
+        # call itself and run
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+
+
+
+
 class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
     bl_idname = "sp.psychopatch_to_bl_nurbs"
     bl_label = "Convert Psychopatches to internal NURBS"
@@ -626,6 +696,9 @@ classes = [
     SP_OT_toogle_control_geom,
     SP_OT_unify_versions,
     SP_OT_select_endpoints,
+    SP_OT_update_modifiers,
+    SP_OT_replace_node_group,
+    SP_OT_Invoke_replace_node_panel,
 ]
 if os!="Darwin":
     classes+= [

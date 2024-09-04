@@ -4,9 +4,6 @@
 import bpy
 import platform
 os = platform.system()
-
-# from utils import *
-# from macros import *
 from . import macros
 
 if os!="Darwin":
@@ -120,6 +117,8 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR")
             row = self.layout.row()
             row.operator("sp.toogle_control_geom", text="Toogle Control Geometry", icon="OUTLINER_DATA_LATTICE")
+            row = self.layout.row()
+            row.operator("sp.replace_node_group", text="Replace Node Group", icon="UV_SYNC_SELECT")
             
             self.layout.label(text="Select Entities")
             layout = self.layout
@@ -215,8 +214,6 @@ def register():
         bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
         bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-    # bpy.types.WindowManager.progress = bpy.props.FloatProperty()
-    # bpy.types.TEXT_HT_header.append(progress_bar)
 
 def unregister():
     if os!="Darwin":
@@ -227,12 +224,10 @@ def unregister():
     bpy.types.VIEW3D_MT_curve_add.remove(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.remove(menu_convert)
     # bpy.types.VIEW3D_MT_object_context_menu_convert.remove(menu_convert)
-    # bpy.types.TEXT_HT_header.remove(progress_bar)    
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)
     macros.unregister()
 
 if __name__ == "__main__":
-    register()
     if os!="Darwin":
         bpy.ops.sp.cad_import()
