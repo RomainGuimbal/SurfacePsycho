@@ -332,9 +332,9 @@ class SP_OT_replace_node_group(bpy.types.Operator):
         if r==1:
             self.report({'INFO'}, f"Successfully replaced")
         elif r==0:
-            self.report({'ERROR'}, f"{new_node_group_name} not found")
+            self.report({'INFO'}, f"{new_node_group_name} not found")
         elif r==-1:
-            self.report({'ERROR'}, f"{target_node_group_name} not found")
+            self.report({'INFO'}, f"{target_node_group_name} not found")
         return {'FINISHED'}
 
     # Display panel
