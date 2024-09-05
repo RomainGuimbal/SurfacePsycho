@@ -440,42 +440,7 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
                 order_att.extend([edge_order/10]+[0.0]*(len(e_vert)-2))
             else :
                 order_att.extend([0.0]*(len(e_vert)-1))
-
-            
-
-
-        # for e in poles_of_edges:
-        #     print(str(id(e[ 0]))[-4:-1])
-        #     print(str(id(e[-1]))[-4:-1])
         
-        # reorder verts_of_edges
-        # e_cur = verts_of_edges[0]
-        # wire_verts.extend(e_cur[:-1])
-        # endpoints.extend([1.0]+[0.0]*(len(e_cur)-2))
-        # verts_of_edges[0]=None
-        # for i in range(len(verts_of_edges)) :
-        #     x_to_match, y_to_match, _ = e_cur[-1]
-        #     # print(e_cur[-1])
-        #     for j,e_nxt in enumerate(verts_of_edges) :
-        #         if e_nxt != None :
-        #             if isclose(e_nxt[0][0], x_to_match, rel_tol=1e-04, abs_tol=0.0) and isclose(e_nxt[0][1], y_to_match, rel_tol=1e-04, abs_tol=0.0):
-        #                 print("Yes")
-        #                 e_nxt.reverse()
-        #                 e_cur = e_nxt
-        #                 wire_verts.extend(e_nxt[:-1])
-        #                 endpoints.extend([1.0]+[0.0]*(len(e_nxt)-2))
-        #                 verts_of_edges[j]=None
-        #                 break
-        #             elif isclose(e_nxt[-1][0], x_to_match, rel_tol=1e-04, abs_tol=0.0) and isclose(e_nxt[-1][1], y_to_match, rel_tol=1e-04, abs_tol=0.0) :
-        #                 print("Yes")
-        #                 e_cur = e_nxt
-        #                 wire_verts.extend(e_nxt[:-1])
-        #                 endpoints.extend([1.0]+[0.0]*(len(e_nxt)-2))
-        #                 verts_of_edges[j]=None
-        #                 break
-        # for n in verts_of_edges :
-        #     if n != None :
-        #         print("No D:<")
 
         wire_edge = [(i,(i+1)%len(wire_verts)) for i in range(len(wire_verts))]
         wires_verts.extend(wire_verts)
@@ -534,6 +499,13 @@ def create_wire_flat_patch(vector_points, seg_p_counts, first_segment_p_id, geom
     wire = makeWire.Wire()
 
     return wire
+
+
+
+
+
+
+
 
 
 

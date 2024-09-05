@@ -174,7 +174,6 @@ def build_SP_NURBS_patch(brepFace, collection, context):
         return False
     
     # control grid
-    # vert, edges, faces = create_grid(vector_pts)
     CPvert, _, CPfaces = create_grid(vector_pts)
 
     # Add trim contour

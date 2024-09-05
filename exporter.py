@@ -319,6 +319,7 @@ def new_brep_any_order_curve(o, context): # LEGACY
 
 
 def new_brep_curve(o, context):
+    # get attributes
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     point_count = get_attribute_by_name(ob, 'CP_count', 'int')
     point_count = [int(p) for p in point_count]
@@ -338,10 +339,39 @@ def new_brep_curve(o, context):
     points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
     points *= 1000 #unit correction
 
-    # Create CP
+    # Poles
     controlPoints = TColgp_Array1OfPnt(1, total_p_count)
     for i in range(total_p_count):
         controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
+
+    # try:
+    #     order = get_attribute_by_name(ob, 'Order', total_p_count)
+    #     is_nurbs = True
+    # except Exception:
+    #     is_nurbs = True
+    
+    # if is_nurbs:
+    #     knot_length = order+point_count+1 - order*2
+    #     knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
+    #     weight_attr = get_attribute_by_name(ob, 'Weight', 'float', point_count)
+
+    #     # weights
+    #     weights = TColStd_Array1OfReal(1, point_count)
+    #     for i in range(point_count):
+    #         weights.SetValue(i+1, weight_attr[i])
+
+    #     # knots
+    #     knots = TColStd_Array1OfReal(1,knot_length)
+    #     for i in range(knot_length):
+    #         knots.SetValue(i+1, knot_attr[i])
+        
+    #     # Multiplicities
+    #     mult = TColStd_Array1OfInteger(1, knot_length)
+    #     for i in range(knot_length):
+    #         if i == 0 or i == knot_length-1:
+    #             mult.SetValue(i+1, order+1)
+    #         else :
+    #             mult.SetValue(i+1, 1)
 
     #init sewing
     ms = BRepBuilderAPI_Sewing(1e-7)
@@ -368,15 +398,11 @@ def new_brep_NURBS_curve(o, context):
     # get attributes
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     point_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
-    print(point_count)
     order = get_attribute_by_name(ob, 'Order', 'first_int')
-    print(order)
     points = get_attribute_by_name(ob, 'CP_NURBS_curve', 'vec3', point_count)
     knot_length = order+point_count+1 - order*2
-    print(knot_length)
     knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
     weight_attr = get_attribute_by_name(ob, 'Weight', 'float', point_count)
-    print(knot_attr)
     points *= 1000 #unit correction
 
     # poles
