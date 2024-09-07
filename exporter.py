@@ -201,9 +201,14 @@ def new_brep_bezier_face(o, context):
 
     # get total_p_count
     total_p_count=0
+    segment_count=0
     for p in segs_p_counts:
         if p>0:
             total_p_count += p-1
+            segment_count += 1
+        else :
+            break
+    segs_p_counts=segs_p_counts[:segment_count]
 
     # Get CP position attr
     trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
@@ -211,11 +216,11 @@ def new_brep_bezier_face(o, context):
     wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts)
 
     # Get occ wires
-    outer_wire = wires[-1].get_occ_wire_curved(bsurf)
+    outer_wire = wires[-1].get_occ_wire_2d(bsurf)
     inner_wires=[]
     for k in wires.keys():
         if k!=-1:
-            inner_wires.append(wires[k].get_occ_wire_curved(bsurf))
+            inner_wires.append(wires[k].get_occ_wire_2d(bsurf))
 
     face = create_face(bsurf, outer_wire, inner_wires)
     return face
@@ -239,8 +244,9 @@ def new_brep_NURBS_face(o, context):
         mult_u = get_attribute_by_name(ob, 'Multiplicity U', 'int')
         mult_v = get_attribute_by_name(ob, 'Multiplicity V', 'int')
 
-        uknots, vknots = None, None #TODO
-        umult, vmult = None, None #TODO
+        # TODO
+        uknots, umult = auto_knot_and_mult(u_count, order_u) # TODO
+        vknots, vmult = auto_knot_and_mult(v_count, order_v) # TODO
     except Exception: # No trim
         uknots, umult = auto_knot_and_mult(u_count, order_u)
         vknots, vmult = auto_knot_and_mult(v_count, order_v)
@@ -267,14 +273,20 @@ def new_brep_NURBS_face(o, context):
 
     # get total_p_count
     total_p_count=0
+    segment_count=0
     for p in segs_p_counts:
         if p>0:
             total_p_count += p-1
+            segment_count += 1
+        else :
+            break
+    segs_p_counts=segs_p_counts[:segment_count]
 
     # Get CP position attr
     trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
+    segs_orders = get_attribute_by_name(ob, 'Contour Order', 'int', segment_count)
 
-    wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts)
+    wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts, segs_orders)
 
     # Get occ wires
     outer_wire = wires[-1].get_occ_wire_curved(bsurf)
@@ -313,78 +325,36 @@ def new_brep_any_order_curve(o, context): # LEGACY
 
 
 
+
 def new_brep_curve(o, context):
-    # get attributes
+    # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    point_count = get_attribute_by_name(ob, 'CP_count', 'int')
-    total_p_count = 1
-    segment_count = 0
-    p_count_accumulate = point_count
-    for i, p in enumerate(point_count):
+    segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
+
+    
+    # get total_p_count
+    total_p_count, segment_count= 1, 0
+    for p in segs_p_counts:
         if p>0:
             total_p_count += p-1
             segment_count += 1
-        if p==0:
-            break
-        if i>0:
-            p_count_accumulate[i] += p_count_accumulate[i-1]-1
-
-    first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count]]
-    points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
-    points *= 1000 #unit correction
-
-    # Poles
-    controlPoints = TColgp_Array1OfPnt(1, total_p_count)
-    for i in range(total_p_count):
-        controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
-
-    try:
-        order = get_attribute_by_name(ob, 'Order', segment_count)
-        is_nurbs = True
-    except Exception:
-        is_nurbs = True
     
-    if is_nurbs:
-        knot_length = order+point_count+1 - order*2
-        # knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
-        # weight_attr = get_attribute_by_name(ob, 'Weight', 'float', point_count)
+    segs_p_counts = segs_p_counts[:segment_count]
 
-        # # weights
-        # weights = TColStd_Array1OfReal(1, point_count)
-        # for i in range(point_count):
-        #     weights.SetValue(i+1, weight_attr[i])
+    try :
+        segs_orders = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+    except Exception :
+        segs_orders = None
 
-        # # knots
-        # knots = TColStd_Array1OfReal(1,knot_length)
-        # for i in range(knot_length):
-        #     knots.SetValue(i+1, knot_attr[i])
-        
-        # Multiplicities
-        mult = TColStd_Array1OfInteger(1, knot_length)
-        for i in range(knot_length):
-            if i == 0 or i == knot_length-1:
-                mult.SetValue(i+1, order+1)
-            else :
-                mult.SetValue(i+1, 1)
+    # Get CP position attr
+    points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
+    points*=1000 # Unit correction
 
-    #init sewing
-    ms = BRepBuilderAPI_Sewing(1e-7)
-    ms.SetNonManifoldMode(True)
+    wire = Wire(points, segs_p_counts, segs_orders)
+    brep_wire = wire.get_occ_wire_3d(ob=ob)
 
-    #create segments
-    for i in range(segment_count):
-        segment_point_array = TColgp_Array1OfPnt(first_segment_p_id[i], first_segment_p_id[i+1])
-        for j in range(first_segment_p_id[i], first_segment_p_id[i+1]+1):
-            segment_point_array.SetValue(j, controlPoints.Value(j+1))
-            
-        segment = Geom_BezierCurve(segment_point_array)
-        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
-        ms.Add(edge)
+    return brep_wire # single wire support for now
 
-    #sew segments
-    ms.Perform()
-    curve = ms.SewedShape()
-    return curve
 
 
 
@@ -473,11 +443,11 @@ def new_brep_planar_face(o, context):
     geom_pl = Geom_Plane(pl)
 
     # Get occ wires
-    outer_wire = wires[-1].get_occ_wire_flat(geom_pl)
+    outer_wire = wires[-1].get_occ_wire_3d(geom_pl)
     inner_wires=[]
     for k in wires.keys():
         if k!=-1:
-            inner_wires.append(wires[k].get_occ_wire_flat(geom_pl))
+            inner_wires.append(wires[k].get_occ_wire_3d(geom_pl))
 
     face = create_face(None, outer_wire, inner_wires)
     return face

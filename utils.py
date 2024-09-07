@@ -470,7 +470,7 @@ def auto_knot_and_mult(p_count, order):
 
 
 
-def create_wire_flat(vector_points, segs_p_counts, first_segment_p_id, segs_orders, geom_plane):
+def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_orders, geom_plane=None, ob=None):
     total_p_count=len(vector_points)
     segment_count = len(segs_p_counts)
 
@@ -486,19 +486,48 @@ def create_wire_flat(vector_points, segs_p_counts, first_segment_p_id, segs_orde
     edges_list = TopTools_Array1OfShape(1, segment_count)
     for i in range(segment_count):
         if segs_p_counts[i] == 2: # straight edges
-            makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
-                                        controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
+            makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count +1), 
+                                        controlPoints.Value((first_segment_p_id[i]+1)%total_p_count +1))
             segment = makesegment.Value()
         else:
             segment_point_array = TColgp_Array1OfPnt(1, segs_p_counts[i])
             for j in range(segs_p_counts[i]):
-                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
+                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count +1))
             
             if segs_p_counts[i]-1==segs_orders[i]:
                 segment = Geom_BezierCurve(segment_point_array)
             else :
-                knot, mult = auto_knot_and_mult(segs_p_counts[i], segs_orders[i])
-                segment = Geom_BSplineCurve(segment_point_array, knot, mult, segs_orders[i], False)
+                p_count = segs_p_counts[i]
+                order = segs_orders[i]
+                try :
+                    knot_length = p_count - order + 1
+                    knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
+                    weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
+                    # DECOMPOSE ALL THAT
+                    # weights
+                    weights = TColStd_Array1OfReal(1, p_count)
+                    for j in range(p_count):
+                        weights.SetValue(j+1, weight_attr[i])
+
+                    # knot
+                    knot = TColStd_Array1OfReal(1,knot_length)
+                    for j in range(knot_length):
+                        knot.SetValue(j+1, knot_attr[i])
+                    
+                    # Multiplicities
+                    mult = TColStd_Array1OfInteger(1, knot_length)
+                    for j in range(knot_length):
+                        if j == 0 or j == knot_length-1:
+                            mult.SetValue(j+1, order+1)
+                        else :
+                            mult.SetValue(j+1, 1)
+                except Exception:
+                    knot, mult = auto_knot_and_mult(segs_p_counts[i], order)
+                    weights = TColStd_Array1OfReal(1, p_count)
+                    for j in range(p_count):
+                        weights.SetValue(j+1, 1)
+
+                segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, order, False)
         
         # append edge
         edge = BRepBuilderAPI_MakeEdge(segment).Edge()
@@ -517,9 +546,9 @@ def create_wire_flat(vector_points, segs_p_counts, first_segment_p_id, segs_orde
 
 
 
-def create_wire_curved(pts_2d, seg_p_counts, first_segment_p_id, geom_surf):
+def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_orders, geom_surf=None, ob = None):
     total_p_count = len(pts_2d)
-    segment_count = len(seg_p_counts)
+    segment_count = len(segs_p_counts)
 
     # Create 2D points
     controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
@@ -531,22 +560,59 @@ def create_wire_curved(pts_2d, seg_p_counts, first_segment_p_id, geom_surf):
     # Create segments
     edges_list = TopTools_Array1OfShape(1, segment_count)
     for i in range(segment_count):
-        if seg_p_counts[i] == 2: # straight edges
+        if segs_p_counts[i] == 2: # straight edges
             makesegment = GCE2d_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
                                         controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
             segment = makesegment.Value()
         else :
-            segment_point_array = TColgp_Array1OfPnt2d(1, seg_p_counts[i])
-            for j in range(seg_p_counts[i]):
+            segment_point_array = TColgp_Array1OfPnt2d(1, segs_p_counts[i])
+            for j in range(segs_p_counts[i]):
                 segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
-            segment = Geom2d_BezierCurve(segment_point_array)
 
-        # make curve 3D
-        adapt = GeomAdaptor_Surface(geom_surf)
-        makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())
+            if segs_p_counts[i]-1==segs_orders[i]:
+                segment = Geom_BezierCurve(segment_point_array)
+            else :
+                p_count = segs_p_counts[i]
+                order = segs_orders[i]
+                try :
+                    knot_length = p_count - order + 1
+                    knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
+                    weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
+
+                    # weights
+                    weights = TColStd_Array1OfReal(1, p_count)
+                    for i in range(p_count):
+                        weights.SetValue(i+1, weight_attr[i])
+
+                    # knot
+                    knot = TColStd_Array1OfReal(1,knot_length)
+                    for i in range(knot_length):
+                        knot.SetValue(i+1, knot_attr[i])
+                    
+                    # Multiplicities
+                    mult = TColStd_Array1OfInteger(1, knot_length)
+                    for i in range(knot_length):
+                        if i == 0 or i == knot_length-1:
+                            mult.SetValue(i+1, order+1)
+                        else :
+                            mult.SetValue(i+1, 1)
+                except Exception:
+                    knot, mult = auto_knot_and_mult(segs_p_counts[i], order)
+                    weights = TColStd_Array1OfReal(1, p_count)
+                    for i in range(p_count):
+                        weights.SetValue(i+1, 1)
+
+                segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, order, False)
+
+        
+        # make segment
+        if geom_surf != None:
+            adapt = GeomAdaptor_Surface(geom_surf)
+            edge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface()).Edge()
+        else :
+            edge = BRepBuilderAPI_MakeEdge(segment).Edge()
         
         # append edge
-        edge = makeEdge.Edge()
         edges_list.SetValue(i+1, edge)
 
     # Make contour
@@ -569,8 +635,13 @@ class Wire :
     def __init__(self, CP, segs_p_counts, segs_orders):
         self.CP = CP
         self.segs_p_counts = segs_p_counts
-        self.segs_orders = segs_orders
-        
+
+        # Bezier if no order
+        if segs_orders==None:
+            self.segs_orders = [c-1 for c in segs_p_counts]
+        else :
+            self.segs_orders = segs_orders
+
         p_count = 0 #(total)
         p_count_accumulate = self.segs_p_counts[:]
         for i, p in enumerate(self.segs_p_counts):
@@ -583,12 +654,12 @@ class Wire :
         
         self.seg_first_P_id = [0] + [p-1 for p in p_count_accumulate[:len(segs_p_counts)-1]]
 
-    def get_occ_wire_flat(self, geom_plane):
-        wire = create_wire_flat(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_orders, geom_plane)
+    def get_occ_wire_3d(self, geom_plane=None, ob=None):
+        wire = create_wire_3d(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_orders, geom_plane, ob)
         return wire
     
-    def get_occ_wire_curved(self, geom_surf):
-        wire = create_wire_curved(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_orders, geom_surf)
+    def get_occ_wire_2d(self, geom_surf=None, ob=None):
+        wire = create_wire_2d(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_orders, geom_surf, ob)
         return wire
 
 
@@ -606,9 +677,9 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_order
         wire_index = [-1]*total_p_count
 
     # Bezier if no order
-    if segs_orders==None:
-        segs_orders = [c-1 for c in segs_p_counts]
-
+        if segs_orders==None:
+            segs_orders = [c-1 for c in segs_p_counts]
+    
     # Make wires
     # Init
     wires = {}
