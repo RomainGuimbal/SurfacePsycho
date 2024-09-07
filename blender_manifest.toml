@@ -13,14 +13,14 @@ tags = ["Modeling", "Import-Export", "Geometry Nodes"]
 
 blender_version_min = "4.2.0"
 
-license = ["SPDX:GPL-3.0-or-later"]
+license = ["SPDX:LGPL-2.0-or-later"]
 
 copyright = ["2024 Romain Guimbal"]
 
 # platforms = ["any", "windows-x64"]
 wheels = [
   "./wheels/six-1.16.0-py3-none-any.whl",
-  "./wheels/OCC-7.7.2-py3-none-any.whl",
+  # "./wheels/OCC-7.7.2-cp311-cp311-win_amd64.whl",
 ]
 
 [permissions]

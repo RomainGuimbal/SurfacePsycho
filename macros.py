@@ -51,14 +51,14 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
     order_u : bpy.props.IntProperty(
         name="Order U",
         description="Number of control points in U direction -1",
-        default=3,
+        default=1,
         min=1,
     )
 
     order_v : bpy.props.IntProperty(
         name="Order V",
         description="Number of control points in V direction -1",
-        default=2,
+        default=1,
         min=1
     )
 

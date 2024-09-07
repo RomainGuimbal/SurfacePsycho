@@ -192,7 +192,6 @@ def new_brep_bezier_face(o, context):
     # Check if trimmed
     try :
         segs_p_counts = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
-        segs_p_counts = [int(p) for p in segs_p_counts]
     except Exception: # No trim
         segs_p_counts=None
         face = create_face(bsurf)
@@ -233,21 +232,18 @@ def new_brep_NURBS_face(o, context):
     points *= 1000 #unit correction
     order_u, order_v = get_attribute_by_name(ob, 'Orders', 'int', 2)
 
-    # Knots
+    # Knots and Multiplicities
     try : 
-        uknots = get_attribute_by_name(ob, 'Knot U', 'int')
-        vknots = get_attribute_by_name(ob, 'Knot V', 'int')
-        uknots, vknots = None, None #TODO
-    except Exception: # No trim
-        uknots, vknots = None, None
-
-    # Multiplicities
-    try : 
+        knot_u = get_attribute_by_name(ob, 'Knot U', 'int')
+        knot_v = get_attribute_by_name(ob, 'Knot V', 'int')
         mult_u = get_attribute_by_name(ob, 'Multiplicity U', 'int')
         mult_v = get_attribute_by_name(ob, 'Multiplicity V', 'int')
+
+        uknots, vknots = None, None #TODO
         umult, vmult = None, None #TODO
     except Exception: # No trim
-        umult, vmult = None, None
+        uknots, umult = auto_knot_and_mult(u_count, order_u)
+        vknots, vmult = auto_knot_and_mult(v_count, order_v)
 
     # Poles grid
     poles = TColgp_Array2OfPnt(1, u_count, 1, v_count)
@@ -262,7 +258,6 @@ def new_brep_NURBS_face(o, context):
     # Check if trimmed
     try :
         segs_p_counts = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
-        segs_p_counts = [int(p) for p in segs_p_counts]
     except Exception: # No trim
         segs_p_counts=None
         face = create_face(bsurf)
@@ -322,7 +317,6 @@ def new_brep_curve(o, context):
     # get attributes
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     point_count = get_attribute_by_name(ob, 'CP_count', 'int')
-    point_count = [int(p) for p in point_count]
     total_p_count = 1
     segment_count = 0
     p_count_accumulate = point_count
@@ -344,34 +338,34 @@ def new_brep_curve(o, context):
     for i in range(total_p_count):
         controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
 
-    # try:
-    #     order = get_attribute_by_name(ob, 'Order', total_p_count)
-    #     is_nurbs = True
-    # except Exception:
-    #     is_nurbs = True
+    try:
+        order = get_attribute_by_name(ob, 'Order', segment_count)
+        is_nurbs = True
+    except Exception:
+        is_nurbs = True
     
-    # if is_nurbs:
-    #     knot_length = order+point_count+1 - order*2
-    #     knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
-    #     weight_attr = get_attribute_by_name(ob, 'Weight', 'float', point_count)
+    if is_nurbs:
+        knot_length = order+point_count+1 - order*2
+        # knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
+        # weight_attr = get_attribute_by_name(ob, 'Weight', 'float', point_count)
 
-    #     # weights
-    #     weights = TColStd_Array1OfReal(1, point_count)
-    #     for i in range(point_count):
-    #         weights.SetValue(i+1, weight_attr[i])
+        # # weights
+        # weights = TColStd_Array1OfReal(1, point_count)
+        # for i in range(point_count):
+        #     weights.SetValue(i+1, weight_attr[i])
 
-    #     # knots
-    #     knots = TColStd_Array1OfReal(1,knot_length)
-    #     for i in range(knot_length):
-    #         knots.SetValue(i+1, knot_attr[i])
+        # # knots
+        # knots = TColStd_Array1OfReal(1,knot_length)
+        # for i in range(knot_length):
+        #     knots.SetValue(i+1, knot_attr[i])
         
-    #     # Multiplicities
-    #     mult = TColStd_Array1OfInteger(1, knot_length)
-    #     for i in range(knot_length):
-    #         if i == 0 or i == knot_length-1:
-    #             mult.SetValue(i+1, order+1)
-    #         else :
-    #             mult.SetValue(i+1, 1)
+        # Multiplicities
+        mult = TColStd_Array1OfInteger(1, knot_length)
+        for i in range(knot_length):
+            if i == 0 or i == knot_length-1:
+                mult.SetValue(i+1, order+1)
+            else :
+                mult.SetValue(i+1, 1)
 
     #init sewing
     ms = BRepBuilderAPI_Sewing(1e-7)
@@ -394,7 +388,7 @@ def new_brep_curve(o, context):
 
 
 
-def new_brep_NURBS_curve(o, context):
+def new_brep_NURBS_curve(o, context): # TO DELETE
     # get attributes
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     point_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
@@ -443,19 +437,26 @@ def new_brep_planar_face(o, context):
         segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
     except Exception :
         segs_p_counts = get_attribute_by_name(ob, 'P_count', 'int')
-    segs_p_counts=[int(p) for p in segs_p_counts]
     
     # get total_p_count
-    total_p_count=0
+    total_p_count, segment_count= 0, 0
     for p in segs_p_counts:
         if p>0:
             total_p_count += p-1
+            segment_count += 1
+    
+    segs_p_counts = segs_p_counts[:segment_count]
+
+    try :
+        segs_orders = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+    except Exception :
+        segs_orders = None
 
     # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
     points*=1000 # Unit correction
 
-    wires = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts)
+    wires = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_orders)
 
     # Orient and place
     loc, rot, scale = o.matrix_world.decompose()
