@@ -414,6 +414,8 @@ def new_brep_planar_face(o, context):
         if p>0:
             total_p_count += p-1
             segment_count += 1
+        if p==0:
+            break
     
     segs_p_counts = segs_p_counts[:segment_count]
 

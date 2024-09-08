@@ -23,71 +23,6 @@ from .utils import *
 
 
 
-def build_SP_curve(brepEdge, collection, context) :
-    # curve info
-    curve_adaptator = BRepAdaptor_Curve(brepEdge)
-    first = curve_adaptator.FirstParameter()
-    last = curve_adaptator.LastParameter()
-    degree = curve_adaptator.GetType() #wrong but needs refactor anyway
-
-    #retrieve CP
-    ts = np.linspace(first, last, degree+1)
-    vector_pts = []
-    for t in ts :
-        gp_pnt=curve_adaptator.Value(t)
-        vector_pts+=[Vector((gp_pnt.X()/1000, gp_pnt.Y()/1000, gp_pnt.Z()/1000))]
-    
-    #poles = get_poles_from_geom_curve(curve_adaptator)
-    
-    
-    status =""
-    # edge, _, _ = BRep_Tool.Curve(brepEdge)
-    # print(type(edge))
-
-    # if isinstance(edge, Geom_BezierCurve):
-    #     bezier_curve = Geom_BezierCurve.DownCast(edge)
-    #     count = bezier_curve.NbPoles()
-        
-    #     vector_pts = np.zeros(count, dtype=Vector)
-    #     for u in range(1, count + 1):
-    #         pole = bezier_curve.Pole(u)
-    #         vector_pts[u-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
-
-    # elif isinstance(edge, Geom_BSplineCurve):
-    #     bspline_curve = Geom_BSplineCurve.DownCast(edge)
-    #     count = bspline_curve.NbPoles()
-
-    #     knots = [bspline_curve.Knot(i+1) for i in range(bspline_curve.NbKnots())]
-    #     if any(x not in [0.0, 1.0] for x in knots) :
-    #         status = "Unsupported NURBS feature present, imported step will not be exact"
-
-    #     vector_pts = np.zeros(count, dtype=Vector)
-    #     for u in range(1, count + 1):
-    #         pole = bspline_curve.Pole(u)
-    #         vector_pts[u-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
-
-    #         weight = bspline_curve.Weight(u)
-    #         if weight!=1.0:
-    #             status = "Weighted NURBS present, SP doesn't currently support them"
-    # else:
-    #     print("error on edge type")
-    #     return False
-
-    # create object
-    mesh = bpy.data.meshes.new("Curve CP")
-    vert = vector_pts
-    edges = [(i,i+1) for i in range(len(vector_pts)-1)]
-    mesh.from_pydata(vert, edges, [])
-    ob = bpy.data.objects.new('STEP curve', mesh)
-
-    # add modifier
-    collection.objects.link(ob)
-    add_sp_modifier(ob, "SP - Curve Through Points")
-    add_sp_modifier(ob, "SP - Curve Meshing")
-
-    if status != "":
-        print(status)
-    return True
 
 
 
@@ -225,6 +160,44 @@ def build_SP_NURBS_patch(brepFace, collection, context):
 
 
 
+
+def build_SP_curve(brepEdge, collection, context) :
+    vector_pts = []
+    curve_adaptor = BRepAdaptor_Curve(brepEdge)
+
+    edge_poles, edge_order = get_poles_from_geom_curve(curve_adaptor, brepEdge)
+    endpoints=[1.0] + [0.0]*(len(edge_poles)-2) + [1.0]
+    if edge_order!=None:
+        order_att=[edge_order/10]+[0.0]*(len(edge_poles)-1)
+    else :
+        order_att=[0.0]*(len(edge_poles))
+
+    # prepare mesh
+    for pnt in edge_poles :
+        vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
+    vert = vector_pts
+    edges = [(i,i+1) for i in range(len(vector_pts)-1)]
+
+    # create object
+    mesh = bpy.data.meshes.new("Curve CP")
+    mesh.from_pydata(vert, edges, [])
+    ob = bpy.data.objects.new('STEP curve', mesh)
+
+    # Assign vertex groups
+    add_vertex_group(ob, "Endpoints", endpoints)
+    add_vertex_group(ob, "Order", order_att)
+
+    # add modifier
+    collection.objects.link(ob)
+    add_sp_modifier(ob, "SP - Curve Meshing")
+
+    return True
+
+
+
+
+
+
 def build_SP_flat(brepFace, collection, context):
     vector_pts, poles, endpoints, order_att = [], [], [], []
     wire = breptools.OuterWire(brepFace)
@@ -260,7 +233,7 @@ def build_SP_flat(brepFace, collection, context):
     mesh.from_pydata(vert, edges, [])
     ob = bpy.data.objects.new('STEP FlatPatch', mesh)
 
-    # Assign endpoints
+    # Assign vertex groups
     add_vertex_group(ob, "Endpoints", endpoints)
     add_vertex_group(ob, "Order", order_att)
     
@@ -414,6 +387,11 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
                 print("Unsupported Face Type : " + ft)
             progress+=1
             wm.progress_update(progress)
+
+    #Create SP free edges
+    if enabled_entities["curves"]:
+        for egde_id, edge in shape_hierarchy.edges.items():
+            build_SP_curve(edge, collection, context)
 
     #recursive_SP_from_brep_shape(shape, collection, context, enabled_entities)
     #TODO : Add brep relations (face connections...)
