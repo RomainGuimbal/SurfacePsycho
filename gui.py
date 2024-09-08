@@ -70,6 +70,7 @@ if os!="Darwin":
         filename_ext = ".step;.stp;.iges;.igs"
         filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
         faces: BoolProperty(name="Faces", description="Import Faces", default=True)
+        trim_contours: BoolProperty(name="Trim Contours (/!\ Experimental)", description="Import faces with their trim contours", default=False)
         curves: BoolProperty(name="Curves", description="Import Curves", default=False)
 
         def modal(self, context, event):
@@ -81,11 +82,11 @@ if os!="Darwin":
             return {'PASS_THROUGH'}
 
         def execute(self, context):
-            import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves})
+            import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,})
             # wm = context.window_manager
             # self._timer = wm.event_timer_add(0.1, window=context.window)
             # wm.modal_handler_add(self)
-            self.report({'WARNING'}, 'Some surfaces may not be supported')
+            self.report({'INFO'}, 'Some surface types may be ignored')
             return {'RUNNING_MODAL'}
 
 

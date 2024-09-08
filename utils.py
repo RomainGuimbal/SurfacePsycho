@@ -12,7 +12,7 @@ from OCC.Core.GCE2d import GCE2d_MakeSegment
 from OCC.Core.Geom import Geom_BezierCurve, Geom_BSplineCurve
 from OCC.Core.Geom2d import Geom2d_BezierCurve # Geom2d_BSplineCurve, Geom2d_Line
 from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
-from OCC.Core.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line #, GeomAbs_CurveType
+from OCC.Core.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle
 from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.gp import gp_Pnt, gp_Pnt2d
@@ -378,12 +378,14 @@ def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve, edge=None):
         # Should also output the order, knot, multiplicities and weights
     
     else :
-        print("Unsupported curve type. Expect inaccurate results")
-        poles = []
-        # # For other curve types, we'll use a sampling approximation
-        # num_points = 5
-        # params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
-        # poles = [curve_adaptor.Value(param) for param in params]
+        if curve_type == GeomAbs_Circle:
+            print("Unsupported curve type : GeomAbs_Circle. Expect inaccurate results")
+        else :
+            print("Unsupported curve type. Expect inaccurate results")
+        # sampling approximation For other curve types, 
+        num_points = 2
+        params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
+        poles = [curve_adaptor.Value(param) for param in params]
     
     # elif curve_type == GeomAbs_Circle:
     #     # center = curve_adaptor.Circle().Location()

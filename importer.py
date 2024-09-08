@@ -27,7 +27,7 @@ from .utils import *
 
 
 
-def build_SP_bezier_patch(brepFace, collection, context) :
+def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
     status =""
     face = BRep_Tool.Surface(brepFace)
 
@@ -49,11 +49,27 @@ def build_SP_bezier_patch(brepFace, collection, context) :
         print("error on face type")
         return False
 
+    # control grid
+    CPvert, _, CPfaces = create_grid(vector_pts)
+    
+    if trims_enabled :
+        # Add trim contour
+        wires_verts, wires_edges, wires_endpoints, wire_orders = get_face_uv_contours(brepFace, uv_bounds)
+        vert, edges, faces = join_mesh_entities(CPvert.tolist(), [], CPfaces, wires_verts, wires_edges, [])
+    else :
+        vert, edges, faces = CPvert, [], CPfaces
+
+
     # create object
     mesh = bpy.data.meshes.new("Patch CP")
-    vert, edges, faces = create_grid(vector_pts)
     mesh.from_pydata(vert, edges, faces)
     ob = bpy.data.objects.new('STEP Patch', mesh)
+
+    if trims_enabled :
+        # assign vertex groups
+        add_vertex_group(ob, "Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
+        add_vertex_group(ob, "Endpoints", [0.0]*len(CPvert) + wires_endpoints)
+        add_vertex_group(ob, "Order", [0.0]*len(CPvert) + wire_orders)
     
     # set smooth
     mesh = ob.data
@@ -72,8 +88,7 @@ def build_SP_bezier_patch(brepFace, collection, context) :
 
 
 
-def build_SP_NURBS_patch(brepFace, collection, context):
-    status =""
+def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
     face = BRep_Tool.Surface(brepFace)
 
     if face.DynamicType().Name() == "Geom_BSplineSurface":
@@ -110,21 +125,24 @@ def build_SP_NURBS_patch(brepFace, collection, context):
     
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
-
-    # Add trim contour
-    wires_verts, wires_edges, wires_endpoints, wire_orders = get_face_uv_contours(brepFace, uv_bounds)
-    vert, edges, faces = join_mesh_entities(CPvert.tolist(), [], CPfaces, wires_verts, wires_edges, [])
+    
+    if trims_enabled :
+        # Add trim contour
+        wires_verts, wires_edges, wires_endpoints, wire_orders = get_face_uv_contours(brepFace, uv_bounds)
+        vert, edges, faces = join_mesh_entities(CPvert.tolist(), [], CPfaces, wires_verts, wires_edges, [])
+    else :
+        vert, edges, faces = CPvert, [], CPfaces
 
     # Create object and add mesh
     mesh = bpy.data.meshes.new("Patch CP")
-
     mesh.from_pydata(vert, edges, faces)
     ob = bpy.data.objects.new('STEP Patch', mesh)
     
-    # assign vertex groups
-    add_vertex_group(ob, "Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
-    add_vertex_group(ob, "Endpoints", [0.0]*len(CPvert) + wires_endpoints)
-    add_vertex_group(ob, "Order", [0.0]*len(CPvert) + wire_orders)
+    if trims_enabled :
+        # assign vertex groups
+        add_vertex_group(ob, "Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
+        add_vertex_group(ob, "Endpoints", [0.0]*len(CPvert) + wires_endpoints)
+        add_vertex_group(ob, "Order", [0.0]*len(CPvert) + wire_orders)
 
     # set smooth
     mesh = ob.data
@@ -133,7 +151,6 @@ def build_SP_NURBS_patch(brepFace, collection, context):
 
     # add_modifiers
     collection.objects.link(ob)
-    # bpy.context.view_layer.objects.active = ob
 
     if custom_knot:
         add_vertex_group(ob, "Knot U", v_knots)# TO FIX U AND V INVERTED FOR DEBUG
@@ -146,14 +163,11 @@ def build_SP_NURBS_patch(brepFace, collection, context):
         print("weights are not fully supported yet")
         #add_sp_modifier(ob, "SP - NURBS Weighting")
         #TO NORMALIZE + factor
-
         # assign vertex group to modifier # change_node_socket_value
     
     # Meshing
     add_sp_modifier(ob, "SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Fit / UV": True})# TO FIX U AND V INVERTED FOR DEBUG
 
-    if status != "":
-        print(status)
     return True
 
 
@@ -372,15 +386,17 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
     wm.progress_begin(0, face_count)
     progress = 0
 
+    trims_enabled = enabled_entities["trim_contours"]
+
     #Create SP faces
     if enabled_entities["faces"]:
         for face_id, face in shape_hierarchy.faces.items():
 
             ft= surface_type(face)
             if ft=="Bezier":
-                build_SP_bezier_patch(face, collection, context)
+                build_SP_bezier_patch(face, collection, trims_enabled)
             elif ft=="NURBS":
-                build_SP_NURBS_patch(face, collection, context)
+                build_SP_NURBS_patch(face, collection, trims_enabled)
             elif ft=="Plane":
                 build_SP_flat(face, collection, context)
             else :
