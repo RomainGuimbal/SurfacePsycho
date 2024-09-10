@@ -33,7 +33,7 @@ from OCC.Core.TopTools import TopTools_Array1OfShape
 from os.path import dirname, abspath, join
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
-ASSETSPATH = addonpath + "./assets/assets.blend"
+ASSETSPATH = addonpath + "/assets/assets.blend"
 
 
 TYPES_FROM_CP_ATTR = {        'CP_bezier_surf':'bicubic_surf',
