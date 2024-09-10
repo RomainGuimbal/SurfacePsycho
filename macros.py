@@ -221,8 +221,8 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
         objects=[ob for ob in context.visible_objects]
         for o in objects:
             for m in o.modifiers :
-                if m.type == "NODES" and m.node_group is not None and m.node_group.name[:-4] in ['SP - Any Order Patch Meshing', 'SP - Bicubic Patch Meshing','SP - Mesh Flat patch', 'SP - Patch meshing', 'SP - FlatPatch Meshing'
-                                                                                                 'SP - Any Order Patch Mes', 'SP - Bicubic Patch Mes','SP - Mesh Flat p', 'SP - Patch mes', 'SP - FlatPatch Mes']:
+                if m.type == "NODES" and m.node_group is not None and m.node_group.name[:-4] in ['SP - Bezier Patch Meshing','SP - Any Order Patch Meshing', 'SP - Bicubic Patch Meshing','SP - Mesh Flat patch', 'SP - Patch meshing', 'SP - FlatPatch Meshing'
+                                                                                                 'SP - Bezier Patch Mes','SP - Any Order Patch Mes', 'SP - Bicubic Patch Mes','SP - Mesh Flat p', 'SP - Patch mes', 'SP - FlatPatch Mes']:
                     o.select_set(True)
                     break
         return {'FINISHED'}

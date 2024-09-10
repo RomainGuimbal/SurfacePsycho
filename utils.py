@@ -10,7 +10,7 @@ from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeWire, BRepBuilderAPI_Make
 from OCC.Core.GC import GC_MakeSegment
 from OCC.Core.GCE2d import GCE2d_MakeSegment
 from OCC.Core.Geom import Geom_BezierCurve, Geom_BSplineCurve
-from OCC.Core.Geom2d import Geom2d_BezierCurve # Geom2d_BSplineCurve, Geom2d_Line
+from OCC.Core.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
 from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
 from OCC.Core.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle
 from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
@@ -572,7 +572,7 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_orders, geom_
                 segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
 
             if segs_p_counts[i]-1==segs_orders[i]:
-                segment = Geom_BezierCurve(segment_point_array)
+                segment = Geom2d_BezierCurve(segment_point_array)
             else :
                 p_count = segs_p_counts[i]
                 order = segs_orders[i]
@@ -604,7 +604,7 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_orders, geom_
                     for i in range(p_count):
                         weights.SetValue(i+1, 1)
 
-                segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, order, False)
+                segment = Geom2d_BSplineCurve(segment_point_array, weights, knot, mult, order, False)
 
         
         # make segment
@@ -679,8 +679,8 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_order
         wire_index = [-1]*total_p_count
 
     # Bezier if no order
-        if segs_orders==None:
-            segs_orders = [c-1 for c in segs_p_counts]
+    if segs_orders==None:
+        segs_orders = [c-1 for c in segs_p_counts]
     
     # Make wires
     # Init
