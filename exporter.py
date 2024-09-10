@@ -2,9 +2,8 @@ import bpy
 import sys
 import numpy as np
 from mathutils import Vector
-from datetime import datetime
 from os.path import dirname, abspath
-from utils import *
+from .utils import *
 
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
@@ -17,13 +16,14 @@ from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Make
 from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
 from OCC.Core.GC import GC_MakeSegment
 from OCC.Core.GCE2d import GCE2d_MakeSegment
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve #, Geom_BSplineCurve
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_Plane, Geom_TrimmedCurve, Geom_BSplineCurve
 from OCC.Core.Geom2d import Geom2d_BezierCurve
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
 from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Pnt2d #, gp_Vec
 from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
 from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
+from OCC.Core.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
 from OCC.Core.TopTools import TopTools_Array1OfShape
 from OCC.Extend.DataExchange import write_step_file, write_iges_file
@@ -38,7 +38,39 @@ from OCC.Core.ShapeFix import ShapeFix_Face
 ##  Brep from SP entities   ##
 ##############################
 
-def new_brep_bicubic_face(o, context):
+def create_face(geom_surf = None, outer_wire = None, inner_wires=[]):
+    # Make face
+    if geom_surf != None:
+        if outer_wire == None :
+            makeface = BRepBuilderAPI_MakeFace(geom_surf, 1e-6)
+            return makeface.Face()
+        else :
+            makeface = BRepBuilderAPI_MakeFace(geom_surf, outer_wire, False)#,1e-6)
+    else : # Flat face
+        makeface = BRepBuilderAPI_MakeFace(outer_wire, True)
+
+    # Add inner wires (holes)
+    for inner_wire in inner_wires:
+        makeface.Add(inner_wire)
+    
+    # Build the face
+    makeface.Build()
+
+    # makeface.Add(trim_wire)#.Reversed())
+    face = makeface.Face()
+    fix = ShapeFix_Face(face)
+    fix.Perform()
+
+    return fix.Face()
+
+
+
+
+
+
+
+
+def new_brep_bicubic_face(o, context): # DEPRECATED
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
 
     # Control Polygon
@@ -50,7 +82,7 @@ def new_brep_bicubic_face(o, context):
             id= 4*i+j
             controlPoints.SetValue(i+1, j+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
-    #Bezier surface
+    # Bezier surface
     geom_surf = Geom_BezierSurface(controlPoints)
     bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
     bezierarray.SetValue(1, 1, geom_surf)
@@ -86,7 +118,7 @@ def new_brep_bicubic_face(o, context):
             pnt= gp_Pnt2d(trim_pts[i][1], trim_pts[i][0])
             controlPoints.SetValue(i+1, pnt)
 
-        #make edges
+        # Make edges
         if subtype :#polygon mode
             edges_list = TopTools_Array1OfShape(1, point_count)
             for i in range(point_count):
@@ -122,13 +154,9 @@ def new_brep_bicubic_face(o, context):
         trim_wire = TopoDS_Wire()
         trim_wire = makeWire.Wire()
         
-        makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, False)#,1e-6)#, trim_wire)
-        # makeface.Add(trim_wire)#.Reversed())
-        face = makeface.Face()
-        fix = ShapeFix_Face(face)
-        fix.Perform()
-        face= fix.Face()
+        face = create_face(bsurf, trim_wire)
     return face
+
 
 
 
@@ -162,95 +190,113 @@ def new_brep_bezier_face(o, context):
         bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
     
     # Check if trimmed
-    try: # Old
-        point_count = get_attribute_by_name(ob, 'P_count', 'first_int')
-        trimmed = True
-        old_version = True
-    except Exception:
-        try : # New
-            point_count = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
-            point_count = [int(p) for p in point_count]
-            trimmed = True
-            old_version = False
-            
-        except Exception: # No trim
-            point_count=None
-            trimmed = False
-            face = BRepBuilderAPI_MakeFace(bsurf, 1e-6).Face()
-
-    # old behaviour
     try :
-        subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
-    except Exception:
-        pass
-    else :
-        if subtype :
-            point_count = [2]*point_count
-        elif not subtype :
-            point_count = [4]*(point_count//3)
-        else :
-            raise Exception("Invalid subtype attribute")
-
+        segs_p_counts = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
+    except Exception: # No trim
+        segs_p_counts=None
+        face = create_face(bsurf)
+        return face
 
     # Build trim contour
-    if trimmed:
-        total_p_count = 0
-        segment_count = 0
-        p_count_accumulate = point_count[:]
-        for i, p in enumerate(point_count):
-            if p>0:
-                total_p_count += p-1
-                segment_count += 1
-            if p==0 :
-                break
-            if i>0:
-                p_count_accumulate[i] += p_count_accumulate[i-1]-1
 
-        first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
-
-
-        if old_version :
-            subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
-            trim_pts = get_attribute_by_name(ob, 'Trim_contour', 'vec3', point_count)
+    # get total_p_count
+    total_p_count=0
+    segment_count=0
+    for p in segs_p_counts:
+        if p>0:
+            total_p_count += p-1
+            segment_count += 1
         else :
-            trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
+            break
+    segs_p_counts=segs_p_counts[:segment_count]
 
-        # Create 2D points
-        controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
-        for i in range(total_p_count):
-            pnt= gp_Pnt2d(trim_pts[i][1], trim_pts[i][0])
-            controlPoints.SetValue(i+1, pnt)
+    # Get CP position attr
+    trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
 
-        # Create edge list
-        edges_list = TopTools_Array1OfShape(1, segment_count)
-        for i in range(segment_count):
-            segment_point_array = TColgp_Array1OfPnt2d(1, point_count[i])
-            for j in range(point_count[i]):
-                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
-            segment = Geom2d_BezierCurve(segment_point_array)
+    wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts)
 
-            # make curve 3D
-            adapt = GeomAdaptor_Surface(bsurf)
-            makeEdge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface())#.Surface()
-            edge = makeEdge.Edge()
-            edges_list.SetValue(i+1, edge)
+    # Get occ wires
+    outer_wire = wires[-1].get_occ_wire_2d(bsurf)
+    inner_wires=[]
+    for k in wires.keys():
+        if k!=-1:
+            inner_wires.append(wires[k].get_occ_wire_2d(bsurf))
 
-        makeWire = BRepBuilderAPI_MakeWire()
-        for e in edges_list :
-            makeWire.Add(e)
-        trim_wire = TopoDS_Wire()
-        trim_wire = makeWire.Wire()
-        
-        makeface = BRepBuilderAPI_MakeFace(bsurf, trim_wire, False)#,1e-6)#, trim_wire)
-        # makeface.Add(trim_wire)#.Reversed())
-        face = makeface.Face()
-        fix = ShapeFix_Face(face)
-        fix.Perform()
-        face= fix.Face()
-
+    face = create_face(bsurf, outer_wire, inner_wires)
     return face
 
 
+
+
+def new_brep_NURBS_face(o, context):
+    # Get attributes
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+    v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
+    points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', u_count*v_count)
+    points *= 1000 #unit correction
+    order_u, order_v = get_attribute_by_name(ob, 'Orders', 'int', 2)
+
+    # Knots and Multiplicities
+    try : 
+        knot_u = get_attribute_by_name(ob, 'Knot U', 'int')
+        knot_v = get_attribute_by_name(ob, 'Knot V', 'int')
+        mult_u = get_attribute_by_name(ob, 'Multiplicity U', 'int')
+        mult_v = get_attribute_by_name(ob, 'Multiplicity V', 'int')
+
+        # TODO
+        uknots, umult = auto_knot_and_mult(u_count, order_u) # TODO
+        vknots, vmult = auto_knot_and_mult(v_count, order_v) # TODO
+    except Exception: # No trim
+        uknots, umult = auto_knot_and_mult(u_count, order_u)
+        vknots, vmult = auto_knot_and_mult(v_count, order_v)
+
+    # Poles grid
+    poles = TColgp_Array2OfPnt(1, u_count, 1, v_count)
+    for i in range(v_count):
+        for j in range(u_count):
+            id= u_count*i +j
+            poles.SetValue(j+1, i+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
+
+    # Compose Geom
+    bsurf = Geom_BSplineSurface(poles, uknots, vknots, umult, vmult, order_u, order_v, False, False)
+
+    # Check if trimmed
+    try :
+        segs_p_counts = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
+    except Exception: # No trim
+        segs_p_counts=None
+        face = create_face(bsurf)
+        return face
+
+    # Build trim contour
+
+    # get total_p_count
+    total_p_count=0
+    segment_count=0
+    for p in segs_p_counts:
+        if p>0:
+            total_p_count += p-1
+            segment_count += 1
+        else :
+            break
+    segs_p_counts=segs_p_counts[:segment_count]
+
+    # Get CP position attr
+    trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
+    segs_orders = get_attribute_by_name(ob, 'Contour Order', 'int', segment_count)
+
+    wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts, segs_orders)
+
+    # Get occ wires
+    outer_wire = wires[-1].get_occ_wire_curved(bsurf)
+    inner_wires=[]
+    for k in wires.keys():
+        if k!=-1:
+            inner_wires.append(wires[k].get_occ_wire_curved(bsurf))
+
+    face = create_face(bsurf, outer_wire, inner_wires)
+    return face
 
 
 
@@ -279,87 +325,110 @@ def new_brep_any_order_curve(o, context): # LEGACY
 
 
 
+
 def new_brep_curve(o, context):
+    # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    point_count = get_attribute_by_name(ob, 'CP_count', 'int')
-    point_count = [int(p) for p in point_count]
-    total_p_count = 1
-    segment_count = 0
-    p_count_accumulate = point_count
-    for i, p in enumerate(point_count):
+    segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
+
+    
+    # get total_p_count
+    total_p_count, segment_count= 1, 0
+    for p in segs_p_counts:
         if p>0:
             total_p_count += p-1
             segment_count += 1
-        if p==0:
-            break
-        if i>0:
-            p_count_accumulate[i] += p_count_accumulate[i-1]-1
+    
+    segs_p_counts = segs_p_counts[:segment_count]
 
-    first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count]]
+    try :
+        segs_orders = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+    except Exception :
+        segs_orders = None
+
+    # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
+    points*=1000 # Unit correction
+
+    wire = Wire(points, segs_p_counts, segs_orders)
+    brep_wire = wire.get_occ_wire_3d(ob=ob)
+
+    return brep_wire # single wire support for now
+
+
+
+
+def new_brep_NURBS_curve(o, context): # TO DELETE
+    # get attributes
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    point_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
+    order = get_attribute_by_name(ob, 'Order', 'first_int')
+    points = get_attribute_by_name(ob, 'CP_NURBS_curve', 'vec3', point_count)
+    knot_length = order+point_count+1 - order*2
+    knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
+    weight_attr = get_attribute_by_name(ob, 'Weight', 'float', point_count)
     points *= 1000 #unit correction
 
-    # Create CP
-    controlPoints = TColgp_Array1OfPnt(1, total_p_count)
-    for i in range(total_p_count):
+    # poles
+    controlPoints = TColgp_Array1OfPnt(1, point_count)
+    for i in range(point_count):
         controlPoints.SetValue(i+1, gp_Pnt(points[i][0], points[i][1], points[i][2]))
 
-    #init sewing
-    ms = BRepBuilderAPI_Sewing(1e-7)
-    ms.SetNonManifoldMode(True)
+    # weights
+    weights = TColStd_Array1OfReal(1, point_count)
+    for i in range(point_count):
+        weights.SetValue(i+1, weight_attr[i])
 
-    #create segments
-    for i in range(segment_count):
-        segment_point_array = TColgp_Array1OfPnt(first_segment_p_id[i], first_segment_p_id[i+1])
-        for j in range(first_segment_p_id[i], first_segment_p_id[i+1]+1):
-            segment_point_array.SetValue(j, controlPoints.Value(j+1))
-            
-        segment = Geom_BezierCurve(segment_point_array)
-        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
-        ms.Add(edge)
+    # knots
+    knots = TColStd_Array1OfReal(1,knot_length)
+    for i in range(knot_length):
+        knots.SetValue(i+1, knot_attr[i])
+    
+    # Multiplicities
+    mult = TColStd_Array1OfInteger(1, knot_length)
+    for i in range(knot_length):
+        if i == 0 or i == knot_length-1:
+            mult.SetValue(i+1, order+1)
+        else :
+            mult.SetValue(i+1, 1)
 
-    #sew segments
-    ms.Perform()
-    curve = ms.SewedShape()
+    #create curve
+    geom_curve = Geom_BSplineCurve(controlPoints, weights, knots, mult, order)
+    curve = BRepBuilderAPI_MakeEdge(geom_curve).Edge()
     return curve
 
 
 
-def new_brep_planar_face(o, context):
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    try:
-        point_count = get_attribute_by_name(ob, 'CP_count', 'int')
-    except Exception:
-        point_count = get_attribute_by_name(ob, 'P_count', 'int')
-        
-    point_count = [int(p) for p in point_count]
-    
-    # Old behaviour
-    try :
-        subtype = get_attribute_by_name(ob, 'subtype', 'first_int')
-    except Exception:
-        pass
-    else :
-        if subtype :
-            point_count = [2]*point_count[0]
-        else :
-            point_count = [4]*(point_count[0]//3)
 
-    total_p_count = 0
-    segment_count = 0
-    p_count_accumulate = point_count[:]
-    for i, p in enumerate(point_count):
+def new_brep_planar_face(o, context):
+    # Get point count attr
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    try :
+        segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
+    except Exception :
+        segs_p_counts = get_attribute_by_name(ob, 'P_count', 'int')
+    
+    # get total_p_count
+    total_p_count, segment_count= 0, 0
+    for p in segs_p_counts:
         if p>0:
             total_p_count += p-1
             segment_count += 1
         if p==0:
             break
-        if i>0:
-            p_count_accumulate[i] += p_count_accumulate[i-1]-1
+    
+    segs_p_counts = segs_p_counts[:segment_count]
 
-    first_segment_p_id = [0] + [p-1 for p in p_count_accumulate[:segment_count-1]]
+    try :
+        segs_orders = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+    except Exception :
+        segs_orders = None
+
+    # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
     points*=1000 # Unit correction
+
+    wires = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_orders)
 
     # Orient and place
     loc, rot, scale = o.matrix_world.decompose()
@@ -372,49 +441,18 @@ def new_brep_planar_face(o, context):
     loc += rot@ Vector(offset)
     loc *= 1000
     pl_normal = rot@ Vector(orient)
-    pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z),gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
+    pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z), gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
     geom_pl = Geom_Plane(pl)
 
-    # Create CP
-    controlPoints = TColgp_Array1OfPnt(1, total_p_count)
-    for i in range(total_p_count):
-        pnt = gp_Pnt(points[i][0], points[i][1], points[i][2])
-        pnt = GeomAPI_ProjectPointOnSurf(pnt, geom_pl).Point(1)
-        controlPoints.SetValue(i+1, pnt)
-    
-    # Create segments
-    edges_list = TopTools_Array1OfShape(1, segment_count)
-    for i in range(segment_count):
-        if point_count[i] == 2: # straight edges
-            makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
-                                         controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
-            segment = makesegment.Value()
-        else:
-            segment_point_array = TColgp_Array1OfPnt(1, point_count[i])
+    # Get occ wires
+    outer_wire = wires[-1].get_occ_wire_3d(geom_pl)
+    inner_wires=[]
+    for k in wires.keys():
+        if k!=-1:
+            inner_wires.append(wires[k].get_occ_wire_3d(geom_pl))
 
-            for j in range(point_count[i]):
-                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
-            segment = Geom_BezierCurve(segment_point_array)
-
-        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
-        edges_list.SetValue(i+1, edge)
-
-    # Make contour
-    makeWire = BRepBuilderAPI_MakeWire()
-    for e in edges_list :
-        makeWire.Add(e)
-    w = TopoDS_Wire()
-    w = makeWire.Wire()
-
-    aface = BRepBuilderAPI_MakeFace(w, True).Face()
-    return aface
-
-
-
-
-
-
-
+    face = create_face(None, outer_wire, inner_wires)
+    return face
 
 
 
@@ -507,7 +545,9 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
         initial_selection = context.visible_objects
     obj_list = initial_selection
     obj_to_del = []
-    
+
+    #TODO replace with recursive version
+
     while(len(obj_list)>0): # itterates until ob_list is empty
         obj_newly_real = []
 
@@ -520,10 +560,15 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
                     bf = new_brep_bicubic_face(o, context)
                     aSew.Add(mirror_brep(o, bf))
 
-                case "surf_any" :
+                case "bezier_surf" :
                     SPobj_count +=1
                     af = new_brep_bezier_face(o, context)
                     aSew.Add(mirror_brep(o, af))
+
+                case "NURBS_surf" :
+                    SPobj_count +=1
+                    nf = new_brep_NURBS_face(o, context)
+                    aSew.Add(mirror_brep(o, nf))
 
                 case "planar" :
                     SPobj_count +=1
@@ -538,6 +583,11 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
                 case "curve" :
                     SPobj_count +=1
                     cu = new_brep_curve(o, context)
+                    aSew.Add(mirror_brep(o, cu))
+
+                case "NURBS_curve" :
+                    SPobj_count +=1
+                    cu = new_brep_NURBS_curve(o, context)
                     aSew.Add(mirror_brep(o, cu))
 
                 # case "collection_instance":

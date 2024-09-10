@@ -1,22 +1,21 @@
 import bpy
 import bmesh
-from utils import *
+from .utils import *
 from mathutils import Vector
 from datetime import datetime
 from os.path import dirname, abspath, join
-
-#Local Packages
 import platform
 os = platform.system()
 
 if os!="Darwin":
-    from importer import *
-    from exporter import *
+    from .importer import *
+    from .exporter import *
 
     class SP_OT_quick_export(bpy.types.Operator):
         bl_idname = "sp.quick_export"
         bl_label = "SP - Quick export"
         bl_options = {'REGISTER', 'UNDO'}
+        bl_description =  "Exports selection as .STEP at current .blend location."
 
         def execute(self, context):
 
@@ -34,21 +33,94 @@ if os!="Darwin":
                 self.report({'INFO'}, 'No SurfacePsycho Objects selected')
             return {'FINISHED'}
 
-class SP_OT_add_bicubic_patch(bpy.types.Operator):
-    bl_idname = "sp.add_bicubic_patch"
-    bl_label = "Add Bicubic PsychoPatch"
+
+class SP_OT_add_NURBS_patch(bpy.types.Operator):
+    bl_idname = "sp.add_nurbs_patch"
+    bl_label = "Add NURBS PsychoPatch"
     bl_options = {'REGISTER', 'UNDO'}
     def execute(self, context):
-        append_object_by_name("PsychoPatch", context)
+        append_object_by_name("NURBS Patch", context)
+        return {'FINISHED'}
+
+
+class SP_OT_add_bezier_patch(bpy.types.Operator):
+    bl_idname = "sp.add_bezier_patch"
+    bl_label = "Add Bezier Patch"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    order_u : bpy.props.IntProperty(
+        name="Order U",
+        description="Number of control points in U direction -1",
+        default=1,
+        min=1,
+    )
+
+    order_v : bpy.props.IntProperty(
+        name="Order V",
+        description="Number of control points in V direction -1",
+        default=1,
+        min=1
+    )
+
+    def execute(self, context):
+        mesh = bpy.data.meshes.new(name="Grid")
+        self.obj = bpy.data.objects.new("Bezier Patch", mesh)
+
+
+        # Create a new bmesh
+        self.bm = bmesh.new()
+
+        # divide grid
+        step_x = 2 / self.order_v
+        step_y = 2 / self.order_u
+
+        # Create vertices
+        for i in range(self.order_u + 1):
+            for j in range(self.order_v + 1):
+                x = j * step_x - 1  # Subtract 1 to center
+                y = i * step_y - 1  # Subtract 1 to center
+                self.bm.verts.new((x, y, 0))
+
+        self.bm.verts.ensure_lookup_table()
+
+        # Create faces
+        for i in range(self.order_u):
+            for j in range(self.order_v):
+                v1 = self.bm.verts[i * (self.order_v + 1) + j]
+                v2 = self.bm.verts[i * (self.order_v + 1) + j + 1]
+                v3 = self.bm.verts[(i + 1) * (self.order_v + 1) + j + 1]
+                v4 = self.bm.verts[(i + 1) * (self.order_v + 1) + j]
+                self.bm.faces.new((v1, v2, v3, v4))
+
+        # Update bmesh
+        self.bm.to_mesh(mesh)
+        self.bm.free()
+
+        # # set smooth
+        values = [True] * len(mesh.polygons)
+        mesh.polygons.foreach_set("use_smooth", values)
+
+        # Update mesh
+        mesh.update()
+
+        # Link the object to the scene
+        bpy.context.collection.objects.link(self.obj)
+
+        add_sp_modifier(self.obj, "SP - Reorder Grid Index")
+        add_sp_modifier(self.obj, "SP - Bezier Patch Continuities")
+        add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", pin=True)
+
+        # Set object location to 3D cursor
+        self.obj.location = bpy.context.scene.cursor.location
+
+        # Select the new object and make it active
+        bpy.ops.object.select_all(action='DESELECT')
+        self.obj.select_set(True)
+        bpy.context.view_layer.objects.active = self.obj
+        
         return {'FINISHED'}
     
-class SP_OT_add_aop(bpy.types.Operator):
-    bl_idname = "sp.add_aop"
-    bl_label = "Add Any Order PsychoPatch"
-    bl_options = {'REGISTER', 'UNDO'}
-    def execute(self, context):
-        append_object_by_name("PsychoPatch Any Order", context)
-        return {'FINISHED'}
+
     
 class SP_OT_add_flat_patch(bpy.types.Operator):
     bl_idname = "sp.add_flat_patch"
@@ -70,9 +142,12 @@ class SP_OT_add_curvatures_probe(bpy.types.Operator):
     bl_idname = "sp.add_curvatures_probe"
     bl_label = "Add Curvatures Probe"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Object inspect curvature. Bind to surface in modifier's properties"
+
     def execute(self, context):
         append_object_by_name("SP - Curvatures Probe", context)
         return {'FINISHED'}
+
 
 class SP_OT_add_library(bpy.types.Operator):
     bl_idname = "sp.add_library"
@@ -101,6 +176,7 @@ class SP_OT_toogle_control_geom(bpy.types.Operator):
     bl_idname = "sp.toogle_control_geom"
     bl_label = "SP - Toogle Control Geom"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Toogle the control geometry of selected object. The active object determines whether to show or hide"
 
     def execute(self, context):
         objects=[ob for ob in context.selected_objects]
@@ -116,12 +192,13 @@ class SP_OT_toogle_control_geom(bpy.types.Operator):
                                 toogle_side = not m[input_id]
                             m[input_id] = toogle_side
                     m.node_group.interface_update(context)
-        return {'FINISHED'}
+        return {'FINISHED'}    
 
 
 class SP_OT_select_visible_curves(bpy.types.Operator):
     bl_idname = "sp.select_visible_curves"
     bl_label = "SP - Select Visible Curves"
+    bl_description = "Select Visible Curves"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -137,14 +214,15 @@ class SP_OT_select_visible_curves(bpy.types.Operator):
 class SP_OT_select_visible_surfaces(bpy.types.Operator):
     bl_idname = "sp.select_visible_surfaces"
     bl_label = "SP - Select Visible Surfaces"
+    bl_description = "Select Visible Surfaces"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         objects=[ob for ob in context.visible_objects]
         for o in objects:
             for m in o.modifiers :
-                if m.type == "NODES" and m.node_group is not None and m.node_group.name[:-4] in ['SP - Any Order Patch Meshing', 'SP - Bicubic Patch Meshing','SP - Mesh Flat patch', 'SP - Patch meshing', 'SP - FlatPatch Meshing'
-                                                                                                 'SP - Any Order Patch Mes', 'SP - Bicubic Patch Mes','SP - Mesh Flat p', 'SP - Patch mes', 'SP - FlatPatch Mes']:
+                if m.type == "NODES" and m.node_group is not None and m.node_group.name[:-4] in ['SP - Bezier Patch Meshing','SP - Any Order Patch Meshing', 'SP - Bicubic Patch Meshing','SP - Mesh Flat patch', 'SP - Patch meshing', 'SP - FlatPatch Meshing'
+                                                                                                 'SP - Bezier Patch Mes','SP - Any Order Patch Mes', 'SP - Bicubic Patch Mes','SP - Mesh Flat p', 'SP - Patch mes', 'SP - FlatPatch Mes']:
                     o.select_set(True)
                     break
         return {'FINISHED'}
@@ -199,6 +277,76 @@ class SP_OT_unify_versions(bpy.types.Operator):
 
 
 
+class SP_OT_update_modifiers(bpy.types.Operator):
+    bl_idname = "sp.update_modifiers"
+    bl_label = "SP - Update Modifiers"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        old_new_pairs = {}
+        for node_group in bpy.data.node_groups:
+            if node_group.type == 'GEOMETRY' and node_group.name[:5]=="SP - ":
+                print(node_group.name)
+                if node_group not in old_new_pairs.keys():
+                    old_new_pairs[node_group] = None
+        print("\n")
+        names = []
+        for p in old_new_pairs.keys():
+            names.append(p.name)
+            print(p.name)
+        
+        new_ng = append_multiple_node_groups(names)
+        
+
+        self.report({'INFO'}, "Not Implemented")
+
+        return {'FINISHED'}
+    
+
+
+
+
+class SP_OT_Invoke_replace_node_panel(bpy.types.Operator):
+    bl_idname = "sp.invoke_replace_node_panel"
+    bl_label = "Invoker for SP - Replace Node Group"
+    bl_options = {'INTERNAL'}
+    
+    def execute(self, context):
+        bpy.ops.sp.replace_node_group
+        return {'FINISHED'}
+
+
+class SP_OT_replace_node_group(bpy.types.Operator):
+    bl_idname = "sp.replace_node_group"
+    bl_label = "SP - Replace Node Group"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    target_name : bpy.props.StringProperty(name='Target', description="", default="")
+    new_name : bpy.props.StringProperty(name='New', description="", default="")
+
+    def execute(self, context):
+        target_node_group_name = self.target_name
+        new_node_group_name = self.new_name
+        
+        r = replace_all_instances_of_node_group(target_node_group_name, new_node_group_name)
+        if r==1:
+            self.report({'INFO'}, f"Successfully replaced")
+        elif r==0:
+            self.report({'INFO'}, f"{new_node_group_name} not found")
+        elif r==-1:
+            self.report({'INFO'}, f"{target_node_group_name} not found")
+        return {'FINISHED'}
+
+    # Display panel
+    def invoke(self, context, event):
+        # call itself and run
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+
+
+
+
 class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
     bl_idname = "sp.psychopatch_to_bl_nurbs"
     bl_label = "Convert Psychopatches to internal NURBS"
@@ -209,7 +357,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
             type = geom_type_of_object(o, context)
             ob = o.evaluated_get(context.evaluated_depsgraph_get())
             match type :
-                case "bezier_surf":
+                case "bicubic_surf":
                     cp=get_attribute_by_name(ob, 'CP_bezier_surf', 'vec3', 16)
                     bpy.ops.surface.primitive_nurbs_surface_surface_add(enter_editmode=True, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
                     i+=1
@@ -223,7 +371,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                     for j,p in enumerate(spline.points): 
                         p.co = (cp[j][0], cp[j][1], cp[j][2], 1)
                     
-                case "surf_any":
+                case "bezier_surf":
                     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
                     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
                     cp=get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', u_count*v_count)
@@ -362,34 +510,88 @@ class SP_OT_remove_from_endpoints(bpy.types.Operator):
                 for v in o.data.vertices:
                     if v.select:
                         vg.remove([v.index])
-                bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.object.mode_set(mode='EDIT')
         return {'FINISHED'}
+    
+
+
+class SP_OT_select_endpoints(bpy.types.Operator):
+    bl_idname = "sp.select_endpoints"
+    bl_label = "Select Endpoints"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        obj = context.active_object
+        
+        if obj.type != 'MESH':
+            self.report({'ERROR'}, "Active object must be a mesh")
+            return {'CANCELLED'}
+        
+        # Ensure we're in edit mode, Switch to object mode to access mesh data
+        bpy.ops.object.mode_set(mode='EDIT') 
+        bpy.ops.object.mode_set(mode='OBJECT')
+        
+        vertex_group = obj.vertex_groups.get("Endpoints")
+        if not vertex_group:
+            self.report({'INFO'}, "No Endpoints")
+            bpy.ops.object.mode_set(mode='EDIT')
+            return {'CANCELLED'}
+        
+        for v in obj.data.vertices:
+            try:
+                weight = vertex_group.weight(v.index)
+                if weight > 0.6:
+                    v.select = True
+            except RuntimeError:
+                # Vertex is not in the group, skip it
+                pass
+        
+        # Switch back to edit mode to show the selection
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        return {'FINISHED'}
+
+
 
 
 class SP_OT_add_trim_contour(bpy.types.Operator):
     bl_idname = "sp.add_trim_contour"
     bl_label = "Add Trim Contour"
+    bl_description = "Add Trim Contour to selected patch"
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
-        original_mode = bpy.context.mode
         
+        # set mode
+        original_mode = bpy.context.mode
         if original_mode == 'EDIT_MESH':
             selected_objects = context.objects_in_mode
         else:
             selected_objects = context.selected_objects
         
+        # loop through selection
         for obj in selected_objects:
-            is_AOP=False
+
+            #check if supported object
+            is_patch=False
             try :
                 if original_mode=='EDIT_MESH':
                     bpy.ops.object.mode_set(mode='OBJECT')
                 ob = obj.evaluated_get(context.evaluated_depsgraph_get())
                 points = get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', 1)
-                is_AOP = True
+                is_patch = True
             except :
-                pass
-            if obj.type == 'MESH' and is_AOP:
+                try :
+                    if original_mode=='EDIT_MESH':
+                        bpy.ops.object.mode_set(mode='OBJECT')
+                    ob = obj.evaluated_get(context.evaluated_depsgraph_get())
+                    points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', 1)
+                    is_patch = True
+                except :
+                    pass
+            
+            #add contour
+            if obj.type == 'MESH' and is_patch:
                 self.add_square_inside_mesh(context, obj)
 
         # Restore the original mode
@@ -397,10 +599,8 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
             original_mode='EDIT'
         bpy.ops.object.mode_set(mode=original_mode)
 
-
-
-
         return {'FINISHED'}
+    
     
     def add_square_inside_mesh(self, context, obj):
         
@@ -419,7 +619,7 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
             bm.verts.new(Vector((0, 1, 0))),
         ]
         
-        # Create edges and faces for the square
+        # Create edges
         bm.edges.new(verts[0:2])
         bm.edges.new(verts[1:3])
         bm.edges.new(verts[2:])
@@ -434,21 +634,24 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
         
         # Assign to Trim contour groups
 
+
         # Switch to object mode to modify vertex groups
-        bpy.ops.object.mode_set(mode='OBJECT')  
-        # Ensure "Endpoints" vertex group exists
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Add vertex groups
         if "Endpoints" not in obj.vertex_groups:
             obj.vertex_groups.new(name="Endpoints")
         if "Trim Contour" not in obj.vertex_groups:
             obj.vertex_groups.new(name="Trim Contour")
-        vg1 = obj.vertex_groups["Endpoints"]
-        vg2 = obj.vertex_groups["Trim Contour"]
+
+        vg_endpoint = obj.vertex_groups["Endpoints"]
+        vg_contour = obj.vertex_groups["Trim Contour"]
         
         # Add selected vertices to the vertex group
         for v in obj.data.vertices[-4:]:
             if v.select:
-                vg1.add([v.index], 1.0, 'ADD')
-                vg2.add([v.index], 1.0, 'ADD')
+                vg_endpoint.add([v.index], 1.0, 'ADD')
+                vg_contour.add([v.index], 1.0, 'ADD')
 
     
 
@@ -474,3 +677,38 @@ class SP_OT_solidify(bpy.types.Operator):
 
 #TODO
 # Bridge patches
+
+
+classes = [
+    SP_OT_add_NURBS_patch,
+    SP_OT_add_bezier_patch,
+    SP_OT_add_curvatures_probe,
+    SP_OT_add_curve,
+    SP_OT_add_flat_patch,
+    SP_OT_add_library,
+    SP_OT_add_trim_contour,
+    SP_OT_assign_as_endpoint,
+    SP_OT_bl_nurbs_to_psychopatch,
+    SP_OT_psychopatch_to_bl_nurbs,
+    SP_OT_remove_from_endpoints,
+    SP_OT_select_visible_curves,
+    SP_OT_select_visible_surfaces,
+    SP_OT_toogle_control_geom,
+    SP_OT_unify_versions,
+    SP_OT_select_endpoints,
+    SP_OT_update_modifiers,
+    SP_OT_replace_node_group,
+    SP_OT_Invoke_replace_node_panel,
+]
+if os!="Darwin":
+    classes+= [
+        SP_OT_quick_export,
+    ]
+
+def register():
+    for c in classes:
+        bpy.utils.register_class(c)
+
+def unregister():
+    for c in classes[::-1]:
+        bpy.utils.unregister_class(c)
