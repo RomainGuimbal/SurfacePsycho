@@ -7,9 +7,8 @@
 VERSION 1
 
 06fbfc28-2e20-45f0-95be-4c3686933b70:SurfacePsycho:SurfacePsycho
-1ae242fc-d80f-43ed-9972-ade5c1e3a3eb:SurfacePsycho/Bicubic Patch (Legacy):SurfacePsycho-Bicubic Patch (Legacy)
+8cf06a38-e44b-43d9-8fd5-aa82ef6d1c90:SurfacePsycho/Bezier Patch:SurfacePsycho-Bezier Patch
 468e3bc1-6343-4240-8d59-e9ada727c0f7:SurfacePsycho/Common:SurfacePsycho-Common
-6e7592aa-cd74-471a-b2bb-bad471697df4:SurfacePsycho/Curve:SurfacePsycho-Curve
-1047f17b-c8ab-468a-9e22-f43a1726c930:SurfacePsycho/Flat:SurfacePsycho-Flat
-8cf06a38-e44b-43d9-8fd5-aa82ef6d1c90:SurfacePsycho/Patch:SurfacePsycho-Patch
+6e7592aa-cd74-471a-b2bb-bad471697df4:SurfacePsycho/Curve & FlatPatch:SurfacePsycho-Curve & FlatPatch
+1ae242fc-d80f-43ed-9972-ade5c1e3a3eb:SurfacePsycho/NURBS Patch:SurfacePsycho-NURBS Patch
 a598baf1-2806-47ea-903f-eaf631d0fc18:SurfacePsycho/Shape:SurfacePsycho-Shape
