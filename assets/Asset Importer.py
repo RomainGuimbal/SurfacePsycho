@@ -3,6 +3,7 @@
 # 2 : Clear all assets (of current file)
 # 3 : Clean up recursive unused data blocks
 # 4 : Execut script
+# 5 : make local
 
 import bpy
 import time
@@ -91,91 +92,123 @@ def append_collections_by_names(filepath, collection_names):
                     asset_data.catalog_id = uuid"""
 
 
-filepath_surf = "//..\..\Bezier-Quest\Bezier_surface.blend"
-obj_surf = ["PsychoPatch", "PsychoPatch Any Order"]
-
+# PROBE
 filepath_probe = "//..\..\Bezier-Quest\Principal curvature.blend"
 obj_probe = ["SP - Curvatures Probe"]
 
-filepath_curve_flat = "//..\..\Bezier-Quest\SP - Curve and FlatPatch.blend"
-obj_curve_flat = ["FlatPatch", "PsychoCurve", "Internal Curve For Patch",]
-
+# SHAPES
 filepath_preset = "//..\..\Bezier-Quest\SP - Shapes presets.blend"
 obj_preset = ["Disk", "Circle"]
-coll_preset = ["Slab", "Cylinder", "Corner", "Step"]
+coll_preset = ["Slab", "Cylinder", "Corner", "Step", "Thick Arch", "Tube", "Square Tube"]
 
 # To copy :    "",
 
+# BEZIER
+filepath_surf = "//..\..\Bezier-Quest\Bezier_surface.blend"
+obj_surf = ["Bezier Patch"]
 gr_surf = [
-"SP - Angle side",
-"SP - AOP Continuities with Curve",
-"SP - AOP Continuities with Flat Patch",
+"SP - Angle Side Bicubic",
+"SP - Bezier Patch Continuities with Curve",
+"SP - Bezier Patch Continuities with Flat Patch",
 "SP - Auto Midpoints Linear",
 "SP - Blend Flat Patches",
 "SP - Blend Surface",
-"SP - Connect AOP to Trim Contour",
-"SP - Connect to Chain",
-"SP - Displace Bicubic Patch",
+"SP - Connect Patch to Trim Contour",
+"SP - Crop or Extend Patch",
+"SP - Displace Patch",
+"SP - Displace Precisely",
 "SP - Fillet Trim Contour",
 "SP - Flatten Patch",
 "SP - Flatten Patch Side",
 "SP - Gradient Map",
 "SP - Loft",
-"SP - Mirror Control Points AOP",
-"SP - Mirror Control Points",
-"SP - Patch Combs AOP",
-"SP - Patch Combs",
+"SP - Mirror Patch Control Points",
 "SP - Patch Normals",
-"SP - Reorder Index Bicubic",
+"SP - Raise Order Bezier Patch",
+"SP - Reorder Grid Index",
+"SP - Select Patch Range",
 "SP - Sew and Symmetrize",
-"SP - Sweep Linear",
-"SP - Sweep",
-#"SP - AOP Continuities",
+"SP - Sweep Linear Bicubic",
+"SP - Sweep Bicubic",
+#"SP - Bezier Patch Continuities",
 #"SP - Auto Snap Continuities",
-#"SP - Continuities",
-#"SP - Quadratic to Cubic Control grid",
+#"SP - Continuities Bicubic",
 #"SP - Straighten Rows",
-#"SP - Crop or Extend Patch",
 ]
 
+# CURVE
+filepath_curve_flat = "//..\..\Bezier-Quest\SP - Curve and FlatPatch.blend"
+obj_curve_flat = ["FlatPatch", "PsychoCurve", "Internal Curve For Patch",]
 gr_curve_flat = [
 "SP - Bezier Circle or Disk",
 "SP - Blend Curve",
 "SP - Circlular Arc",
+"SP - Compose FlatPatch From Sides",
 "SP - Continuities between Segments",
 "SP - Control Grid from Internal Curves",
-"SP - Convert Flat Patch to AOP",
-"SP - Copy Flat Patch Side",
+"SP - Convert Flat Patch to Bezier Patch",
 "SP - Copy Curve or FlatPatch",
+"SP - Copy Flat Patch Side",
 "SP - Copy Mesh Face",
 "SP - Copy Patch Side",
+"SP - Curve on Surface from UV",
 "SP - Curve Through Points",
 "SP - Displace Chain Handles",
-"SP - Fillet Curve",
-"SP - Fillet Flat Patch",
+"SP - Fillet Curve or FlatPatch",
+"SP - Inset FlatPatch",
 "SP - Internal Curve to PsychoCurve",
 "SP - Intervale Curve",
 "SP - Mirror Curve Control Points",
-#"SP - Offset Curve",
 "SP - Project on Flat Patch",
-"SP - Reorder Curve Index",
-#"SP - Continuities Curve",
-#"SP - Curve Meshing",
 "SP - Raise or Lower Curve Order",
-"SP - Select Patch Range",
+"SP - Reorder Curve Index",
 "SP - Split Curve",
 "SP - Switch Curve Direction",
-#"SP - Trim Range Curve",
+#"SP - Continuities Curve",
+#"SP - Curve Meshing",
+#"SP - Crop or Extend Curve",
+#"SP - Offset Curve",
 ]
 
+# NURBS
+filepath_nurbs= "//..\..\Bezier-Quest\SP - NURBS.blend"
+obj_nurbs=["NURBS Patch"]
+gr_nurbs=[
+#"SP - NURBS Curve Meshing",
+"SP - NURBS Patch Meshing",
+"SP - NURBS Weighting",
+"SP - Set Knot NURBS Patch",
+]
+
+# Append Groups
 append_node_group_by_names(filepath_surf, gr_surf)
 append_node_group_by_names(filepath_curve_flat, gr_curve_flat)
+append_node_group_by_names(filepath_nurbs, gr_nurbs)
 
+# Append Objects
 append_objs_by_names(filepath_surf, obj_surf)
 append_objs_by_names(filepath_probe, obj_probe)
 append_objs_by_names(filepath_curve_flat, obj_curve_flat)
 append_objs_by_names(filepath_preset, obj_preset)
+append_objs_by_names(filepath_nurbs, obj_nurbs)
 
 append_collections_by_names(filepath_preset, coll_preset)
 
 #assign_assets_to_catalog(obj_preset, 'Shape')
+
+
+#bpy.ops.object.make_local(type='ALL')
+
+#full_list = gr_surf + gr_curve_flat + gr_nurbs + [
+#"SP - NURBS Curve Meshing",
+#"SP - Bezier Patch Continuities",
+#"SP - Auto Snap Continuities",
+#"SP - Continuities Bicubic",
+#"SP - Straighten Rows",
+#"SP - Continuities Curve",
+#"SP - Curve Meshing",
+#"SP - Crop or Extend Curve",
+#]
+
+#for ng in full_list:
+#    bpy.ops.sp.replace_node_group(target_name=ng+".001", new_name=ng)
