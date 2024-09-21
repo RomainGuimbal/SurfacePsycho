@@ -34,10 +34,11 @@ from OCC.Core.TopAbs import (
     TopAbs_COMPOUND,
     TopAbs_COMPSOLID,
     TopAbs_ShapeEnum,
+    TopAbs_Orientation,
 )
 from OCC.Core.TopExp import TopExp_Explorer, topexp
 from OCC.Core.TopTools import (
-    TopTools_ListOfListOfShape,
+    TopTools_ListIteratorOfListOfShape,
     TopTools_IndexedDataMapOfShapeListOfShape,
 )
 from OCC.Core.TopoDS import (
@@ -59,8 +60,6 @@ from OCC.Core.GCPnts import (
     GCPnts_UniformDeflection,
 )
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
-
-MAX_32_BIT_INT = 2**31 - 1
 
 
 def _number_of_topo(iterable: Iterable) -> int:
@@ -218,7 +217,7 @@ class TopologyExplorer:
             filter_orientation_seq: List = []
             filter_orientation_hash_codes = {}
             for i in seq:
-                i_hash_code = i.HashCode(MAX_32_BIT_INT)
+                i_hash_code = hash(i)
                 if i_hash_code not in filter_orientation_hash_codes:
                     filter_orientation_seq.append(i)
                     filter_orientation_hash_codes[i_hash_code] = [
@@ -333,12 +332,12 @@ class TopologyExplorer:
         if results.Size() == 0:
             yield None
 
-        topology_iterator = TopTools_ListOfListOfShape(results)
+        topology_iterator = TopTools_ListIteratorOfListOfShape(results)
         while topology_iterator.More():
             topo_entity = self.topology_factory[topology_type_2](
                 topology_iterator.Value()
             )
-            topo_entity_hash_code = topo_entity.HashCode(MAX_32_BIT_INT)
+            topo_entity_hash_code = hash(topo_entity)
             # return the entity if not in set
             # to assure we're not returning entities several times
             if topo_entity not in topo_set:
@@ -381,7 +380,7 @@ class TopologyExplorer:
         results = _map.FindFromKey(topological_entity)
         if results.Size() == 0:
             return None
-        topology_iterator = TopTools_ListOfListOfShape(results)
+        topology_iterator = TopTools_ListIteratorOfListOfShape(results)
         while topology_iterator.More():
             topo_set.add(topology_iterator.Value())
             topology_iterator.Next()
@@ -579,6 +578,10 @@ def discretize_edge(
     for i in range(1, discretizer.NbPoints() + 1):
         p = curve_adaptator.Value(discretizer.Parameter(i))
         points.append(p.Coord())
+
+    if a_topods_edge.Orientation() == TopAbs_Orientation.TopAbs_REVERSED:
+        points.reverse()
+
     return points
 
 
