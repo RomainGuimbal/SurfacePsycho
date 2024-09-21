@@ -86,9 +86,8 @@ if os!="Darwin":
             # wm = context.window_manager
             # self._timer = wm.event_timer_add(0.1, window=context.window)
             # wm.modal_handler_add(self)
-            self.report({'INFO'}, 'Some surface types may be ignored')
+            self.report({'INFO'}, 'Some surface types may have been ignored')
             return {'RUNNING_MODAL'}
-
 
 
 
