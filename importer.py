@@ -213,7 +213,7 @@ def build_SP_curve(brepEdge, collection, context) :
 
 
 def build_SP_flat(brepFace, collection, context):
-    vector_pts, poles, endpoints, order_att = [], [], [], []
+    poles, endpoints, order_att = [], [], []
     wire = breptools.OuterWire(brepFace)
     explorer = TopExp_Explorer(wire, TopAbs_EDGE)
     
@@ -227,7 +227,16 @@ def build_SP_flat(brepFace, collection, context):
         if edge.Orientation() != TopAbs_FORWARD:
             edge_poles.reverse()
 
+        # print("____")
+        # print(edge.Orientation())
+        # pnt= edge_poles[0]
+        # print((pnt.X(), pnt.Y(), pnt.Z()))
+        # pnt= edge_poles[-1]
+        # print((pnt.X(), pnt.Y(), pnt.Z()))
+
+
         poles.extend(edge_poles[:-1])
+
         endpoints.extend([1.0]+[0.0]*(len(edge_poles)-2))
         if edge_order!=None:
             order_att.extend([edge_order/10]+[0.0]*(len(edge_poles)-2))
@@ -235,12 +244,15 @@ def build_SP_flat(brepFace, collection, context):
             order_att.extend([0.0]*(len(edge_poles)-1))
 
         explorer.Next()
+    # print("----")
 
     # prepare mesh
-    for pnt in poles :
-        vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
+    vector_pts = [None]*len(poles)
+    for i,pnt in enumerate(poles) :
+        vector_pts[i]=Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000))
     vert = vector_pts
     edges = [(i,(i+1)%len(vector_pts)) for i in range(len(vector_pts))]
+    print(edges)
     
     # create object
     mesh = bpy.data.meshes.new("FlatPatch CP")

@@ -21,7 +21,7 @@ from OCC.Core.Geom2d import Geom2d_BezierCurve
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.GeomConvert import GeomConvert_CompBezierSurfacesToBSplineSurface
 from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Pnt2d #, gp_Vec
-from OCC.Core.TColGeom import TColGeom_Array2OfBezierSurface #, TColGeom_Array1OfBezierCurve
+from OCC.Core.TColGeom import TColGeom_Array2OfSurface #, TColGeom_Array1OfBezierCurve
 from OCC.Core.TColgp import TColgp_Array2OfPnt, TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
 from OCC.Core.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
@@ -83,21 +83,7 @@ def new_brep_bicubic_face(o, context): # DEPRECATED
             controlPoints.SetValue(i+1, j+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
     # Bezier surface
-    geom_surf = Geom_BezierSurface(controlPoints)
-    bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
-    bezierarray.SetValue(1, 1, geom_surf)
-    
-    bspline_param = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
-    if bspline_param.IsDone():
-        poles = bspline_param.Poles().Array2()
-        uknots = bspline_param.UKnots().Array1()
-        vknots = bspline_param.VKnots().Array1()
-        umult = bspline_param.UMultiplicities().Array1()
-        vmult = bspline_param.VMultiplicities().Array1()
-        udeg = bspline_param.UDegree()
-        vdeg = bspline_param.VDegree()
-
-        bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
+    bsurf = Geom_BezierSurface(controlPoints)
     
     # Trimming wire
     try:
@@ -173,22 +159,8 @@ def new_brep_bezier_face(o, context):
             id= u_count*i +j
             controlPoints.SetValue(j+1, i+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
-    geom_surf = Geom_BezierSurface(controlPoints)
-    bezierarray = TColGeom_Array2OfBezierSurface(1, 1, 1, 1)
-    bezierarray.SetValue(1, 1, geom_surf)
-    
-    bspline_param = GeomConvert_CompBezierSurfacesToBSplineSurface(bezierarray)
-    if bspline_param.IsDone():
-        poles = bspline_param.Poles().Array2()
-        uknots = bspline_param.UKnots().Array1()
-        vknots = bspline_param.VKnots().Array1()
-        umult = bspline_param.UMultiplicities().Array1()
-        vmult = bspline_param.VMultiplicities().Array1()
-        udeg = bspline_param.UDegree()
-        vdeg = bspline_param.VDegree()
+    bsurf = Geom_BezierSurface(controlPoints)
 
-        bsurf = Geom_BSplineSurface( poles, uknots, vknots, umult, vmult, udeg, vdeg, False, False )
-    
     # Check if trimmed
     try :
         segs_p_counts = get_attribute_by_name(ob, 'CP_count_trim_contour_UV', 'int')
