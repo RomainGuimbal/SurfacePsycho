@@ -13,7 +13,7 @@ from OCC.Core.Geom import Geom_BezierCurve, Geom_BSplineCurve
 from OCC.Core.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
 from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
 from OCC.Core.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle
-from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
+from OCC.Core.GeomAdaptor import GeomAdaptor_Surface, GeomAdaptor_Curve
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.gp import gp_Pnt, gp_Pnt2d
 from OCC.Core.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
@@ -331,15 +331,22 @@ def get_edges_from_wire(wire):
 
 
 
-def get_edge_endpoints(edge):
-    explorer = TopExp_Explorer(edge, TopAbs_VERTEX)
+def get_edge_endpoints(topods_edge):
+    explorer = TopExp_Explorer(topods_edge, TopAbs_VERTEX)
     vertices = []
     while explorer.More():
         vertex = explorer.Current()
-        point = BRep_Tool.Pnt(TopoDS_Vertex(vertex))
-        vertices.append(point)
+        vertices.append(TopoDS_Vertex(vertex))
         explorer.Next()
-    return vertices[0], vertices[-1]
+    
+    if len(vertices)==2:
+        param1 = BRep_Tool.Parameter(vertices[0], topods_edge)
+        param2 = BRep_Tool.Parameter(vertices[1], topods_edge)
+        
+        first_vertex = vertices[0] if param1 < param2 else vertices[1]
+        last_vertex = vertices[1] if param1 < param2 else vertices[0]
+
+    return BRep_Tool.Pnt(TopoDS_Vertex(first_vertex)), BRep_Tool.Pnt(TopoDS_Vertex(last_vertex))
 
 
 
@@ -351,19 +358,23 @@ def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve, edge=None):
     
     if curve_type == GeomAbs_Line:
         if edge!=None :
+
             start_point, end_point = get_edge_endpoints(edge)
-            # start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
-            # end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
+            # start_point = curve_adaptor.Value(0)
+            # end_point = curve_adaptor.Value(1)
             poles = [start_point, end_point]
-            print(str(start_point.X()) + "  |  " + str(start_point.Y()))
-            print(str(end_point.X()) + "  |  " + str(end_point.Y()))
+
+            # p1=curve_adaptor.Value(curve_adaptor.FirstParameter())
+            # p2=curve_adaptor.Value(curve_adaptor.LastParameter())
+            # print(f"{p1.X()},{p1.Y()},{p1.Z()}")
+            # print(f"{p2.X()},{p2.Y()},{p2.Z()}")
         else:
             # start_point, end_point = get_edge_endpoints(edge)
             start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
             end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
             poles = [start_point, end_point]
-            print(str(start_point.X()) + "  |  " + str(start_point.Y()))
-            print(str(end_point.X()) + "  |  " + str(end_point.Y()))
+            # print(str(start_point.X()) + "  |  " + str(start_point.Y()))
+            # print(str(end_point.X()) + "  |  " + str(end_point.Y()))
 
     elif curve_type == GeomAbs_BezierCurve:
         bezier = curve_adaptor.Bezier()
@@ -399,6 +410,59 @@ def get_poles_from_geom_curve(curve_adaptor: BRepAdaptor_Curve, edge=None):
     #     # control_points = [start_point, mid_point, end_point]
     return poles, order
 
+
+
+
+def get_face_3D_contours(brepface, scale = 1000):
+    wires = get_wires_from_face(brepface)
+    wires_verts, wires_edges, wires_endpoints  = [], [], []
+
+    for w in wires :
+        edges = get_edges_from_wire(w)
+        wire_orders, endpoints, wire_verts, verts_of_edges, order_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
+        # first=True
+
+        for e in edges :
+            # Get the 2D curve on the surface
+            curve, _, _ = BRep_Tool.Curve(e)
+            adaptor = GeomAdaptor_Curve(curve)
+            poles, edge_order = get_poles_from_geom_curve(adaptor, e)
+
+            e_vert = [Vector((p.X()/scale, p.Y()/scale, p.Z()/scale)) for p in poles]
+            
+            # Reverse
+            if e.Orientation() != TopAbs_FORWARD :
+                e_vert.reverse()
+            
+            # if first:
+            #     same = True
+            # else :
+            #     same = isclose(e_vert[0][0], prev_last_vert[0]) and isclose(e_vert[0][1], prev_last_vert[1]) and isclose(e_vert[0][2], prev_last_vert[2])
+            # if not same :
+            #     e_vert.reverse()
+            # first=False
+            
+
+            # print(f"{len(poles)} : {np.linalg.norm(e_vert[-1]-e_vert[0])}")
+
+            verts_of_edges.append(e_vert)
+            wire_verts.extend(e_vert[:-1])
+            endpoints.extend([1.0]+[0.0]*(len(e_vert)-2))
+            if edge_order!=None:
+                order_att.extend([edge_order/10]+[0.0]*(len(e_vert)-2))
+            else :
+                order_att.extend([0.0]*(len(e_vert)-1))
+
+            prev_last_vert = e_vert[-1]
+        
+
+        wire_edges = [(i+len(wires_verts),((i+1)%len(wire_verts))+len(wires_verts)) for i in range(len(wire_verts))]
+        wires_verts.extend(wire_verts)
+        wires_edges.extend(wire_edges)
+        wires_endpoints.extend(endpoints)
+        wire_orders.extend(order_att)
+        
+    return wires_verts, wires_edges, wires_endpoints, wire_orders
 
 
 
@@ -446,9 +510,9 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
                 order_att.extend([0.0]*(len(e_vert)-1))
         
 
-        wire_edge = [(i,(i+1)%len(wire_verts)) for i in range(len(wire_verts))]
+        wire_edges = [(i+len(wires_verts),((i+1)%len(wire_verts))+len(wires_verts)) for i in range(len(wire_verts))]
         wires_verts.extend(wire_verts)
-        wires_edges.extend(wire_edge)
+        wires_edges.extend(wire_edges)
         wires_endpoints.extend(endpoints)
         wire_orders.extend(order_att)
         
@@ -722,41 +786,39 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_order
 
 
 
-from OCC.Core.TopoDS import TopoDS_Face
-from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopAbs import TopAbs_WIRE
-from OCC.Core.TopoDS import topods_Wire
-from OCC.Core.BRepCheck import BRepCheck_Wire, BRepCheck_NoError
+# from OCC.Core.TopoDS import TopoDS_Face
+# from OCC.Core.TopExp import TopExp_Explorer
+# from OCC.Core.TopAbs import TopAbs_WIRE
+# from OCC.Core.TopoDS import topods_Wire
+# from OCC.Core.BRepCheck import BRepCheck_Wire, BRepCheck_NoError
 
-def check_trim_wires_for_face(face: TopoDS_Face):
-    if not isinstance(face, TopoDS_Face):
-        raise TypeError("Input must be a TopoDS_Face")
+# def check_trim_wires_for_face(face: TopoDS_Face):
+#     if not isinstance(face, TopoDS_Face):
+#         raise TypeError("Input must be a TopoDS_Face")
 
-    issues_found = False
-    wire_explorer = TopExp_Explorer(face, TopAbs_WIRE)
+#     issues_found = False
+#     wire_explorer = TopExp_Explorer(face, TopAbs_WIRE)
 
-    while wire_explorer.More():
-        wire = topods_Wire(wire_explorer.Current())
-        wire_checker = BRepCheck_Wire(wire)
+#     while wire_explorer.More():
+#         wire = topods_Wire(wire_explorer.Current())
+#         wire_checker = BRepCheck_Wire(wire)
         
-        # Check if the wire is valid on the face
-        if wire_checker.InContext(face) != BRepCheck_NoError:
-            print(f"Wire is invalid on the given face")
-            issues_found = True
+#         # Check if the wire is valid on the face
+#         if wire_checker.InContext(face) != BRepCheck_NoError:
+#             print(f"Wire is invalid on the given face")
+#             issues_found = True
         
-        # Check wire closure
-        if wire_checker.Closed() != BRepCheck_NoError:
-            print(f"Wire is not closed on the given face")
-            issues_found = True
+#         # Check wire closure
+#         if wire_checker.Closed() != BRepCheck_NoError:
+#             print(f"Wire is not closed on the given face")
+#             issues_found = True
         
-        wire_explorer.Next()
+#         wire_explorer.Next()
 
-    if not issues_found:
-        print("All trim wires on the face are valid")
+#     if not issues_found:
+#         print("All trim wires on the face are valid")
 
-# Usage example
-# Assuming you have a face object named 'my_face'
-# check_trim_wires_for_face(my_face)
+
 
 
 def replace_all_instances_of_node_group(old_name, new_name):

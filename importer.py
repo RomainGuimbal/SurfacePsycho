@@ -30,24 +30,18 @@ from .utils import *
 def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
     status =""
     face = BRep_Tool.Surface(brepFace)
+    bezier_surface = Geom_BezierSurface.DownCast(face)
+    u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
+    uv_bounds = bezier_surface.Bounds()
+    vector_pts = np.zeros((u_count, v_count), dtype=Vector)
+    for u in range(1, u_count + 1):
+        for v in range(1, v_count + 1):
+            pole = bezier_surface.Pole(u, v)
+            vector_pts[u-1, v-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
 
-
-    if face.DynamicType().Name() == "Geom_BezierSurface":
-        bezier_surface = Geom_BezierSurface.DownCast(face)
-        u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
-        
-        vector_pts = np.zeros((u_count, v_count), dtype=Vector)
-        for u in range(1, u_count + 1):
-            for v in range(1, v_count + 1):
-                pole = bezier_surface.Pole(u, v)
-                vector_pts[u-1, v-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
-
-                weight = bezier_surface.Weight(u, v)
-                if weight!=1.0:
-                    status = "Weighted Bezier not supported"
-    else:
-        print("error on face type")
-        return False
+            weight = bezier_surface.Weight(u, v)
+            if weight!=1.0:
+                status = "Weighted Bezier not supported"
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
@@ -78,7 +72,7 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
 
     # add modifier
     collection.objects.link(ob)
-    add_sp_modifier(ob, "SP - Bezier Patch Meshing")
+    add_sp_modifier(ob, "SP - Bezier Patch Meshing", pin=True)
     
     if status != "":
         print(status)
@@ -90,38 +84,33 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
 
 def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
     face = BRep_Tool.Surface(brepFace)
+    bspline_surface = Geom_BSplineSurface.DownCast(face)
+    u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
+    udeg = bspline_surface.UDegree()
+    vdeg = bspline_surface.VDegree()
+    uv_bounds = bspline_surface.Bounds()
+    u_knots = normalize_array(bspline_surface.UKnots())
+    v_knots = normalize_array(bspline_surface.VKnots())
+    u_mult = bspline_surface.UMultiplicities()
+    v_mult = bspline_surface.VMultiplicities()
+    custom_knot = False
+    if any(x not in [0.0, 1.0] for x in u_knots) or any(x not in [0.0, 1.0] for x in v_knots):
+        custom_knot = True
+        print(u_knots)
+        print(v_knots)
 
-    if face.DynamicType().Name() == "Geom_BSplineSurface":
-        bspline_surface = Geom_BSplineSurface.DownCast(face)
-        u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
-        udeg = bspline_surface.UDegree()
-        vdeg = bspline_surface.VDegree()
-        uv_bounds = bspline_surface.Bounds()
-        u_knots = normalize_array(bspline_surface.UKnots())
-        v_knots = normalize_array(bspline_surface.VKnots())
-        u_mult = bspline_surface.UMultiplicities()
-        v_mult = bspline_surface.VMultiplicities()
-        custom_knot = False
-        if any(x not in [0.0, 1.0] for x in u_knots) or any(x not in [0.0, 1.0] for x in v_knots):
-            custom_knot = True
-            print(u_knots)
-            print(v_knots)
-
-        custom_weight = False
-        vector_pts = np.zeros((u_count, v_count), dtype=Vector)
-        weights = np.zeros((u_count, v_count), dtype=float)
-        for u in range(1, u_count + 1):
-            for v in range(1, v_count + 1):
-                pole = bspline_surface.Pole(u, v)
-                vector_pts[u-1, v-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
-                
-                weight = bspline_surface.Weight(u, v)
-                weights[u-1, v-1] = weight
-                if weight!=1.0 :
-                    custom_weight = True
-    else:
-        print("error on face type")
-        return False
+    custom_weight = False
+    vector_pts = np.zeros((u_count, v_count), dtype=Vector)
+    weights = np.zeros((u_count, v_count), dtype=float)
+    for u in range(1, u_count + 1):
+        for v in range(1, v_count + 1):
+            pole = bspline_surface.Pole(u, v)
+            vector_pts[u-1, v-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
+            
+            weight = bspline_surface.Weight(u, v)
+            weights[u-1, v-1] = weight
+            if weight!=1.0 :
+                custom_weight = True
     
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
@@ -166,7 +155,7 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
         # assign vertex group to modifier # change_node_socket_value
     
     # Meshing
-    add_sp_modifier(ob, "SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Fit / UV": True})# TO FIX U AND V INVERTED FOR DEBUG
+    add_sp_modifier(ob, "SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Fit / UV": True}, pin=True)# TO FIX U AND V INVERTED FOR DEBUG
 
     return True
 
@@ -175,7 +164,7 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
 
 
 
-def build_SP_curve(brepEdge, collection, context) :
+def build_SP_curve(brepEdge, collection) :
     vector_pts = []
     curve_adaptor = BRepAdaptor_Curve(brepEdge)
 
@@ -203,7 +192,7 @@ def build_SP_curve(brepEdge, collection, context) :
 
     # add modifier
     collection.objects.link(ob)
-    add_sp_modifier(ob, "SP - Curve Meshing")
+    add_sp_modifier(ob, "SP - Curve Meshing", pin=True)
 
     return True
 
@@ -212,60 +201,24 @@ def build_SP_curve(brepEdge, collection, context) :
 
 
 
-def build_SP_flat(brepFace, collection, context):
-    poles, endpoints, order_att = [], [], []
-    wire = breptools.OuterWire(brepFace)
-    explorer = TopExp_Explorer(wire, TopAbs_EDGE)
+def build_SP_flat(brepFace, collection):
+    wires_verts, wires_edges, wires_endpoints, order_att = get_face_3D_contours(brepFace)
     
-    while explorer.More():
-        # Get the current edge
-        edge = topods.Edge(explorer.Current())
-        curve_adaptor = BRepAdaptor_Curve(edge)
-        edge_poles, edge_order = get_poles_from_geom_curve(curve_adaptor, edge)
-        
-        # Reverse
-        if edge.Orientation() != TopAbs_FORWARD:
-            edge_poles.reverse()
+    for i, v in enumerate(wires_verts):
+        print(f"{i} : {v}")
 
-        # print("____")
-        # print(edge.Orientation())
-        # pnt= edge_poles[0]
-        # print((pnt.X(), pnt.Y(), pnt.Z()))
-        # pnt= edge_poles[-1]
-        # print((pnt.X(), pnt.Y(), pnt.Z()))
-
-
-        poles.extend(edge_poles[:-1])
-
-        endpoints.extend([1.0]+[0.0]*(len(edge_poles)-2))
-        if edge_order!=None:
-            order_att.extend([edge_order/10]+[0.0]*(len(edge_poles)-2))
-        else :
-            order_att.extend([0.0]*(len(edge_poles)-1))
-
-        explorer.Next()
-    # print("----")
-
-    # prepare mesh
-    vector_pts = [None]*len(poles)
-    for i,pnt in enumerate(poles) :
-        vector_pts[i]=Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000))
-    vert = vector_pts
-    edges = [(i,(i+1)%len(vector_pts)) for i in range(len(vector_pts))]
-    print(edges)
-    
     # create object
     mesh = bpy.data.meshes.new("FlatPatch CP")
-    mesh.from_pydata(vert, edges, [])
+    mesh.from_pydata(wires_verts, wires_edges, [])
     ob = bpy.data.objects.new('STEP FlatPatch', mesh)
 
     # Assign vertex groups
-    add_vertex_group(ob, "Endpoints", endpoints)
+    add_vertex_group(ob, "Endpoints", wires_endpoints)
     add_vertex_group(ob, "Order", order_att)
     
     # add_modifier(ob, "SP - Any Order Patch Meshing")
     collection.objects.link(ob)
-    add_sp_modifier(ob, "SP - FlatPatch Meshing", {'Orient': True})
+    add_sp_modifier(ob, "SP - FlatPatch Meshing", {'Orient': True}, pin=True)
     
     return True
 
@@ -410,7 +363,7 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
             elif ft=="NURBS":
                 build_SP_NURBS_patch(face, collection, trims_enabled)
             elif ft=="Plane":
-                build_SP_flat(face, collection, context)
+                build_SP_flat(face, collection)
             else :
                 print("Unsupported Face Type : " + ft)
             progress+=1
@@ -419,7 +372,7 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
     #Create SP free edges
     if enabled_entities["curves"]:
         for egde_id, edge in shape_hierarchy.edges.items():
-            build_SP_curve(edge, collection, context)
+            build_SP_curve(edge, collection)
 
     #recursive_SP_from_brep_shape(shape, collection, context, enabled_entities)
     #TODO : Add brep relations (face connections...)
