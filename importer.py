@@ -4,7 +4,7 @@ from OCC.Core.BRep import BRep_Tool
 from OCC.Core.BRepTools import breptools
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve
-from OCC.Core.GeomAbs import GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_Plane, GeomAbs_Torus, GeomAbs_Sphere, GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Line, GeomAbs_BSplineCurve
+from OCC.Core.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 from OCC.Core.GeomAdaptor import GeomAdaptor_Curve, GeomAdaptor_Surface
 from OCC.Core.GeomConvert import geomconvert_CurveToBSplineCurve
 from OCC.Core.TopoDS import topods
@@ -357,15 +357,15 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
     if enabled_entities["faces"]:
         for face_id, face in shape_hierarchy.faces.items():
 
-            ft= surface_type(face)
-            if ft=="Bezier":
+            ft= get_face_type_id(face)
+            if ft==5:
                 build_SP_bezier_patch(face, collection, trims_enabled)
-            elif ft=="NURBS":
+            elif ft==6:
                 build_SP_NURBS_patch(face, collection, trims_enabled)
-            elif ft=="Plane":
+            elif ft==0:
                 build_SP_flat(face, collection)
             else :
-                print("Unsupported Face Type : " + ft)
+                print("Unsupported Face Type : " + get_face_type_name(face))
             progress+=1
             wm.progress_update(progress)
 
@@ -382,26 +382,6 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
 
 
 
-def surface_type(face):
-    surface_adaptor = GeomAdaptor_Surface(BRep_Tool.Surface(face))
-    surface_type = surface_adaptor.GetType()
-
-    if surface_type == GeomAbs_Plane :
-        return "Plane"
-    elif surface_type == GeomAbs_Cylinder :
-        return "Cylindrical"
-    elif surface_type == GeomAbs_Cone :
-        return "Conical"
-    elif surface_type == GeomAbs_Sphere :
-        return "Spherical"
-    elif surface_type == GeomAbs_Torus :
-        return "Toroidal"
-    elif surface_type == GeomAbs_BezierSurface :
-        return "Bezier"
-    elif surface_type == GeomAbs_BSplineSurface :
-        return "NURBS"
-    else :
-        return str(surface_type)
 
 
 
