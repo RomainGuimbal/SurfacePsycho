@@ -182,10 +182,15 @@ def new_brep_bezier_face(o, context):
             break
     segs_p_counts=segs_p_counts[:segment_count]
 
+    try :
+        segs_orders = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+    except Exception :
+        segs_orders = None
+
     # Get CP position attr
     trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
 
-    wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts)
+    wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts, segs_orders)
 
     # Get occ wires
     outer_wire = wires[-1].get_occ_wire_2d(bsurf)
@@ -254,10 +259,14 @@ def new_brep_NURBS_face(o, context):
             break
     segs_p_counts=segs_p_counts[:segment_count]
 
+    try :
+        segs_orders = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+    except Exception :
+        segs_orders = None
+
     # Get CP position attr
     trim_pts = get_attribute_by_name(ob, 'CP_trim_contour_UV', 'vec3', total_p_count)
-    segs_orders = get_attribute_by_name(ob, 'Contour Order', 'int', segment_count)
-
+    
     wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts, segs_orders)
 
     # Get occ wires

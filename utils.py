@@ -208,14 +208,13 @@ def add_vertex_group(object, name, values):
     vg = object.vertex_groups[name]
 
     if len(object.data.vertices) < len(values):
-        print(len(object.data.vertices))
-        print(values)
+        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
         return False
 
     for i,v in enumerate(values):
         if v>1. :
             v=1
-            print("vertex group value clamped to 1")
+            print("Warning : vertex group value clamped to 1")
         object.data.vertices
         if v!=0.0 :
             vg.add([i], v, 'ADD')
@@ -293,18 +292,21 @@ def add_node_group_modifier_from_asset(obj, asset_name, settings_dict={}, pin = 
     change_GN_modifier_settings(modifier, settings_dict)
 
 
-def add_sp_modifier(ob, name, settings_dict={}, pin=False):
+def add_sp_modifier(ob, name : str, settings_dict={}, pin=False):
     add_node_group_modifier_from_asset(ob, name, settings_dict, pin = pin)
 
 
 
 def join_mesh_entities(verts1, edges1, faces1, verts2, edges2, faces2):
     len1 = len(verts1)
-    verts1.extend(verts2)
-    edges1.extend([(e[0]+len1, e[1]+len1) for e in edges2])
-    faces1.extend([[i+len1 for i in f] for f in faces2])
+    verts3=verts1.copy()
+    verts3.extend(verts2)
+    edges3=edges1.copy()
+    edges3.extend([(e[0]+len1, e[1]+len1) for e in edges2])
+    faces3=faces1.copy()
+    faces3.extend([[i+len1 for i in f] for f in faces2])
     
-    return verts1, edges1, faces1
+    return verts3, edges3, faces3
 
 
 
@@ -576,8 +578,6 @@ def get_face_3D_contours(brepface, scale = 1000):
         wire_orders, endpoints, wire_verts, verts_of_edges, order_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
 
         wire_is_reversed = w.Orientation() == 1
-        if wire_is_reversed:
-            print("reversed")
 
         for e in edges :
             poles, edge_order = get_poles_from_edge(e)
@@ -620,13 +620,7 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
         
         wire_is_reversed = w.Orientation() == 1
 
-        poles_of_edges = []
         for e in edges :
-            # # Get the 2D curve on the surface
-            # curve2d, u0, u1 = BRep_Tool.CurveOnSurface(e, face)
-            # adaptor = Geom2dAdaptor_Curve(curve2d)
-            # poles, edge_order = get_poles_from_curve(adaptor, e)
-
             poles, edge_order = get_poles_from_edge_2d(e, face)
 
             # Reverse the order if the edge orientation is reversed
@@ -758,7 +752,6 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_orders, geom_
     controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
     for i in range(total_p_count):
         pnt = gp_Pnt2d(pts_2d[i][1], pts_2d[i][0]) # INVERTED
-        print(str((pts_2d[i][1], pts_2d[i][0]))+ ',')
         controlPoints.SetValue(i+1, pnt)
 
     # Create segments

@@ -70,7 +70,7 @@ if os!="Darwin":
         filename_ext = ".step;.stp;.iges;.igs"
         filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
         faces: BoolProperty(name="Faces", description="Import Faces", default=True)
-        trim_contours: BoolProperty(name="Trim Contours (/!\ Experimental)", description="Import faces with their trim contours", default=False)
+        trim_contours: BoolProperty(name="Trim Contours", description="Import faces with their trim contours", default=True)
         curves: BoolProperty(name="Curves", description="Import Curves", default=False)
 
         def modal(self, context, event):

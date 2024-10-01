@@ -634,24 +634,23 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
         
         # Assign to Trim contour groups
 
-
         # Switch to object mode to modify vertex groups
         bpy.ops.object.mode_set(mode='OBJECT')
 
         # Add vertex groups
-        if "Endpoints" not in obj.vertex_groups:
-            obj.vertex_groups.new(name="Endpoints")
         if "Trim Contour" not in obj.vertex_groups:
             obj.vertex_groups.new(name="Trim Contour")
-
-        vg_endpoint = obj.vertex_groups["Endpoints"]
+        if "Endpoints" not in obj.vertex_groups:
+            obj.vertex_groups.new(name="Endpoints")
+        
         vg_contour = obj.vertex_groups["Trim Contour"]
+        vg_endpoint = obj.vertex_groups["Endpoints"]
         
         # Add selected vertices to the vertex group
         for v in obj.data.vertices[-4:]:
             if v.select:
-                vg_endpoint.add([v.index], 1.0, 'ADD')
                 vg_contour.add([v.index], 1.0, 'ADD')
+                vg_endpoint.add([v.index], 1.0, 'ADD')
 
     
 

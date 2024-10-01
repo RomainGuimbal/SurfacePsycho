@@ -3,7 +3,7 @@ import numpy as np
 from OCC.Core.BRep import BRep_Tool
 from OCC.Core.BRepTools import breptools
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface
 from OCC.Core.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 from OCC.Core.GeomAdaptor import GeomAdaptor_Curve, GeomAdaptor_Surface
 from OCC.Core.GeomConvert import geomconvert_CurveToBSplineCurve
@@ -22,13 +22,69 @@ from .utils import *
 
 
 
+class SP_surface :
+    def __init__(self, brepFace, collection, trims_enabled, uv_bounds, CPvert, CPedges, CPfaces):
+        self.trims_enabled = trims_enabled
+        self.brepFace = brepFace
+        self.uv_bounds = uv_bounds
+        self.CPvert = CPvert
+        self.CPedges = CPedges
+        self.CPfaces = CPfaces
+        self.vert, self.edges, self.faces = [],[],[]
+        
+        if trims_enabled :
+            wires_verts, wires_edges, wires_endpoints, wire_orders = get_face_uv_contours(self.brepFace, self.uv_bounds)
+            self.vert, self.edges, self.faces = join_mesh_entities(CPvert, CPedges, CPfaces, wires_verts, wires_edges, [])
+        else :
+            self.vert, self.edges, self.faces = self.CPvert, self.CP_edges, self.CPfaces
 
+        mesh = bpy.data.meshes.new("Patch CP")
+        mesh.from_pydata(self.vert, self.edges, self.faces)
+        self.ob = bpy.data.objects.new('STEP Patch', mesh)
+        
+        if trims_enabled :
+            print(f"biiiizard : CP : {len(CPvert)} wire: {len(wires_verts)}")
+            print(len(self.vert))
+
+            self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
+            self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + wires_endpoints)
+            self.assign_vertex_gr("Order", [0.0]*len(CPvert) + wire_orders)
+
+        self.set_smooth()
+
+        collection.objects.link(self.ob)
+
+    def set_smooth(self):
+        mesh = self.ob.data
+        values = [True] * len(mesh.polygons)
+        mesh.polygons.foreach_set("use_smooth", values)
+
+    def assign_vertex_gr(self, name, values):
+        add_vertex_group(self.ob, name, values)
+        
+    def add_modifier(self, name, settings_dict = {}, pin=False):
+        add_sp_modifier(self.ob, name, settings_dict, pin = pin)
+
+
+
+
+def build_SP_cylinder(brepFace, collection, trims_enabled) :
+    face = BRep_Tool.Surface(brepFace)
+    cylinder_surface = Geom_CylindricalSurface.DownCast(face)
+    radius = cylinder_surface.Radius()/1000
+    uv_bounds = cylinder_surface.Bounds()
+
+    CPvert = [Vector((0,0,0)), Vector((0,0,1)), Vector((0,radius,.5))]
+    CP_edges = [(0,1)]
+    sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [])
+    sp_surf.add_modifier("SP - Cylindrical Meshing", pin=True)
+    del sp_surf
+    return True
 
 
 
 
 def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
-    status =""
     face = BRep_Tool.Surface(brepFace)
     bezier_surface = Geom_BezierSurface.DownCast(face)
     u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
@@ -41,41 +97,14 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
 
             weight = bezier_surface.Weight(u, v)
             if weight!=1.0:
-                status = "Weighted Bezier not supported"
+                print("Weighted Bezier not supported")
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
-    
-    if trims_enabled :
-        # Add trim contour
-        wires_verts, wires_edges, wires_endpoints, wire_orders = get_face_uv_contours(brepFace, uv_bounds)
-        vert, edges, faces = join_mesh_entities(CPvert.tolist(), [], CPfaces, wires_verts, wires_edges, [])
-    else :
-        vert, edges, faces = CPvert, [], CPfaces
 
-
-    # create object
-    mesh = bpy.data.meshes.new("Patch CP")
-    mesh.from_pydata(vert, edges, faces)
-    ob = bpy.data.objects.new('STEP Patch', mesh)
-
-    if trims_enabled :
-        # assign vertex groups
-        add_vertex_group(ob, "Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
-        add_vertex_group(ob, "Endpoints", [0.0]*len(CPvert) + wires_endpoints)
-        add_vertex_group(ob, "Order", [0.0]*len(CPvert) + wire_orders)
-    
-    # set smooth
-    mesh = ob.data
-    values = [True] * len(mesh.polygons)
-    mesh.polygons.foreach_set("use_smooth", values)
-
-    # add modifier
-    collection.objects.link(ob)
-    add_sp_modifier(ob, "SP - Bezier Patch Meshing", pin=True)
-    
-    if status != "":
-        print(status)
+    sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
+    sp_surf.add_modifier("SP - Bezier Patch Meshing", pin=True)
+    del sp_surf
     return True
 
 
@@ -115,48 +144,24 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
     
-    if trims_enabled :
-        # Add trim contour
-        wires_verts, wires_edges, wires_endpoints, wire_orders = get_face_uv_contours(brepFace, uv_bounds)
-        vert, edges, faces = join_mesh_entities(CPvert.tolist(), [], CPfaces, wires_verts, wires_edges, [])
-    else :
-        vert, edges, faces = CPvert, [], CPfaces
-
-    # Create object and add mesh
-    mesh = bpy.data.meshes.new("Patch CP")
-    mesh.from_pydata(vert, edges, faces)
-    ob = bpy.data.objects.new('STEP Patch', mesh)
+    sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
     
-    if trims_enabled :
-        # assign vertex groups
-        add_vertex_group(ob, "Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
-        add_vertex_group(ob, "Endpoints", [0.0]*len(CPvert) + wires_endpoints)
-        add_vertex_group(ob, "Order", [0.0]*len(CPvert) + wire_orders)
-
-    # set smooth
-    mesh = ob.data
-    values = [True] * len(mesh.polygons)
-    mesh.polygons.foreach_set("use_smooth", values)
-
-    # add_modifiers
-    collection.objects.link(ob)
-
     if custom_knot:
-        add_vertex_group(ob, "Knot U", v_knots)# TO FIX U AND V INVERTED FOR DEBUG
-        add_vertex_group(ob, "Knot V", u_knots)# TO FIX U AND V INVERTED FOR DEBUG
-        add_vertex_group(ob, "Multiplicity U", np.array(v_mult)/10)# TO FIX U AND V INVERTED FOR DEBUG
-        add_vertex_group(ob, "Multiplicity V", np.array(u_mult)/10)# TO FIX U AND V INVERTED FOR DEBUG
+        sp_surf.assign_vertex_gr("Knot U", v_knots)# TO FIX U AND V INVERTED
+        sp_surf.assign_vertex_gr("Knot V", u_knots)# TO FIX U AND V INVERTED
+        sp_surf.assign_vertex_gr("Multiplicity U", np.array(v_mult)/10)# TO FIX U AND V INVERTED
+        sp_surf.assign_vertex_gr("Multiplicity V", np.array(u_mult)/10)# TO FIX U AND V INVERTED
 
     if custom_weight:
-        add_vertex_group(ob, "Weight", weights.flatten())
-        print("weights are not fully supported yet")
+        sp_surf.assign_vertex_gr("Weight", weights.flatten())
+        print("Weights are not fully supported yet")
         #add_sp_modifier(ob, "SP - NURBS Weighting")
         #TO NORMALIZE + factor
         # assign vertex group to modifier # change_node_socket_value
     
     # Meshing
-    add_sp_modifier(ob, "SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Fit / UV": True}, pin=True)# TO FIX U AND V INVERTED FOR DEBUG
-
+    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Fit / UV": True}, pin=True)# TO FIX U AND V INVERTED
+    del sp_surf
     return True
 
 
@@ -203,9 +208,6 @@ def build_SP_curve(brepEdge, collection) :
 
 def build_SP_flat(brepFace, collection):
     wires_verts, wires_edges, wires_endpoints, order_att = get_face_3D_contours(brepFace)
-    
-    for i, v in enumerate(wires_verts):
-        print(f"{i} : {v}")
 
     # create object
     mesh = bpy.data.meshes.new("FlatPatch CP")
@@ -358,14 +360,17 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
         for face_id, face in shape_hierarchy.faces.items():
 
             ft= get_face_type_id(face)
-            if ft==5:
-                build_SP_bezier_patch(face, collection, trims_enabled)
-            elif ft==6:
-                build_SP_NURBS_patch(face, collection, trims_enabled)
-            elif ft==0:
-                build_SP_flat(face, collection)
-            else :
-                print("Unsupported Face Type : " + get_face_type_name(face))
+            match ft:
+                case 0:
+                    build_SP_flat(face, collection)
+                case 1:
+                    build_SP_cylinder(face, collection, trims_enabled)
+                case 5:
+                    build_SP_bezier_patch(face, collection, trims_enabled)
+                case 6:
+                    build_SP_NURBS_patch(face, collection, trims_enabled)
+                case _ :
+                    print("Unsupported Face Type : " + get_face_type_name(face))
             progress+=1
             wm.progress_update(progress)
 
