@@ -171,9 +171,8 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
 
 def build_SP_curve(brepEdge, collection) :
     vector_pts = []
-    curve_adaptor = BRepAdaptor_Curve(brepEdge)
-
-    edge_poles, edge_order = get_poles_from_geom_curve(curve_adaptor, brepEdge)
+    
+    edge_poles, edge_order = get_poles_from_edge(brepEdge)
     endpoints=[1.0] + [0.0]*(len(edge_poles)-2) + [1.0]
     if edge_order!=None:
         order_att=[edge_order/10]+[0.0]*(len(edge_poles)-1)

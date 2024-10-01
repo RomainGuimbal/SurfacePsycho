@@ -380,16 +380,14 @@ def get_edges_from_wire(wire):
 
 
 
-def get_poles_from_curve(curve, edge=None):
-    curve_adaptor = GeomAdaptor_Curve(curve)
+def get_poles_from_curve(geom_curve, edge=None):
+    curve_adaptor = GeomAdaptor_Curve(geom_curve)
     edge_adaptor = BRepAdaptor_Curve(edge)
 
     curve_type = curve_adaptor.GetType()
-
     
     order = None
 
-    
     if curve_type == GeomAbs_Line:
         if edge!=None :
             
