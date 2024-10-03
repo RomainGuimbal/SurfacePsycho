@@ -3,16 +3,17 @@ import numpy as np
 from OCC.Core.BRep import BRep_Tool
 from OCC.Core.BRepTools import breptools
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface
+from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line
 from OCC.Core.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 from OCC.Core.GeomAdaptor import GeomAdaptor_Curve, GeomAdaptor_Surface
+from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnCurve
 from OCC.Core.GeomConvert import geomconvert_CurveToBSplineCurve
 from OCC.Core.TopoDS import topods
 from OCC.Core.TopTools import TopTools_IndexedMapOfShape
 from OCC.Core.IFSelect import IFSelect_RetDone
 from OCC.Core.IGESControl import IGESControl_Reader
 from OCC.Core.STEPControl import STEPControl_Reader
-from OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
+from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Extend.DataExchange import read_step_file
 from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
@@ -43,9 +44,6 @@ class SP_surface :
         self.ob = bpy.data.objects.new('STEP Patch', mesh)
         
         if trims_enabled :
-            print(f"biiiizard : CP : {len(CPvert)} wire: {len(wires_verts)}")
-            print(len(self.vert))
-
             self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
             self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + wires_endpoints)
             self.assign_vertex_gr("Order", [0.0]*len(CPvert) + wire_orders)
@@ -71,14 +69,44 @@ class SP_surface :
 def build_SP_cylinder(brepFace, collection, trims_enabled) :
     face = BRep_Tool.Surface(brepFace)
     cylinder_surface = Geom_CylindricalSurface.DownCast(face)
-    radius = cylinder_surface.Radius()/1000
-    uv_bounds = cylinder_surface.Bounds()
 
-    CPvert = [Vector((0,0,0)), Vector((0,0,1)), Vector((0,radius,.5))]
+    gp_cylinder = cylinder_surface.Cylinder()
+    
+    gpaxis= gp_cylinder.Axis()
+    xaxis = gpaxis.Direction()
+    yaxis = gp_cylinder.YAxis().Direction()
+    xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
+    yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
+
+    face_adpator = BRepAdaptor_Surface(brepFace)
+    
+
+    aPnt1 = face_adpator.Value(face_adpator.FirstUParameter(), face_adpator.FirstVParameter())
+    aPnt2 = face_adpator.Value(face_adpator.LastUParameter(), face_adpator.LastVParameter())
+
+    aGeomAxis = Geom_Line(gpaxis)
+    p1 = GeomAPI_ProjectPointOnCurve(aPnt1, aGeomAxis).Point(1)
+    p2 = GeomAPI_ProjectPointOnCurve(aPnt2, aGeomAxis).Point(1)
+    length = p1.Distance(p2)/1000
+
+
+    location = gp_cylinder.Location()
+    loc_vec = Vector((location.X()/1000,location.Y()/1000,location.Z()/1000)) - xaxis_vec*length/2
+    radius = cylinder_surface.Radius()/1000
+
+
+    false_uv_bounds = cylinder_surface.Bounds()
+    uv_bounds = (false_uv_bounds[0]-np.pi/2, false_uv_bounds[1]-np.pi/2, -length/2, length/2)
+    min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
+
+    print(f"UV Bounds : {(min_u, max_u, min_v, max_v)}")
+
+    raduis_vert = (yaxis_vec*radius)+loc_vec
+
+    CPvert = [loc_vec, xaxis_vec*length + loc_vec, raduis_vert]
     CP_edges = [(0,1)]
     sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [])
-    sp_surf.add_modifier("SP - Cylindrical Meshing", pin=True)
-    del sp_surf
+    sp_surf.add_modifier("SP - Cylindrical Meshing", {"Use Trim Contour":trims_enabled, "Scaling Method":"UV"}, pin=True)
     return True
 
 
@@ -104,7 +132,6 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
 
     sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
     sp_surf.add_modifier("SP - Bezier Patch Meshing", pin=True)
-    del sp_surf
     return True
 
 
@@ -161,7 +188,6 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
     
     # Meshing
     sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Fit / UV": True}, pin=True)# TO FIX U AND V INVERTED
-    del sp_surf
     return True
 
 
@@ -171,7 +197,7 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
 
 def build_SP_curve(brepEdge, collection) :
     vector_pts = []
-    
+
     edge_poles, edge_order = get_poles_from_edge(brepEdge)
     endpoints=[1.0] + [0.0]*(len(edge_poles)-2) + [1.0]
     if edge_order!=None:
@@ -217,7 +243,7 @@ def build_SP_flat(brepFace, collection):
     add_vertex_group(ob, "Endpoints", wires_endpoints)
     add_vertex_group(ob, "Order", order_att)
     
-    # add_modifier(ob, "SP - Any Order Patch Meshing")
+    # add modifier
     collection.objects.link(ob)
     add_sp_modifier(ob, "SP - FlatPatch Meshing", {'Orient': True}, pin=True)
     

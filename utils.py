@@ -473,7 +473,7 @@ def get_poles_from_edge(edge):
         # if curve_type == GeomAbs_Circle:
         #     print("Unsupported curve type : GeomAbs_Circle. Expect inaccurate results")
         # else :
-        print("Unsupported curve type. Expect inaccurate results")
+        print("Unsupported curve type. Expect missing geometry")
         poles = []
         # # sampling approximation For other curve types, 
         # num_points = 2
@@ -604,13 +604,13 @@ def get_face_3D_contours(brepface, scale = 1000):
 
 
 
-def get_face_uv_contours(face, bounds=(0,1,0,1)):
+def get_face_uv_contours(face, uv_bounds=(0,1,0,1)):
     wires = get_wires_from_face(face)
     wires_verts, wires_edges, wires_endpoints  = [], [], []
 
-    min_u, max_u, min_v, max_v = bounds[0], bounds[1], bounds[2], bounds[3]
+    min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
     range_u, range_v = max_u - min_u, max_v - min_v
-    print("UV Range : (" + str(range_u) + ", " + str(range_v) + ")")
+    # print("UV Range : (" + str(range_u) + ", " + str(range_v) + ")")
 
     for w in wires :
         edges = get_edges_from_wire(w)
@@ -621,7 +621,7 @@ def get_face_uv_contours(face, bounds=(0,1,0,1)):
         for e in edges :
             poles, edge_order = get_poles_from_edge_2d(e, face)
 
-            # Reverse the order if the edge orientation is reversed
+            # Reverse
             if (e.Orientation() != TopAbs_FORWARD) != wire_is_reversed :
                 poles.reverse()
             
@@ -776,26 +776,26 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_orders, geom_
 
                     # weights
                     weights = TColStd_Array1OfReal(1, p_count)
-                    for i in range(p_count):
-                        weights.SetValue(i+1, weight_attr[i])
+                    for j in range(p_count):
+                        weights.SetValue(j+1, weight_attr[i])
 
                     # knot
                     knot = TColStd_Array1OfReal(1,knot_length)
-                    for i in range(knot_length):
-                        knot.SetValue(i+1, knot_attr[i])
+                    for j in range(knot_length):
+                        knot.SetValue(j+1, knot_attr[i])
                     
                     # Multiplicities
                     mult = TColStd_Array1OfInteger(1, knot_length)
-                    for i in range(knot_length):
-                        if i == 0 or i == knot_length-1:
-                            mult.SetValue(i+1, order+1)
+                    for j in range(knot_length):
+                        if j == 0 or j == knot_length-1:
+                            mult.SetValue(j+1, order+1)
                         else :
-                            mult.SetValue(i+1, 1)
+                            mult.SetValue(j+1, 1)
                 except Exception:
                     knot, mult = auto_knot_and_mult(segs_p_counts[i], order)
                     weights = TColStd_Array1OfReal(1, p_count)
-                    for i in range(p_count):
-                        weights.SetValue(i+1, 1)
+                    for j in range(p_count):
+                        weights.SetValue(j+1, 1)
 
                 segment = Geom2d_BSplineCurve(segment_point_array, weights, knot, mult, order, False)
 

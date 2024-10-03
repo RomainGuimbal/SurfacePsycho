@@ -183,7 +183,7 @@ def new_brep_bezier_face(o, context):
     segs_p_counts=segs_p_counts[:segment_count]
 
     try :
-        segs_orders = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+        segs_orders = get_attribute_by_name(ob, 'Contour Order', 'int', segment_count)
     except Exception :
         segs_orders = None
 
@@ -221,8 +221,8 @@ def new_brep_NURBS_face(o, context):
         mult_u = get_attribute_by_name(ob, 'Multiplicity U', 'int')
         mult_v = get_attribute_by_name(ob, 'Multiplicity V', 'int')
 
-        # TODO
-        uknots, umult = auto_knot_and_mult(u_count, order_u) # TODO
+        # TODO (not auto)
+        uknots, umult = auto_knot_and_mult(u_count, order_u) # TODO 
         vknots, vmult = auto_knot_and_mult(v_count, order_v) # TODO
     except Exception: # No trim
         uknots, umult = auto_knot_and_mult(u_count, order_u)
@@ -260,7 +260,7 @@ def new_brep_NURBS_face(o, context):
     segs_p_counts=segs_p_counts[:segment_count]
 
     try :
-        segs_orders = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+        segs_orders = get_attribute_by_name(ob, 'Contour Order', 'int', segment_count)
     except Exception :
         segs_orders = None
 
@@ -270,11 +270,11 @@ def new_brep_NURBS_face(o, context):
     wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts, segs_orders)
 
     # Get occ wires
-    outer_wire = wires[-1].get_occ_wire_curved(bsurf)
+    outer_wire = wires[-1].get_occ_wire_2d(bsurf)
     inner_wires=[]
     for k in wires.keys():
         if k!=-1:
-            inner_wires.append(wires[k].get_occ_wire_curved(bsurf))
+            inner_wires.append(wires[k].get_occ_wire_2d(bsurf))
 
     face = create_face(bsurf, outer_wire, inner_wires)
     return face
