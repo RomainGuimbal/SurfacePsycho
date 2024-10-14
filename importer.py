@@ -34,7 +34,7 @@ class SP_surface :
         self.vert, self.edges, self.faces = [],[],[]
         
         if trims_enabled :
-            wires_verts, wires_edges, wires_endpoints, wire_orders = get_face_uv_contours(self.brepFace, self.uv_bounds)
+            wires_verts, wires_edges, wires_endpoints, wire_degrees = get_face_uv_contours(self.brepFace, self.uv_bounds)
             self.vert, self.edges, self.faces = join_mesh_entities(CPvert, CPedges, CPfaces, wires_verts, wires_edges, [])
         else :
             self.vert, self.edges, self.faces = self.CPvert, self.CP_edges, self.CPfaces
@@ -46,7 +46,7 @@ class SP_surface :
         if trims_enabled :
             self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
             self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + wires_endpoints)
-            self.assign_vertex_gr("Order", [0.0]*len(CPvert) + wire_orders)
+            self.assign_vertex_gr("Order", [0.0]*len(CPvert) + wire_degrees)
 
         self.set_smooth()
 
@@ -77,6 +77,7 @@ def build_SP_cylinder(brepFace, collection, trims_enabled) :
     yaxis = gp_cylinder.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
+    zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
 
     face_adpator = BRepAdaptor_Surface(brepFace)
     
@@ -96,17 +97,17 @@ def build_SP_cylinder(brepFace, collection, trims_enabled) :
 
 
     false_uv_bounds = cylinder_surface.Bounds()
-    uv_bounds = (false_uv_bounds[0]-np.pi/2, false_uv_bounds[1]-np.pi/2, -length/2, length/2)
+    uv_bounds = (false_uv_bounds[1], false_uv_bounds[0], -length/2, length/2) # -np.pi/2
     min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
 
     print(f"UV Bounds : {(min_u, max_u, min_v, max_v)}")
 
-    raduis_vert = (yaxis_vec*radius)+loc_vec
+    raduis_vert = (zaxis_vec*radius)+loc_vec
 
     CPvert = [loc_vec, xaxis_vec*length + loc_vec, raduis_vert]
     CP_edges = [(0,1)]
     sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [])
-    sp_surf.add_modifier("SP - Cylindrical Meshing", {"Use Trim Contour":trims_enabled, "Scaling Method":"UV"}, pin=True)
+    sp_surf.add_modifier("SP - Cylindrical Meshing", {"Use Trim Contour":trims_enabled, "Scaling Method":1}, pin=True)
     return True
 
 
@@ -131,7 +132,7 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
     CPvert, _, CPfaces = create_grid(vector_pts)
 
     sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
-    sp_surf.add_modifier("SP - Bezier Patch Meshing", pin=True)
+    sp_surf.add_modifier("SP - Bezier Patch Meshing", {"Use Trim Contour":trims_enabled, "Scaling Method":1}, pin=True)
     return True
 
 
@@ -187,7 +188,7 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
         # assign vertex group to modifier # change_node_socket_value
     
     # Meshing
-    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Fit / UV": True}, pin=True)# TO FIX U AND V INVERTED
+    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Use Trim Contour":False, "Scaling Method": 1}, pin=True)# TO FIX U AND V INVERTED
     return True
 
 
@@ -198,12 +199,12 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
 def build_SP_curve(brepEdge, collection) :
     vector_pts = []
 
-    edge_poles, edge_order = get_poles_from_edge(brepEdge)
+    edge_poles, edge_degree = get_poles_from_edge(brepEdge)
     endpoints=[1.0] + [0.0]*(len(edge_poles)-2) + [1.0]
-    if edge_order!=None:
-        order_att=[edge_order/10]+[0.0]*(len(edge_poles)-1)
+    if edge_degree!=None:
+        degree_att=[edge_degree/10]+[0.0]*(len(edge_poles)-1)
     else :
-        order_att=[0.0]*(len(edge_poles))
+        degree_att=[0.0]*(len(edge_poles))
 
     # prepare mesh
     for pnt in edge_poles :
@@ -218,7 +219,7 @@ def build_SP_curve(brepEdge, collection) :
 
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", endpoints)
-    add_vertex_group(ob, "Order", order_att)
+    add_vertex_group(ob, "Order", degree_att)
 
     # add modifier
     collection.objects.link(ob)
@@ -232,7 +233,7 @@ def build_SP_curve(brepEdge, collection) :
 
 
 def build_SP_flat(brepFace, collection):
-    wires_verts, wires_edges, wires_endpoints, order_att = get_face_3D_contours(brepFace)
+    wires_verts, wires_edges, wires_endpoints, degree_att = get_face_3D_contours(brepFace)
 
     # create object
     mesh = bpy.data.meshes.new("FlatPatch CP")
@@ -241,7 +242,7 @@ def build_SP_flat(brepFace, collection):
 
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", wires_endpoints)
-    add_vertex_group(ob, "Order", order_att)
+    add_vertex_group(ob, "Order", degree_att)
     
     # add modifier
     collection.objects.link(ob)
@@ -367,7 +368,7 @@ class ShapeHierarchy:
 
 
 
-def build_SP_from_brep(shape, collection, context, enabled_entities):
+def build_SP_from_brep(shape, collection, enabled_entities):
     # Create the hierarchy
     shape_hierarchy = ShapeHierarchy()
     shape_hierarchy.process_shape(shape)
@@ -383,7 +384,6 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
     #Create SP faces
     if enabled_entities["faces"]:
         for face_id, face in shape_hierarchy.faces.items():
-
             ft= get_face_type_id(face)
             match ft:
                 case 0:
@@ -404,8 +404,7 @@ def build_SP_from_brep(shape, collection, context, enabled_entities):
         for egde_id, edge in shape_hierarchy.edges.items():
             build_SP_curve(edge, collection)
 
-    #recursive_SP_from_brep_shape(shape, collection, context, enabled_entities)
-    #TODO : Add brep relations (face connections...)
+    # TODO : Add brep relations (face connections...)
     
     wm.progress_end()
     return True
@@ -443,7 +442,7 @@ def import_cad(filepath, context, enabled_entities):
     # import cProfile
     # profiler = cProfile.Profile()
     # profiler.enable()
-    build_SP_from_brep(shape, new_collection, context, enabled_entities)
+    build_SP_from_brep(shape, new_collection, enabled_entities)
     # profiler.disable()
     # profiler.print_stats()
 

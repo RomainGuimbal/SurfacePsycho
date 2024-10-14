@@ -48,15 +48,15 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
     bl_label = "Add Bezier Patch"
     bl_options = {'REGISTER', 'UNDO'}
 
-    order_u : bpy.props.IntProperty(
-        name="Order U",
+    degree_u : bpy.props.IntProperty(
+        name="Degree U",
         description="Number of control points in U direction -1",
         default=1,
         min=1,
     )
 
-    order_v : bpy.props.IntProperty(
-        name="Order V",
+    degree_v : bpy.props.IntProperty(
+        name="Degree V",
         description="Number of control points in V direction -1",
         default=1,
         min=1
@@ -71,12 +71,12 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         self.bm = bmesh.new()
 
         # divide grid
-        step_x = 2 / self.order_v
-        step_y = 2 / self.order_u
+        step_x = 2 / self.degree_v
+        step_y = 2 / self.degree_u
 
         # Create vertices
-        for i in range(self.order_u + 1):
-            for j in range(self.order_v + 1):
+        for i in range(self.degree_u + 1):
+            for j in range(self.degree_v + 1):
                 x = j * step_x - 1  # Subtract 1 to center
                 y = i * step_y - 1  # Subtract 1 to center
                 self.bm.verts.new((x, y, 0))
@@ -84,12 +84,12 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         self.bm.verts.ensure_lookup_table()
 
         # Create faces
-        for i in range(self.order_u):
-            for j in range(self.order_v):
-                v1 = self.bm.verts[i * (self.order_v + 1) + j]
-                v2 = self.bm.verts[i * (self.order_v + 1) + j + 1]
-                v3 = self.bm.verts[(i + 1) * (self.order_v + 1) + j + 1]
-                v4 = self.bm.verts[(i + 1) * (self.order_v + 1) + j]
+        for i in range(self.degree_u):
+            for j in range(self.degree_v):
+                v1 = self.bm.verts[i * (self.degree_v + 1) + j]
+                v2 = self.bm.verts[i * (self.degree_v + 1) + j + 1]
+                v3 = self.bm.verts[(i + 1) * (self.degree_v + 1) + j + 1]
+                v4 = self.bm.verts[(i + 1) * (self.degree_v + 1) + j]
                 self.bm.faces.new((v1, v2, v3, v4))
 
         # Update bmesh
@@ -106,7 +106,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         # Link the object to the scene
         bpy.context.collection.objects.link(self.obj)
 
-        add_sp_modifier(self.obj, "SP - Reorder Grid Index")
+        add_sp_modifier(self.obj, "SP - Redegree Grid Index")
         add_sp_modifier(self.obj, "SP - Bezier Patch Continuities")
         add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", pin=True)
 
@@ -364,8 +364,8 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                     spline=context.active_object.data.splines[i]
                     spline.use_endpoint_u = True
                     spline.use_endpoint_v = True
-                    spline.order_u = 4
-                    spline.order_v = 4
+                    spline.degree_u = 4
+                    spline.degree_v = 4
                     
                     # set CP of spline
                     for j,p in enumerate(spline.points): 
@@ -396,8 +396,8 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                             p.select = True
                     bpy.ops.object.mode_set(mode = 'EDIT') 
                     bpy.ops.curve.make_segment()
-                    splines[i].order_u =min(v_count,6)
-                    splines[i].order_v =min(u_count,6)
+                    splines[i].degree_u =min(v_count,6)
+                    splines[i].degree_v =min(u_count,6)
                 
                 case "curve_any":
                     cp_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
@@ -412,8 +412,8 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                     spline.use_endpoint_v = True
                     spline.use_bezier_u = True
                     spline.use_bezier_v = True
-                    spline.order_u =min(cp_count,6)
-                    spline.order_v =min(cp_count,6)
+                    spline.degree_u =min(cp_count,6)
+                    spline.degree_v =min(cp_count,6)
 
                     # set CP of spline
                     for j,p in enumerate(spline.points): 
@@ -448,8 +448,8 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
                     spline_cp = [Vector(p.co[0:3]) for p in s.points]
                     
                     #create mesh grid
-                    u_count = s.order_u
-                    v_count = s.order_v
+                    u_count = s.degree_u
+                    v_count = s.degree_v
                     
                     faces = [(v*u_count + u, (v + 1)*u_count + u, (v + 1)*u_count + 1 + u, v*u_count + 1 + u) for v in range(v_count-1) for u in range(u_count-1)]
                     mesh = bpy.data.meshes.new("Grid") 

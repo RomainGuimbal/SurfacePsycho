@@ -94,6 +94,9 @@ def geom_type_of_object(o, context):
 def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
     ge = ob_deps_graph.data
     match type :
+        case 'first_bool':
+            attribute = int(ge.attributes[name].data[0].value)
+
         case 'first_int':
             attribute = int(ge.attributes[name].data[0].value)
 
@@ -386,7 +389,7 @@ def get_poles_from_curve(geom_curve, edge=None):
 
     curve_type = curve_adaptor.GetType()
     
-    order = None
+    degree = None
 
     if curve_type == GeomAbs_Line:
         if edge!=None :
@@ -407,8 +410,8 @@ def get_poles_from_curve(geom_curve, edge=None):
     elif curve_type == GeomAbs_BSplineCurve:
         bspline = curve_adaptor.BSpline()
         poles = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
-        order = bspline.Degree()
-        # Should also output the order, knot, multiplicities and weights
+        degree = bspline.Degree()
+        # Should also output the degree, knot, multiplicities and weights
 
 
     
@@ -432,7 +435,7 @@ def get_poles_from_curve(geom_curve, edge=None):
     #     # mid_point = curve_adaptor.Value(mid_angle)
     #     # end_point = curve_adaptor.Value(end_angle)
     #     # control_points = [start_point, mid_point, end_point]
-    return poles, order
+    return poles, degree
 
 
 
@@ -444,7 +447,7 @@ def get_poles_from_edge(edge):
     curve_type = c.GetType()
     curve = c.Curve()
     
-    order = None
+    degree = None
     
     if curve_type == GeomAbs_Line :
             start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
@@ -466,7 +469,7 @@ def get_poles_from_edge(edge):
 
         # bspline = Geom_BSplineCurve.DownCast(curve)
         poles = [bspline.Pole(i+1) for i in range(bspline.NbPoles())]
-        order = bspline.Degree()
+        degree = bspline.Degree()
         # TODO output the knot, multiplicities and weights
    
     else :
@@ -490,7 +493,7 @@ def get_poles_from_edge(edge):
     #     # mid_point = curve_adaptor.Value(mid_angle)
     #     # end_point = curve_adaptor.Value(end_angle)
     #     # control_points = [start_point, mid_point, end_point]
-    return poles, order
+    return poles, degree
 
 
 
@@ -500,7 +503,7 @@ def get_poles_from_edge_2d(edge, face):
     edge_adaptor = BRepAdaptor_Curve2d(edge, face)
     curve_type = edge_adaptor.GetType()
     
-    order = None
+    degree = None
     
     if curve_type == GeomAbs_Line:
         start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
@@ -512,12 +515,12 @@ def get_poles_from_edge_2d(edge, face):
     elif curve_type == GeomAbs_BSplineCurve:
         bspline = edge_adaptor.BSpline()
         poles = [bspline.Pole(i+1) for i in range(bspline.NbPoles())]
-        order = bspline.Degree()
+        degree = bspline.Degree()
     else:
         print(f"Unsupported curve type: {curve_type}. Expect inaccurate results")
         poles = []
 
-    return poles, order
+    return poles, degree
 
 
 
@@ -528,7 +531,7 @@ def get_poles_from_edge_2d(edge, face):
 # def get_poles_from_geom_curve_2d(curve_2d, edge=None):
 #     curve_adaptor = BRepAdaptor_Curve2d(curve_2d)
 #     curve_type = curve_adaptor.GetType()
-#     order = None
+#     degree = None
     
 #     if curve_type == GeomAbs_Line:
 #         if edge!=None :
@@ -547,8 +550,8 @@ def get_poles_from_edge_2d(edge, face):
 #     elif curve_type == GeomAbs_BSplineCurve:
 #         bspline = curve_adaptor.BSpline()
 #         poles = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
-#         order = bspline.Degree()
-#         # Should also output the order, knot, multiplicities and weights
+#         degree = bspline.Degree()
+#         # Should also output the degree, knot, multiplicities and weights
     
 #     else :
 #         if curve_type == GeomAbs_Circle:
@@ -560,7 +563,7 @@ def get_poles_from_edge_2d(edge, face):
 #         params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
 #         poles = [curve_adaptor.Value(param) for param in params]
     
-#     return poles, order
+#     return poles, degree
 
 
 
@@ -573,12 +576,12 @@ def get_face_3D_contours(brepface, scale = 1000):
 
     for w in wires :
         edges = get_edges_from_wire(w)
-        wire_orders, endpoints, wire_verts, verts_of_edges, order_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
+        wire_degrees, endpoints, wire_verts, verts_of_edges, degree_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
 
         wire_is_reversed = w.Orientation() == 1
 
         for e in edges :
-            poles, edge_order = get_poles_from_edge(e)
+            poles, edge_degree = get_poles_from_edge(e)
 
             e_vert = [Vector((p.X()/scale, p.Y()/scale, p.Z()/scale)) for p in poles]
             
@@ -589,18 +592,18 @@ def get_face_3D_contours(brepface, scale = 1000):
             verts_of_edges.append(e_vert)
             wire_verts.extend(e_vert[:-1])
             endpoints.extend([1.0]+[0.0]*(len(e_vert)-2))
-            if edge_order!=None:
-                order_att.extend([edge_order/10]+[0.0]*(len(e_vert)-2))
+            if edge_degree!=None:
+                degree_att.extend([edge_degree/10]+[0.0]*(len(e_vert)-2))
             else :
-                order_att.extend([0.0]*(len(e_vert)-1))     
+                degree_att.extend([0.0]*(len(e_vert)-1))     
 
         wire_edges = [(i+len(wires_verts),((i+1)%len(wire_verts))+len(wires_verts)) for i in range(len(wire_verts))]
         wires_verts.extend(wire_verts)
         wires_edges.extend(wire_edges)
         wires_endpoints.extend(endpoints)
-        wire_orders.extend(order_att)
+        wire_degrees.extend(degree_att)
         
-    return wires_verts, wires_edges, wires_endpoints, wire_orders
+    return wires_verts, wires_edges, wires_endpoints, wire_degrees
 
 
 
@@ -614,12 +617,12 @@ def get_face_uv_contours(face, uv_bounds=(0,1,0,1)):
 
     for w in wires :
         edges = get_edges_from_wire(w)
-        wire_orders, endpoints, wire_verts, verts_of_edges, order_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
+        wire_degrees, endpoints, wire_verts, verts_of_edges, degree_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
         
         wire_is_reversed = w.Orientation() == 1
 
         for e in edges :
-            poles, edge_order = get_poles_from_edge_2d(e, face)
+            poles, edge_degree = get_poles_from_edge_2d(e, face)
 
             # Reverse
             if (e.Orientation() != TopAbs_FORWARD) != wire_is_reversed :
@@ -634,29 +637,35 @@ def get_face_uv_contours(face, uv_bounds=(0,1,0,1)):
             verts_of_edges.append(e_vert)
             wire_verts.extend(e_vert[:-1])
             endpoints.extend([1.0]+[0.0]*(len(e_vert)-2))
-            if edge_order!=None:
-                order_att.extend([edge_order/10]+[0.0]*(len(e_vert)-2))
+            if edge_degree!=None:
+                degree_att.extend([edge_degree/10]+[0.0]*(len(e_vert)-2))
             else :
-                order_att.extend([0.0]*(len(e_vert)-1))
+                degree_att.extend([0.0]*(len(e_vert)-1))
         
 
         wire_edges = [(i+len(wires_verts),((i+1)%len(wire_verts))+len(wires_verts)) for i in range(len(wire_verts))]
         wires_verts.extend(wire_verts)
         wires_edges.extend(wire_edges)
         wires_endpoints.extend(endpoints)
-        wire_orders.extend(order_att)
+        wire_degrees.extend(degree_att)
         
-    return wires_verts, wires_edges, wires_endpoints, wire_orders
+    return wires_verts, wires_edges, wires_endpoints, wire_degrees
 
 
 
 
 
 
-def auto_knot_and_mult(p_count, order):
-    knot_length = p_count - order + 1
-    knot_att = [r/(knot_length-1) for r in range(knot_length)]
-    mult_att = [order+1] + [1]*(knot_length-2) + [order+1]
+def auto_knot_and_mult(p_count, degree, isclamped = True):
+    if isclamped :
+        knot_length = p_count - degree + 1
+        knot_att = [r/(knot_length-1) for r in range(knot_length)]
+        mult_att = [degree+1] + [1]*(knot_length-2) + [degree+1]
+    else :
+        knot_length = p_count + degree
+        knot_att = [r/(knot_length-1) for r in range(knot_length)]
+        mult_att = [1]*knot_length
+
     knot = TColStd_Array1OfReal(1, knot_length)
     mult = TColStd_Array1OfInteger(1, knot_length)
     for i in range(knot_length):
@@ -666,7 +675,8 @@ def auto_knot_and_mult(p_count, order):
 
 
 
-def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_orders, geom_plane=None, ob=None):
+
+def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_degrees, geom_plane=None, ob=None):
     total_p_count=len(vector_points)
     segment_count = len(segs_p_counts)
 
@@ -681,29 +691,53 @@ def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_orders
     # Create segments
     edges_list = TopTools_Array1OfShape(1, segment_count)
     for i in range(segment_count):
-        if segs_p_counts[i] == 2: # straight edges
+        
+        # Straight edge
+        if segs_p_counts[i] == 2: 
             makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count +1), 
                                         controlPoints.Value((first_segment_p_id[i]+1)%total_p_count +1))
             segment = makesegment.Value()
+        
+        # Curved edge
         else:
+            # CP
             segment_point_array = TColgp_Array1OfPnt(1, segs_p_counts[i])
             for j in range(segs_p_counts[i]):
                 segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count +1))
             
-            if segs_p_counts[i]-1==segs_orders[i]:
+            p_count = segs_p_counts[i]
+            degree = segs_degrees[i]
+
+            # weights
+            try:
+                weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
+                weights = TColStd_Array1OfReal(1, p_count)
+                for j in range(p_count):
+                    weights.SetValue(j+1, weight_attr[i])
+            except Exception:
+                weights = TColStd_Array1OfReal(1, p_count)
+                for j in range(p_count):
+                    weights.SetValue(j+1, 1)
+            
+            # Bezier
+            if p_count-1==degree:
                 segment = Geom_BezierCurve(segment_point_array)
+
+            # Bspline
             else :
-                p_count = segs_p_counts[i]
-                order = segs_orders[i]
+                # Mult and Knot
+                try:
+                    isclamped = get_attribute_by_name(ob, 'Clamped', 'first_bool')
+                except Exception:
+                    isclamped = True
+                
                 try :
-                    knot_length = p_count - order + 1
+                    if isclamped :
+                        knot_length = p_count - degree + 1
+                    else :
+                        knot_length = p_count + degree
+
                     knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
-                    weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
-                    # DECOMPOSE ALL THAT
-                    # weights
-                    weights = TColStd_Array1OfReal(1, p_count)
-                    for j in range(p_count):
-                        weights.SetValue(j+1, weight_attr[i])
 
                     # knot
                     knot = TColStd_Array1OfReal(1,knot_length)
@@ -713,17 +747,14 @@ def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_orders
                     # Multiplicities
                     mult = TColStd_Array1OfInteger(1, knot_length)
                     for j in range(knot_length):
-                        if j == 0 or j == knot_length-1:
-                            mult.SetValue(j+1, order+1)
+                        if isclamped and (j == 0 or j == knot_length-1):
+                            mult.SetValue(j+1, degree+1)
                         else :
                             mult.SetValue(j+1, 1)
                 except Exception:
-                    knot, mult = auto_knot_and_mult(segs_p_counts[i], order)
-                    weights = TColStd_Array1OfReal(1, p_count)
-                    for j in range(p_count):
-                        weights.SetValue(j+1, 1)
+                    knot, mult = auto_knot_and_mult(segs_p_counts[i], degree, isclamped)
 
-                segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, order, False)
+                segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, degree, False)
         
         # append edge
         edge = BRepBuilderAPI_MakeEdge(segment).Edge()
@@ -742,7 +773,7 @@ def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_orders
 
 
 
-def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_orders, geom_surf=None, ob = None):
+def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_degrees, geom_surf=None, ob = None):
     total_p_count = len(pts_2d)
     segment_count = len(segs_p_counts)
 
@@ -755,29 +786,49 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_orders, geom_
     # Create segments
     edges_list = TopTools_Array1OfShape(1, segment_count)
     for i in range(segment_count):
-        if segs_p_counts[i] == 2: # straight edges
+        
+        # Straight edge
+        if segs_p_counts[i] == 2: 
             makesegment = GCE2d_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
                                         controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
             segment = makesegment.Value()
+        
+        # Curved edge
         else :
+            # CP
             segment_point_array = TColgp_Array1OfPnt2d(1, segs_p_counts[i])
             for j in range(segs_p_counts[i]):
                 segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
+            
+            p_count = segs_p_counts[i]
+            degree = segs_degrees[i]
 
-            if segs_p_counts[i]-1==segs_orders[i]:
+            # weights
+            try:
+                weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
+                weights = TColStd_Array1OfReal(1, p_count)
+                for j in range(p_count):
+                    weights.SetValue(j+1, weight_attr[i])
+            except Exception:
+                weights = TColStd_Array1OfReal(1, p_count)
+                for j in range(p_count):
+                    weights.SetValue(j+1, 1)
+
+            # Bezier
+            if p_count-1==degree:
                 segment = Geom2d_BezierCurve(segment_point_array)
-            else :
-                p_count = segs_p_counts[i]
-                order = segs_orders[i]
-                try :
-                    knot_length = p_count - order + 1
-                    knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
-                    weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
 
-                    # weights
-                    weights = TColStd_Array1OfReal(1, p_count)
-                    for j in range(p_count):
-                        weights.SetValue(j+1, weight_attr[i])
+            # Bspline
+            else :
+                # Mult and Knot
+                try:
+                    isclamped = get_attribute_by_name(ob, 'Clamped', 'first_bool')
+                except Exception:
+                    isclamped = True
+
+                try :
+                    knot_length = p_count - degree + 1
+                    knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
 
                     # knot
                     knot = TColStd_Array1OfReal(1,knot_length)
@@ -788,16 +839,13 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_orders, geom_
                     mult = TColStd_Array1OfInteger(1, knot_length)
                     for j in range(knot_length):
                         if j == 0 or j == knot_length-1:
-                            mult.SetValue(j+1, order+1)
+                            mult.SetValue(j+1, degree+1)
                         else :
                             mult.SetValue(j+1, 1)
                 except Exception:
-                    knot, mult = auto_knot_and_mult(segs_p_counts[i], order)
-                    weights = TColStd_Array1OfReal(1, p_count)
-                    for j in range(p_count):
-                        weights.SetValue(j+1, 1)
+                    knot, mult = auto_knot_and_mult(segs_p_counts[i], degree, isclamped)
 
-                segment = Geom2d_BSplineCurve(segment_point_array, weights, knot, mult, order, False)
+                segment = Geom2d_BSplineCurve(segment_point_array, weights, knot, mult, degree, False)
 
         
         # make segment
@@ -827,15 +875,15 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_orders, geom_
 
 
 class Wire :
-    def __init__(self, CP, segs_p_counts, segs_orders):
+    def __init__(self, CP, segs_p_counts, segs_degrees):
         self.CP = CP
         self.segs_p_counts = segs_p_counts
 
-        # Bezier if no order
-        if segs_orders==None:
-            self.segs_orders = [c-1 for c in segs_p_counts]
+        # Bezier if no degree
+        if segs_degrees==None:
+            self.segs_degrees = [c-1 for c in segs_p_counts]
         else :
-            self.segs_orders = segs_orders
+            self.segs_degrees = segs_degrees
 
         p_count = 0 #(total)
         p_count_accumulate = self.segs_p_counts[:]
@@ -850,11 +898,11 @@ class Wire :
         self.seg_first_P_id = [0] + [p-1 for p in p_count_accumulate[:len(segs_p_counts)-1]]
 
     def get_occ_wire_3d(self, geom_plane=None, ob=None):
-        wire = create_wire_3d(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_orders, geom_plane, ob)
+        wire = create_wire_3d(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_degrees, geom_plane, ob)
         return wire
     
     def get_occ_wire_2d(self, geom_surf=None, ob=None):
-        wire = create_wire_2d(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_orders, geom_surf, ob)
+        wire = create_wire_2d(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_degrees, geom_surf, ob)
         return wire
 
 
@@ -863,7 +911,7 @@ class Wire :
 
 
 
-def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_orders=None):
+def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degrees=None):
     # wire index attr
     try :
         wire_index = get_attribute_by_name(ob, 'Wire', 'int', total_p_count)
@@ -871,25 +919,25 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_order
     except Exception :
         wire_index = [-1]*total_p_count
 
-    # Bezier if no order
-    if segs_orders==None:
-        segs_orders = [c-1 for c in segs_p_counts]
+    # Bezier if no degree
+    if segs_degrees==None:
+        segs_degrees = [c-1 for c in segs_p_counts]
     
     # Make wires
     # Init
     wires = {}
     w_prev = wire_index[0]
-    build_CP, build_segs_p_counts, build_segs_orders = [], [], []
+    build_CP, build_segs_p_counts, build_segs_degrees = [], [], []
     seg_p_added = 0
     seg_curr_id = 0
     seg_p_count_curr = segs_p_counts[0]
-    segs_orders_curr = segs_orders[0]
+    segs_degrees_curr = segs_degrees[0]
 
     for i, w_cur in enumerate(wire_index) :
         # wire first point
         if w_cur != w_prev :
-            wires[w_prev] = Wire(build_CP, build_segs_p_counts, build_segs_orders)
-            build_CP, build_segs_p_counts, build_segs_orders = [], [], []
+            wires[w_prev] = Wire(build_CP, build_segs_p_counts, build_segs_degrees)
+            build_CP, build_segs_p_counts, build_segs_degrees = [], [], []
 
         # Add point
         build_CP.append(points[i])
@@ -898,16 +946,16 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_order
         # Segment last point
         if seg_p_added == seg_p_count_curr-1 :
             build_segs_p_counts.append(seg_p_count_curr)
-            build_segs_orders.append(segs_orders_curr)
+            build_segs_degrees.append(segs_degrees_curr)
             seg_curr_id+=1
             if i<len(wire_index)-1:
                 seg_p_count_curr = segs_p_counts[seg_curr_id]
-                segs_orders_curr = segs_orders[seg_curr_id]
+                segs_degrees_curr = segs_degrees[seg_curr_id]
             seg_p_added = 0
 
         w_prev = w_cur
     # Build last wire
-    wires[w_prev] = Wire(build_CP, build_segs_p_counts, build_segs_orders)
+    wires[w_prev] = Wire(build_CP, build_segs_p_counts, build_segs_degrees)
 
     return wires # dictionary
 
