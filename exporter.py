@@ -138,7 +138,12 @@ def new_brep_NURBS_face(o, context):
     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
     points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', u_count*v_count)
     points *= 1000 #unit correction
-    degree_u, degree_v = get_attribute_by_name(ob, 'Orders', 'int', 2)
+    degree_u, degree_v = get_attribute_by_name(ob, 'Degrees', 'int', 2)
+    try:
+        isclamped_u, isclamped_v = get_attribute_by_name(ob, 'IsClamped', 'bool', 2)
+        isperiodic_u, isperiodic_v = get_attribute_by_name(ob, 'IsPeriodic', 'bool', 2)
+    except KeyError:
+        isclamped_u, isclamped_v, isperiodic_u, isperiodic_v = True, True, False, False
 
     # Knots and Multiplicities
     try : 
@@ -148,11 +153,11 @@ def new_brep_NURBS_face(o, context):
         mult_v = get_attribute_by_name(ob, 'Multiplicity V', 'int')
 
         # TODO (not auto)
-        uknots, umult = auto_knot_and_mult(u_count, degree_u) # TODO 
-        vknots, vmult = auto_knot_and_mult(v_count, degree_v) # TODO
-    except Exception: # No trim
-        uknots, umult = auto_knot_and_mult(u_count, degree_u)
-        vknots, vmult = auto_knot_and_mult(v_count, degree_v)
+        uknots, umult = auto_knot_and_mult(u_count, degree_u, isclamped_u, isperiodic_u) # TODO 
+        vknots, vmult = auto_knot_and_mult(v_count, degree_v, isclamped_v, isperiodic_v) # TODO
+    except KeyError: # No custom knot
+        uknots, umult = auto_knot_and_mult(u_count, degree_u, isclamped_u, isperiodic_u) 
+        vknots, vmult = auto_knot_and_mult(v_count, degree_v, isclamped_v, isperiodic_v)
 
     # Poles grid
     poles = TColgp_Array2OfPnt(1, u_count, 1, v_count)
@@ -162,7 +167,7 @@ def new_brep_NURBS_face(o, context):
             poles.SetValue(j+1, i+1, gp_Pnt(points[id][0], points[id][1], points[id][2]))
 
     # Compose Geom
-    bsurf = Geom_BSplineSurface(poles, uknots, vknots, umult, vmult, degree_u, degree_v, False, False)
+    bsurf = Geom_BSplineSurface(poles, uknots, vknots, umult, vmult, degree_u, degree_v, isperiodic_u, isperiodic_v)
 
     # Check if trimmed
     try :
@@ -216,11 +221,10 @@ def new_brep_NURBS_face(o, context):
 
 
 
-def new_brep_curve(o, context):
+def new_brep_curve(o, context, scale=1000):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
-
     
     # get total_p_count
     total_p_count, segment_count= 1, 0
@@ -238,7 +242,7 @@ def new_brep_curve(o, context):
 
     # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
-    points*=1000 # Unit correction
+    points*=scale # Unit correction
 
     wire = Wire(points, segs_p_counts, segs_degrees)
     brep_wire = wire.get_occ_wire_3d(ob=ob)
@@ -271,7 +275,7 @@ def new_brep_planar_face(o, context):
 
     try :
         segs_degrees = get_attribute_by_name(ob, 'Order', 'int', segment_count)
-    except Exception :
+    except KeyError :
         segs_degrees = None
 
     # Get CP position attr
@@ -285,7 +289,7 @@ def new_brep_planar_face(o, context):
     try :
         offset = get_attribute_by_name(ob, 'planar_offset', 'vec3', 1)[0]
         orient = get_attribute_by_name(ob, 'planar_orient', 'vec3', 1)[0]
-    except Exception:
+    except KeyError :
         offset = [0,0,0]
         orient = [0,0,1]
     loc += rot@ Vector(offset)
@@ -405,11 +409,6 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
             gto = geom_type_of_object(o, context)
 
             match gto :
-                case "bicubic_surf" :
-                    SPobj_count +=1
-                    bf = new_brep_bicubic_face(o, context)
-                    aSew.Add(mirror_brep(o, bf))
-
                 case "bezier_surf" :
                     SPobj_count +=1
                     af = new_brep_bezier_face(o, context)
@@ -424,20 +423,10 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
                     SPobj_count +=1
                     pf = new_brep_planar_face(o, context)
                     aSew.Add(mirror_brep(o, pf))
-                
-                case "curve_any" : # LEGACY
-                    SPobj_count +=1
-                    ce = new_brep_any_order_curve(o, context)
-                    aSew.Add(mirror_brep(o, ce))
 
                 case "curve" :
                     SPobj_count +=1
                     cu = new_brep_curve(o, context)
-                    aSew.Add(mirror_brep(o, cu))
-
-                case "NURBS_curve" :
-                    SPobj_count +=1
-                    cu = new_brep_NURBS_curve(o, context)
                     aSew.Add(mirror_brep(o, cu))
 
                 # case "collection_instance":

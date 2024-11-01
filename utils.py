@@ -95,13 +95,23 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
     ge = ob_deps_graph.data
     match type :
         case 'first_bool':
-            attribute = int(ge.attributes[name].data[0].value)
+            attribute = bool(ge.attributes[name].data[0].value)
 
         case 'first_int':
             attribute = int(ge.attributes[name].data[0].value)
 
         case 'second_int':
             attribute = int(ge.attributes[name].data[1].value)
+
+        case 'bool':
+            len_raw = len(ge.attributes[name].data)
+            if len_attr==None :
+                len_attr = len_raw
+            attribute = np.zeros(len_raw)
+            ge.attributes[name].data.foreach_get("value", attribute)
+            attribute = attribute[0:len_attr]
+            attribute = [bool(a) for a in attribute]
+
 
         case 'int':
             len_raw = len(ge.attributes[name].data)
@@ -471,7 +481,17 @@ def get_poles_from_edge(edge):
         poles = [bspline.Pole(i+1) for i in range(bspline.NbPoles())]
         degree = bspline.Degree()
         # TODO output the knot, multiplicities and weights
-   
+
+    elif curve_type == GeomAbs_Circle : 
+        start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
+        end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
+        center = edge_adaptor.Circle().Location()
+        if start_point == end_point:
+            print("GOT IT")
+            poles = [start_point, center]
+        else:
+            poles = [start_point, center ,end_point]
+
     else :
         # if curve_type == GeomAbs_Circle:
         #     print("Unsupported curve type : GeomAbs_Circle. Expect inaccurate results")
@@ -509,13 +529,30 @@ def get_poles_from_edge_2d(edge, face):
         start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
         end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
         poles = [start_point, end_point]
+
     elif curve_type == GeomAbs_BezierCurve:
         bezier = edge_adaptor.Bezier()
         poles = [bezier.Pole(i+1) for i in range(bezier.NbPoles())]
+
     elif curve_type == GeomAbs_BSplineCurve:
         bspline = edge_adaptor.BSpline()
         poles = [bspline.Pole(i+1) for i in range(bspline.NbPoles())]
         degree = bspline.Degree()
+
+#TODO TEST
+#TODO TEST
+    elif curve_type == GeomAbs_Circle: 
+        start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
+        end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
+        center = edge_adaptor.Circle().Location()
+        if start_point == end_point:
+            print("GOT IT")
+            poles = [start_point, center]
+        poles = [start_point, center ,end_point]
+#TODO TEST
+#TODO TEST
+
+
     else:
         print(f"Unsupported curve type: {curve_type}. Expect inaccurate results")
         poles = []
@@ -574,12 +611,13 @@ def get_face_3D_contours(brepface, scale = 1000):
     wires = get_wires_from_face(brepface)
     wires_verts, wires_edges, wires_endpoints  = [], [], []
 
+    # Wires
     for w in wires :
         edges = get_edges_from_wire(w)
         wire_degrees, endpoints, wire_verts, verts_of_edges, degree_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
-
         wire_is_reversed = w.Orientation() == 1
 
+        #Edges
         for e in edges :
             poles, edge_degree = get_poles_from_edge(e)
 
@@ -597,7 +635,10 @@ def get_face_3D_contours(brepface, scale = 1000):
             else :
                 degree_att.extend([0.0]*(len(e_vert)-1))     
 
-        wire_edges = [(i+len(wires_verts),((i+1)%len(wire_verts))+len(wires_verts)) for i in range(len(wire_verts))]
+        if len(edges)==1: # Unclosed wire (for now just for the circle case)
+            wire_edges = [(i + len(wires_verts), i+1 + len(wires_verts)) for i in range(len(wire_verts)-1)]
+        else :
+            wire_edges = [(i + len(wires_verts), ((i+1)%len(wire_verts)) + len(wires_verts)) for i in range(len(wire_verts))]
         wires_verts.extend(wire_verts)
         wires_edges.extend(wire_edges)
         wires_endpoints.extend(endpoints)
@@ -615,12 +656,14 @@ def get_face_uv_contours(face, uv_bounds=(0,1,0,1)):
     range_u, range_v = max_u - min_u, max_v - min_v
     # print("UV Range : (" + str(range_u) + ", " + str(range_v) + ")")
 
+    # Wires
     for w in wires :
         edges = get_edges_from_wire(w)
         wire_degrees, endpoints, wire_verts, verts_of_edges, degree_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
         
         wire_is_reversed = w.Orientation() == 1
-
+        
+        # Edges
         for e in edges :
             poles, edge_degree = get_poles_from_edge_2d(e, face)
 
@@ -656,13 +699,13 @@ def get_face_uv_contours(face, uv_bounds=(0,1,0,1)):
 
 
 
-def auto_knot_and_mult(p_count, degree, isclamped = True):
+def auto_knot_and_mult(p_count, degree, isclamped = True, isperiodic = False):
     if isclamped :
         knot_length = p_count - degree + 1
         knot_att = [r/(knot_length-1) for r in range(knot_length)]
         mult_att = [degree+1] + [1]*(knot_length-2) + [degree+1]
     else :
-        knot_length = p_count + degree
+        knot_length = p_count + degree + 1 + (degree*isperiodic)
         knot_att = [r/(knot_length-1) for r in range(knot_length)]
         mult_att = [1]*knot_length
 
@@ -727,9 +770,10 @@ def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_degree
             else :
                 # Mult and Knot
                 try:
-                    isclamped = get_attribute_by_name(ob, 'Clamped', 'first_bool')
+                    isclamped = get_attribute_by_name(ob, 'IsClamped', 'first_bool')
+                    isperiodic = get_attribute_by_name(ob, 'IsPeriodic', 'first_bool')
                 except Exception:
-                    isclamped = True
+                    isclamped, isperiodic = True, False
                 
                 try :
                     if isclamped :
@@ -752,9 +796,9 @@ def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_degree
                         else :
                             mult.SetValue(j+1, 1)
                 except Exception:
-                    knot, mult = auto_knot_and_mult(segs_p_counts[i], degree, isclamped)
+                    knot, mult = auto_knot_and_mult(segs_p_counts[i], degree, isclamped, isperiodic)
 
-                segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, degree, False)
+                segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, degree, isperiodic)
         
         # append edge
         edge = BRepBuilderAPI_MakeEdge(segment).Edge()
