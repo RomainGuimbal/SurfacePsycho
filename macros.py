@@ -106,7 +106,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         # Link the object to the scene
         bpy.context.collection.objects.link(self.obj)
 
-        add_sp_modifier(self.obj, "SP - Redegree Grid Index")
+        add_sp_modifier(self.obj, "SP - Reorder Grid Index")
         add_sp_modifier(self.obj, "SP - Bezier Patch Continuities")
         add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", pin=True)
 
@@ -172,11 +172,11 @@ class SP_OT_add_library(bpy.types.Operator):
 
 
 
-class SP_OT_toogle_control_geom(bpy.types.Operator):
-    bl_idname = "sp.toogle_control_geom"
-    bl_label = "SP - Toogle Control Geom"
+class SP_OT_toggle_control_geom(bpy.types.Operator):
+    bl_idname = "sp.toggle_control_geom"
+    bl_label = "SP - Toggle Control Geom"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Toogle the control geometry of selected object. The active object determines whether to show or hide"
+    bl_description = "Toggle the control geometry of selected object. The active object determines whether to show or hide"
 
     def execute(self, context):
         objects=[ob for ob in context.selected_objects]
@@ -189,10 +189,35 @@ class SP_OT_toogle_control_geom(bpy.types.Operator):
                             input_id = it.identifier
                             if not first_obj_found:
                                 first_obj_found=True
-                                toogle_side = not m[input_id]
-                            m[input_id] = toogle_side
+                                toggle_side = not m[input_id]
+                            m[input_id] = toggle_side
                     m.node_group.interface_update(context)
         return {'FINISHED'}    
+
+
+class SP_OT_toggle_combs(bpy.types.Operator):
+    bl_idname = "sp.toggle_combs"
+    bl_label = "SP - Toggle Curvature Combs"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Toggle curvature combs of selected object. The active object determines whether to show or hide"
+
+    def execute(self, context):
+        objects=[ob for ob in context.selected_objects]
+        first_obj_found = False
+        for o in objects:
+            for m in o.modifiers :
+                if m.type == "NODES" and m.node_group.name[:5]=='SP - ':
+                    if 'Combs' in m.node_group.interface.items_tree.keys():
+                        for it in m.node_group.interface.items_tree['Combs'].interface_items :
+                            if it.name in ['Enable', 'U', 'V'] and it.socket_type =='NodeSocketBool':
+                                input_id = it.identifier
+                                if not first_obj_found:
+                                    first_obj_found=True
+                                    toggle_side = not m[input_id]
+                                m[input_id] = toggle_side
+                        m.node_group.interface_update(context)
+        return {'FINISHED'}
+
 
 
 class SP_OT_select_visible_curves(bpy.types.Operator):
@@ -652,8 +677,31 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
                 vg_contour.add([v.index], 1.0, 'ADD')
                 vg_endpoint.add([v.index], 1.0, 'ADD')
 
-    
 
+
+def scale_combs(self, context):
+    objects=[ob for ob in context.selected_objects]
+    for o in objects:
+        for m in o.modifiers :
+            if m.type == "NODES" and m.node_group.name[:5]=='SP - ':
+                if 'Combs' in m.node_group.interface.items_tree.keys():
+                    for it in m.node_group.interface.items_tree['Combs'].interface_items :
+                        if it.name =='Scale' and it.socket_type =='NodeSocketFloat':
+                            input_id = it.identifier
+                            m[input_id] = self.combs_scale
+                    m.node_group.interface_update(context)
+
+
+
+class SP_Props_Group(bpy.types.PropertyGroup):
+
+    combs_scale : bpy.props.FloatProperty(
+    name="Combs Scale",
+    description="Curvature Combs Scale",
+    default=0.1,
+    min=0,
+    update=scale_combs
+    )
 
 
 class SP_OT_show_only_curves(bpy.types.Operator):
@@ -678,6 +726,10 @@ class SP_OT_solidify(bpy.types.Operator):
 # Bridge patches
 
 
+
+
+
+
 classes = [
     SP_OT_add_NURBS_patch,
     SP_OT_add_bezier_patch,
@@ -692,12 +744,14 @@ classes = [
     SP_OT_remove_from_endpoints,
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,
-    SP_OT_toogle_control_geom,
+    SP_OT_toggle_combs,
+    SP_OT_toggle_control_geom,
     SP_OT_unify_versions,
     SP_OT_select_endpoints,
     SP_OT_update_modifiers,
     SP_OT_replace_node_group,
     SP_OT_Invoke_replace_node_panel,
+    SP_Props_Group,
 ]
 if os!="Darwin":
     classes+= [
@@ -707,7 +761,9 @@ if os!="Darwin":
 def register():
     for c in classes:
         bpy.utils.register_class(c)
+    bpy.types.Scene.sp_properties = bpy.props.PointerProperty(type=SP_Props_Group) 
 
 def unregister():
+    del bpy.types.Scene.sp_properties
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)

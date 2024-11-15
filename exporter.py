@@ -28,7 +28,7 @@ from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Wire #, TopoDS_Compound
 from OCC.Core.TopTools import TopTools_Array1OfShape
 from OCC.Extend.DataExchange import write_step_file, write_iges_file
 from OCC.Core.ShapeFix import ShapeFix_Face
-
+from typing import List, Dict
 
 
 
@@ -109,7 +109,7 @@ def new_brep_bezier_face(o, context):
     segs_p_counts=segs_p_counts[:segment_count]
 
     try :
-        segs_degrees = get_attribute_by_name(ob, 'Contour Order', 'int', segment_count)
+        segs_degrees = get_attribute_by_name(ob, 'Contour Degree', 'int', segment_count)
     except Exception :
         segs_degrees = None
 
@@ -236,7 +236,7 @@ def new_brep_curve(o, context, scale=1000):
     segs_p_counts = segs_p_counts[:segment_count]
 
     try :
-        segs_degrees = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+        segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', segment_count)
     except Exception :
         segs_degrees = None
 
@@ -274,7 +274,7 @@ def new_brep_planar_face(o, context):
     segs_p_counts = segs_p_counts[:segment_count]
 
     try :
-        segs_degrees = get_attribute_by_name(ob, 'Order', 'int', segment_count)
+        segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', segment_count)
     except KeyError :
         segs_degrees = None
 
@@ -307,6 +307,13 @@ def new_brep_planar_face(o, context):
 
     face = create_face(None, outer_wire, inner_wires)
     return face
+
+
+
+
+
+
+
 
 
 
@@ -471,6 +478,235 @@ def export_iges(context, filepath, use_selection, axis_up='Z', axis_forward='Y')
     brep_shapes = prepare_brep(context, use_selection, axis_up, axis_forward)
     if brep_shapes is not None :
         write_iges_file(brep_shapes, filepath)
+        return True
+    else:
+        return False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####################################
+#                                   #
+#           SVG exporter            #
+#                                   #
+#####################################
+
+
+def svg_xy_string_from_CP(CP, plane="XY"):
+    match plane:
+        case "XY":
+            axis1 = 0
+            axis2 = 1
+
+        case "YZ":
+            axis1 = 1
+            axis2 = 2
+
+        case "XZ":
+            axis1 = 0
+            axis2 = 2
+
+    return f"{CP[axis1]} {-CP[axis2]} "
+
+
+
+def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
+    # Get point count attr
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    try :
+        segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
+    except Exception :
+        segs_p_counts = get_attribute_by_name(ob, 'P_count', 'int')
+    
+    # get total_p_count
+    total_p_count, segment_count= 0, 0
+    for p in segs_p_counts:
+        if p>0:
+            total_p_count += p-1
+            segment_count += 1
+        if p==0:
+            break
+    
+    segs_p_counts = segs_p_counts[:segment_count]
+
+    try :
+        segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', segment_count)
+    except KeyError :
+        segs_degrees = None
+
+    # Get CP position attr
+    points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
+    points -= origin
+    points *= scale # Unit correction
+
+    wires = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degrees)
+
+    d =""
+    for w in wires.values():
+        d+="M "
+        d+= svg_xy_string_from_CP(w.CP[0], plane)
+        i=1
+        seg_count = len(w.segs_degrees)
+        for j,degree in enumerate(w.segs_degrees) :
+            islast = j == seg_count-1
+            if degree <= 1:
+                if not islast :
+                    d+= "L "
+                    d+= svg_xy_string_from_CP(w.CP[i], plane)
+                i+=1
+            elif degree == 3:
+                d+= "C "
+                d+= svg_xy_string_from_CP(w.CP[i], plane)
+                d+= svg_xy_string_from_CP(w.CP[i+1], plane)
+                if not islast :
+                    d+= svg_xy_string_from_CP(w.CP[i+2], plane)
+                i+=3
+            else :
+                print("Error, segment has degree not 1 or 3")
+        d+="Z "
+    
+    hex_col = to_hex(o.color)
+    color = f"#{hex_col}"
+    return {"d": d, "color": color, "opacity": o.color[3]}
+
+
+
+def prepare_svg(context, use_selection, plane="XY",  origin_mode="auto", scale=100):
+    shapes = []
+    SPobj_count=0
+
+    # Selection
+    if use_selection:
+        initial_selection = context.selected_objects
+    else :
+        initial_selection = context.visible_objects
+    obj_list = initial_selection
+    obj_to_del = []
+
+    # Position
+    if origin_mode=="auto":
+        # Find bounds
+        xmax, ymax, zmax = 0,0,0
+        xmin, ymin, zmin = 1.7976931348623157e+308, 1.7976931348623157e+308, 1.7976931348623157e+308
+        
+        for o in initial_selection :
+            bbox_corners = [o.matrix_world @ Vector(corner) for corner in o.bound_box]
+            oxmax, oymax, ozmax = np.array(bbox_corners).max(axis=0)
+            xmax = oxmax if oxmax > xmax else xmax
+            ymax = oymax if oymax > ymax else ymax
+            zmax = ozmax if ozmax > zmax else zmax
+            
+            oxmin, oymin, ozmin = np.array(bbox_corners).min(axis=0)
+            xmin = oxmin if oxmin < xmin else xmin
+            ymin = oymin if oymin < ymin else ymin
+            zmin = ozmin if ozmin < zmin else zmin
+
+        match plane:
+            case "XY":
+                axis1 = 0
+                axis2 = 1
+
+            case "YZ":
+                axis1 = 1
+                axis2 = 2
+
+            case "XZ":
+                axis1 = 0
+                axis2 = 2
+        
+        min = Vector((xmin, ymin, zmin))
+        max = Vector((xmax, ymax, zmax))
+        
+        #origin is in top-left corner
+        ox = xmin #if axis1==0 else 0
+        oy = ymax if axis2==1 else ymin
+        oz = zmax #if axis2==2 else 0
+
+        mx = xmax
+        my = ymin if axis2==1 else ymax
+        mz = zmin
+        origin = Vector((ox, oy, oz))
+        size3d = (Vector((mx,my,mz))-origin)*scale
+
+        canvas_size = (abs(size3d[axis1]), abs(size3d[axis2]))
+    else : #world
+        origin = Vector((0,0,0))
+        #considering there is high chance a fill is placed at less than 10 blender unit from the origin
+        canvas_size = (10*scale,10*scale)
+
+    # Main entity loop
+    while(len(obj_list)>0): # itterates until ob_list is empty
+        obj_newly_real = []
+
+        for o in obj_list:
+            gto = geom_type_of_object(o, context)
+
+            match gto :
+                case "planar" :
+                    SPobj_count +=1
+                    shape = new_svg_fill(o, context, plane, origin, scale)
+                    # aSew.Add(mirror_brep(o, pf))
+                    shapes.append(shape)
+
+                # case "curve" :
+                #     SPobj_count +=1
+                #     cu = new_svg_curve(o, context)
+                #     aSew.Add(mirror_brep(o, cu))
+
+                # case "collection_instance":
+                #     pass
+
+        obj_list=[]
+        for onr in obj_newly_real:
+            obj_list.append(onr)
+            obj_to_del.append(onr)
+
+    for o in obj_to_del : # clear realized objects
+        bpy.data.objects.remove(o, do_unlink=True)
+    
+    if SPobj_count>0 :
+        return shapes, canvas_size
+    else :
+        return None
+
+
+
+
+def write_svg_file(contours: List[Dict[str, str]], filepath: str, canvas_size):
+    # Start SVG file structure
+    svg_content = f'''<svg width="{canvas_size[0]}" height="{canvas_size[1]}" xmlns="http://www.w3.org/2000/svg">\n'''
+    
+    # Add each contour as a separate path with its own color
+    for contour in contours:
+        d = contour["d"]
+        color = contour.get("color", "black")  # Default to black if color not provided
+        opacity = contour["opacity"]
+        svg_content += f'    <path d="{d}" fill="{color}" fill-opacity="{opacity}" fill-rule="evenodd"/>\n'
+    
+    # Close SVG file structure
+    svg_content += "</svg>"
+    
+    # Write the SVG content to file
+    with open(filepath, "w") as svg_file:
+        svg_file.write(svg_content)
+
+
+
+def export_svg(context, filepath, use_selection, plane="XY", origin_mode="auto", scale=100):
+    svg_shapes, canvas_size = prepare_svg(context, use_selection, plane,  origin_mode, scale)
+    if svg_shapes is not None :
+        write_svg_file(svg_shapes, filepath, canvas_size)
         return True
     else:
         return False

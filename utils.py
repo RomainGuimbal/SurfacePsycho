@@ -2,6 +2,7 @@ import bpy
 # import bmesh
 import numpy as np
 from mathutils import Vector
+import math
 from math import isclose
 
 from OCC.Core.BRep import BRep_Tool
@@ -1066,3 +1067,21 @@ def replace_all_instances_of_node_group(old_name, new_name):
     else:
         return -1
         
+
+
+
+
+def to_hex(color):
+    hexcol = ""
+    for c in color[0:3]:
+        if c < 0.0031308:
+            srgb = 0.0 if c < 0.0 else c * 12.92
+        else:
+            srgb = 1.055 * math.pow(c, 1.0 / 2.4) - 0.055
+        
+        hexstr = hex(max(min(int(srgb * 255 + 0.5), 255), 0))
+        if len(hexstr[2:])==1:
+            hexcol+= "0" + hexstr[2:]
+        else :
+            hexcol+= hexstr[2:]
+    return hexcol

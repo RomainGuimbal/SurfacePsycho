@@ -5,6 +5,7 @@ import bpy
 import platform
 os = platform.system()
 from . import macros
+# from .macros import SP_Props_Group
 
 if os!="Darwin":
     from .importer import import_cad
@@ -12,7 +13,7 @@ if os!="Darwin":
     # from utils import  progress_bar
 
 
-    from bpy.props import StringProperty, BoolProperty, EnumProperty
+    from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty
     from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
 
 
@@ -91,6 +92,22 @@ if os!="Darwin":
 
 
 
+from .exporter import export_svg
+
+class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
+    bl_idname = "sp.svg_export"
+    bl_label = "Export SVG"
+
+    filename_ext = ".svg"
+    filter_glob: StringProperty(default="*.svg", options={'HIDDEN'}, maxlen=255)
+    use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
+    plane: EnumProperty(name="Projection Plane", default='XY', items=[('XY', "XY", "XY Plane"), ('YZ', "YZ", "YZ Plane"), ('XZ', "XZ", "XZ Plane")])
+    origin_mode: EnumProperty(name="Origin Mode", default='auto', items=[('auto', "Auto", "Fits exported entities"), ('world', "World", "Place entities relative to Scene origin. Thay may be out of canvas")])
+    scale: FloatProperty(name="Scale", default=100, min=0, description="In pixel per Blender unit")
+    
+    def execute(self, context):
+        export_svg(context, self.filepath, self.use_selection, self.plane, self.origin_mode, self.scale)
+        return {'FINISHED'}
 
 
 
@@ -106,7 +123,7 @@ class SP_PT_MainPanel(bpy.types.Panel):
     bl_label = "Surface Psycho"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Edit"
+    bl_category = "Surface Psycho"
     
     def draw(self, context):
         if context.mode == 'OBJECT':
@@ -114,21 +131,12 @@ class SP_PT_MainPanel(bpy.types.Panel):
                 row = self.layout.row()
                 row.scale_y = 2.0
                 row.operator("sp.quick_export", text="Quick export as .STEP", icon="EXPORT")
+            
             row = self.layout.row()
             row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR")
             row = self.layout.row()
-            row.operator("sp.toogle_control_geom", text="Toogle Control Geometry", icon="OUTLINER_DATA_LATTICE")
-            row = self.layout.row()
             row.operator("sp.replace_node_group", text="Replace Node Group", icon="UV_SYNC_SELECT")
             
-            self.layout.label(text="Select Entities")
-            layout = self.layout
-            split = layout.split(factor=0.5, align=True)
-            col1 = split.column(align=True)
-            col2 = split.column(align=True)
-
-            col1.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
-            col2.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
 
         if context.mode == 'OBJECT' or context.mode == 'EDIT_MESH' :
             row = self.layout.row()
@@ -147,12 +155,45 @@ class SP_PT_MainPanel(bpy.types.Panel):
             
         
 
+class SP_PT_ViewPanel(bpy.types.Panel):
+    bl_idname = "SP_PT_ViewPanel"
+    bl_parent_id = "SP_PT_MainPanel"
+    bl_label = "View"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Surface Psycho"
+    
 
-            
+    def draw(self, context):
+        row = self.layout.row()
+        row.operator("sp.toggle_control_geom", text="Toggle Control Geometry", icon="OUTLINER_DATA_LATTICE")
+        row = self.layout.row()
+        row.operator("sp.toggle_combs", text="Toggle Combs", icon="PARTICLEMODE")
+
+        self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
+        col = self.layout.column()
+        col.prop(context.scene.sp_properties, "combs_scale", text="Combs Scale")
 
 
+class SP_PT_SelectPanel(bpy.types.Panel):
+    bl_idname = "SP_PT_SelectPanel"
+    bl_parent_id = "SP_PT_MainPanel"
+    bl_label = "Select"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Surface Psycho"
+    
 
+    def draw(self, context):
+        # self.layout.label(text="Select Entities")
+        layout = self.layout
+        split = layout.split(factor=0.5, align=True)
+        col1 = split.column(align=True)
+        col2 = split.column(align=True)
 
+        col1.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
+        col2.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
 
 
 
@@ -179,6 +220,7 @@ def menu_convert(self, context):
         if context.active_object.type == 'MESH':
             self.layout.operator("sp.psychopatch_to_bl_nurbs", text="PsychoPatch to internal NURBS", icon="SURFACE_NSURFACE")
 
+
 if os!="Darwin":
     def menu_export_step(self, context):
         self.layout.operator("sp.step_export", text="SurfacePsycho CAD (.step)")
@@ -189,10 +231,15 @@ if os!="Darwin":
     def menu_func_import(self, context):
         self.layout.operator(SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)")
 
+def menu_export_svg(self, context):
+    self.layout.operator("sp.svg_export", text="SurfacePsycho SVG (.svg)")
 
 
 classes = [
     SP_PT_MainPanel,
+    SP_PT_ViewPanel,
+    SP_PT_SelectPanel,
+    SP_OT_ExportSvg,
 ]
 
 if os!="Darwin":
@@ -215,8 +262,10 @@ def register():
         bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
         bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-
+    bpy.types.TOPBAR_MT_file_export.append(menu_export_svg)
+    
 def unregister():
+    bpy.types.TOPBAR_MT_file_export.remove(menu_export_svg)
     if os!="Darwin":
         bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
         bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
