@@ -502,8 +502,7 @@ def export_iges(context, filepath, use_selection, axis_up='Z', axis_forward='Y')
 #                                   #
 #####################################
 
-
-def svg_xy_string_from_CP(CP, plane="XY"):
+def get_axis_ids_from_name(plane):
     match plane:
         case "XY":
             axis1 = 0
@@ -516,19 +515,18 @@ def svg_xy_string_from_CP(CP, plane="XY"):
         case "XZ":
             axis1 = 0
             axis2 = 2
+    return (axis1,axis2)
 
+def svg_xy_string_from_CP(CP, plane="XY"):
+    axis1, axis2 = get_axis_ids_from_name(plane)
     return f"{CP[axis1]} {-CP[axis2]} "
-
 
 
 def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    try :
-        segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
-    except Exception :
-        segs_p_counts = get_attribute_by_name(ob, 'P_count', 'int')
-    
+    segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
+
     # get total_p_count
     total_p_count, segment_count= 0, 0
     for p in segs_p_counts:
@@ -560,21 +558,24 @@ def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
         seg_count = len(w.segs_degrees)
         for j,degree in enumerate(w.segs_degrees) :
             islast = j == seg_count-1
-            if degree <= 1:
+            if degree == 1:
                 if not islast :
                     d+= "L "
                     d+= svg_xy_string_from_CP(w.CP[i], plane)
+                else :
+                    d+="Z "
                 i+=1
             elif degree == 3:
                 d+= "C "
                 d+= svg_xy_string_from_CP(w.CP[i], plane)
+                d+=","
                 d+= svg_xy_string_from_CP(w.CP[i+1], plane)
-                if not islast :
-                    d+= svg_xy_string_from_CP(w.CP[i+2], plane)
+                d+=","
+                d+= svg_xy_string_from_CP(w.CP[(i+2)%(len(w.CP))], plane)
                 i+=3
             else :
                 print("Error, segment has degree not 1 or 3")
-        d+="Z "
+        
     
     hex_col = to_hex(o.color)
     color = f"#{hex_col}"
@@ -597,7 +598,7 @@ def prepare_svg(context, use_selection, plane="XY",  origin_mode="auto", scale=1
     # Position
     if origin_mode=="auto":
         # Find bounds
-        xmax, ymax, zmax = 0,0,0
+        xmax, ymax, zmax = -1.7976931348623157e+308, -1.7976931348623157e+308, -1.7976931348623157e+308
         xmin, ymin, zmin = 1.7976931348623157e+308, 1.7976931348623157e+308, 1.7976931348623157e+308
         
         for o in initial_selection :
@@ -612,23 +613,10 @@ def prepare_svg(context, use_selection, plane="XY",  origin_mode="auto", scale=1
             ymin = oymin if oymin < ymin else ymin
             zmin = ozmin if ozmin < zmin else zmin
 
-        match plane:
-            case "XY":
-                axis1 = 0
-                axis2 = 1
-
-            case "YZ":
-                axis1 = 1
-                axis2 = 2
-
-            case "XZ":
-                axis1 = 0
-                axis2 = 2
         
-        min = Vector((xmin, ymin, zmin))
-        max = Vector((xmax, ymax, zmax))
-        
+
         #origin is in top-left corner
+        axis1, axis2 = get_axis_ids_from_name(plane)
         ox = xmin #if axis1==0 else 0
         oy = ymax if axis2==1 else ymin
         oz = zmax #if axis2==2 else 0
@@ -700,6 +688,8 @@ def write_svg_file(contours: List[Dict[str, str]], filepath: str, canvas_size):
     # Write the SVG content to file
     with open(filepath, "w") as svg_file:
         svg_file.write(svg_content)
+
+    print("SVG Export succesful")
 
 
 
