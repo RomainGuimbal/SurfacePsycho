@@ -46,7 +46,7 @@ class SP_surface :
         if trims_enabled :
             self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
             self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + wires_endpoints)
-            self.assign_vertex_gr("Order", [0.0]*len(CPvert) + wire_degrees)
+            self.assign_vertex_gr("Degree", [0.0]*len(CPvert) + wire_degrees)
 
         self.set_smooth()
 
@@ -188,7 +188,7 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
         # assign vertex group to modifier # change_node_socket_value
     
     # Meshing
-    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Order V": udeg, "Order U": vdeg, "Use Trim Contour":False, "Scaling Method": 1}, pin=True)# TO FIX U AND V INVERTED
+    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Degree V": udeg, "Degree U": vdeg, "Use Trim Contour":False, "Scaling Method": 1}, pin=True)# TO FIX U AND V INVERTED
     return True
 
 
@@ -219,7 +219,7 @@ def build_SP_curve(brepEdge, collection) :
 
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", endpoints)
-    add_vertex_group(ob, "Order", degree_att)
+    add_vertex_group(ob, "Degree", degree_att)
 
     # add modifier
     collection.objects.link(ob)
@@ -242,7 +242,7 @@ def build_SP_flat(brepFace, collection):
 
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", wires_endpoints)
-    add_vertex_group(ob, "Order", degree_att)
+    add_vertex_group(ob, "Degree", degree_att)
     
     # add modifier
     collection.objects.link(ob)
