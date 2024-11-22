@@ -155,20 +155,18 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
 
 
 def build_SP_curve(topodsEdge, collection, scale = 1000) :
-    vector_pts = []
-    
     sp_edge = SP_Edge(topodsEdge)
     sp_edge.scale(1/scale)
     verts = sp_edge.verts
     edge_degree = sp_edge.degree
 
-    endpoints=[1.0] + [0.0]*(len(verts)-2) + [1.0]
+    endpoints = [1.0] + [0.0]*(len(verts)-2) + [1.0]
     if edge_degree!=None:
         degree_att=[edge_degree/10]+[0.0]*(len(verts)-1)
     else :
         degree_att=[0.0]*(len(verts))
 
-    edges = [(i,i+1) for i in range(len(vector_pts)-1)]
+    edges = [(i,i+1) for i in range(len(verts)-1)]
 
     # create object
     mesh = bpy.data.meshes.new("Curve CP")

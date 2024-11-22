@@ -543,8 +543,8 @@ def get_face_3D_contours(occface, scale = 1000):
     for w in wires :
         sp_wire = SP_Wire(occ_wire=w, scale = scale)
 
+        _, wires_edges, _ = join_mesh_entities(wires_verts, wires_edges, [], sp_wire.CP, sp_wire.bmesh_edges, [])
         wires_verts.extend(sp_wire.CP)
-        wires_edges.extend(sp_wire.bmesh_edges)
         wires_endpoints.extend(sp_wire.endpoints_att)
         wires_degrees.extend(sp_wire.degree_att)
         wires_circles.extend(sp_wire.circle_att)
@@ -559,7 +559,6 @@ def get_face_uv_contours(face, uv_bounds=(0,1,0,1)):
 
     min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
     range_u, range_v = max_u - min_u, max_v - min_v
-    # print("UV Range : (" + str(range_u) + ", " + str(range_v) + ")")
 
     # Wires
     for w in wires :
@@ -951,8 +950,9 @@ class SP_Edge :
                 
                 start_point = edge_adaptor.Value(min_t)
                 end_point = edge_adaptor.Value(max_t)
-                
-                if start_point == end_point:
+                range_t = max_t - min_t
+
+                if start_point == end_point or isclose(range_t, math.pi*2):
                     center = edge_adaptor.Circle().Location()
                     gp_pnt_poles = [start_point, center]
                     self.type = EDGES_TYPES['circle']
@@ -989,9 +989,9 @@ class SP_Wire :
             self.bmesh_edges = [] #int tuple
             self.endpoints_att = [] #float
             self.degree_att = [] #float
-            self.knot_att = [] #float
-            self.weights_att = [] #float
-            self.mult_att = [] #float
+            # self.knot_att = [] #float
+            # self.weights_att = [] #float
+            # self.mult_att = [] #float
             self.circle_att = []
             self.import_constructor(occ_wire, scale)
         else :
@@ -1002,7 +1002,7 @@ class SP_Wire :
 
     
     def import_constructor(self, occ_wire: TopoDS_Wire, scale=1000):
-            verts_of_edges = []
+            # verts_of_edges = []
             topods_edges = get_edges_from_wire(occ_wire)
             wire_is_reversed = occ_wire.Orientation() == 1
 
@@ -1018,7 +1018,6 @@ class SP_Wire :
                 if (e.Orientation() != TopAbs_FORWARD) != wire_is_reversed :
                     e_vert.reverse()
 
-                # verts_of_edges.append(e_vert) #verts grouped by edges
                 self.CP.extend(e_vert[:-1])
 
                 self.endpoints_att.extend([1.0]+[0.0]*(len(e_vert)-2))
@@ -1028,16 +1027,28 @@ class SP_Wire :
                     self.degree_att.extend([0.0]*(len(e_vert)-1))
                 
                 # is arc :
-                if e_type == EDGES_TYPES['circle_arc']:
+                if e_type == EDGES_TYPES['circle_arc'] or e_type == EDGES_TYPES['circle']:
                     self.circle_att.extend([0.0, 1.0])
                 else :
                     self.circle_att.extend([0.0]*(len(e_vert)-1))
                 
 
-            if len(topods_edges)==1: # Unclosed wire (for now just for the circle case)
-                self.bmesh_edges = [(i + len(self.CP), i+1 + len(self.CP)) for i in range(len(self.CP)-1)]
-            else :
-                self.bmesh_edges = [(i + len(self.CP), ((i+1)%len(self.CP)) + len(self.CP)) for i in range(len(self.CP))]
+            # if len(topods_edges)==1: # Unclosed wire (for now just for the circle case)
+            #     self.bmesh_edges = [(i + len(self.CP), i+1 + len(self.CP)) for i in range(len(self.CP)-1)]
+            # else :
+            #     self.bmesh_edges = [(i + len(self.CP), ((i+1)%len(self.CP)) + len(self.CP)) for i in range(len(self.CP))]
+            if len(topods_edges)==1: # Unclosed mesh wire (for now just for the circle case)
+                self.CP.append(e_vert[-1])
+                self.degree_att.append(0.0)
+                self.endpoints_att.append(0.0)
+                self.bmesh_edges = [(i, i+1) for i in range(len(self.CP)-1)]
+                
+                if e_type == EDGES_TYPES['circle']:
+                    self.CP.reverse()
+                    self.circle_att.reverse()
+
+            else : # Closed
+                self.bmesh_edges = [(i, ((i+1)%len(self.CP))) for i in range(len(self.CP))]
 
 
     # Exporter constructor
