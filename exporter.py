@@ -4,6 +4,7 @@ import numpy as np
 from mathutils import Vector
 from os.path import dirname, abspath
 from .utils import *
+import copy
 
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
@@ -29,7 +30,6 @@ from OCC.Core.TopTools import TopTools_Array1OfShape
 from OCC.Extend.DataExchange import write_step_file, write_iges_file
 from OCC.Core.ShapeFix import ShapeFix_Face
 from typing import List, Dict
-
 
 
 
@@ -244,7 +244,7 @@ def new_brep_curve(o, context, scale=1000):
     points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
     points*=scale # Unit correction
 
-    wire = Wire(points, segs_p_counts, segs_degrees)
+    wire = SP_Wire(CP = points, segs_p_counts= segs_p_counts, segs_degrees=segs_degrees)
     brep_wire = wire.get_occ_wire_3d(ob=ob)
 
     return brep_wire
@@ -321,7 +321,7 @@ def new_brep_planar_face(o, context):
 
 
 
-def mirror_brep(o, shape):
+def mirror_brep(o, shape, scale=1000):
     ms = BRepBuilderAPI_Sewing(1e-1)
     ms.SetNonManifoldMode(True)
     ms.Add(shape)
@@ -329,15 +329,15 @@ def mirror_brep(o, shape):
 
     ms.Perform()
     shape = ms.SewedShape()
-    loc, rot, scale = o.matrix_world.decompose()
+    loc, rot, _ = o.matrix_world.decompose()
 
     for m in o.modifiers :
         if m.type == 'MIRROR' and m.show_viewport :
             if m.mirror_object==None:
-                mirror_offset = loc*1000
+                mirror_offset = loc*scale
             else :
-                loc, rot, scale = m.mirror_object.matrix_world.decompose()
-                mirror_offset = loc*1000
+                loc, rot, _ = m.mirror_object.matrix_world.decompose()
+                mirror_offset = loc*scale
             
             #Fill configurations array
             configurations = [False]*7
@@ -370,10 +370,12 @@ def mirror_brep(o, shape):
                         base = rot@(Vector([xscales[i],yscales[i],zscales[i]]))
                         atrsf = gp_Trsf()
                         atrsf.SetMirror(gp_Ax2(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]), gp_Dir(base.x, base.y, base.z)))
+                    
                     elif symtype[i]==2 :#sym axiale
                         base = rot@(Vector([xscales[i]-1,abs(yscales[i]-1),abs(zscales[i]-1)])) 
                         atrsf = gp_Trsf()
                         atrsf.SetMirror(gp_Ax1(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]), gp_Dir(base.x, base.y, base.z)))
+                    
                     else :#sym centrale
                         atrsf = gp_Trsf()
                         atrsf.SetMirror(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]))
@@ -507,19 +509,112 @@ def get_axis_ids_from_name(plane):
         case "XY":
             axis1 = 0
             axis2 = 1
+            axis3 = 2
 
         case "YZ":
             axis1 = 1
             axis2 = 2
+            axis3 = 0
 
         case "XZ":
             axis1 = 0
             axis2 = 2
-    return (axis1,axis2)
+            axis3 = 1
+
+    return (axis1,axis2,axis3)
 
 def svg_xy_string_from_CP(CP, plane="XY"):
-    axis1, axis2 = get_axis_ids_from_name(plane)
+    axis1, axis2, _ = get_axis_ids_from_name(plane)
     return f"{CP[axis1]} {-CP[axis2]} "
+
+def svg_z_from_obj(o, plane="XY"):
+    _, _, axis3 = get_axis_ids_from_name(plane)
+    return o.location[axis3]
+
+
+
+
+def mirror_wires_like_modifiers(o, wire_bundle):
+    # list of list of wires
+    list_of_bundle_of_wires = [wire_bundle]
+    self_matrix = o.matrix_world
+
+    for m in o.modifiers :
+        if m.type == 'MIRROR' and m.show_viewport :
+            if m.mirror_object!=None:
+                mirror_obj_mat = m.mirror_object.matrix_world
+            else :
+                mirror_obj_mat = None
+            
+            x = m.use_axis[0]
+            y = m.use_axis[1]
+            z = m.use_axis[2]
+
+            bundle_list = list_of_bundle_of_wires.copy()
+
+            if x :
+                for p in bundle_list :
+                    mir_wires = []
+                    for w in p :
+                        wir = copy.deepcopy(w)
+                        wir.mirror_CP("X", self_matrix, mirror_obj_mat)
+                        mir_wires.append(wir)
+                bundle_list.append(mir_wires)
+
+            if y :
+                for p in bundle_list :
+                    mir_wires = []
+                    for w in p :
+                        wir = copy.deepcopy(w)
+                        wir.mirror_CP("Y", self_matrix, mirror_obj_mat)
+                        mir_wires.append(wir)
+                bundle_list.append(mir_wires)
+
+            if z :
+                for p in bundle_list :
+                    mir_wires = []
+                    for w in p :
+                        wir = copy.deepcopy(w)
+                        wir.mirror_CP("Z", self_matrix, mirror_obj_mat)
+                        mir_wires.append(wir)
+                bundle_list.append(mir_wires)
+            
+            list_of_bundle_of_wires.append(bundle_list)
+
+    return list_of_bundle_of_wires
+
+
+
+def svg_path_string_from_wires(wires, plane):
+    # SVG path string
+    d =""
+    for w in wires.values():
+        d+="M "
+        d+= svg_xy_string_from_CP(w.CP[0], plane)
+        i=1
+        seg_count = len(w.segs_degrees)
+        for j,degree in enumerate(w.segs_degrees) :
+            islast = j == seg_count-1
+            if degree == 1:
+                if not islast :
+                    d+= "L "
+                    d+= svg_xy_string_from_CP(w.CP[i], plane)
+                else :
+                    d+="Z "
+                i+=1
+            elif degree == 3:
+                d+= "C "
+                d+= svg_xy_string_from_CP(w.CP[i], plane)
+                d+=","
+                d+= svg_xy_string_from_CP(w.CP[i+1], plane)
+                d+=","
+                d+= svg_xy_string_from_CP(w.CP[(i+2)%(len(w.CP))], plane)
+                i+=3
+            else :
+                print("Error, segment has degree not 1 or 3")
+    return d
+
+
 
 
 def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
@@ -548,38 +643,23 @@ def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
     points -= origin
     points *= scale # Unit correction
 
+    # Wires
     wires = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degrees)
-
-    d =""
-    for w in wires.values():
-        d+="M "
-        d+= svg_xy_string_from_CP(w.CP[0], plane)
-        i=1
-        seg_count = len(w.segs_degrees)
-        for j,degree in enumerate(w.segs_degrees) :
-            islast = j == seg_count-1
-            if degree == 1:
-                if not islast :
-                    d+= "L "
-                    d+= svg_xy_string_from_CP(w.CP[i], plane)
-                else :
-                    d+="Z "
-                i+=1
-            elif degree == 3:
-                d+= "C "
-                d+= svg_xy_string_from_CP(w.CP[i], plane)
-                d+=","
-                d+= svg_xy_string_from_CP(w.CP[i+1], plane)
-                d+=","
-                d+= svg_xy_string_from_CP(w.CP[(i+2)%(len(w.CP))], plane)
-                i+=3
-            else :
-                print("Error, segment has degree not 1 or 3")
-        
     
+    
+    # SVG path attributes
     hex_col = to_hex(o.color)
     color = f"#{hex_col}"
-    return {"d": d, "color": color, "opacity": o.color[3]}
+    z = svg_z_from_obj(o, plane="XY")
+    fills = []
+
+    # mirror
+    mirrored_wires = mirror_wires_like_modifiers(o, wires) # list of list of wires
+    for mw in mirrored_wires :
+        d = svg_path_string_from_wires(mw, plane)
+        fills.append({"d": d, "color": color, "opacity": o.color[3], "z": z})
+    
+    return fills
 
 
 
@@ -616,7 +696,7 @@ def prepare_svg(context, use_selection, plane="XY",  origin_mode="auto", scale=1
         
 
         #origin is in top-left corner
-        axis1, axis2 = get_axis_ids_from_name(plane)
+        axis1, axis2, _ = get_axis_ids_from_name(plane)
         ox = xmin #if axis1==0 else 0
         oy = ymax if axis2==1 else ymin
         oz = zmax #if axis2==2 else 0
@@ -643,9 +723,7 @@ def prepare_svg(context, use_selection, plane="XY",  origin_mode="auto", scale=1
             match gto :
                 case "planar" :
                     SPobj_count +=1
-                    shape = new_svg_fill(o, context, plane, origin, scale)
-                    # aSew.Add(mirror_brep(o, pf))
-                    shapes.append(shape)
+                    shapes.extend(new_svg_fill(o, context, plane, origin, scale))
 
                 # case "curve" :
                 #     SPobj_count +=1
@@ -664,7 +742,8 @@ def prepare_svg(context, use_selection, plane="XY",  origin_mode="auto", scale=1
         bpy.data.objects.remove(o, do_unlink=True)
     
     if SPobj_count>0 :
-        return shapes, canvas_size
+        shapes_sorted = list(sorted(shapes, key=lambda x: x["z"]))
+        return shapes_sorted, canvas_size
     else :
         return None
 

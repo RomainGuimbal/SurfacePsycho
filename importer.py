@@ -23,48 +23,6 @@ from .utils import *
 
 
 
-class SP_surface :
-    def __init__(self, brepFace, collection, trims_enabled, uv_bounds, CPvert, CPedges, CPfaces):
-        self.trims_enabled = trims_enabled
-        self.brepFace = brepFace
-        self.uv_bounds = uv_bounds
-        self.CPvert = CPvert
-        self.CPedges = CPedges
-        self.CPfaces = CPfaces
-        self.vert, self.edges, self.faces = [],[],[]
-        
-        if trims_enabled :
-            wires_verts, wires_edges, wires_endpoints, wire_degrees = get_face_uv_contours(self.brepFace, self.uv_bounds)
-            self.vert, self.edges, self.faces = join_mesh_entities(CPvert, CPedges, CPfaces, wires_verts, wires_edges, [])
-        else :
-            self.vert, self.edges, self.faces = self.CPvert, self.CP_edges, self.CPfaces
-
-        mesh = bpy.data.meshes.new("Patch CP")
-        mesh.from_pydata(self.vert, self.edges, self.faces)
-        self.ob = bpy.data.objects.new('STEP Patch', mesh)
-        
-        if trims_enabled :
-            self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
-            self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + wires_endpoints)
-            self.assign_vertex_gr("Degree", [0.0]*len(CPvert) + wire_degrees)
-
-        self.set_smooth()
-
-        collection.objects.link(self.ob)
-
-    def set_smooth(self):
-        mesh = self.ob.data
-        values = [True] * len(mesh.polygons)
-        mesh.polygons.foreach_set("use_smooth", values)
-
-    def assign_vertex_gr(self, name, values):
-        add_vertex_group(self.ob, name, values)
-        
-    def add_modifier(self, name, settings_dict = {}, pin=False):
-        add_sp_modifier(self.ob, name, settings_dict, pin = pin)
-
-
-
 
 def build_SP_cylinder(brepFace, collection, trims_enabled) :
     face = BRep_Tool.Surface(brepFace)
@@ -196,25 +154,25 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
 
 
 
-def build_SP_curve(brepEdge, collection) :
+def build_SP_curve(topodsEdge, collection, scale = 1000) :
     vector_pts = []
+    
+    sp_edge = SP_Edge(topodsEdge)
+    sp_edge.scale(1/scale)
+    verts = sp_edge.verts
+    edge_degree = sp_edge.degree
 
-    edge_poles, edge_degree = get_poles_from_edge(brepEdge)
-    endpoints=[1.0] + [0.0]*(len(edge_poles)-2) + [1.0]
+    endpoints=[1.0] + [0.0]*(len(verts)-2) + [1.0]
     if edge_degree!=None:
-        degree_att=[edge_degree/10]+[0.0]*(len(edge_poles)-1)
+        degree_att=[edge_degree/10]+[0.0]*(len(verts)-1)
     else :
-        degree_att=[0.0]*(len(edge_poles))
+        degree_att=[0.0]*(len(verts))
 
-    # prepare mesh
-    for pnt in edge_poles :
-        vector_pts.append(Vector((pnt.X()/1000, pnt.Y()/1000, pnt.Z()/1000)))
-    vert = vector_pts
     edges = [(i,i+1) for i in range(len(vector_pts)-1)]
 
     # create object
     mesh = bpy.data.meshes.new("Curve CP")
-    mesh.from_pydata(vert, edges, [])
+    mesh.from_pydata(verts, edges, [])
     ob = bpy.data.objects.new('STEP curve', mesh)
 
     # Assign vertex groups
@@ -232,8 +190,8 @@ def build_SP_curve(brepEdge, collection) :
 
 
 
-def build_SP_flat(brepFace, collection):
-    wires_verts, wires_edges, wires_endpoints, degree_att = get_face_3D_contours(brepFace)
+def build_SP_flat(topodsFace, collection):
+    wires_verts, wires_edges, wires_endpoints, degree_att, circle_att = get_face_3D_contours(topodsFace)
 
     # create object
     mesh = bpy.data.meshes.new("FlatPatch CP")
@@ -243,6 +201,7 @@ def build_SP_flat(brepFace, collection):
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", wires_endpoints)
     add_vertex_group(ob, "Degree", degree_att)
+    add_vertex_group(ob, "Circle", circle_att)
     
     # add modifier
     collection.objects.link(ob)
@@ -368,7 +327,7 @@ class ShapeHierarchy:
 
 
 
-def build_SP_from_brep(shape, collection, enabled_entities):
+def build_SP_from_brep(shape, collection, enabled_entities, scale = 1000):
     # Create the hierarchy
     shape_hierarchy = ShapeHierarchy()
     shape_hierarchy.process_shape(shape)
@@ -402,7 +361,7 @@ def build_SP_from_brep(shape, collection, enabled_entities):
     #Create SP free edges
     if enabled_entities["curves"]:
         for egde_id, edge in shape_hierarchy.edges.items():
-            build_SP_curve(edge, collection)
+            build_SP_curve(edge, collection, scale)
 
     # TODO : Add brep relations (face connections...)
     
