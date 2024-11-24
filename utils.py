@@ -982,7 +982,7 @@ class SP_Edge :
 
 
 class SP_Wire :
-    def __init__(self, occ_wire: TopoDS_Wire=None, scale=1000, CP=None, segs_p_counts=None, segs_degrees=None):
+    def __init__(self, occ_wire: TopoDS_Wire=None, scale=1000, CP =[], segs_p_counts=None, segs_degrees=None):
         self.CP = [] #Vectors, bmesh format
         if occ_wire!=None:
             # vertex aligned attributes
@@ -996,7 +996,7 @@ class SP_Wire :
             self.import_constructor(occ_wire, scale)
         else :
             self.segs_degrees = segs_degrees
-            self.CP = CP
+            self.CP = [Vector(v) for v in CP]
             self.segs_p_counts = segs_p_counts
             self.export_constructor()
 
@@ -1080,35 +1080,39 @@ class SP_Wire :
         return wire
     
 
-    def mirror_CP(self, axis, object_matrix, mirror_object_matrix=None):
+    def mirror_CP(self, axis, object_matrix, mirror_obj_matrix=None):
+        if mirror_obj_matrix==None :
+            mirror_obj_matrix = object_matrix
+        # Example :
+        # w_M_o @ p_o = p_w : matrix transform of p in object coords to p in world coords (w)
         match axis :
+            # the initial mirror matrix is either expressed in object coords (o) or in mirror object coords (t)
                 case "X":
-                    m = Matrix(((-1,0,0,0),
+                    m_M_o_or_t = Matrix(((-1,0,0,0),
                                 (0,1,0,0),
                                 (0,0,1,0),
                                 (0,0,0,1)))
                 case "Y":
-                    m = Matrix(((1,0,0,0),
+                    m_M_o_or_t = Matrix(((1,0,0,0),
                                 (0,-1,0,0),
                                 (0,0,1,0),
                                 (0,0,0,1)))
                 case "Z":
-                    m = Matrix(((1,0,0,0),
+                    m_M_o_or_t = Matrix(((1,0,0,0),
                                 (0,1,0,0),
                                 (0,0,-1,0),
                                 (0,0,0,1)))
-                    
-        if mirror_object_matrix != None:
-            mirror_object_matrix_relative = object_matrix.invert() * mirror_object_matrix
-        else :
-            mirror_object_matrix_relative = Matrix(((1,0,0,0),
-                                                    (0,1,0,0),
-                                                    (0,0,1,0),
-                                                    (0,0,0,1)))
-        
-        self.CP = (self.CP @ mirror_object_matrix_relative.invert()) @ (mirror_object_matrix_relative * m.invert())
 
-        
+        o_or_t_M_w = mirror_obj_matrix.inverted() #t_M_w or o_M_w
+        m_M_w = m_M_o_or_t @ o_or_t_M_w
+
+        self.CP = [ o_or_t_M_w.inverted() @ (m_M_w @ pw) for pw in self.CP]
+
+    def scale(self, scale_factor):
+        self.CP = [v*scale_factor for v in self.CP]
+    
+    def offset(self, offset : Vector):
+        self.CP = [v+offset for v in self.CP]
 
 
 
@@ -1129,7 +1133,7 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degre
     
     # Make wires
     # Init
-    wires = {}
+    wires_dict = {}
     w_prev = wire_index[0]
     build_CP, build_segs_p_counts, build_segs_degrees = [], [], []
     seg_p_added = 0
@@ -1140,7 +1144,7 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degre
     for i, w_cur in enumerate(wire_index) :
         # wire first point
         if w_cur != w_prev :
-            wires[w_prev] = SP_Wire(CP = build_CP, segs_p_counts= build_segs_p_counts, segs_degrees= build_segs_degrees)
+            wires_dict[w_prev] = SP_Wire(CP = build_CP, segs_p_counts= build_segs_p_counts, segs_degrees= build_segs_degrees)
             build_CP, build_segs_p_counts, build_segs_degrees = [], [], []
 
         # Add point
@@ -1159,9 +1163,9 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degre
 
         w_prev = w_cur
     # Build last wire
-    wires[w_prev] = SP_Wire(CP = build_CP, segs_p_counts= build_segs_p_counts, segs_degrees= build_segs_degrees)
+    wires_dict[w_prev] = SP_Wire(CP = build_CP, segs_p_counts= build_segs_p_counts, segs_degrees= build_segs_degrees)
 
-    return wires # dictionary
+    return wires_dict # dictionary of SP_Wires
 
 
 

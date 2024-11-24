@@ -534,9 +534,9 @@ def svg_z_from_obj(o, plane="XY"):
 
 
 
-def mirror_wires_like_modifiers(o, wire_bundle):
+def mirror_wires_like_modifiers(o, wire_bundle : dict):
     # list of list of wires
-    list_of_bundle_of_wires = [wire_bundle]
+    list_of_bundle_of_wires =[wire_bundle]
     self_matrix = o.matrix_world
 
     for m in o.modifiers :
@@ -550,36 +550,38 @@ def mirror_wires_like_modifiers(o, wire_bundle):
             y = m.use_axis[1]
             z = m.use_axis[2]
 
-            bundle_list = list_of_bundle_of_wires.copy()
+            #copy bundles
+            bundles_list = list_of_bundle_of_wires.copy()
 
+            #mirror and append the copy to the original
             if x :
-                for p in bundle_list :
-                    mir_wires = []
-                    for w in p :
+                for bundle in bundles_list.copy() :
+                    mir_wires = {}
+                    for key, w in bundle.items() :
                         wir = copy.deepcopy(w)
                         wir.mirror_CP("X", self_matrix, mirror_obj_mat)
-                        mir_wires.append(wir)
-                bundle_list.append(mir_wires)
-
+                        mir_wires[key]= wir
+                    bundles_list.append(mir_wires)
+            
             if y :
-                for p in bundle_list :
-                    mir_wires = []
-                    for w in p :
+                for bundle in bundles_list.copy() :
+                    mir_wires = {}
+                    for key, w in bundle.items() :
                         wir = copy.deepcopy(w)
                         wir.mirror_CP("Y", self_matrix, mirror_obj_mat)
-                        mir_wires.append(wir)
-                bundle_list.append(mir_wires)
+                        mir_wires[key]= wir
+                    bundles_list.append(mir_wires)
 
             if z :
-                for p in bundle_list :
-                    mir_wires = []
-                    for w in p :
+                for bundle in bundles_list.copy() :
+                    mir_wires = {}
+                    for key, w in bundle.items() :
                         wir = copy.deepcopy(w)
                         wir.mirror_CP("Z", self_matrix, mirror_obj_mat)
-                        mir_wires.append(wir)
-                bundle_list.append(mir_wires)
+                        mir_wires[key]= wir
+                    bundles_list.append(mir_wires)
             
-            list_of_bundle_of_wires.append(bundle_list)
+            list_of_bundle_of_wires = bundles_list.copy()
 
     return list_of_bundle_of_wires
 
@@ -640,11 +642,10 @@ def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
 
     # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
-    points -= origin
-    points *= scale # Unit correction
+    
 
     # Wires
-    wires = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degrees)
+    wires_dict = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degrees)
     
     
     # SVG path attributes
@@ -654,7 +655,14 @@ def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
     fills = []
 
     # mirror
-    mirrored_wires = mirror_wires_like_modifiers(o, wires) # list of list of wires
+    mirrored_wires = mirror_wires_like_modifiers(o, wires_dict) # list of dictionaries of wires
+    
+    # transform
+    for mw in mirrored_wires :
+        for k, v in mw.items():
+            v.offset(-origin)
+            v.scale(scale)
+
     for mw in mirrored_wires :
         d = svg_path_string_from_wires(mw, plane)
         fills.append({"d": d, "color": color, "opacity": o.color[3], "z": z})
