@@ -10,6 +10,9 @@ The long term goal is a full class A surfacing tool accessible by anyone.
 
 [BlenderArtists thread](https://blenderartists.org/t/surfacepsycho-addon-project/1487629)
 
-[>>> Alpha release and test file here <<<](https://acideromineh.gumroad.com/l/SurfacePsycho)
+[>>> Alpha releases and test files here <<<](https://acideromineh.gumroad.com/l/SurfacePsycho)
+
+Join the [Discord server](https://discord.gg/MJdxMBM6pm) to know what is under the suface (spoiler alert psychos)
+
 
 Experiment with it and share feedback !
