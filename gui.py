@@ -102,11 +102,13 @@ class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
     filter_glob: StringProperty(default="*.svg", options={'HIDDEN'}, maxlen=255)
     use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
     plane: EnumProperty(name="Projection Plane", default='XY', items=[('XY', "XY", "XY Plane"), ('YZ', "YZ", "YZ Plane"), ('XZ', "XZ", "XZ Plane")])
-    origin_mode: EnumProperty(name="Origin Mode", default='auto', items=[('auto', "Auto", "Fits exported entities"), ('world', "World", "Place entities relative to Scene origin. Thay may be out of canvas")])
+    origin_mode: EnumProperty(name="Origin Mode", default='auto', items=[('auto', "Auto", "Fits exported entities"), 
+                                                                         ('world', "World", "Place entities relative to Scene origin. Thay may be out of canvas")])
     scale: FloatProperty(name="Scale", default=100, min=0, description="In pixel per Blender unit")
-    
+    color_mode: EnumProperty(name="Color", default='material', items=[('material', "From Material", "Color svg paths according to material in object first slot", 'MATERIAL', 1),
+                                                                      ('object', "From Object", "Color svg paths according to object color property", 'OBJECT_DATAMODE', 2)])
     def execute(self, context):
-        export_svg(context, self.filepath, self.use_selection, self.plane, self.origin_mode, self.scale)
+        export_svg(context, self.filepath, self.use_selection, self.plane, self.origin_mode, self.scale, self.color_mode)
         return {'FINISHED'}
 
 

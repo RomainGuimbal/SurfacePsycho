@@ -619,7 +619,7 @@ def svg_path_string_from_wires(wires, plane):
 
 
 
-def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
+def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100, color_mode="material"):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
@@ -649,7 +649,11 @@ def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
     
     
     # SVG path attributes
-    hex_col = to_hex(o.color)
+    if color_mode == "object":
+        col_rgba = o.color
+    elif color_mode == "material":
+        col_rgba = o.material_slots[0].material.diffuse_color
+    hex_col = to_hex(col_rgba)
     color = f"#{hex_col}"
     z = svg_z_from_obj(o, plane="XY")
     fills = []
@@ -662,16 +666,18 @@ def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100):
         for k, v in mw.items():
             v.offset(-origin)
             v.scale(scale)
+    
+    opacity = o.color[3]**(1/2.2) if o.color[3]!=1.0 else 1.0
 
     for mw in mirrored_wires :
         d = svg_path_string_from_wires(mw, plane)
-        fills.append({"d": d, "color": color, "opacity": o.color[3], "z": z})
+        fills.append({"d": d, "color": color, "opacity": opacity, "z": z})
     
     return fills
 
 
 
-def prepare_svg(context, use_selection, plane="XY",  origin_mode="auto", scale=100):
+def prepare_svg(context, use_selection, plane="XY",  origin_mode="auto", scale=100, color_mode="material"):
     shapes = []
     SPobj_count=0
 
@@ -731,7 +737,7 @@ def prepare_svg(context, use_selection, plane="XY",  origin_mode="auto", scale=1
             match gto :
                 case "planar" :
                     SPobj_count +=1
-                    shapes.extend(new_svg_fill(o, context, plane, origin, scale))
+                    shapes.extend(new_svg_fill(o, context, plane, origin, scale, color_mode="material"))
 
                 # case "curve" :
                 #     SPobj_count +=1
@@ -780,8 +786,8 @@ def write_svg_file(contours: List[Dict[str, str]], filepath: str, canvas_size):
 
 
 
-def export_svg(context, filepath, use_selection, plane="XY", origin_mode="auto", scale=100):
-    svg_shapes, canvas_size = prepare_svg(context, use_selection, plane,  origin_mode, scale)
+def export_svg(context, filepath, use_selection, plane="XY", origin_mode="auto", scale=100, color_mode="material"):
+    svg_shapes, canvas_size = prepare_svg(context, use_selection, plane,  origin_mode, scale, color_mode)
     if svg_shapes is not None :
         write_svg_file(svg_shapes, filepath, canvas_size)
         return True
