@@ -5,11 +5,13 @@ from mathutils import Vector
 from datetime import datetime
 from os.path import dirname, abspath, join
 import platform
+from .exporter_svg import *
 os = platform.system()
+
 
 if os!="Darwin":
     from .importer import *
-    from .exporter import *
+    from .exporter_cad import *
 
     class SP_OT_quick_export(bpy.types.Operator):
         bl_idname = "sp.quick_export"

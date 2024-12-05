@@ -9,7 +9,7 @@ from . import macros
 
 if os!="Darwin":
     from .importer import import_cad
-    from .exporter import export_step, export_iges
+    from .exporter_cad import export_step, export_iges
     # from utils import  progress_bar
 
 
@@ -92,7 +92,7 @@ if os!="Darwin":
 
 
 
-from .exporter import export_svg
+from .exporter_svg import export_svg
 
 class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
     bl_idname = "sp.svg_export"

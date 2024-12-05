@@ -29,8 +29,6 @@ from OCC.Core.Convert import Convert_TgtThetaOver2
 
 
 
-# from multiprocessing import Process
-
 from os.path import dirname, abspath, join
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
