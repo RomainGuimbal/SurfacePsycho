@@ -2,7 +2,7 @@ import bpy
 import sys
 import numpy as np
 from mathutils import Vector
-from os.path import dirname, abspath
+from os.path import dirname, abspath, isfile
 from .utils import *
 import copy
 
@@ -11,14 +11,18 @@ if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
 
-
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform
 from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_Plane #Geom_BezierCurve, Geom_TrimmedCurve, Geom_BSplineCurve
 from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2 #gp_Pnt2d #, gp_Vec
 from OCP.TColgp import TColgp_Array2OfPnt
 from OCP.TopoDS import TopoDS_Shape #TopoDS_Wire, TopoDS_Compound
-# from OCC.Extend.DataExchange import write_step_file, write_iges_file
 from OCP.ShapeFix import ShapeFix_Face
+from OCP.IGESControl import IGESControl_Writer
+from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
+from OCP.Interface import Interface_Static
+from OCP.IFSelect import IFSelect_RetDone
+from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
+
 
 
 
@@ -471,3 +475,74 @@ def export_iges(context, filepath, use_selection, axis_up='Z', axis_forward='Y')
         return True
     else:
         return False
+    
+
+
+
+
+
+
+
+
+
+###########################
+# Step export OCC Extends #
+###########################
+
+def write_step_file(a_shape, filename, application_protocol="AP203"):
+    """exports a shape to a STEP file
+    a_shape: the topods_shape to export (a compound, a solid etc.)
+    filename: the filename
+    application protocol: "AP203" or "AP214IS" or "AP242DIS"
+    """
+    # a few checks
+    if a_shape.IsNull():
+        raise AssertionError(f"Shape {a_shape} is null.")
+    if application_protocol not in ["AP203", "AP214IS", "AP242DIS"]:
+        raise AssertionError(
+            f"application_protocol must be either AP203 or AP214IS. You passed {application_protocol}."
+        )
+    if isfile(filename):
+        print(f"Warning: {filename} file already exists and will be replaced")
+    # creates and initialise the step exporter
+    step_writer = STEPControl_Writer()
+    Interface_Static.SetCVal("write.step.schema", application_protocol)
+
+    # transfer shapes and write file
+    step_writer.Transfer(a_shape, STEPControl_AsIs)
+    status = step_writer.Write(filename)
+
+    if status != IFSelect_RetDone:
+        raise IOError("Error while writing shape to STEP file.")
+    if not isfile(filename):
+        raise IOError(f"{filename} not saved to filesystem.")
+    
+
+
+
+
+
+###########################
+# IGES export OCC Extends #
+###########################
+
+def write_iges_file(a_shape, filename):
+    """exports a shape to a STEP file
+    a_shape: the topods_shape to export (a compound, a solid etc.)
+    filename: the filename
+    application protocol: "AP203" or "AP214"
+    """
+    # a few checks
+    if a_shape.IsNull():
+        raise AssertionError("Shape is null.")
+    if isfile(filename):
+        print(f"Warning: {filename} already exists and will be replaced")
+    # creates and initialise the step exporter
+    iges_writer = IGESControl_Writer()
+    iges_writer.AddShape(a_shape)
+    status = iges_writer.Write(filename)
+
+    if status != IFSelect_RetDone:
+        raise AssertionError("Not done.")
+    if not isfile(filename):
+        raise IOError("File not written to disk.")

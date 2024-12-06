@@ -14,8 +14,8 @@
 bl_info = {
     "name": "Surface Psycho",
     "author": "Romain Guimbal",
-    "version": (0, 6),
-    "blender": (4, 1, 0),
+    "version": (0, 7),
+    "blender": (4, 3, 0),
     "description": "Surface design for the mechanical industry",
     "warning": "Alpha",
     "doc_url": "https://github.com/RomainGuimbal/SurfacePsycho/wiki",
@@ -23,32 +23,43 @@ bl_info = {
     "location": "View3D > Add > Surface/Curve  |  Viewport > N Panel > Edit"
 }
 
+import bpy
+
+# import six
+# print(six.__file__)
+
+# import vtkmodules
+# print(vtkmodules.__file__)
+
+# import OCP
+# print(OCP.__file__)
+
 import sys
 from os.path import dirname
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
-import bpy
-import OCP
-# from . import gui
 
-# class SP_AddonPreferences(bpy.types.AddonPreferences):
-#     bl_idname = __name__
+from . import gui
 
-#     def draw(self, context):
-#         layout = self.layout
-#         col = layout.column()
-#         col.operator("sp.add_library", text="Add Assets Path")
+class SP_AddonPreferences(bpy.types.AddonPreferences):
+    bl_idname = __name__
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.operator("sp.add_library", text="Add Assets Path")
 
 
-# def register():
-#     gui.register()
-#     bpy.utils.register_class(SP_AddonPreferences)
+def register():
+    gui.register()
+    bpy.utils.register_class(SP_AddonPreferences)
 
-# def unregister():
-#     bpy.utils.unregister_class(SP_AddonPreferences)
-#     gui.unregister()
+def unregister():
+    bpy.utils.unregister_class(SP_AddonPreferences)
+    gui.unregister()
 
-# if __name__ == "__main__":
-#     register()
+
+if __name__ == "__main__":
+    register()

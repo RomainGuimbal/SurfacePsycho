@@ -21,10 +21,11 @@ from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
-from OCP.TopoDS import TopoDS_Wire, TopoDS_Face, TopoDS_Edge, topods, TopoDS_Vertex
+from OCP.TopoDS import TopoDS_Wire, TopoDS_Face, TopoDS_Edge, TopoDS_Vertex
 from OCP.TopTools import TopTools_Array1OfShape
-from OCP.GeomConvert import geomconvert
+from OCP.GeomConvert import GeomConvert
 from OCP.Convert import Convert_TgtThetaOver2
+
 
 
 
@@ -337,19 +338,15 @@ def flatten_list_of_lists(list_of_lists):
 
 
 
-
-
-def get_wires_from_face(face):
-    # face type = TopoDS_Face
+def get_wires_from_face(face: TopoDS_Face):
     wires = []
     explorer = TopExp_Explorer(face, TopAbs_WIRE)
-
     while explorer.More():
         wire = explorer.Current()
+        # wire = TopoDS_Wire.Cast(explorer.Current())
         if wire.ShapeType() == TopAbs_WIRE and wire.Closed():
-            wires.append(topods.Wire(wire))
+            wires.append(wire)
         explorer.Next()
-
     return wires
 
 
@@ -361,7 +358,7 @@ def get_edges_from_wire(wire):
     while explorer.More():
         edge = explorer.Current()
         if edge.ShapeType() == TopAbs_EDGE:
-            edges.append(topods.Edge(edge))
+            edges.append(edge)
         explorer.Next()
 
     return edges
@@ -920,7 +917,7 @@ class SP_Edge :
             if not isinstance(curve, Geom_BSplineCurve):
                 # first_param = edge_adaptor.FirstParameter()
                 # last_param = edge_adaptor.LastParameter()
-                bspline = geomconvert.CurveToBSplineCurve(curve, Convert_TgtThetaOver2)
+                bspline = GeomConvert.CurveToBSplineCurve(curve, Convert_TgtThetaOver2)
             else:
                 bspline = curve
 
