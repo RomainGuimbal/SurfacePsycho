@@ -4,33 +4,31 @@ import numpy as np
 from mathutils import Vector, Matrix
 import math
 from math import isclose
+from typing import List, Tuple
+from os.path import dirname, abspath, join
 
-from OCP.BRep import BRep_Tool
+# from OCP.Geom2dAdaptor import Geom2dAdaptor_Curve
+from OCP.BRep import BRep_Builder
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
+from OCP.Convert import Convert_TgtThetaOver2
 from OCP.GC import GC_MakeSegment
 from OCP.GCE2d import GCE2d_MakeSegment
 from OCP.Geom import Geom_BezierCurve, Geom_BSplineCurve
 from OCP.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
-from OCP.Geom2dAdaptor import Geom2dAdaptor_Curve
 from OCP.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 from OCP.GeomAdaptor import GeomAdaptor_Surface, GeomAdaptor_Curve
 from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
+from OCP.GeomConvert import GeomConvert
 from OCP.gp import gp_Pnt, gp_Pnt2d
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
-from OCP.TopoDS import TopoDS_Wire, TopoDS_Face, TopoDS_Edge, TopoDS_Vertex
+from OCP.TopoDS import TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
 from OCP.TopTools import TopTools_Array1OfShape
-from OCP.GeomConvert import GeomConvert
-from OCP.Convert import Convert_TgtThetaOver2
 
 
-
-
-
-from os.path import dirname, abspath, join
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
@@ -1243,3 +1241,26 @@ def to_hex(color):
         else :
             hexcol+= hexstr[2:]
     return hexcol
+
+
+
+
+# From OCC Extend
+def list_of_shapes_to_compound(
+    list_of_shapes: List[TopoDS_Shape],
+) -> Tuple[TopoDS_Compound, bool]:
+    """takes a list of shape in input, gather all shapes into one compound
+    returns the compound and a boolean, True if all shapes were added to the compound,
+    False otherwise
+    """
+    all_shapes_converted = True
+    the_compound = TopoDS_Compound()
+    the_builder = BRep_Builder()
+    the_builder.MakeCompound(the_compound)
+    for shp in list_of_shapes:
+        # first ensure the shape is not Null
+        if shp.IsNull():
+            all_shapes_converted = False
+            continue
+        the_builder.Add(the_compound, shp)
+    return the_compound, all_shapes_converted

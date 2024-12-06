@@ -26,8 +26,7 @@ from OCP.TopoDS import TopoDS_Compound, TopoDS_Face, TopoDS_Edge
 from OCP.TopTools import TopTools_IndexedMapOfShape
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorTool
 
-# from OCC.Extend.TopologyUtils import list_of_shapes_to_compound
-# from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
+from .utils import list_of_shapes_to_compound
 
 
 
