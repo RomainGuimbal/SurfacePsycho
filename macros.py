@@ -22,7 +22,7 @@ if os!="Darwin":
         def execute(self, context):
 
             blenddir = bpy.path.abspath("//")
-            if blenddir !="":#avoids exporting to root
+            if blenddir !="": #avoids exporting to root
                 dir =  blenddir
             else :
                 dir = context.preferences.filepaths.temporary_directory

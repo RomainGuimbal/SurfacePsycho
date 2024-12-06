@@ -5,26 +5,26 @@ from mathutils import Vector, Matrix
 import math
 from math import isclose
 
-from OCC.Core.BRep import BRep_Tool
-from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
-from OCC.Core.GC import GC_MakeSegment
-from OCC.Core.GCE2d import GCE2d_MakeSegment
-from OCC.Core.Geom import Geom_BezierCurve, Geom_BSplineCurve
-from OCC.Core.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
-from OCC.Core.Geom2dAdaptor import Geom2dAdaptor_Curve
-from OCC.Core.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
-from OCC.Core.GeomAdaptor import GeomAdaptor_Surface, GeomAdaptor_Curve
-from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
-from OCC.Core.gp import gp_Pnt, gp_Pnt2d
-from OCC.Core.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
-from OCC.Core.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
-from OCC.Core.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
-from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopoDS import TopoDS_Wire, TopoDS_Face, TopoDS_Edge, topods, TopoDS_Vertex
-from OCC.Core.TopTools import TopTools_Array1OfShape
-from OCC.Core.GeomConvert import geomconvert
-from OCC.Core.Convert import Convert_TgtThetaOver2
+from OCP.BRep import BRep_Tool
+from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
+from OCP.GC import GC_MakeSegment
+from OCP.GCE2d import GCE2d_MakeSegment
+from OCP.Geom import Geom_BezierCurve, Geom_BSplineCurve
+from OCP.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
+from OCP.Geom2dAdaptor import Geom2dAdaptor_Curve
+from OCP.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
+from OCP.GeomAdaptor import GeomAdaptor_Surface, GeomAdaptor_Curve
+from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
+from OCP.gp import gp_Pnt, gp_Pnt2d
+from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
+from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
+from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
+from OCP.TopExp import TopExp_Explorer
+from OCP.TopoDS import TopoDS_Wire, TopoDS_Face, TopoDS_Edge, topods, TopoDS_Vertex
+from OCP.TopTools import TopTools_Array1OfShape
+from OCP.GeomConvert import geomconvert
+from OCP.Convert import Convert_TgtThetaOver2
 
 
 
@@ -1169,11 +1169,11 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degre
 
 
 
-# from OCC.Core.TopoDS import TopoDS_Face
-# from OCC.Core.TopExp import TopExp_Explorer
-# from OCC.Core.TopAbs import TopAbs_WIRE
-# from OCC.Core.TopoDS import topods_Wire
-# from OCC.Core.BRepCheck import BRepCheck_Wire, BRepCheck_NoError
+# from OCP.TopoDS import TopoDS_Face
+# from OCP.TopExp import TopExp_Explorer
+# from OCP.TopAbs import TopAbs_WIRE
+# from OCP.TopoDS import topods_Wire
+# from OCP.BRepCheck import BRepCheck_Wire, BRepCheck_NoError
 
 # def check_trim_wires_for_face(face: TopoDS_Face):
 #     if not isinstance(face, TopoDS_Face):

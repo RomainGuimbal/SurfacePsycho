@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "surfacepsycho"
-version = "0.6.0"
+version = "0.7.0"
 name = "Surface Psycho"
 tagline = "Surface Design in Blender"
 maintainer = "Romain Guimbal"
@@ -11,7 +11,7 @@ website = "https://github.com/RomainGuimbal/SurfacePsycho/wiki"
 
 tags = ["Modeling", "Import-Export", "Geometry Nodes"]
 
-blender_version_min = "4.2.0"
+blender_version_min = "4.3.0"
 
 license = ["SPDX:LGPL-2.0-or-later"]
 
@@ -20,7 +20,7 @@ copyright = ["2024 Romain Guimbal"]
 # platforms = ["any", "windows-x64"]
 wheels = [
   "./wheels/six-1.16.0-py2.py3-none-any.whl",
-  # "./wheels/OCC-7.7.2-cp311-cp311-win_amd64.whl",
+  "./wheels/cadquery_ocp-7.7.2-cp311-cp311-win_amd64.whl",
 ]
 
 [permissions]

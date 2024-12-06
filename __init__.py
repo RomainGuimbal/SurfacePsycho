@@ -30,24 +30,25 @@ if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
 import bpy
-from . import gui
+import OCP
+# from . import gui
 
-class SP_AddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = __name__
+# class SP_AddonPreferences(bpy.types.AddonPreferences):
+#     bl_idname = __name__
 
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.operator("sp.add_library", text="Add Assets Path")
+#     def draw(self, context):
+#         layout = self.layout
+#         col = layout.column()
+#         col.operator("sp.add_library", text="Add Assets Path")
 
 
-def register():
-    gui.register()
-    bpy.utils.register_class(SP_AddonPreferences)
+# def register():
+#     gui.register()
+#     bpy.utils.register_class(SP_AddonPreferences)
 
-def unregister():
-    bpy.utils.unregister_class(SP_AddonPreferences)
-    gui.unregister()
+# def unregister():
+#     bpy.utils.unregister_class(SP_AddonPreferences)
+#     gui.unregister()
 
-if __name__ == "__main__":
-    register()
+# if __name__ == "__main__":
+#     register()

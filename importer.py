@@ -1,22 +1,22 @@
 import bpy
 import numpy as np
-from OCC.Core.BRep import BRep_Tool
-from OCC.Core.BRepTools import breptools
-from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line
-from OCC.Core.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
-from OCC.Core.GeomAdaptor import GeomAdaptor_Curve, GeomAdaptor_Surface
-from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnCurve
-from OCC.Core.GeomConvert import geomconvert_CurveToBSplineCurve
-from OCC.Core.TopoDS import topods
-from OCC.Core.TopTools import TopTools_IndexedMapOfShape
-from OCC.Core.IFSelect import IFSelect_RetDone
-from OCC.Core.IGESControl import IGESControl_Reader
-from OCC.Core.STEPControl import STEPControl_Reader
-from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
-from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Extend.DataExchange import read_step_file
-from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
+from OCP.BRep import BRep_Tool
+from OCP.BRepTools import breptools
+from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line
+from OCP.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
+from OCP.GeomAdaptor import GeomAdaptor_Curve, GeomAdaptor_Surface
+from OCP.GeomAPI import GeomAPI_ProjectPointOnCurve
+from OCP.GeomConvert import geomconvert_CurveToBSplineCurve
+from OCP.TopoDS import topods
+from OCP.TopTools import TopTools_IndexedMapOfShape
+from OCP.IFSelect import IFSelect_RetDone
+from OCP.IGESControl import IGESControl_Reader
+from OCP.STEPControl import STEPControl_Reader
+from OCP.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
+from OCP.TopExp import TopExp_Explorer
+# from OCC.Extend.DataExchange import read_step_file
+# from OCC.Extend.TopologyUtils import is_face, is_edge, is_compound, is_shell
 from mathutils import Vector
 from os.path import abspath, splitext, split
 from .utils import *

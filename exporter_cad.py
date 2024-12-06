@@ -12,13 +12,13 @@ if file_dirname not in sys.path:
 
 
 
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform
-from OCC.Core.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_Plane #Geom_BezierCurve, Geom_TrimmedCurve, Geom_BSplineCurve
-from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2 #gp_Pnt2d #, gp_Vec
-from OCC.Core.TColgp import TColgp_Array2OfPnt
-from OCC.Core.TopoDS import TopoDS_Shape #TopoDS_Wire, TopoDS_Compound
-from OCC.Extend.DataExchange import write_step_file, write_iges_file
-from OCC.Core.ShapeFix import ShapeFix_Face
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform
+from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_Plane #Geom_BezierCurve, Geom_TrimmedCurve, Geom_BSplineCurve
+from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2 #gp_Pnt2d #, gp_Vec
+from OCP.TColgp import TColgp_Array2OfPnt
+from OCP.TopoDS import TopoDS_Shape #TopoDS_Wire, TopoDS_Compound
+# from OCC.Extend.DataExchange import write_step_file, write_iges_file
+from OCP.ShapeFix import ShapeFix_Face
 
 
 
