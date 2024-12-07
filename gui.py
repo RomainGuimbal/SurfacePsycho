@@ -23,11 +23,12 @@ if os!="Darwin":
         filename_ext = ".step"
         filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255)
         use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-        axis_up: EnumProperty(default='Z')
-        axis_forward: EnumProperty(default='Y')
+        # axis_up: EnumProperty(default='Z')
+        # axis_forward: EnumProperty(default='Y')
+        scale: FloatProperty(name="Scale", default=1000, min=0)
 
         def execute(self, context):
-            export_step(context, self.filepath, self.use_selection, self.axis_up, self.axis_forward)
+            export_step(context, self.filepath, self.use_selection, 'Z', 'Y', self.scale)
             return {'FINISHED'}
 
 
@@ -39,11 +40,12 @@ if os!="Darwin":
         filename_ext = ".iges"
         filter_glob: StringProperty(default="*.iges", options={'HIDDEN'}, maxlen=255)
         use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-        axis_up: EnumProperty(default='Z')
-        axis_forward: EnumProperty(default='Y')
+        # axis_up: EnumProperty(default='Z')
+        # axis_forward: EnumProperty(default='Y')
+        scale: FloatProperty(name="Scale", default=1000, min=0)
 
         def execute(self, context):
-            export_iges(context, self.filepath, self.use_selection,self.axis_up, self.axis_forward)
+            export_iges(context, self.filepath, self.use_selection, 'Z', 'Y', self.scale)
             return {'FINISHED'}
 
 

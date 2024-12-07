@@ -64,12 +64,12 @@ def create_face(geom_surf = None, outer_wire = None, inner_wires=[]):
 
 
 
-def new_brep_bezier_face(o, context):
+def new_brep_bezier_face(o, context, scale=1000):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
     points = get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', u_count*v_count)
-    points *= 1000 #unit correction
+    points *= scale #unit correction
 
     controlPoints = TColgp_Array2OfPnt(1, u_count, 1, v_count)
     for i in range(v_count):
@@ -123,13 +123,13 @@ def new_brep_bezier_face(o, context):
 
 
 
-def new_brep_NURBS_face(o, context):
+def new_brep_NURBS_face(o, context, scale=1000):
     # Get attributes
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
     points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', u_count*v_count)
-    points *= 1000 #unit correction
+    points *= scale #unit correction
     degree_u, degree_v = get_attribute_by_name(ob, 'Degrees', 'int', 2)
     try:
         isclamped_u, isclamped_v = get_attribute_by_name(ob, 'IsClamped', 'bool', 2)
@@ -246,7 +246,7 @@ def new_brep_curve(o, context, scale=1000):
 
 
 
-def new_brep_planar_face(o, context):
+def new_brep_planar_face(o, context, scale=1000):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     try :
@@ -272,12 +272,12 @@ def new_brep_planar_face(o, context):
 
     # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
-    points*=1000 # Unit correction
+    points*=scale # Unit correction
 
     wires = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degrees)
 
     # Orient and place
-    loc, rot, scale = o.matrix_world.decompose()
+    loc, rot, obj_scale = o.matrix_world.decompose()
     try :
         offset = get_attribute_by_name(ob, 'planar_offset', 'vec3', 1)[0]
         orient = get_attribute_by_name(ob, 'planar_orient', 'vec3', 1)[0]
@@ -285,7 +285,7 @@ def new_brep_planar_face(o, context):
         offset = [0,0,0]
         orient = [0,0,1]
     loc += rot@ Vector(offset)
-    loc *= 1000
+    loc *= scale
     pl_normal = rot@ Vector(orient)
     pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z), gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
     geom_pl = Geom_Plane(pl)
@@ -389,7 +389,7 @@ def mirror_brep(o, shape, scale=1000):
 
 
 
-def prepare_brep(context, use_selection, axis_up, axis_forward):
+def prepare_brep(context, use_selection, axis_up, axis_forward, scale = 1000):
     aShape = TopoDS_Shape()
     aSew = BRepBuilderAPI_Sewing(1e-1)
     SPobj_count=0
@@ -412,23 +412,23 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
             match gto :
                 case "bezier_surf" :
                     SPobj_count +=1
-                    af = new_brep_bezier_face(o, context)
-                    aSew.Add(mirror_brep(o, af))
+                    af = new_brep_bezier_face(o, context, scale)
+                    aSew.Add(mirror_brep(o, af, scale))
 
                 case "NURBS_surf" :
                     SPobj_count +=1
-                    nf = new_brep_NURBS_face(o, context)
-                    aSew.Add(mirror_brep(o, nf))
+                    nf = new_brep_NURBS_face(o, context, scale)
+                    aSew.Add(mirror_brep(o, nf, scale))
 
                 case "planar" :
                     SPobj_count +=1
-                    pf = new_brep_planar_face(o, context)
-                    aSew.Add(mirror_brep(o, pf))
+                    pf = new_brep_planar_face(o, context, scale)
+                    aSew.Add(mirror_brep(o, pf, scale))
 
                 case "curve" :
                     SPobj_count +=1
-                    cu = new_brep_curve(o, context)
-                    aSew.Add(mirror_brep(o, cu))
+                    cu = new_brep_curve(o, context, scale)
+                    aSew.Add(mirror_brep(o, cu, scale))
 
                 # case "collection_instance":
                 #     pass
@@ -460,16 +460,16 @@ def prepare_brep(context, use_selection, axis_up, axis_forward):
 
 
 
-def export_step(context, filepath, use_selection, axis_up='Z', axis_forward='Y'):
-    brep_shapes = prepare_brep(context, use_selection, axis_up, axis_forward)
+def export_step(context, filepath, use_selection, axis_up='Z', axis_forward='Y', scale =1000):
+    brep_shapes = prepare_brep(context, use_selection, axis_up, axis_forward, scale)
     if brep_shapes is not None :
         write_step_file(brep_shapes, filepath, application_protocol="AP203")
         return True
     else:
         return False
 
-def export_iges(context, filepath, use_selection, axis_up='Z', axis_forward='Y'):
-    brep_shapes = prepare_brep(context, use_selection, axis_up, axis_forward)
+def export_iges(context, filepath, use_selection, axis_up='Z', axis_forward='Y', scale =1000):
+    brep_shapes = prepare_brep(context, use_selection, axis_up, axis_forward, scale)
     if brep_shapes is not None :
         write_iges_file(brep_shapes, filepath)
         return True
