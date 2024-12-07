@@ -506,7 +506,7 @@ def write_step_file(a_shape, filename, application_protocol="AP203"):
         print(f"Warning: {filename} file already exists and will be replaced")
     # creates and initialise the step exporter
     step_writer = STEPControl_Writer()
-    Interface_Static.SetCVal("write.step.schema", application_protocol)
+    Interface_Static.SetCVal_s("write.step.schema", application_protocol)
 
     # transfer shapes and write file
     step_writer.Transfer(a_shape, STEPControl_AsIs)

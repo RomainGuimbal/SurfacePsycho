@@ -25,7 +25,7 @@ from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
-from OCP.TopoDS import TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
+from OCP.TopoDS import TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
 from OCP.TopTools import TopTools_Array1OfShape
 
 
@@ -698,13 +698,13 @@ def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_degree
                 segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, degree, isperiodic)
         
         # append edge
-        edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+        edge = BRepBuilderAPI_MakeEdge(segment).Edge()     
         edges_list.SetValue(i+1, edge)
 
     # Make contour
     makeWire = BRepBuilderAPI_MakeWire()
     for e in edges_list :
-        makeWire.Add(e)
+        makeWire.Add(TopoDS.Edge_s(e))
     wire = TopoDS_Wire()
     wire = makeWire.Wire()
 
@@ -802,7 +802,7 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_degrees, geom
     # Make contour
     makeWire = BRepBuilderAPI_MakeWire()
     for e in edges_list :
-        makeWire.Add(e)
+        makeWire.Add(TopoDS.Edge_s(e))
     wire = TopoDS_Wire()
     wire = makeWire.Wire()
 
