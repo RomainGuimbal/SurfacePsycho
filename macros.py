@@ -559,19 +559,27 @@ class SP_OT_select_endpoints(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
         
         vertex_group = obj.vertex_groups.get("Endpoints")
-        if not vertex_group:
-            self.report({'INFO'}, "No Endpoints")
-            bpy.ops.object.mode_set(mode='EDIT')
-            return {'CANCELLED'}
+        if vertex_group!=None:
+            for v in obj.data.vertices:
+                        try:
+                            weight = vertex_group.weight(v.index)
+                            if weight > 0.6:
+                                v.select = True
+                        except RuntimeError:
+                            # Vertex is not in the group, skip it
+                            pass
+        else :
+            try :
+                weights = get_attribute_by_name(obj, "Endpoints", "float")
+                for v in obj.data.vertices:
+                    weight = weights[v.index]
+                    if weight > 0.6:
+                        v.select = True
+            except KeyError :
+                self.report({'INFO'}, "No Endpoints")
+                bpy.ops.object.mode_set(mode='EDIT')
+                return {'CANCELLED'}
         
-        for v in obj.data.vertices:
-            try:
-                weight = vertex_group.weight(v.index)
-                if weight > 0.6:
-                    v.select = True
-            except RuntimeError:
-                # Vertex is not in the group, skip it
-                pass
         
         # Switch back to edit mode to show the selection
         bpy.ops.object.mode_set(mode='EDIT')

@@ -277,7 +277,7 @@ def new_brep_planar_face(o, context, scale=1000):
     wires = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degrees)
 
     # Orient and place
-    loc, rot, obj_scale = o.matrix_world.decompose()
+    loc, rot, _ = o.matrix_world.decompose()
     try :
         offset = get_attribute_by_name(ob, 'planar_offset', 'vec3', 1)[0]
         orient = get_attribute_by_name(ob, 'planar_orient', 'vec3', 1)[0]
