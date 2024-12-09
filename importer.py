@@ -38,9 +38,9 @@ from .utils import list_of_shapes_to_compound
 
 
 def build_SP_cylinder(brepFace, collection, trims_enabled) :
-    face = BRep_Tool.Surface(brepFace)
-    cylinder_surface = Geom_CylindricalSurface.DownCast(face)
-
+    # face = BRep_Tool.Surface_s(brepFace)
+    # cylinder_surface = Geom_CylindricalSurface.DownCast(face)
+    cylinder_surface = BRepAdaptor_Surface(brepFace).Surface().Cylinder()
     gp_cylinder = cylinder_surface.Cylinder()
     
     gpaxis= gp_cylinder.Axis()
@@ -84,9 +84,9 @@ def build_SP_cylinder(brepFace, collection, trims_enabled) :
 
 
 
-def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
-    face = BRep_Tool.Surface(brepFace)
-    bezier_surface = Geom_BezierSurface.DownCast(face)
+def build_SP_bezier_patch(brepFace, collection, trims_enabled):
+    bezier_surface = BRepAdaptor_Surface(brepFace).Surface().Bezier()
+
     u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
     uv_bounds = bezier_surface.Bounds()
     vector_pts = np.zeros((u_count, v_count), dtype=Vector)
@@ -111,14 +111,16 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled) :
 
 
 def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
-    face = BRep_Tool.Surface(brepFace)
-    bspline_surface = Geom_BSplineSurface.DownCast(face)
+    #BRep_Tool.Surface_s(brepFace)
+    # bspline_surface = Geom_BSplineSurface.DownCast(face)
+    bspline_surface = BRepAdaptor_Surface(brepFace).Surface().BSpline()
+    
     u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
     udeg = bspline_surface.UDegree()
     vdeg = bspline_surface.VDegree()
     uv_bounds = bspline_surface.Bounds()
-    u_knots = normalize_array(bspline_surface.UKnots())
-    v_knots = normalize_array(bspline_surface.VKnots())
+    u_knots = normalize_array(tcolstd_array1_to_list(bspline_surface.UKnots()))
+    v_knots = normalize_array(tcolstd_array1_to_list(bspline_surface.VKnots()))
     u_mult = bspline_surface.UMultiplicities()
     v_mult = bspline_surface.VMultiplicities()
     custom_knot = False
@@ -279,11 +281,11 @@ class ShapeHierarchy:
                 exp.Next()
         
         elif shape.ShapeType() == TopAbs_FACE:
-            face = TopoDS_Face.Cast(shape)
+            face = TopoDS.Face_s(shape)
             hierarchy['Face'] = self.add_face(face)
         
         elif shape.ShapeType() == TopAbs_EDGE:
-            edge = TopoDS_Edge.Cast(shape)
+            edge = TopoDS.Edge_s(shape)
             hierarchy['Edge'] = self.add_edge(edge)
         
         return hierarchy
@@ -299,7 +301,7 @@ class ShapeHierarchy:
         
         exp = TopExp_Explorer(shape, TopAbs_FACE)
         while exp.More():
-            face = TopoDS_Face.Cast(exp.Current())
+            face = TopoDS.Face_s(exp.Current())
             face_exp = TopExp_Explorer(face, TopAbs_EDGE)
             while face_exp.More():
                 face_map.Add(face_exp.Current())

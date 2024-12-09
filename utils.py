@@ -232,11 +232,13 @@ def add_vertex_group(object, name, values):
     return True
 
 
+def tcolstd_array1_to_list(array):
+    return [array.Value(i) for i in range(array.Lower(), array.Upper() + 1)]
+
 
 def normalize_array(array):
     mini = min(array)
     return ((np.array(array)-mini)/(max(array)-mini)).tolist()
-
 
 
 def list_geometry_node_groups():
@@ -349,14 +351,14 @@ def get_wires_from_face(face: TopoDS_Face):
 
 
 
-def get_edges_from_wire(wire):
+def get_edges_from_wire(wire : TopoDS_Wire) -> List[TopoDS_Edge]:
     edges = []
     explorer = TopExp_Explorer(wire, TopAbs_EDGE)
 
     while explorer.More():
         edge = explorer.Current()
         if edge.ShapeType() == TopAbs_EDGE:
-            edges.append(edge)
+            edges.append(TopoDS.Edge_s(edge))
         explorer.Next()
 
     return edges
@@ -440,7 +442,7 @@ def get_poles_from_curve(geom_curve, edge=None):
 
 
 
-def get_poles_from_edge_2d(edge, face):
+def get_poles_from_edge_2d(edge : TopoDS_Edge, face : TopoDS_Face) -> Tuple[List[TopoDS_Edge], List[int]]:
     edge_adaptor = BRepAdaptor_Curve2d(edge, face)
     curve_type = edge_adaptor.GetType()
     
@@ -460,19 +462,13 @@ def get_poles_from_edge_2d(edge, face):
         poles = [bspline.Pole(i+1) for i in range(bspline.NbPoles())]
         degree = bspline.Degree()
 
-#TODO TEST
-#TODO TEST
     elif curve_type == GeomAbs_Circle: 
         start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
         end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
         center = edge_adaptor.Circle().Location()
         if start_point == end_point:
-            print("GOT IT")
             poles = [start_point, center]
         poles = [start_point, center ,end_point]
-#TODO TEST
-#TODO TEST
-
 
     else:
         print(f"Unsupported curve type: {curve_type}. Expect inaccurate results")
