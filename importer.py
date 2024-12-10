@@ -10,6 +10,7 @@ from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface #BRepAdaptor_Curve
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line
+from OCP.GeomAdaptor import GeomAdaptor_Surface
 from OCP.GeomAPI import GeomAPI_ProjectPointOnCurve
 from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
 from OCP.IGESControl import IGESControl_Controller, IGESControl_Reader
@@ -34,12 +35,10 @@ from .utils import list_of_shapes_to_compound
 
 
 
-
-
-
-def build_SP_cylinder(brepFace, collection, trims_enabled, scale = 0.001) :
-    cylinder_surface = BRepAdaptor_Surface(brepFace).Surface()
-    gp_cylinder = cylinder_surface.Cylinder()
+def build_SP_cylinder(brepFace : TopoDS_Face, collection, trims_enabled, scale = 0.001) :
+    face_adpator = BRepAdaptor_Surface(brepFace)
+    gp_cylinder = face_adpator.Surface().Cylinder()
+    geom_cylinder = Geom_CylindricalSurface(gp_cylinder)
     
     gpaxis= gp_cylinder.Axis()
     xaxis = gpaxis.Direction()
@@ -47,9 +46,6 @@ def build_SP_cylinder(brepFace, collection, trims_enabled, scale = 0.001) :
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
     zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
-
-    face_adpator = BRepAdaptor_Surface(brepFace)
-    
 
     aPnt1 = face_adpator.Value(face_adpator.FirstUParameter(), face_adpator.FirstVParameter())
     aPnt2 = face_adpator.Value(face_adpator.LastUParameter(), face_adpator.LastVParameter())
@@ -59,14 +55,12 @@ def build_SP_cylinder(brepFace, collection, trims_enabled, scale = 0.001) :
     p2 = GeomAPI_ProjectPointOnCurve(aPnt2, aGeomAxis).Point(1)
     length = p1.Distance(p2)*scale
 
-
     location = gp_cylinder.Location()
     loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale)) - xaxis_vec*length/2
-    # radius = cylinder_surface.Radius()*scale
     radius = gp_cylinder.Radius()*scale
 
 
-    false_uv_bounds = cylinder_surface.Bounds()
+    false_uv_bounds = geom_cylinder.Bounds()
     uv_bounds = (false_uv_bounds[1], false_uv_bounds[0], -length/2, length/2) # -np.pi/2
     min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
 
@@ -149,14 +143,14 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
     if custom_knot:
         sp_surf.assign_vertex_gr("Knot U", v_knots)# TO FIX U AND V INVERTED
         sp_surf.assign_vertex_gr("Knot V", u_knots)# TO FIX U AND V INVERTED
-        sp_surf.assign_vertex_gr("Multiplicity U", np.array(v_mult)/10)# TO FIX U AND V INVERTED
-        sp_surf.assign_vertex_gr("Multiplicity V", np.array(u_mult)/10)# TO FIX U AND V INVERTED
+        sp_surf.assign_vertex_gr("Multiplicity U", np.array(tcolstd_array1_to_list(v_mult))/10)# TO FIX U AND V INVERTED
+        sp_surf.assign_vertex_gr("Multiplicity V", np.array(tcolstd_array1_to_list(u_mult))/10)# TO FIX U AND V INVERTED
 
     if custom_weight:
         sp_surf.assign_vertex_gr("Weight", weights.flatten())
         print("Weights are not fully supported yet")
-        #add_sp_modifier(ob, "SP - NURBS Weighting")
-        #TO NORMALIZE + factor
+        # add_sp_modifier(ob, "SP - NURBS Weighting")
+        # TO NORMALIZE + factor
         # assign vertex group to modifier # change_node_socket_value
     
     # Meshing
