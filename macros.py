@@ -9,31 +9,30 @@ from .exporter_svg import *
 os = platform.system()
 
 
-if os!="Darwin":
-    from .importer import *
-    from .exporter_cad import *
+from .importer import *
+from .exporter_cad import *
 
-    class SP_OT_quick_export(bpy.types.Operator):
-        bl_idname = "sp.quick_export"
-        bl_label = "SP - Quick export"
-        bl_options = {'REGISTER', 'UNDO'}
-        bl_description =  "Exports selection as .STEP at current .blend location."
+class SP_OT_quick_export(bpy.types.Operator):
+    bl_idname = "sp.quick_export"
+    bl_label = "SP - Quick export"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description =  "Exports selection as .STEP at current .blend location."
 
-        def execute(self, context):
+    def execute(self, context):
 
-            blenddir = bpy.path.abspath("//")
-            if blenddir !="": #avoids exporting to root
-                dir =  blenddir
-            else :
-                dir = context.preferences.filepaths.temporary_directory
-            pathstr = dir + str(datetime.today())[:-7].replace('-','').replace(' ','-').replace(':','')
+        blenddir = bpy.path.abspath("//")
+        if blenddir !="": #avoids exporting to root
+            dir =  blenddir
+        else :
+            dir = context.preferences.filepaths.temporary_directory
+        pathstr = dir + str(datetime.today())[:-7].replace('-','').replace(' ','-').replace(':','')
 
-            export_isdone = export_step(context, f"{pathstr}.step", True)
-            if export_isdone:
-                self.report({'INFO'}, f"Step file exported as {pathstr}.step")
-            else :
-                self.report({'INFO'}, 'No SurfacePsycho Objects selected')
-            return {'FINISHED'}
+        export_isdone = export_step(context, f"{pathstr}.step", True)
+        if export_isdone:
+            self.report({'INFO'}, f"Step file exported as {pathstr}.step")
+        else :
+            self.report({'INFO'}, 'No SurfacePsycho Objects selected')
+        return {'FINISHED'}
 
 
 class SP_OT_add_NURBS_patch(bpy.types.Operator):
@@ -762,11 +761,8 @@ classes = [
     SP_OT_replace_node_group,
     SP_OT_Invoke_replace_node_panel,
     SP_Props_Group,
+    SP_OT_quick_export,
 ]
-if os!="Darwin":
-    classes+= [
-        SP_OT_quick_export,
-    ]
 
 def register():
     for c in classes:

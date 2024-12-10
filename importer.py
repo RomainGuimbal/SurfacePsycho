@@ -37,10 +37,8 @@ from .utils import list_of_shapes_to_compound
 
 
 
-def build_SP_cylinder(brepFace, collection, trims_enabled) :
-    # face = BRep_Tool.Surface_s(brepFace)
-    # cylinder_surface = Geom_CylindricalSurface.DownCast(face)
-    cylinder_surface = BRepAdaptor_Surface(brepFace).Surface().Cylinder()
+def build_SP_cylinder(brepFace, collection, trims_enabled, scale = 0.001) :
+    cylinder_surface = BRepAdaptor_Surface(brepFace).Surface()
     gp_cylinder = cylinder_surface.Cylinder()
     
     gpaxis= gp_cylinder.Axis()
@@ -59,12 +57,13 @@ def build_SP_cylinder(brepFace, collection, trims_enabled) :
     aGeomAxis = Geom_Line(gpaxis)
     p1 = GeomAPI_ProjectPointOnCurve(aPnt1, aGeomAxis).Point(1)
     p2 = GeomAPI_ProjectPointOnCurve(aPnt2, aGeomAxis).Point(1)
-    length = p1.Distance(p2)/1000
+    length = p1.Distance(p2)*scale
 
 
     location = gp_cylinder.Location()
-    loc_vec = Vector((location.X()/1000,location.Y()/1000,location.Z()/1000)) - xaxis_vec*length/2
-    radius = cylinder_surface.Radius()/1000
+    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale)) - xaxis_vec*length/2
+    # radius = cylinder_surface.Radius()*scale
+    radius = gp_cylinder.Radius()*scale
 
 
     false_uv_bounds = cylinder_surface.Bounds()
@@ -73,7 +72,7 @@ def build_SP_cylinder(brepFace, collection, trims_enabled) :
 
     print(f"UV Bounds : {(min_u, max_u, min_v, max_v)}")
 
-    raduis_vert = (zaxis_vec*radius)+loc_vec
+    raduis_vert = (zaxis_vec*radius) + loc_vec
 
     CPvert = [loc_vec, xaxis_vec*length + loc_vec, raduis_vert]
     CP_edges = [(0,1)]

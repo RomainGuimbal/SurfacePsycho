@@ -7,70 +7,71 @@ os = platform.system()
 from . import macros
 # from .macros import SP_Props_Group
 
-if os!="Darwin":
-    from .importer import import_cad
-    from .exporter_cad import export_step, export_iges
 
-    from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty
-    from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
-
-
-    @orientation_helper(axis_forward='Y', axis_up='Z')
-    class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
-        bl_idname = "sp.step_export"
-        bl_label = "Export STEP"
-
-        filename_ext = ".step"
-        filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255)
-        use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-        # axis_up: EnumProperty(default='Z')
-        # axis_forward: EnumProperty(default='Y')
-        scale: FloatProperty(name="Scale", default=1000, min=0)
-
-        def execute(self, context):
-            export_step(context, self.filepath, self.use_selection, 'Z', 'Y', self.scale)
-            return {'FINISHED'}
-
-
-    @orientation_helper(axis_forward='Y', axis_up='Z')
-    class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
-        bl_idname = "sp.iges_export"
-        bl_label = "Export IGES"
-
-        filename_ext = ".iges"
-        filter_glob: StringProperty(default="*.iges", options={'HIDDEN'}, maxlen=255)
-        use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
-        # axis_up: EnumProperty(default='Z')
-        # axis_forward: EnumProperty(default='Y')
-        scale: FloatProperty(name="Scale", default=1000, min=0)
-
-        def execute(self, context):
-            export_iges(context, self.filepath, self.use_selection, 'Z', 'Y', self.scale)
-            return {'FINISHED'}
-
-
-    class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
-        bl_idname = "sp.cad_import"
-        bl_label = "Import CAD"
-        bl_options = {'REGISTER', 'UNDO'}
-
-        filename_ext = ".step;.stp;.iges;.igs"
-        filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
-        faces: BoolProperty(name="Faces", description="Import Faces", default=True)
-        trim_contours: BoolProperty(name="Trim Contours", description="Import faces with their trim contours", default=True)
-        curves: BoolProperty(name="Curves", description="Import Curves", default=False)
-
-        def modal(self, context, event):
-            return {'PASS_THROUGH'}
-
-        def execute(self, context):
-            import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,})
-            self.report({'INFO'}, 'Some surface types may have been ignored')
-            return {'RUNNING_MODAL'}
-
-
-
+from .importer import import_cad
+from .exporter_cad import export_step, export_iges
 from .exporter_svg import export_svg
+
+from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty
+from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
+
+
+@orientation_helper(axis_forward='Y', axis_up='Z')
+class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
+    bl_idname = "sp.step_export"
+    bl_label = "Export STEP"
+
+    filename_ext = ".step"
+    filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255)
+    use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
+    # axis_up: EnumProperty(default='Z')
+    # axis_forward: EnumProperty(default='Y')
+    scale: FloatProperty(name="Scale", default=1000, min=0)
+
+    def execute(self, context):
+        export_step(context, self.filepath, self.use_selection, 'Z', 'Y', self.scale)
+        return {'FINISHED'}
+
+
+@orientation_helper(axis_forward='Y', axis_up='Z')
+class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
+    bl_idname = "sp.iges_export"
+    bl_label = "Export IGES"
+
+    filename_ext = ".iges"
+    filter_glob: StringProperty(default="*.iges", options={'HIDDEN'}, maxlen=255)
+    use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
+    # axis_up: EnumProperty(default='Z')
+    # axis_forward: EnumProperty(default='Y')
+    scale: FloatProperty(name="Scale", default=1000, min=0)
+
+    def execute(self, context):
+        export_iges(context, self.filepath, self.use_selection, 'Z', 'Y', self.scale)
+        return {'FINISHED'}
+
+
+class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
+    bl_idname = "sp.cad_import"
+    bl_label = "Import CAD"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    filename_ext = ".step;.stp;.iges;.igs"
+    filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
+    faces: BoolProperty(name="Faces", description="Import Faces", default=True)
+    trim_contours: BoolProperty(name="Trim Contours", description="Import faces with their trim contours", default=True)
+    curves: BoolProperty(name="Curves", description="Import Curves", default=False)
+
+    def modal(self, context, event):
+        return {'PASS_THROUGH'}
+
+    def execute(self, context):
+        import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,})
+        self.report({'INFO'}, 'Some surface types may have been ignored')
+        return {'RUNNING_MODAL'}
+
+
+
+
 
 class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
     bl_idname = "sp.svg_export"
@@ -107,11 +108,10 @@ class SP_PT_MainPanel(bpy.types.Panel):
     
     def draw(self, context):
         if context.mode == 'OBJECT':
-            if os != "Darwin" :
-                row = self.layout.row()
-                row.scale_y = 2.0
-                row.operator("sp.quick_export", text="Quick export as .STEP", icon="EXPORT")
-            
+            row = self.layout.row()
+            row.scale_y = 2.0
+            row.operator("sp.quick_export", text="Quick export as .STEP", icon="EXPORT")
+        
             row = self.layout.row()
             row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR")
             row = self.layout.row()
@@ -201,15 +201,14 @@ def menu_convert(self, context):
             self.layout.operator("sp.psychopatch_to_bl_nurbs", text="PsychoPatch to internal NURBS", icon="SURFACE_NSURFACE")
 
 
-if os!="Darwin":
-    def menu_export_step(self, context):
-        self.layout.operator("sp.step_export", text="SurfacePsycho CAD (.step)")
+def menu_export_step(self, context):
+    self.layout.operator("sp.step_export", text="SurfacePsycho CAD (.step)")
 
-    def menu_export_iges(self, context):
-        self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
+def menu_export_iges(self, context):
+    self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
 
-    def menu_func_import(self, context):
-        self.layout.operator(SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)")
+def menu_func_import(self, context):
+    self.layout.operator(SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)")
 
 def menu_export_svg(self, context):
     self.layout.operator("sp.svg_export", text="SurfacePsycho SVG (.svg)")
@@ -219,15 +218,12 @@ classes = [
     SP_PT_MainPanel,
     SP_PT_ViewPanel,
     SP_PT_SelectPanel,
-    SP_OT_ExportSvg,
+    SP_OT_ExportSvg,        
+    SP_OT_ExportStep,
+    SP_OT_ExportIges,
+    SP_OT_ImportCAD,
 ]
 
-if os!="Darwin":
-    classes+= [
-        SP_OT_ExportStep,
-        SP_OT_ExportIges,
-        SP_OT_ImportCAD,
-    ]
 
 
 def register():
@@ -238,18 +234,17 @@ def register():
     bpy.types.VIEW3D_MT_curve_add.append(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.append(menu_convert)
     # bpy.types.VIEW3D_MT_object_context_menu_convert.append(menu_convert)
-    if os!="Darwin":
-        bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
-        bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
-        bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
+
+    bpy.types.TOPBAR_MT_file_export.append(menu_export_step)
+    bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
+    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.append(menu_export_svg)
     
 def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_svg)
-    if os!="Darwin":
-        bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
-        bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
-        bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     bpy.types.VIEW3D_MT_surface_add.remove(menu_surface)
     bpy.types.VIEW3D_MT_curve_add.remove(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.remove(menu_convert)
@@ -259,5 +254,4 @@ def unregister():
     macros.unregister()
 
 if __name__ == "__main__":
-    if os!="Darwin":
-        bpy.ops.sp.cad_import()
+    bpy.ops.sp.cad_import()
