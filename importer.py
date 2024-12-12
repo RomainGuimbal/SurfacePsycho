@@ -104,8 +104,6 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled):
 
 
 def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
-    #BRep_Tool.Surface_s(brepFace)
-    # bspline_surface = Geom_BSplineSurface.DownCast(face)
     bspline_surface = BRepAdaptor_Surface(brepFace).Surface().BSpline()
     
     u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
@@ -132,9 +130,10 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
             
             weight = bspline_surface.Weight(u, v)
             weights[u-1, v-1] = weight
-            if weight!=1.0 :
-                custom_weight = True
-    
+            
+            # Custom weight flag, true if 1 weight is not 1.0
+            custom_weight = custom_weight or weight!=1.0
+
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
     
@@ -147,7 +146,10 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
         sp_surf.assign_vertex_gr("Multiplicity V", np.array(tcolstd_array1_to_list(u_mult))/10)# TO FIX U AND V INVERTED
 
     if custom_weight:
-        sp_surf.assign_vertex_gr("Weight", weights.flatten())
+        # Since Nurbs trim contour uses "weight" attr too, set all trim contour weights to 1.0. To improve later
+        weights = weights.flatten().tolist()
+        weights.extend([1.0]*(len(sp_surf.ob.data.vertices)-len(weights)))
+        sp_surf.assign_vertex_gr("Weight", weights)
         print("Weights are not fully supported yet")
         # sp_surf.add_modifier(ob, "SP - NURBS Weighting")
         # TO NORMALIZE + factor
