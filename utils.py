@@ -442,7 +442,7 @@ def get_poles_from_curve(geom_curve, edge=None):
 
 
 
-def get_poles_from_edge_2d(edge : TopoDS_Edge, face : TopoDS_Face) -> Tuple[List[TopoDS_Edge], List[int]]:
+def get_poles_from_edge_2d(edge : TopoDS_Edge, face : TopoDS_Face) -> Tuple[List[gp_Pnt], List]:
     edge_adaptor = BRepAdaptor_Curve2d(edge, face)
     curve_type = edge_adaptor.GetType()
     
@@ -821,7 +821,7 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_degrees, geom
 
 class SP_surface :
     # Importer class, to unify
-    def __init__(self, brepFace, collection, trims_enabled, uv_bounds, CPvert, CPedges, CPfaces):
+    def __init__(self, brepFace : TopoDS_Face, collection, trims_enabled : bool, uv_bounds, CPvert, CPedges, CPfaces, ob_name = "STEP Patch"):
         self.trims_enabled = trims_enabled
         self.brepFace = brepFace
         self.uv_bounds = uv_bounds
@@ -837,22 +837,15 @@ class SP_surface :
             self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
 
         mesh = bpy.data.meshes.new("Patch CP")
-        mesh.from_pydata(self.vert, self.edges, self.faces)
-        self.ob = bpy.data.objects.new('STEP Patch', mesh)
+        mesh.from_pydata(self.vert, self.edges, self.faces, False)
+        self.ob = bpy.data.objects.new(ob_name, mesh)
         
         if trims_enabled :
             self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
             self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + wires_endpoints)
             self.assign_vertex_gr("Degree", [0.0]*len(CPvert) + wire_degrees)
 
-        self.set_smooth()
-
         collection.objects.link(self.ob)
-
-    def set_smooth(self):
-        mesh = self.ob.data
-        values = [True] * len(mesh.polygons)
-        mesh.polygons.foreach_set("use_smooth", values)
 
     def assign_vertex_gr(self, name, values):
         add_vertex_group(self.ob, name, values)

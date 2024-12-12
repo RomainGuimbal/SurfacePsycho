@@ -1,7 +1,7 @@
 import bpy
 import numpy as np
 from mathutils import Vector
-from os.path import abspath, splitext, split
+from os.path import abspath, splitext, split, isfile
 from .utils import *
 
 # from OCP.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
@@ -66,11 +66,11 @@ def build_SP_cylinder(brepFace : TopoDS_Face, collection, trims_enabled, scale =
 
     print(f"UV Bounds : {(min_u, max_u, min_v, max_v)}")
 
-    raduis_vert = (zaxis_vec*radius) + loc_vec
+    raduis_vert = Vector((zaxis_vec*radius) + loc_vec)
 
     CPvert = [loc_vec, xaxis_vec*length + loc_vec, raduis_vert]
     CP_edges = [(0,1)]
-    sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [])
+    sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
     sp_surf.add_modifier("SP - Cylindrical Meshing", {"Use Trim Contour":trims_enabled, "Scaling Method":1}, pin=True)
     return True
 
@@ -149,7 +149,7 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
     if custom_weight:
         sp_surf.assign_vertex_gr("Weight", weights.flatten())
         print("Weights are not fully supported yet")
-        # add_sp_modifier(ob, "SP - NURBS Weighting")
+        # sp_surf.add_modifier(ob, "SP - NURBS Weighting")
         # TO NORMALIZE + factor
         # assign vertex group to modifier # change_node_socket_value
     
@@ -178,7 +178,7 @@ def build_SP_curve(topodsEdge, collection, scale = 1000) :
 
     # create object
     mesh = bpy.data.meshes.new("Curve CP")
-    mesh.from_pydata(verts, edges, [])
+    mesh.from_pydata(verts, edges, [], False)
     ob = bpy.data.objects.new('STEP curve', mesh)
 
     # Assign vertex groups
@@ -201,7 +201,7 @@ def build_SP_flat(topodsFace, collection):
 
     # create object
     mesh = bpy.data.meshes.new("FlatPatch CP")
-    mesh.from_pydata(wires_verts, wires_edges, [])
+    mesh.from_pydata(wires_verts, wires_edges, [], False)
     ob = bpy.data.objects.new('STEP FlatPatch', mesh)
 
     # Assign vertex groups
@@ -333,6 +333,26 @@ class ShapeHierarchy:
 
 
 
+
+def process_occ_face(face, collection, trims_enabled):
+    ft= get_face_type_id(face)
+    match ft:
+        case 0:
+            build_SP_flat(face, collection)
+        case 1:
+            build_SP_cylinder(face, collection, trims_enabled)
+        case 5:
+            build_SP_bezier_patch(face, collection, trims_enabled)
+        case 6:
+            build_SP_NURBS_patch(face, collection, trims_enabled)
+        case _ :
+            print("Unsupported Face Type : " + get_face_type_name(face))
+    
+    return True
+
+
+
+
 def build_SP_from_brep(shape, collection, enabled_entities, scale = 1000):
     # Create the hierarchy
     shape_hierarchy = ShapeHierarchy()
@@ -346,27 +366,16 @@ def build_SP_from_brep(shape, collection, enabled_entities, scale = 1000):
 
     trims_enabled = enabled_entities["trim_contours"]
 
-    #Create SP faces
+    #Create SP faces 
     if enabled_entities["faces"]:
-        for face_id, face in shape_hierarchy.faces.items():
-            ft= get_face_type_id(face)
-            match ft:
-                case 0:
-                    build_SP_flat(face, collection)
-                case 1:
-                    build_SP_cylinder(face, collection, trims_enabled)
-                case 5:
-                    build_SP_bezier_patch(face, collection, trims_enabled)
-                case 6:
-                    build_SP_NURBS_patch(face, collection, trims_enabled)
-                case _ :
-                    print("Unsupported Face Type : " + get_face_type_name(face))
+        for _, face in shape_hierarchy.faces.items():# TODO ThreadPool
+            process_occ_face(face, collection, trims_enabled)
             progress+=1
             wm.progress_update(progress)
 
     #Create SP free edges
     if enabled_entities["curves"]:
-        for egde_id, edge in shape_hierarchy.edges.items():
+        for _, edge in shape_hierarchy.edges.items():
             build_SP_curve(edge, collection, scale)
 
     # TODO : Add brep relations (face connections...)
@@ -433,7 +442,7 @@ def read_step_file(filename, as_compound=True, verbosity=True):
     as_compound: True by default. If there are more than one shape at root,
     gather all shapes into one compound. Otherwise returns a list of shapes.
     """
-    if not os.path.isfile(filename):
+    if not isfile(filename):
         raise FileNotFoundError(f"{filename} not found.")
 
     step_reader = STEPControl_Reader()
@@ -476,7 +485,7 @@ def read_step_file_with_names_colors(filename):
     """Returns list of tuples (topods_shape, label, color)
     Use OCAF.
     """
-    if not os.path.isfile(filename):
+    if not isfile(filename):
         raise FileNotFoundError(f"{filename} not found.")
     # the list:
     output_shapes = {}
@@ -719,7 +728,7 @@ def read_iges_file(
                       else returns a single compound
     verbosity: optionl, False by default.
     """
-    if not os.path.isfile(filename):
+    if not isfile(filename):
         raise FileNotFoundError(f"{filename} not found.")
 
     IGESControl_Controller.Init()

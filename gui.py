@@ -49,7 +49,7 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
         export_iges(context, self.filepath, self.use_selection, 'Z', 'Y', self.scale)
         return {'FINISHED'}
 
-
+@orientation_helper(axis_forward='Y', axis_up='Z')
 class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     bl_idname = "sp.cad_import"
     bl_label = "Import CAD"
