@@ -250,6 +250,7 @@ def list_geometry_node_groups():
     return geometry_node_groups
 
 
+
 def append_asset(asset_name, force=False):
     if force :
         asset_already = False
@@ -266,6 +267,7 @@ def append_asset(asset_name, force=False):
             else:
                 print(f"Asset '{asset_name}' not found")
                 return False
+
 
 
 def append_multiple_node_groups(ng_names):
@@ -334,10 +336,6 @@ def flatten_list_of_lists(list_of_lists):
 
 
 
-
-
-
-
 def get_wires_from_face(face: TopoDS_Face):
     wires = []
     explorer = TopExp_Explorer(face, TopAbs_WIRE)
@@ -367,230 +365,6 @@ def get_edges_from_wire(wire : TopoDS_Wire) -> List[TopoDS_Edge]:
 
 
 
-# def get_edge_endpoints(topods_edge):
-#     explorer = TopExp_Explorer(topods_edge, TopAbs_VERTEX)
-#     vertices = []
-#     while explorer.More():
-#         vertex = explorer.Current()
-#         vertices.append(TopoDS_Vertex(vertex))
-#         explorer.Next()
-    
-#     if len(vertices)==2:
-#         param1 = BRep_Tool.Parameter(vertices[0], topods_edge)
-#         param2 = BRep_Tool.Parameter(vertices[1], topods_edge)
-        
-#         first_vertex = vertices[0] if param1 < param2 else vertices[1]
-#         last_vertex = vertices[1] if param1 < param2 else vertices[0]
-
-#     return BRep_Tool.Pnt(TopoDS_Vertex(first_vertex)), BRep_Tool.Pnt(TopoDS_Vertex(last_vertex))
-
-
-
-def get_poles_from_curve(geom_curve, edge=None):
-    curve_adaptor = GeomAdaptor_Curve(geom_curve)
-    edge_adaptor = BRepAdaptor_Curve(edge)
-
-    curve_type = curve_adaptor.GetType()
-    
-    degree = None
-
-    if curve_type == GeomAbs_Line:
-        if edge!=None :
-            
-            start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
-            end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
-            poles = [start_point, end_point]
-        else:
-            start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
-            end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
-            poles = [start_point, end_point]
-
-    elif curve_type == GeomAbs_BezierCurve:
-        bezier = curve_adaptor.Bezier()
-        poles = [bezier.Pole(i) for i in range(1, bezier.NbPoles() + 1)]
-        # Should also output weights
-
-    elif curve_type == GeomAbs_BSplineCurve:
-        bspline = curve_adaptor.BSpline()
-        poles = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
-        degree = bspline.Degree()
-        # Should also output the degree, knot, multiplicities and weights
-
-
-    
-    else :
-        if curve_type == GeomAbs_Circle:
-            print("Unsupported curve type : GeomAbs_Circle. Expect inaccurate results")
-        else :
-            print("Unsupported curve type. Expect inaccurate results")
-        # sampling approximation For other curve types, 
-        num_points = 2
-        params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
-        poles = [curve_adaptor.Value(param) for param in params]
-    
-    # elif curve_type == GeomAbs_Circle:
-    #     # center = curve_adaptor.Circle().Location()
-    #     # radius = curve_adaptor.Circle().Radius()
-    #     # start_angle = curve_adaptor.FirstParameter()
-    #     # end_angle = curve_adaptor.LastParameter()
-    #     # mid_angle = (start_angle + end_angle) / 2
-    #     # start_point = curve_adaptor.Value(start_angle)
-    #     # mid_point = curve_adaptor.Value(mid_angle)
-    #     # end_point = curve_adaptor.Value(end_angle)
-    #     # control_points = [start_point, mid_point, end_point]
-    return poles, degree
-
-
-
-def get_poles_from_edge_2d(edge : TopoDS_Edge, face : TopoDS_Face) -> Tuple[List[gp_Pnt], List]:
-    edge_adaptor = BRepAdaptor_Curve2d(edge, face)
-    curve_type = edge_adaptor.GetType()
-    
-    degree = None
-    
-    if curve_type == GeomAbs_Line:
-        start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
-        end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
-        poles = [start_point, end_point]
-
-    elif curve_type == GeomAbs_BezierCurve:
-        bezier = edge_adaptor.Bezier()
-        poles = [bezier.Pole(i+1) for i in range(bezier.NbPoles())]
-
-    elif curve_type == GeomAbs_BSplineCurve:
-        bspline = edge_adaptor.BSpline()
-        poles = [bspline.Pole(i+1) for i in range(bspline.NbPoles())]
-        degree = bspline.Degree()
-
-    elif curve_type == GeomAbs_Circle: 
-        start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
-        end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
-        center = edge_adaptor.Circle().Location()
-        if start_point == end_point:
-            poles = [start_point, center]
-        poles = [start_point, center ,end_point]
-
-    else:
-        print(f"Unsupported curve type: {curve_type}. Expect inaccurate results")
-        poles = []
-
-    return poles, degree
-
-
-
-
-
-
-
-# def get_poles_from_geom_curve_2d(curve_2d, edge=None):
-#     curve_adaptor = BRepAdaptor_Curve2d(curve_2d)
-#     curve_type = curve_adaptor.GetType()
-#     degree = None
-    
-#     if curve_type == GeomAbs_Line:
-#         if edge!=None :
-#             start_point, end_point = get_edge_endpoints(edge)
-#             poles = [start_point, end_point]
-#         else:
-#             start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
-#             end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
-#             poles = [start_point, end_point]
-
-#     elif curve_type == GeomAbs_BezierCurve:
-#         bezier = curve_adaptor.Bezier()
-#         poles = [bezier.Pole(i) for i in range(1, bezier.NbPoles() + 1)]
-#         # Should also output weights
-
-#     elif curve_type == GeomAbs_BSplineCurve:
-#         bspline = curve_adaptor.BSpline()
-#         poles = [bspline.Pole(i) for i in range(1, bspline.NbPoles() + 1)]
-#         degree = bspline.Degree()
-#         # Should also output the degree, knot, multiplicities and weights
-    
-#     else :
-#         if curve_type == GeomAbs_Circle:
-#             print("Unsupported curve type : GeomAbs_Circle. Expect inaccurate results")
-#         else :
-#             print("Unsupported curve type. Expect inaccurate results")
-#         # sampling approximation For other curve types, 
-#         num_points = 2
-#         params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
-#         poles = [curve_adaptor.Value(param) for param in params]
-    
-#     return poles, degree
-
-
-
-
-
-
-def get_face_3D_contours(occface, scale = 1000):
-    wires_verts, wires_edges, wires_endpoints, wires_degrees, wires_circles = [], [], [], [], []
-    wires = get_wires_from_face(occface)
-
-    # Wires
-    for w in wires :
-        sp_wire = SP_Wire(occ_wire=w, scale = scale)
-
-        _, wires_edges, _ = join_mesh_entities(wires_verts, wires_edges, [], sp_wire.CP, sp_wire.bmesh_edges, [])
-        wires_verts.extend(sp_wire.CP)
-        wires_endpoints.extend(sp_wire.endpoints_att)
-        wires_degrees.extend(sp_wire.degree_att)
-        wires_circles.extend(sp_wire.circle_att)
-        
-    return wires_verts, wires_edges, wires_endpoints, wires_degrees, wires_circles
-
-
-
-def get_face_uv_contours(face, uv_bounds=(0,1,0,1)):
-    wires = get_wires_from_face(face)
-    wires_verts, wires_edges, wires_endpoints  = [], [], []
-
-    min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
-    range_u, range_v = max_u - min_u, max_v - min_v
-
-    # Wires
-    for w in wires :
-        edges = get_edges_from_wire(w)
-        wire_degrees, endpoints, wire_verts, verts_of_edges, degree_att, knot_att, weights_att, mult_att = [], [], [], [], [], [], [], []
-        
-        wire_is_reversed = w.Orientation() == 1
-        
-        # Edges
-        for e in edges :
-            poles, edge_degree = get_poles_from_edge_2d(e, face)
-
-            # Reverse
-            if (e.Orientation() != TopAbs_FORWARD) != wire_is_reversed :
-                poles.reverse()
-            
-            e_vert = []
-            for p in poles :
-                x=max(0, min(1, (p.X()-min_u)/range_u))
-                y=max(0, min(1, (p.Y()-min_v)/range_v))
-                e_vert.append(Vector((x, y, 0)))
-
-            verts_of_edges.append(e_vert)
-            wire_verts.extend(e_vert[:-1])
-            endpoints.extend([1.0]+[0.0]*(len(e_vert)-2))
-            if edge_degree!=None:
-                degree_att.extend([edge_degree/10]+[0.0]*(len(e_vert)-2))
-            else :
-                degree_att.extend([0.0]*(len(e_vert)-1))
-        
-
-        wire_edges = [(i+len(wires_verts),((i+1)%len(wire_verts))+len(wires_verts)) for i in range(len(wire_verts))]
-        wires_verts.extend(wire_verts)
-        wires_edges.extend(wire_edges)
-        wires_endpoints.extend(endpoints)
-        wire_degrees.extend(degree_att)
-        
-    return wires_verts, wires_edges, wires_endpoints, wire_degrees
-
-
-
-
-
 
 def auto_knot_and_mult(p_count, degree, isclamped = True, isperiodic = False):
     if isclamped :
@@ -611,7 +385,7 @@ def auto_knot_and_mult(p_count, degree, isclamped = True, isperiodic = False):
 
 
 
-
+# exporter
 def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_degrees, geom_plane=None, ob=None):
     total_p_count=len(vector_points)
     segment_count = len(segs_p_counts)
@@ -710,6 +484,7 @@ def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_degree
 
 
 
+#exporter
 def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_degrees, geom_surf=None, ob = None):
     total_p_count = len(pts_2d)
     segment_count = len(segs_p_counts)
@@ -818,51 +593,14 @@ def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_degrees, geom
 #        Converter Classes          #
 #                                   #
 #####################################
-
-class SP_surface :
-    # Importer class, to unify
-    def __init__(self, brepFace : TopoDS_Face, collection, trims_enabled : bool, uv_bounds, CPvert, CPedges, CPfaces, ob_name = "STEP Patch"):
-        self.trims_enabled = trims_enabled
-        self.brepFace = brepFace
-        self.uv_bounds = uv_bounds
-        self.CPvert = CPvert
-        self.CPedges = CPedges
-        self.CPfaces = CPfaces
-        self.vert, self.edges, self.faces = [],[],[]
-        
-        if trims_enabled :
-            wires_verts, wires_edges, wires_endpoints, wire_degrees = get_face_uv_contours(self.brepFace, self.uv_bounds)
-            self.vert, self.edges, self.faces = join_mesh_entities(CPvert, CPedges, CPfaces, wires_verts, wires_edges, [])
-        else :
-            self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
-
-        mesh = bpy.data.meshes.new("Patch CP")
-        mesh.from_pydata(self.vert, self.edges, self.faces, False)
-        self.ob = bpy.data.objects.new(ob_name, mesh)
-        
-        if trims_enabled :
-            self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(wires_verts))
-            self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + wires_endpoints)
-            self.assign_vertex_gr("Degree", [0.0]*len(CPvert) + wire_degrees)
-
-        collection.objects.link(self.ob)
-
-    def assign_vertex_gr(self, name, values):
-        add_vertex_group(self.ob, name, values)
-        
-    def add_modifier(self, name, settings_dict = {}, pin=False):
-        add_sp_modifier(self.ob, name, settings_dict, pin = pin)
-
-
-
-
 class SP_Pole :
-    def __init__(self, occ_pole : gp_Pnt):
-        self.vertex = Vector((occ_pole.X(), occ_pole.Y(), occ_pole.Z()))
+    def __init__(self, occ_pole):
+        if isinstance(occ_pole, gp_Pnt2d) : 
+            self.vertex = Vector((occ_pole.X(), occ_pole.Y(), 0))
+        else :
+            self.vertex = Vector((occ_pole.X(), occ_pole.Y(), occ_pole.Z()))
+    
         # self.weight ?
-        
-        
-
 
 
 EDGES_TYPES = {'line' : 0,
@@ -874,89 +612,126 @@ EDGES_TYPES = {'line' : 0,
 
 class SP_Edge :
     # Importer for now
-    def __init__(self, occ_edge : TopoDS_Edge = None):
-        if occ_edge!= None :
+    def __init__(self, topods_edge : TopoDS_Edge, topods_face = None):
+        if topods_edge!= None :
             self.verts = None
             self.degree = None
             self.type = None
-            self.init_attrs(occ_edge)
+            
+            # Edge adaptor
+            # 3D
+            if topods_face is None:
+                twoD=False
+                edge_adaptor = BRepAdaptor_Curve(topods_edge)
+                curve_type = edge_adaptor.Curve().GetType()
+                # c = edge_adaptor.Curve()
+                # curve_type = c.GetType()
+                # curve = c.Curve()
 
-    def init_attrs(self, occ_edge : TopoDS_Edge):
-        edge_adaptor = BRepAdaptor_Curve(occ_edge)
-
-        c = edge_adaptor.Curve()
-        curve_type = c.GetType()
-        curve = c.Curve()
-                
-        if curve_type == GeomAbs_Line :
-            start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
-            end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
-            gp_pnt_poles = [start_point, end_point]
-            self.type = EDGES_TYPES['line']
-
-        elif curve_type == GeomAbs_BezierCurve :
-            bezier = Geom_BezierCurve.DownCast(curve)
-            gp_pnt_poles = [bezier.Pole(i+1) for i in range(bezier.NbPoles())]
-            self.type = EDGES_TYPES['bezier']
-            # TODO output weights
-
-        elif curve_type == GeomAbs_BSplineCurve :
-            if not isinstance(curve, Geom_BSplineCurve):
-                # first_param = edge_adaptor.FirstParameter()
-                # last_param = edge_adaptor.LastParameter()
-                bspline = GeomConvert.CurveToBSplineCurve(curve, Convert_TgtThetaOver2)
-            else:
-                bspline = curve
-
-            # bspline = Geom_BSplineCurve.DownCast(curve)
-            gp_pnt_poles = [bspline.Pole(i+1) for i in range(bspline.NbPoles())]
-            self.degree = bspline.Degree()
-            self.type = EDGES_TYPES['nurbs']
-            # TODO output the knot, multiplicities and weights
-
-        elif curve_type == GeomAbs_Circle :
-            arc_method = False
-            if arc_method :
-                # arc from center
+                # curve_adaptor = GeomAdaptor_Curve(geom_curve)
+            #2D
+            else :
+                twoD=True
+                edge_adaptor = BRepAdaptor_Curve2d(topods_edge, topods_face)
+                curve_type = edge_adaptor.GetType()
+            
+            if curve_type == GeomAbs_Line :
+                self.line(edge_adaptor)
+            elif curve_type == GeomAbs_BezierCurve :
+                self.bezier(edge_adaptor)
+            elif curve_type == GeomAbs_BSplineCurve :
+                self.bspline(edge_adaptor, twoD)
+            elif curve_type == GeomAbs_Circle :
+                self.circle(edge_adaptor)
+            else :
+                print(f"Unsupported curve type: {curve_type}. Expect inaccurate results")
                 start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
                 end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
-                center = edge_adaptor.Circle().Location()
-                if start_point == end_point:
-                    gp_pnt_poles = [start_point, center]
-                else:
-                    gp_pnt_poles = [start_point, center, end_point]
-            else:
-                # arc from 3 pts (no need for invert but worse for tangency):
-                min_t = edge_adaptor.FirstParameter()
-                max_t = edge_adaptor.LastParameter()
-                
-                start_point = edge_adaptor.Value(min_t)
-                end_point = edge_adaptor.Value(max_t)
-                range_t = max_t - min_t
-
-                if start_point == end_point or isclose(range_t, math.pi*2):
-                    center = edge_adaptor.Circle().Location()
-                    gp_pnt_poles = [start_point, center]
-                    self.type = EDGES_TYPES['circle']
-                else:
-                    mid_t = (max_t - min_t)/2 + min_t
-                    mid_point = edge_adaptor.Value(mid_t)
-                    gp_pnt_poles = [start_point, mid_point, end_point]
-                    self.type = EDGES_TYPES['circle_arc']
-                    # self.circle_arc_subtype = 1. # tree_points
-        else :
-            print("Unsupported curve type. Expect wrong geometry")
-            # # sampling approximation For other curve types, 
-            # num_points = 2
-            # params = [curve_adaptor.FirstParameter() + i * (curve_adaptor.LastParameter() - curve_adaptor.FirstParameter()) / (num_points - 1) for i in range(num_points)]
-            # poles = [curve_adaptor.Value(param) for param in params]
-
-        self.verts = [SP_Pole(g).vertex for g in gp_pnt_poles]
+                gp_pnt_poles = [start_point, end_point]
+                self.type = EDGES_TYPES['line']
+                self.verts = [SP_Pole(g).vertex for g in gp_pnt_poles]
 
     def scale(self, scale_factor):
         self.verts = [v*scale_factor for v in self.verts]
 
+    def line(self, edge_adaptor):
+        start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
+        end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
+        gp_pnt_poles = [start_point, end_point]
+        self.type = EDGES_TYPES['line']
+        self.verts = [SP_Pole(g).vertex for g in gp_pnt_poles]
 
+        # if edge!=None :
+        #     start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
+        #     end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
+        #     poles = [start_point, end_point]
+        # else:
+        #     start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
+        #     end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
+        #     poles = [start_point, end_point]
+
+
+    def bezier(self, edge_adaptor):
+        bezier = edge_adaptor.Bezier()
+        gp_pnt_poles = [bezier.Pole(i+1) for i in range(bezier.NbPoles())]
+        self.type = EDGES_TYPES['bezier']
+        self.verts = [SP_Pole(g).vertex for g in gp_pnt_poles]
+        # TODO output weights
+
+    def bspline(self, edge_adaptor, twoD):
+        # if not twoD :
+        #     curve = edge_adaptor.Curve()
+        #     if not isinstance(curve, Geom_BSplineCurve):
+        #         # first_param = edge_adaptor.FirstParameter()
+        #         # last_param = edge_adaptor.LastParameter()
+        #         bspline = GeomConvert.CurveToBSplineCurve(curve, Convert_TgtThetaOver2)
+        #     else:
+        #         bspline = curve
+
+        # else :
+        #     # 2D version
+        #     bspline = edge_adaptor.BSpline()
+        bspline = edge_adaptor.BSpline()
+        
+        gp_pnt_poles = [bspline.Pole(i+1) for i in range(bspline.NbPoles())]
+        self.degree = bspline.Degree()
+        self.verts = [SP_Pole(g).vertex for g in gp_pnt_poles]
+        self.type = EDGES_TYPES['nurbs']
+        # TODO output the knot, multiplicities and weights  
+
+    def circle(self, edge_adaptor):
+        arc_method = False
+        if arc_method :
+            # arc from center
+            start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
+            end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
+            center = edge_adaptor.Circle().Location()
+            if start_point == end_point:
+                gp_pnt_poles = [start_point, center]
+            else:
+                gp_pnt_poles = [start_point, center, end_point]
+        else:
+            # arc from 3 pts (no need for invert but worse for tangency):
+            min_t = edge_adaptor.FirstParameter()
+            max_t = edge_adaptor.LastParameter()
+            
+            start_point = edge_adaptor.Value(min_t)
+            end_point = edge_adaptor.Value(max_t)
+            range_t = max_t - min_t
+
+            if start_point == end_point or isclose(range_t, math.pi*2):
+                center = edge_adaptor.Circle().Location()
+                gp_pnt_poles = [start_point, center]
+                self.type = EDGES_TYPES['circle']
+            else:
+                mid_t = (max_t - min_t)/2 + min_t
+                mid_point = edge_adaptor.Value(mid_t)
+                gp_pnt_poles = [start_point, mid_point, end_point]
+                self.type = EDGES_TYPES['circle_arc']
+                # self.circle_arc_subtype = 1. # tree_points
+
+        self.verts = [SP_Pole(g).vertex for g in gp_pnt_poles]
+    
 
 
 
@@ -964,9 +739,11 @@ class SP_Edge :
 
 
 class SP_Wire :
-    def __init__(self, occ_wire: TopoDS_Wire=None, scale=1000, CP =[], segs_p_counts=None, segs_degrees=None):
+    def __init__(self, topods_wire: TopoDS_Wire=None, scale=0.001, CP =[], topods_face = None, segs_p_counts=None, segs_degrees=None):
         self.CP = [] #Vectors, bmesh format
-        if occ_wire!=None:
+        
+        # Import
+        if topods_wire!=None:
             # vertex aligned attributes
             self.bmesh_edges = [] #int tuple
             self.endpoints_att = [] #float
@@ -975,7 +752,13 @@ class SP_Wire :
             # self.weights_att = [] #float
             # self.mult_att = [] #float
             self.circle_att = []
-            self.import_constructor(occ_wire, scale)
+
+            if topods_face == None :
+                self.import_constructor_3d_space(topods_wire, scale)
+            else :
+                self.import_constructor_uv_space(topods_wire, topods_face)
+        
+        # Export
         else :
             self.segs_degrees = segs_degrees
             self.CP = [Vector(v) for v in CP]
@@ -983,43 +766,86 @@ class SP_Wire :
             self.export_constructor()
 
     
-    def import_constructor(self, occ_wire: TopoDS_Wire, scale=1000):
-            # verts_of_edges = []
-            topods_edges = get_edges_from_wire(occ_wire)
-            wire_is_reversed = occ_wire.Orientation() == 1
+    def import_constructor_3d_space(self, topods_wire: TopoDS_Wire, scale):
+        topods_edges = get_edges_from_wire(topods_wire)
+        wire_is_reversed = topods_wire.Orientation() == 1
 
-            #Edges
-            for e in topods_edges :
-                sp_edge = SP_Edge(e)
-                sp_edge.scale(1/scale)
-                e_vert = sp_edge.verts
-                e_degree = sp_edge.degree
-                e_type = sp_edge.type
-                
-                # Reverse
-                if (e.Orientation() != TopAbs_FORWARD) != wire_is_reversed :
-                    e_vert.reverse()
+        #Edges
+        for e in topods_edges :
+            sp_edge = SP_Edge(e)
+            sp_edge.scale(scale)
+            e_vert = sp_edge.verts
+            e_degree = sp_edge.degree
+            e_type = sp_edge.type
+            
+            # Reverse
+            if (e.Orientation() != TopAbs_FORWARD) != wire_is_reversed :
+                e_vert.reverse()
 
-                self.CP.extend(e_vert[:-1])
+            self.CP.extend(e_vert[:-1])
 
-                self.endpoints_att.extend([1.0]+[0.0]*(len(e_vert)-2))
-                if e_degree!=None:
-                    self.degree_att.extend([e_degree/10]+[0.0]*(len(e_vert)-2))
-                else :
-                    self.degree_att.extend([0.0]*(len(e_vert)-1))
-                
-                # is arc :
-                if e_type == EDGES_TYPES['circle_arc'] or e_type == EDGES_TYPES['circle']:
-                    self.circle_att.extend([0.0, 1.0])
-                else :
-                    self.circle_att.extend([0.0]*(len(e_vert)-1))
-                
+            self.endpoints_att.extend([1.0]+[0.0]*(len(e_vert)-2))
+            if e_degree!=None:
+                self.degree_att.extend([e_degree/10]+[0.0]*(len(e_vert)-2))
+            else :
+                self.degree_att.extend([0.0]*(len(e_vert)-1))
+            
+            # is arc :
+            if e_type == EDGES_TYPES['circle_arc'] or e_type == EDGES_TYPES['circle']:
+                self.circle_att.extend([0.0, 1.0])
+            else :
+                self.circle_att.extend([0.0]*(len(e_vert)-1))
+            
+        # if len(topods_edges)==1: # Unclosed wire (for now just for the circle case)
+        #     self.bmesh_edges = [(i + len(self.CP), i+1 + len(self.CP)) for i in range(len(self.CP)-1)]
+        # else :
+        #     self.bmesh_edges = [(i + len(self.CP), ((i+1)%len(self.CP)) + len(self.CP)) for i in range(len(self.CP))]
+        if len(topods_edges)==1: # Unclosed mesh wire (for now just for the circle case)
+            self.CP.append(e_vert[-1])
+            self.degree_att.append(0.0)
+            self.endpoints_att.append(0.0)
+            self.bmesh_edges = [(i, i+1) for i in range(len(self.CP)-1)]
+            
+            if e_type == EDGES_TYPES['circle']:
+                self.CP.reverse()
+                self.circle_att.reverse()
 
-            # if len(topods_edges)==1: # Unclosed wire (for now just for the circle case)
-            #     self.bmesh_edges = [(i + len(self.CP), i+1 + len(self.CP)) for i in range(len(self.CP)-1)]
-            # else :
-            #     self.bmesh_edges = [(i + len(self.CP), ((i+1)%len(self.CP)) + len(self.CP)) for i in range(len(self.CP))]
-            if len(topods_edges)==1: # Unclosed mesh wire (for now just for the circle case)
+        else : # Closed
+            self.bmesh_edges = [(i, ((i+1)%len(self.CP))) for i in range(len(self.CP))]
+
+
+    def import_constructor_uv_space(self, topods_wire, topods_face):
+        
+        topods_edges = get_edges_from_wire(topods_wire)
+        wire_is_reversed = topods_wire.Orientation() == 1
+
+        #Edges
+        for e in topods_edges :
+            sp_edge = SP_Edge(e, topods_face)
+            e_vert = sp_edge.verts
+            e_degree = sp_edge.degree
+            e_type = sp_edge.type
+            
+            # Reverse
+            if (e.Orientation() != TopAbs_FORWARD) != wire_is_reversed :
+                e_vert.reverse()
+            
+            # verts_of_edges.append(e_vert)
+            self.CP.extend(e_vert[:-1])
+
+            self.endpoints_att.extend([1.0]+[0.0]*(len(e_vert)-2))
+            if e_degree!=None:
+                self.degree_att.extend([e_degree/10]+[0.0]*(len(e_vert)-2))
+            else :
+                self.degree_att.extend([0.0]*(len(e_vert)-1))
+            
+            # is arc :
+            if e_type == EDGES_TYPES['circle_arc'] or e_type == EDGES_TYPES['circle']:
+                self.circle_att.extend([0.0, 1.0])
+            else :
+                self.circle_att.extend([0.0]*(len(e_vert)-1))
+
+        if len(topods_edges)==1: # Unclosed mesh wire (for now just for the circle case)
                 self.CP.append(e_vert[-1])
                 self.degree_att.append(0.0)
                 self.endpoints_att.append(0.0)
@@ -1029,8 +855,9 @@ class SP_Wire :
                     self.CP.reverse()
                     self.circle_att.reverse()
 
-            else : # Closed
-                self.bmesh_edges = [(i, ((i+1)%len(self.CP))) for i in range(len(self.CP))]
+        else : # Closed
+            self.bmesh_edges = [(i, ((i+1)%len(self.CP))) for i in range(len(self.CP))]
+
 
 
     # Exporter constructor
@@ -1100,7 +927,7 @@ class SP_Wire :
 
 
 
-
+# for export
 def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degrees=None):
     # wire index attr
     try :
@@ -1152,38 +979,96 @@ def split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degre
 
 
 
+class SP_Contour :
+    def __init__(self, topodsface,  scale = None):
+        self.wires = get_wires_from_face(topodsface)
+        self.verts, self.edges, self.endpoints, self.degrees, self.circles = [], [], [], [], []
 
-# from OCP.TopoDS import TopoDS_Face
-# from OCP.TopExp import TopExp_Explorer
-# from OCP.TopAbs import TopAbs_WIRE
-# from OCP.TopoDS import topods_Wire
-# from OCP.BRepCheck import BRepCheck_Wire, BRepCheck_NoError
+        for w in self.wires :
+            if scale!=None:
+                sp_wire = SP_Wire(topods_wire=w, scale = scale)
+            else :
+                sp_wire = SP_Wire(topods_wire=w, topods_face=topodsface)
+                
+            _, self.edges, _ = join_mesh_entities(self.verts, self.edges, [], sp_wire.CP, sp_wire.bmesh_edges, [])
+            self.verts.extend(sp_wire.CP)
+            self.endpoints.extend(sp_wire.endpoints_att)
+            self.degrees.extend(sp_wire.degree_att)
+            self.circles.extend(sp_wire.circle_att)
+    
+    # For square contour following the patch bounds
+    def is_trivial(self):
+        is_trivial_trim = False
+        if len(self.verts) == 4 :
+            t1 = self.verts == [Vector((0.0,0.0,0.0)), Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)),]
+            t2 = self.verts == [Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)), Vector((0.0,0.0,0.0)),]
+            t3 = self.verts == [Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)), Vector((0.0,0.0,0.0)), Vector((0.0,1.0,0.0)),]
+            t4 = self.verts == [Vector((1.0,0.0,0.0)), Vector((0.0,0.0,0.0)), Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)),]
 
-# def check_trim_wires_for_face(face: TopoDS_Face):
-#     if not isinstance(face, TopoDS_Face):
-#         raise TypeError("Input must be a TopoDS_Face")
+            t5 = self.verts == [Vector((1.0,0.0,0.0)), Vector((1.0,1.0,0.0)), Vector((0.0,1.0,0.0)), Vector((0.0,0.0,0.0)),]
+            t6 = self.verts == [Vector((1.0,1.0,0.0)), Vector((0.0,1.0,0.0)), Vector((0.0,0.0,0.0)), Vector((1.0,0.0,0.0)),]
+            t7 = self.verts == [Vector((0.0,1.0,0.0)), Vector((0.0,0.0,0.0)), Vector((1.0,0.0,0.0)), Vector((1.0,1.0,0.0)),]
+            t8 = self.verts == [Vector((0.0,0.0,0.0)), Vector((1.0,0.0,0.0)), Vector((1.0,1.0,0.0)), Vector((0.0,1.0,0.0)),]
+            
+            t9 = set(self.edges) == {(0,1), (1,2), (2,3), (3,0)}
+            
+            is_trivial_trim = (t1 or t2 or t3 or t4 or t5 or t6 or t7 or t8) and t9
 
-#     issues_found = False
-#     wire_explorer = TopExp_Explorer(face, TopAbs_WIRE)
+        return is_trivial_trim
 
-#     while wire_explorer.More():
-#         wire = topods_Wire(wire_explorer.Current())
-#         wire_checker = BRepCheck_Wire(wire)
+    def rebound(self, uv_bounds):
+        min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
+        range_u, range_v = max_u - min_u, max_v - min_v
+
+        for i,v in enumerate(self.verts) :
+            x=max(0, min(1, (v[0]-min_u)/range_u))
+            y=max(0, min(1, (v[1]-min_v)/range_v))
+            self.verts[i] = Vector((x, y, 0))
+
+
+
+
+
+class SP_surface :
+    # Importer class, to unify
+    def __init__(self, face : TopoDS_Face, collection, trims_enabled : bool, uv_bounds, CPvert, CPedges, CPfaces, ob_name = "STEP Patch", scale=0.001):
+        self.trims_enabled = trims_enabled
+        self.face = face
+        self.uv_bounds = uv_bounds
+        self.CPvert = CPvert
+        self.CPedges = CPedges
+        self.CPfaces = CPfaces
+        self.vert, self.edges, self.faces = [],[],[]
         
-#         # Check if the wire is valid on the face
-#         if wire_checker.InContext(face) != BRepCheck_NoError:
-#             print(f"Wire is invalid on the given face")
-#             issues_found = True
-        
-#         # Check wire closure
-#         if wire_checker.Closed() != BRepCheck_NoError:
-#             print(f"Wire is not closed on the given face")
-#             issues_found = True
-        
-#         wire_explorer.Next()
+        if trims_enabled :
+            contour = SP_Contour(face)
+            contour.rebound(uv_bounds)
+            istrivial = contour.is_trivial()
+            if istrivial :
+                print("Trivial contour skipped")
+                self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
+                del contour
+            else :
+                self.vert, self.edges, self.faces = join_mesh_entities(CPvert, CPedges, CPfaces, contour.verts, contour.edges, [])           
+        else :
+            self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
 
-#     if not issues_found:
-#         print("All trim wires on the face are valid")
+        mesh = bpy.data.meshes.new("Patch CP")
+        mesh.from_pydata(self.vert, self.edges, self.faces, False)
+        self.ob = bpy.data.objects.new(ob_name, mesh)
+        
+        if trims_enabled and not istrivial :
+            self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(contour.verts))
+            self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + contour.endpoints)
+            self.assign_vertex_gr("Degree", [0.0]*len(CPvert) + contour.degrees)
+
+        collection.objects.link(self.ob)
+
+    def assign_vertex_gr(self, name, values):
+        add_vertex_group(self.ob, name, values)
+        
+    def add_modifier(self, name, settings_dict = {}, pin=False):
+        add_sp_modifier(self.ob, name, settings_dict, pin = pin)
 
 
 

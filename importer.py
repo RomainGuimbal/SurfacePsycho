@@ -60,11 +60,11 @@ def build_SP_cylinder(brepFace : TopoDS_Face, collection, trims_enabled, scale =
     radius = gp_cylinder.Radius()*scale
 
 
-    false_uv_bounds = geom_cylinder.Bounds()
-    uv_bounds = (false_uv_bounds[1], false_uv_bounds[0], -length/2, length/2) # -np.pi/2
+    fake_uv_bounds = geom_cylinder.Bounds()
+    uv_bounds = (fake_uv_bounds[1], fake_uv_bounds[0], -length/2, length/2) # -np.pi/2
     min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
 
-    print(f"UV Bounds : {(min_u, max_u, min_v, max_v)}")
+    print(f"Cylinder UV bounds : {(min_u, max_u, min_v, max_v)}")
 
     raduis_vert = Vector((zaxis_vec*radius) + loc_vec)
 
@@ -102,9 +102,9 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled):
 
 
 
-
-def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
-    bspline_surface = BRepAdaptor_Surface(brepFace).Surface().BSpline()
+def build_SP_NURBS_patch(topods_face, collection, trims_enabled):
+    # Patch attributes
+    bspline_surface = BRepAdaptor_Surface(topods_face).Surface().BSpline()
     
     u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
     udeg = bspline_surface.UDegree()
@@ -115,11 +115,18 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
     u_mult = bspline_surface.UMultiplicities()
     v_mult = bspline_surface.VMultiplicities()
     custom_knot = False
-    if any(x not in [0.0, 1.0] for x in u_knots) or any(x not in [0.0, 1.0] for x in v_knots):
+    if any(x not in [min(u_knots), max(u_knots)] for x in u_knots) or any(x not in [min(v_knots), max(v_knots)] for x in v_knots):
         custom_knot = True
         print(u_knots)
         print(v_knots)
+    # TODO
+    # else :
+    #    Convert to bezier then
+    #    build_SP_BezierPatch(...)
 
+    # vertex aligned attributes
+
+    # CP Grid
     custom_weight = False
     vector_pts = np.zeros((u_count, v_count), dtype=Vector)
     weights = np.zeros((u_count, v_count), dtype=float)
@@ -137,7 +144,7 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
     
-    sp_surf = SP_surface(brepFace, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
+    sp_surf = SP_surface(topods_face, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
     
     if custom_knot:
         sp_surf.assign_vertex_gr("Knot U", v_knots)# TO FIX U AND V INVERTED
@@ -164,9 +171,9 @@ def build_SP_NURBS_patch(brepFace, collection, trims_enabled):
 
 
 
-def build_SP_curve(topodsEdge, collection, scale = 1000) :
+def build_SP_curve(topodsEdge, collection, scale = 0.001) :
     sp_edge = SP_Edge(topodsEdge)
-    sp_edge.scale(1/scale)
+    sp_edge.scale(scale)
     verts = sp_edge.verts
     edge_degree = sp_edge.degree
 
@@ -187,6 +194,9 @@ def build_SP_curve(topodsEdge, collection, scale = 1000) :
     add_vertex_group(ob, "Endpoints", endpoints)
     add_vertex_group(ob, "Degree", degree_att)
 
+    if sp_edge.type == EDGES_TYPES['circle']:
+        add_vertex_group(ob, "Circle", [0.0, 1.0, 0.0])
+
     # add modifier
     collection.objects.link(ob)
     add_sp_modifier(ob, "SP - Curve Meshing", pin=True)
@@ -198,16 +208,22 @@ def build_SP_curve(topodsEdge, collection, scale = 1000) :
 
 
 
-def build_SP_flat(topodsFace, collection):
-    wires_verts, wires_edges, wires_endpoints, degree_att, circle_att = get_face_3D_contours(topodsFace)
+def build_SP_flat(topodsFace, collection, scale = 0.001):
+    # Get contour
+    contour = SP_Contour(topodsFace, scale)
+    verts = contour.verts
+    edges = contour.edges
+    endpoints = contour.endpoints
+    degree_att = contour.degrees
+    circle_att = contour.circles
 
-    # create object
+    # Create object
     mesh = bpy.data.meshes.new("FlatPatch CP")
-    mesh.from_pydata(wires_verts, wires_edges, [], False)
+    mesh.from_pydata(verts, edges, [], False)
     ob = bpy.data.objects.new('STEP FlatPatch', mesh)
 
     # Assign vertex groups
-    add_vertex_group(ob, "Endpoints", wires_endpoints)
+    add_vertex_group(ob, "Endpoints", endpoints)
     add_vertex_group(ob, "Degree", degree_att)
     add_vertex_group(ob, "Circle", circle_att)
     
