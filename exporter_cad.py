@@ -111,11 +111,11 @@ def new_brep_bezier_face(o, context, scale=1000):
     wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts, segs_degrees)
 
     # Get occ wires
-    outer_wire = wires[-1].get_occ_wire_2d(bsurf)
+    outer_wire = wires[-1].get_topods_wire_2d(bsurf)
     inner_wires=[]
     for k in wires.keys():
         if k!=-1:
-            inner_wires.append(wires[k].get_occ_wire_2d(bsurf))
+            inner_wires.append(wires[k].get_topods_wire_2d(bsurf))
 
     face = create_face(bsurf, outer_wire, inner_wires)
     return face
@@ -192,12 +192,12 @@ def new_brep_NURBS_face(o, context, scale=1000):
     
     wires = split_and_prepare_wires(ob, trim_pts, total_p_count, segs_p_counts, segs_degrees)
 
-    # Get occ wires
-    outer_wire = wires[-1].get_occ_wire_2d(bsurf)
+    # Get topods wires
+    outer_wire = wires[-1].get_topods_wire_2d(bsurf)
     inner_wires=[]
     for k in wires.keys():
         if k!=-1:
-            inner_wires.append(wires[k].get_occ_wire_2d(bsurf))
+            inner_wires.append(wires[k].get_topods_wire_2d(bsurf))
 
     face = create_face(bsurf, outer_wire, inner_wires)
     return face
@@ -237,7 +237,7 @@ def new_brep_curve(o, context, scale=1000):
     points*=scale # Unit correction
 
     wire = SP_Wire(CP = points, segs_p_counts= segs_p_counts, segs_degrees=segs_degrees)
-    brep_wire = wire.get_occ_wire_3d(ob=ob)
+    brep_wire = wire.get_topods_wire_3d(ob=ob)
 
     return brep_wire
 
@@ -291,11 +291,11 @@ def new_brep_planar_face(o, context, scale=1000):
     geom_pl = Geom_Plane(pl)
 
     # Get occ wires
-    outer_wire = wires[-1].get_occ_wire_3d(geom_pl)
+    outer_wire = wires[-1].get_topods_wire_3d(geom_pl)
     inner_wires=[]
     for k in wires.keys():
         if k!=-1:
-            inner_wires.append(wires[k].get_occ_wire_3d(geom_pl))
+            inner_wires.append(wires[k].get_topods_wire_3d(geom_pl))
 
     face = create_face(None, outer_wire, inner_wires)
     return face

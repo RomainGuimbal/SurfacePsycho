@@ -163,7 +163,7 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled):
         # assign vertex group to modifier # change_node_socket_value
     
     # Meshing
-    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Degree V": udeg, "Degree U": vdeg, "Use Trim Contour":False, "Scaling Method": 1}, pin=True)# TO FIX U AND V INVERTED
+    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Degree V": udeg, "Degree U": vdeg, "Use Trim Contour":trims_enabled, "Scaling Method": 1}, pin=True)# TO FIX U AND V INVERTED
     return True
 
 

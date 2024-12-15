@@ -385,202 +385,6 @@ def auto_knot_and_mult(p_count, degree, isclamped = True, isperiodic = False):
 
 
 
-# exporter
-def create_wire_3d(vector_points, segs_p_counts, first_segment_p_id, segs_degrees, geom_plane=None, ob=None):
-    total_p_count=len(vector_points)
-    segment_count = len(segs_p_counts)
-
-    # Create CP
-    controlPoints = TColgp_Array1OfPnt(1, total_p_count)
-    for i in range(total_p_count):
-        pnt = gp_Pnt(vector_points[i][0], vector_points[i][1], vector_points[i][2])
-        if geom_plane != None:
-            pnt = GeomAPI_ProjectPointOnSurf(pnt, geom_plane).Point(1)
-        controlPoints.SetValue(i+1, pnt)
-    
-    # Create segments
-    edges_list = TopTools_Array1OfShape(1, segment_count)
-    for i in range(segment_count):
-        
-        # Straight edge
-        if segs_p_counts[i] == 2: 
-            makesegment = GC_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count +1), 
-                                        controlPoints.Value((first_segment_p_id[i]+1)%total_p_count +1))
-            segment = makesegment.Value()
-        
-        # Curved edge
-        else:
-            # CP
-            segment_point_array = TColgp_Array1OfPnt(1, segs_p_counts[i])
-            for j in range(segs_p_counts[i]):
-                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count +1))
-            
-            p_count = segs_p_counts[i]
-            degree = segs_degrees[i]
-
-            # weights
-            try:
-                weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
-                weights = TColStd_Array1OfReal(1, p_count)
-                for j in range(p_count):
-                    weights.SetValue(j+1, weight_attr[i])
-            except Exception:
-                weights = TColStd_Array1OfReal(1, p_count)
-                for j in range(p_count):
-                    weights.SetValue(j+1, 1)
-            
-            # Bezier
-            if p_count-1==degree:
-                segment = Geom_BezierCurve(segment_point_array)
-
-            # Bspline
-            else :
-                # Mult and Knot
-                try:
-                    isclamped = get_attribute_by_name(ob, 'IsClamped', 'first_bool')
-                    isperiodic = get_attribute_by_name(ob, 'IsPeriodic', 'first_bool')
-                except Exception:
-                    isclamped, isperiodic = True, False
-                
-                try :
-                    if isclamped :
-                        knot_length = p_count - degree + 1
-                    else :
-                        knot_length = p_count + degree
-
-                    knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
-
-                    # knot
-                    knot = TColStd_Array1OfReal(1,knot_length)
-                    for j in range(knot_length):
-                        knot.SetValue(j+1, knot_attr[i])
-                    
-                    # Multiplicities
-                    mult = TColStd_Array1OfInteger(1, knot_length)
-                    for j in range(knot_length):
-                        if isclamped and (j == 0 or j == knot_length-1):
-                            mult.SetValue(j+1, degree+1)
-                        else :
-                            mult.SetValue(j+1, 1)
-                except Exception:
-                    knot, mult = auto_knot_and_mult(segs_p_counts[i], degree, isclamped, isperiodic)
-
-                segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, degree, isperiodic)
-        
-        # append edge
-        edge = BRepBuilderAPI_MakeEdge(segment).Edge()     
-        edges_list.SetValue(i+1, edge)
-
-    # Make contour
-    makeWire = BRepBuilderAPI_MakeWire()
-    for e in edges_list :
-        makeWire.Add(TopoDS.Edge_s(e))
-    wire = TopoDS_Wire()
-    wire = makeWire.Wire()
-
-    return wire
-
-
-
-
-
-#exporter
-def create_wire_2d(pts_2d, segs_p_counts, first_segment_p_id, segs_degrees, geom_surf=None, ob = None):
-    total_p_count = len(pts_2d)
-    segment_count = len(segs_p_counts)
-
-    # Create 2D points
-    controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
-    for i in range(total_p_count):
-        pnt = gp_Pnt2d(pts_2d[i][1], pts_2d[i][0]) # INVERTED
-        controlPoints.SetValue(i+1, pnt)
-
-    # Create segments
-    edges_list = TopTools_Array1OfShape(1, segment_count)
-    for i in range(segment_count):
-        
-        # Straight edge
-        if segs_p_counts[i] == 2: 
-            makesegment = GCE2d_MakeSegment(controlPoints.Value((first_segment_p_id[i])%total_p_count+1), 
-                                        controlPoints.Value((first_segment_p_id[i]+1)%total_p_count+1))
-            segment = makesegment.Value()
-        
-        # Curved edge
-        else :
-            # CP
-            segment_point_array = TColgp_Array1OfPnt2d(1, segs_p_counts[i])
-            for j in range(segs_p_counts[i]):
-                segment_point_array.SetValue(j+1, controlPoints.Value((first_segment_p_id[i]+j)%total_p_count+1))
-            
-            p_count = segs_p_counts[i]
-            degree = segs_degrees[i]
-
-            # weights
-            try:
-                weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
-                weights = TColStd_Array1OfReal(1, p_count)
-                for j in range(p_count):
-                    weights.SetValue(j+1, weight_attr[i])
-            except Exception:
-                weights = TColStd_Array1OfReal(1, p_count)
-                for j in range(p_count):
-                    weights.SetValue(j+1, 1)
-
-            # Bezier
-            if p_count-1==degree:
-                segment = Geom2d_BezierCurve(segment_point_array)
-
-            # Bspline
-            else :
-                # Mult and Knot
-                try:
-                    isclamped = get_attribute_by_name(ob, 'Clamped', 'first_bool')
-                except Exception:
-                    isclamped = True
-
-                try :
-                    knot_length = p_count - degree + 1
-                    knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
-
-                    # knot
-                    knot = TColStd_Array1OfReal(1,knot_length)
-                    for j in range(knot_length):
-                        knot.SetValue(j+1, knot_attr[i])
-                    
-                    # Multiplicities
-                    mult = TColStd_Array1OfInteger(1, knot_length)
-                    for j in range(knot_length):
-                        if j == 0 or j == knot_length-1:
-                            mult.SetValue(j+1, degree+1)
-                        else :
-                            mult.SetValue(j+1, 1)
-                except Exception:
-                    knot, mult = auto_knot_and_mult(segs_p_counts[i], degree, isclamped)
-
-                segment = Geom2d_BSplineCurve(segment_point_array, weights, knot, mult, degree, False)
-
-        
-        # make segment
-        if geom_surf != None:
-            adapt = GeomAdaptor_Surface(geom_surf)
-            edge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface()).Edge()
-        else :
-            edge = BRepBuilderAPI_MakeEdge(segment).Edge()
-        
-        # append edge
-        edges_list.SetValue(i+1, edge)
-
-    # Make contour
-    makeWire = BRepBuilderAPI_MakeWire()
-    for e in edges_list :
-        makeWire.Add(TopoDS.Edge_s(e))
-    wire = TopoDS_Wire()
-    wire = makeWire.Wire()
-
-    return wire
-
-
-
 
 
 
@@ -815,7 +619,6 @@ class SP_Wire :
 
 
     def import_constructor_uv_space(self, topods_wire, topods_face):
-        
         topods_edges = get_edges_from_wire(topods_wire)
         wire_is_reversed = topods_wire.Orientation() == 1
 
@@ -879,13 +682,195 @@ class SP_Wire :
         self.seg_first_P_id = [0] + [p-1 for p in p_count_accumulate[:len(self.segs_p_counts)-1]]
 
 
-    def get_occ_wire_3d(self, geom_plane=None, ob=None):
-        wire = create_wire_3d(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_degrees, geom_plane, ob)
+    def get_topods_wire_3d(self, geom_plane=None, ob=None):
+        total_p_count=len(self.CP)
+        segment_count = len(self.segs_p_counts)
+
+        # Create CP
+        controlPoints = TColgp_Array1OfPnt(1, total_p_count)
+        for i in range(total_p_count):
+            pnt = gp_Pnt(self.CP[i][0], self.CP[i][1], self.CP[i][2])
+            if geom_plane != None:
+                pnt = GeomAPI_ProjectPointOnSurf(pnt, geom_plane).Point(1)
+            controlPoints.SetValue(i+1, pnt)
+        
+        # Create segments
+        edges_list = TopTools_Array1OfShape(1, segment_count)
+        for i in range(segment_count):
+            
+            # Straight edge
+            if self.segs_p_counts[i] == 2: 
+                makesegment = GC_MakeSegment(controlPoints.Value((self.seg_first_P_id[i])%total_p_count +1), 
+                                            controlPoints.Value((self.seg_first_P_id[i]+1)%total_p_count +1))
+                segment = makesegment.Value()
+            
+            # Curved edge
+            else:
+                # CP
+                segment_point_array = TColgp_Array1OfPnt(1, self.segs_p_counts[i])
+                for j in range(self.segs_p_counts[i]):
+                    segment_point_array.SetValue(j+1, controlPoints.Value((self.seg_first_P_id[i]+j)%total_p_count +1))
+                
+                p_count = self.segs_p_counts[i]
+                degree = self.segs_degrees[i]
+
+                # weights
+                try:
+                    weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
+                    weights = TColStd_Array1OfReal(1, p_count)
+                    for j in range(p_count):
+                        weights.SetValue(j+1, weight_attr[i])
+                except Exception:
+                    weights = TColStd_Array1OfReal(1, p_count)
+                    for j in range(p_count):
+                        weights.SetValue(j+1, 1)
+                
+                # Bezier
+                if p_count-1==degree:
+                    segment = Geom_BezierCurve(segment_point_array)
+
+                # Bspline
+                else :
+                    # Mult and Knot
+                    try:
+                        isclamped = get_attribute_by_name(ob, 'IsClamped', 'first_bool')
+                        is_unclamped_periodic = get_attribute_by_name(ob, 'IsPeriodic', 'first_bool') and not isclamped
+                    except Exception:
+                        isclamped, is_unclamped_periodic = True, False
+                    
+
+                    try :
+                        if isclamped :
+                            knot_length = p_count - degree + 1
+                        else :
+                            knot_length = p_count + degree
+
+                        knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
+
+                        # knot
+                        knot = TColStd_Array1OfReal(1,knot_length)
+                        for j in range(knot_length):
+                            knot.SetValue(j+1, knot_attr[i])
+                        
+                        # Multiplicities
+                        mult = TColStd_Array1OfInteger(1, knot_length)
+                        for j in range(knot_length):
+                            if isclamped and (j == 0 or j == knot_length-1):
+                                mult.SetValue(j+1, degree+1)
+                            else :
+                                mult.SetValue(j+1, 1)
+                    except Exception:
+                        knot, mult = auto_knot_and_mult(self.segs_p_counts[i], degree, isclamped, is_unclamped_periodic)
+
+                    segment = Geom_BSplineCurve(segment_point_array, weights, knot, mult, degree, is_unclamped_periodic)
+            
+            # append edge
+            edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+            edges_list.SetValue(i+1, edge)
+
+        # Make contour
+        makeWire = BRepBuilderAPI_MakeWire()
+        for e in edges_list :
+            makeWire.Add(TopoDS.Edge_s(e))
+        wire = TopoDS_Wire()
+        wire = makeWire.Wire()
+
         return wire
+
     
 
-    def get_occ_wire_2d(self, geom_surf=None, ob=None):
-        wire = create_wire_2d(self.CP, self.segs_p_counts, self.seg_first_P_id, self.segs_degrees, geom_surf, ob)
+    def get_topods_wire_2d(self, geom_surf=None, ob=None):
+        total_p_count = len(self.CP)
+        segment_count = len(self.segs_p_counts)
+
+        # Create 2D points
+        controlPoints = TColgp_Array1OfPnt2d(1, total_p_count)
+        for i in range(total_p_count):
+            pnt = gp_Pnt2d(self.CP[i][1], self.CP[i][0]) # INVERTED
+            controlPoints.SetValue(i+1, pnt)
+
+        # Create segments
+        edges_list = TopTools_Array1OfShape(1, segment_count)
+        for i in range(segment_count):
+            
+            # Straight edge
+            if self.segs_p_counts[i] == 2: 
+                makesegment = GCE2d_MakeSegment(controlPoints.Value((self.seg_first_P_id[i])%total_p_count+1), 
+                                            controlPoints.Value((self.seg_first_P_id[i]+1)%total_p_count+1))
+                segment = makesegment.Value()
+            
+            # Curved edge
+            else :
+                # CP
+                segment_point_array = TColgp_Array1OfPnt2d(1, self.segs_p_counts[i])
+                for j in range(self.segs_p_counts[i]):
+                    segment_point_array.SetValue(j+1, controlPoints.Value((self.seg_first_P_id[i]+j)%total_p_count+1))
+                
+                p_count = self.segs_p_counts[i]
+                degree = self.segs_degrees[i]
+
+                # weights
+                try:
+                    weight_attr = get_attribute_by_name(ob, 'Weight', 'float', p_count)
+                    weights = TColStd_Array1OfReal(1, p_count)
+                    for j in range(p_count):
+                        weights.SetValue(j+1, weight_attr[i])
+                except Exception:
+                    weights = TColStd_Array1OfReal(1, p_count)
+                    for j in range(p_count):
+                        weights.SetValue(j+1, 1)
+
+                # Bezier
+                if p_count-1==degree:
+                    segment = Geom2d_BezierCurve(segment_point_array)
+
+                # Bspline
+                else :
+                    # Mult and Knot
+                    try:
+                        isclamped = get_attribute_by_name(ob, 'Clamped', 'first_bool')
+                    except Exception:
+                        isclamped = True
+
+                    try :
+                        knot_length = p_count - degree + 1
+                        knot_attr = get_attribute_by_name(ob, 'Knot', 'float', knot_length)
+
+                        # knot
+                        knot = TColStd_Array1OfReal(1,knot_length)
+                        for j in range(knot_length):
+                            knot.SetValue(j+1, knot_attr[i])
+                        
+                        # Multiplicities
+                        mult = TColStd_Array1OfInteger(1, knot_length)
+                        for j in range(knot_length):
+                            if j == 0 or j == knot_length-1:
+                                mult.SetValue(j+1, degree+1)
+                            else :
+                                mult.SetValue(j+1, 1)
+                    except Exception:
+                        knot, mult = auto_knot_and_mult(self.segs_p_counts[i], degree, isclamped)
+
+                    segment = Geom2d_BSplineCurve(segment_point_array, weights, knot, mult, degree, False)
+
+            
+            # make segment
+            if geom_surf != None:
+                adapt = GeomAdaptor_Surface(geom_surf)
+                edge = BRepBuilderAPI_MakeEdge(segment, adapt.Surface()).Edge()
+            else :
+                edge = BRepBuilderAPI_MakeEdge(segment).Edge()
+            
+            # append edge
+            edges_list.SetValue(i+1, edge)
+
+        # Make contour
+        makeWire = BRepBuilderAPI_MakeWire()
+        for e in edges_list :
+            makeWire.Add(TopoDS.Edge_s(e))
+        wire = TopoDS_Wire()
+        wire = makeWire.Wire()
+
         return wire
     
 
@@ -1000,6 +985,9 @@ class SP_Contour :
     def is_trivial(self):
         is_trivial_trim = False
         if len(self.verts) == 4 :
+
+            print(self.verts)
+
             t1 = self.verts == [Vector((0.0,0.0,0.0)), Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)),]
             t2 = self.verts == [Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)), Vector((0.0,0.0,0.0)),]
             t3 = self.verts == [Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)), Vector((0.0,0.0,0.0)), Vector((0.0,1.0,0.0)),]

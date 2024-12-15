@@ -24,21 +24,28 @@ bl_info = {
 }
 
 import bpy
-
-# import six
-# print(six.__file__)
-
-# import vtkmodules
-# print(vtkmodules.__file__)
-
-# import OCP
-# print(OCP.__file__)
-
+import os
 import sys
+
+def add_ocp_dll_path():
+    site_packages = next(p for p in sys.path if 'site-packages' in p)
+    platlib_path = os.path.join(site_packages, 'cadquery_ocp-7.7.2.data', 'platlib')
+    
+    try:
+        os.add_dll_directory(platlib_path)
+        print(f"Added DLL directory: {platlib_path}")
+    except Exception as e:
+        print(f"Could not add DLL directory: {e}")
+
+# Call this before importing any OCP modules
+add_ocp_dll_path()
+
+
 from os.path import dirname
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
+
 
 
 from . import gui
