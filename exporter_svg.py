@@ -1,7 +1,6 @@
 import bpy
 import numpy as np
 from mathutils import Vector
-from os.path import dirname, abspath
 from .utils import *
 import copy
 from typing import List, Dict
@@ -144,17 +143,11 @@ def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100, color_mod
     
     segs_p_counts = segs_p_counts[:segment_count]
 
-    try :
-        segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', segment_count)
-    except KeyError :
-        segs_degrees = None
-
     # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
     
-
     # Wires
-    wires_dict = split_and_prepare_wires(ob, points, total_p_count, segs_p_counts, segs_degrees)
+    wires_dict = SP_Contour_export(ob, points, total_p_count, segs_p_counts)
     
     
     # SVG path attributes
@@ -313,46 +306,39 @@ def export_svg(context, filepath, use_selection, plane="XY", origin_mode="auto",
 
 
 
-
+#######################################
+#      OCC EXTENDS SVG EXPORTER !     #
+#######################################
 
 ##############
 # SVG export #
 ##############
-def edge_to_svg_polyline(topods_edge, tol=0.1, unit="mm"):
-    """Returns a svgwrite.Path for the edge, and the 2d bounding box"""
-    check_svgwrite_installed()
+# def edge_to_svg_polyline(topods_edge, tol=0.1, unit="mm"):
+#     """Returns a svgwrite.Path for the edge, and the 2d bounding box"""
+#     check_svgwrite_installed()
 
-    unit_factor = 1  # by default
+#     unit_factor = 1  # by default
 
-    if unit == "mm":
-        unit_factor = 1
-    elif unit == "m":
-        unit_factor = 1e3
+#     if unit == "mm":
+#         unit_factor = 1
+#     elif unit == "m":
+#         unit_factor = 1e3
 
-    points_3d = discretize_edge(topods_edge, tol)
-    points_2d = []
-    box2d = Bnd_Box2d()
+#     points_3d = discretize_edge(topods_edge, tol)
+#     points_2d = []
+#     box2d = Bnd_Box2d()
 
-    for point in points_3d:
-        # we tak only the first 2 coordinates (x and y, leave z)
-        x_p = -point[0] * unit_factor
-        y_p = point[1] * unit_factor
-        box2d.Add(gp_Pnt2d(x_p, y_p))
-        points_2d.append((x_p, y_p))
+#     for point in points_3d:
+#         # we tak only the first 2 coordinates (x and y, leave z)
+#         x_p = -point[0] * unit_factor
+#         y_p = point[1] * unit_factor
+#         box2d.Add(gp_Pnt2d(x_p, y_p))
+#         points_2d.append((x_p, y_p))
 
-    return svgwrite.shapes.Polyline(points_2d, fill="none"), box2d
-
-
+#     return svgwrite.shapes.Polyline(points_2d, fill="none"), box2d
 
 
 
-
-
-
-
-#######################################
-#      OCC EXTENDS SVG EXPORTER !     #
-#######################################
 # Uses external package for the actuall export. (Should be quite easy to retro engineer)
 
 # import os
