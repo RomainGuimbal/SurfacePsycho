@@ -74,7 +74,9 @@ class SP_Edge_export:
 
     def get_type(self):
         circle_exists = 'circle' in self.cp_aligned_attrs.keys()
-        if self.p_count ==2:
+        if self.p_count < 2:
+            print('Error : Invalid segment')
+        elif self.p_count ==2:
             if circle_exists and sum(self.cp_aligned_attrs['circle']) > 0:
                 return 4
             else:
@@ -142,7 +144,7 @@ class SP_Edge_export:
         for i in range(self.p_count):
             weights.SetValue(i+1, weights_att[i])
         
-        # TODO knot/mult/ per edge, no design yet
+        # TODO custom knot/mult per edge, no design yet
         # try :
         #     if isclamped :
         #         knot_length = self.p_count - degree + 1
@@ -203,6 +205,7 @@ class SP_Wire_export :
         self.segs_degrees = segs_degrees
         self.CP = [Vector(v) for v in CP]
         self.segs_p_counts = segs_p_counts
+        self.isclosed = sum([s -1 for s in segs_p_counts]) == len(CP)
 
         # Bezier if no degree
         if self.segs_degrees==None:
@@ -223,10 +226,15 @@ class SP_Wire_export :
 
     def get_attr_per_edge(self, attr) -> list[list]:
         split_attr=[]
-        attr_twotimes = attr + attr
-        fp = self.seg_first_P_id + [len(self.CP)-1]
-        for i,f in enumerate(self.seg_first_P_id) :
-            split_attr.append(attr_twotimes[f:fp[i+1]+1])
+        inf = 0
+        sup = self.segs_p_counts[0]
+        for i,n in enumerate(self.segs_p_counts) :
+            if i==len(self.segs_p_counts)-1 and self.isclosed:
+                split_attr.append(attr[inf:len(self.CP)]+[attr[0]])
+            else :
+                split_attr.append(attr[inf:sup])
+            inf = sup - 1
+            sup = inf + n         
         return split_attr
     
 
@@ -286,7 +294,6 @@ class SP_Wire_export :
         makeWire = BRepBuilderAPI_MakeWire()
         for e in edges_list :
             makeWire.Add(TopoDS.Edge_s(e))
-        # wire = TopoDS_Wire()
         wire = makeWire.Wire()
 
         return wire
@@ -502,7 +509,7 @@ class SP_Contour_export :
         for i, w_cur in enumerate(wire_index) :
             # wire first point
             if w_cur != w_prev :
-                wires_dict[w_prev] = SP_Wire_export(CP = build_CP, segs_p_counts= build_segs_p_counts, segs_degrees= build_segs_degrees)
+                wires_dict[w_prev] = SP_Wire_export(build_CP, build_segs_p_counts, build_segs_degrees)
                 build_CP, build_segs_p_counts, build_segs_degrees = [], [], []
 
             # Add point
@@ -521,7 +528,7 @@ class SP_Contour_export :
 
             w_prev = w_cur
         # Build last wire
-        wires_dict[w_prev] = SP_Wire_export(CP = build_CP, segs_p_counts= build_segs_p_counts, segs_degrees= build_segs_degrees)
+        wires_dict[w_prev] = SP_Wire_export(build_CP, build_segs_p_counts, build_segs_degrees)
         self.wires_dict = wires_dict
         
 
@@ -705,21 +712,26 @@ def new_brep_NURBS_face(o, context, scale=1000):
 
 
 
-
-
+# class SP_Curve_obj_export :?
 def new_brep_curve(o, context, scale=1000):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
     
-    # get total_p_count
+    # get total_p_count and segment_count
     total_p_count, segment_count= 1, 0
     for p in segs_p_counts:
-        if p>0:
+        if p>1:
             total_p_count += p-1
             segment_count += 1
-    
+        else :
+            break
+    #crop segs_p_counts
     segs_p_counts = segs_p_counts[:segment_count]
+    
+    # 1 point less if closed
+    is_closed = get_attribute_by_name(ob, 'IsPeriodic', 'first_int')
+    total_p_count -= is_closed
 
     try :
         segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', segment_count)
