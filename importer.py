@@ -108,7 +108,6 @@ class SP_Edge_import :
         #     end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
         #     poles = [start_point, end_point]
 
-
     def bezier(self, edge_adaptor):
         bezier = edge_adaptor.Bezier()
         gp_pnt_poles = [bezier.Pole(i+1) for i in range(bezier.NbPoles())]
@@ -454,15 +453,16 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled):
 def build_SP_NURBS_patch(topods_face, collection, trims_enabled):
     # Patch attributes
     bspline_surface = BRepAdaptor_Surface(topods_face).Surface().BSpline()
-    
     u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
     udeg = bspline_surface.UDegree()
     vdeg = bspline_surface.VDegree()
     uv_bounds = bspline_surface.Bounds()
     u_knots = normalize_array(tcolstd_array1_to_list(bspline_surface.UKnots()))
     v_knots = normalize_array(tcolstd_array1_to_list(bspline_surface.VKnots()))
-    u_mult = bspline_surface.UMultiplicities()
-    v_mult = bspline_surface.VMultiplicities()
+    u_mult = tcolstd_array1_to_list(bspline_surface.UMultiplicities())
+    v_mult = tcolstd_array1_to_list(bspline_surface.VMultiplicities())
+    
+    # Custom knot
     custom_knot = False
     if any(x not in [min(u_knots), max(u_knots)] for x in u_knots) or any(x not in [min(v_knots), max(v_knots)] for x in v_knots):
         custom_knot = True
@@ -498,8 +498,8 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled):
     if custom_knot:
         sp_surf.assign_vertex_gr("Knot U", v_knots)# TO FIX U AND V INVERTED
         sp_surf.assign_vertex_gr("Knot V", u_knots)# TO FIX U AND V INVERTED
-        sp_surf.assign_vertex_gr("Multiplicity U", np.array(tcolstd_array1_to_list(v_mult))/10)# TO FIX U AND V INVERTED
-        sp_surf.assign_vertex_gr("Multiplicity V", np.array(tcolstd_array1_to_list(u_mult))/10)# TO FIX U AND V INVERTED
+        sp_surf.assign_vertex_gr("Multiplicity U", np.array(v_mult)/10)# TO FIX U AND V INVERTED
+        sp_surf.assign_vertex_gr("Multiplicity V", np.array(u_mult)/10)# TO FIX U AND V INVERTED
 
     if custom_weight:
         # Since Nurbs trim contour uses "weight" attr too, set all trim contour weights to 1.0. To improve later
@@ -511,8 +511,11 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled):
         # TO NORMALIZE + factor
         # assign vertex group to modifier # change_node_socket_value
     
+    u_clamped = any(m!=1 for m in u_mult) or not custom_knot
+    v_clamped = any(m!=1 for m in v_mult) or not custom_knot
+
     # Meshing
-    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Degree V": udeg, "Degree U": vdeg, "Use Trim Contour":trims_enabled, "Scaling Method": 1}, pin=True)# TO FIX U AND V INVERTED
+    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Degree V": udeg, "Degree U": vdeg, "Use Trim Contour":trims_enabled, "Scaling Method": 1, "Endpoint U" : v_clamped, "Endpoint V" : u_clamped }, pin=True)# TO FIX U AND V INVERTED
     return True
 
 
@@ -824,6 +827,7 @@ def import_cad(filepath, context, enabled_entities):
 ###########################
 # Step import OCC Extends #
 ###########################
+
 def read_step_file(filename, as_compound=True, verbosity=True):
     """read the STEP file and returns a compound
     filename: the file path

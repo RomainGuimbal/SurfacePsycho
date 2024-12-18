@@ -27,7 +27,7 @@ from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 from OCP.TopoDS import TopoDS_Shape, TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
-from OCP.TopTools import TopTools_Array1OfShape
+# from OCP.TopTools import TopTools_Array1OfShape
 
 
 
@@ -36,7 +36,8 @@ from OCP.TopTools import TopTools_Array1OfShape
 ##############################
 
 class SP_Edge_export:
-    def __init__(self, vec_cp : list[Vector], seg_attrs : dict[str:float], cp_aligned_attrs : dict[str:list], is2D = False, geom_surf = None):
+    def __init__(self, vec_cp : list[Vector], seg_attrs : dict[str:float],
+                  cp_aligned_attrs : dict[str:list], is2D = False, geom_surf = None, flat_normal = None):
         self.vec_cp = vec_cp
         self.gp_cp = []
         for v in vec_cp :
@@ -50,6 +51,7 @@ class SP_Edge_export:
         self.cp_aligned_attrs = cp_aligned_attrs
         self.topods_edge = None
         self.is2D = is2D
+        self.flat_normal = flat_normal
         
         type = self.get_type()
         match type :
@@ -63,9 +65,9 @@ class SP_Edge_export:
                 self.circle_arc()
             case 4 :
                 self.circle()
-        
+
         # make segment
-        if geom_surf != None:
+        if geom_surf != None: #2D
             adapt = GeomAdaptor_Surface(geom_surf)
             self.topods_edge = BRepBuilderAPI_MakeEdge(self.geom, adapt.Surface()).Edge()
         else :
@@ -106,12 +108,18 @@ class SP_Edge_export:
             circle = gp_Circ2d(gp_Ax2d(p_center, gp_Dir2d(p_center, p_other)), radius)
             self.geom = circle
 
-        # missing direction. Best fix : make 2d flat patch and transform face afterward
-        # else :
-        #     p_center = gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1])
-        #     p_other = gp_Pnt(self.vec_cp[1][0], self.vec_cp[1][1])
-        #     circle = gp_Circ(gp_Ax2(gp_Dir(p_center, p_other), gp_Dir(#############)), radius)
-        #     self.geom = circle
+        elif self.flat_normal is not None:
+            p_center = gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2])
+            p_other = gp_Pnt(self.vec_cp[1][0], self.vec_cp[1][1], self.vec_cp[1][2])
+            dir1 = gp_Dir(p_center, p_other)
+
+            pl_normal_vec = [self.flat_normal.X(), self.flat_normal.Y(), self.flat_normal.Z()]
+
+            dir2_vec = np.cross(pl_normal_vec, self.vec_cp[0]-self.vec_cp[1])
+            dir2= gp_Dir(gp_Pnt(0,0,0), gp_Pnt(dir2_vec[0], dir2_vec[1], dir2_vec[2]))
+
+            circle = gp_Circ(gp_Ax2(dir1, dir2), radius)
+            self.geom = circle
     
     def bezier(self):
         if self.is2D :
@@ -176,6 +184,8 @@ class SP_Edge_export:
 
 
 
+
+
 def auto_knot_and_mult(p_count, degree, isclamped = True, isperiodic = False):
     if isclamped :
         knot_length = p_count - degree + 1
@@ -196,6 +206,10 @@ def auto_knot_and_mult(p_count, degree, isclamped = True, isperiodic = False):
         knot.SetValue(i+1, knot_att[i])
         mult.SetValue(i+1, mult_att[i])
     return knot, mult
+
+
+
+
 
 
 
@@ -282,13 +296,17 @@ class SP_Wire_export :
         edges_degrees = self.segs_degrees
         edges_circle = self.get_single_val_attr_per_edge(circle_att)
         
+        flat_normal = None
+        if geom_plane is not None :
+            flat_normal = geom_plane.Pln().Axis().Direction()
+
         # Make Edges
         edges_list = [SP_Edge_export(vec_cp_per_edge[i], {'degree':edges_degrees[i], 
                                                           'circle':edges_circle[i],
                                                           'isclamped':isclamped,
                                                           'isperiodic':isperiodic,},
                                                           {'weight':weight[i],
-                                                           }).topods_edge for i in range(segment_count)]
+                                                           }, flat_normal).topods_edge for i in range(segment_count)]
 
         # Make contour
         makeWire = BRepBuilderAPI_MakeWire()
@@ -615,7 +633,7 @@ def new_brep_bezier_face(o, context, scale=1000):
 
     wires = SP_Contour_export(ob, trim_pts, total_p_count, segs_p_counts).wires_dict
 
-    # Get occ wires
+    # Get topods wires
     outer_wire = wires[-1].get_topods_wire_2d(ob, bsurf)
     inner_wires=[]
     for k in wires.keys():
@@ -752,7 +770,7 @@ def new_brep_curve(o, context, scale=1000):
 
 
 
-def new_brep_planar_face(o, context, scale=1000):
+def new_brep_flat_face(o, context, scale=1000):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     try :
@@ -788,7 +806,8 @@ def new_brep_planar_face(o, context, scale=1000):
     loc += rot@ Vector(offset)
     loc *= scale
     pl_normal = rot@ Vector(orient)
-    pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z), gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z))
+    pl_normal_dir = gp_Dir(pl_normal.x, pl_normal.y, pl_normal.z)
+    pl = gp_Pln(gp_Pnt(loc.x,loc.y,loc.z), pl_normal_dir)
     geom_pl = Geom_Plane(pl)
 
     # Get occ wires
@@ -923,7 +942,7 @@ def prepare_brep(context, use_selection, axis_up, axis_forward, scale = 1000):
 
                 case "planar" :
                     SPobj_count +=1
-                    pf = new_brep_planar_face(o, context, scale)
+                    pf = new_brep_flat_face(o, context, scale)
                     aSew.Add(mirror_brep(o, pf, scale))
 
                 case "curve" :
