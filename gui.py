@@ -104,7 +104,7 @@ class SP_PT_MainPanel(bpy.types.Panel):
     bl_label = "Surface Psycho"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Surface Psycho"
+    bl_category = "Tool"
     
     def draw(self, context):
         if context.mode == 'OBJECT':

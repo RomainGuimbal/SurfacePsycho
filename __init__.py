@@ -16,11 +16,11 @@ bl_info = {
     "author": "Romain Guimbal",
     "version": (0, 7),
     "blender": (4, 3, 0),
-    "description": "Surface design for the mechanical industry",
+    "description": "Precision Surface Design",
     "warning": "Alpha",
     "doc_url": "https://github.com/RomainGuimbal/SurfacePsycho/wiki",
     "category": "3D View",
-    "location": "View3D > Add > Surface/Curve  |  Viewport > N Panel > Edit"
+    "location": "View3D > Add > Surface/Curve  |  Viewport > N Panel > Tool"
 }
 
 import bpy
