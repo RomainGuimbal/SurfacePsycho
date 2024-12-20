@@ -49,7 +49,6 @@ class SP_Edge_export:
         self.p_count = len(vec_cp)
         self.seg_attrs = seg_attrs
         self.cp_aligned_attrs = cp_aligned_attrs
-        self.topods_edge = None
         self.is2D = is2D
         self.flat_normal = flat_normal
         
@@ -144,7 +143,7 @@ class SP_Edge_export:
                 segment_point_array.SetValue(i+1, self.gp_cp[i])
 
         isclamped = self.seg_attrs['isclamped'] if not None else True
-        is_unclamped_periodic = self.seg_attrs['isperiodic'] if not None else False
+        is_unclamped_periodic = (self.seg_attrs['isperiodic'] if not None else False) and not isclamped
         degree = self.seg_attrs['degree']
         
         weights_att = self.cp_aligned_attrs['weight']
@@ -242,13 +241,14 @@ class SP_Wire_export :
         split_attr=[]
         inf = 0
         sup = self.segs_p_counts[0]
-        for i,n in enumerate(self.segs_p_counts) :
-            if i==len(self.segs_p_counts)-1 and self.isclosed:
+        seg_count = len(self.segs_p_counts)
+        for i in range(seg_count) :
+            if i==seg_count-1 and self.isclosed:
                 split_attr.append(attr[inf:len(self.CP)]+[attr[0]])
             else :
                 split_attr.append(attr[inf:sup])
-            inf = sup - 1
-            sup = inf + n         
+                inf = sup - 1
+                sup = inf + self.segs_p_counts[i+1]
         return split_attr
     
 
@@ -306,7 +306,7 @@ class SP_Wire_export :
                                                           'isclamped':isclamped,
                                                           'isperiodic':isperiodic,},
                                                           {'weight':weight[i],
-                                                           }, flat_normal).topods_edge for i in range(segment_count)]
+                                                           }, flat_normal=flat_normal).topods_edge for i in range(segment_count)]
 
         # Make contour
         makeWire = BRepBuilderAPI_MakeWire()
@@ -358,7 +358,7 @@ class SP_Wire_export :
                                                           'isclamped':isclamped,
                                                           'isperiodic':isperiodic,},
                                                           {'weight':weight[i],
-                                                           }, geom_surf).topods_edge for i in range(segment_count)]
+                                                           }, geom_surf=geom_surf).topods_edge for i in range(segment_count)]
 
         # Make contour
         makeWire = BRepBuilderAPI_MakeWire()
@@ -495,9 +495,9 @@ class SP_Contour_export :
         try :
             try :
                 try :
-                    segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', len(segs_p_counts))
-                except KeyError :
                     segs_degrees = get_attribute_by_name(ob, 'Contour Degree', 'int', len(segs_p_counts))
+                except KeyError :
+                    segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', len(segs_p_counts))
             except KeyError :
                 segs_degrees = get_attribute_by_name(ob, 'Contour Order', 'int', len(segs_p_counts))
         except KeyError :

@@ -13,7 +13,7 @@ from OCP.GeomAbs import GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_S
 from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
 from OCP.TopoDS import TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
-
+from OCP.TColStd import TColStd_Array1OfReal
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
@@ -250,6 +250,13 @@ def tcolstd_array1_to_list(array):
     return [array.Value(i) for i in range(array.Lower(), array.Upper() + 1)]
 
 
+def float_list_to_tcolstd(array: list):
+    tcol = TColStd_Array1OfReal(1, len(array))
+    for i in range(len(array)):
+        tcol.SetValue(i+1, array[i])
+    return 
+
+
 def normalize_array(array):
     mini = min(array)
     return ((np.array(array)-mini)/(max(array)-mini)).tolist()
@@ -310,8 +317,9 @@ def append_multiple_node_groups(ng_names : set):
 
 
 
-def add_node_group_modifier_from_asset(obj, asset_name, settings_dict={}, pin = False):
-    # append_node_group(asset_name)
+def add_node_group_modifier_from_asset(obj, asset_name, settings_dict={}, pin = False, add_mode=False):
+    if add_mode :
+        append_node_group(asset_name)
 
     # Create the modifier and assign the loaded node group
     modifier = obj.modifiers.new(name=asset_name, type='NODES')
@@ -323,8 +331,8 @@ def add_node_group_modifier_from_asset(obj, asset_name, settings_dict={}, pin = 
 
 
 
-def add_sp_modifier(ob, name : str, settings_dict={}, pin=False):
-    add_node_group_modifier_from_asset(ob, name, settings_dict, pin = pin)
+def add_sp_modifier(ob, name : str, settings_dict={}, pin=False, add_mode = False):
+    add_node_group_modifier_from_asset(ob, name, settings_dict, pin = pin, add_mode = add_mode)
 
 
 
