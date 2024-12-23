@@ -14,6 +14,9 @@ from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
 from OCP.TopoDS import TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
 from OCP.TColStd import TColStd_Array1OfReal
+from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Circ2d, gp_Dir2d #, gp_Vec
+from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
+from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
@@ -254,7 +257,19 @@ def float_list_to_tcolstd(array: list):
     tcol = TColStd_Array1OfReal(1, len(array))
     for i in range(len(array)):
         tcol.SetValue(i+1, array[i])
-    return 
+    return tcol
+
+def vec_list_to_gp_pnt2d(array: list):
+    tcol = TColgp_Array1OfPnt2d(1, len(array))
+    for i in range(len(array)):
+        tcol.SetValue(i+1, gp_Pnt2d(array[i][0], array[i][1]))
+    return tcol
+
+def vec_list_to_gp_pnt(array: list):
+    tcol = TColgp_Array1OfPnt(1, len(array))
+    for i in range(len(array)):
+        tcol.SetValue(i+1, gp_Pnt(array[i][0], array[i][1], array[i][2]))
+    return tcol
 
 
 def normalize_array(array):
