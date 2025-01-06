@@ -123,7 +123,8 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row.operator("sp.add_trim_contour", text="Add Trim Contour", icon="MOD_MESHDEFORM")
 
         if context.mode == 'EDIT_MESH':
-            self.layout.label(text="Bezier Segments Endpoints")
+            # Endpoints
+            self.layout.label(text="Endpoints")
             row = self.layout.row()
 
             sub = row.row(align=True)
@@ -132,6 +133,13 @@ class SP_PT_MainPanel(bpy.types.Panel):
 
             sub = row.row(align=True)
             sub.operator("sp.select_endpoints", text="Select")
+
+            # Segment Degree
+            # self.layout.label(text="Degree")
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col = self.layout.column()
+            col.prop(context.scene.sp_properties, "active_segment_degree", text="Degree")
             
         
 

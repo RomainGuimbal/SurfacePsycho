@@ -702,15 +702,45 @@ def scale_combs(self, context):
 
 
 
+def set_seg_degree(self, context):
+    objs = context.objects_in_mode
+    for o in objs :
+        # Switch to object mode to modify vertex groups
+        bpy.ops.object.mode_set(mode='OBJECT')  
+        # Ensure "Endpoints" vertex group exists
+        if "Degree" not in o.vertex_groups:
+            o.vertex_groups.new(name="Degree")
+        
+        vg = o.vertex_groups["Degree"]
+        
+        # Add selected vertices to the vertex group
+        for v in o.data.vertices:
+            if v.select:
+                vg.add([v.index], max(min(self.active_segment_degree/10,1),0), 'REPLACE')
+        bpy.ops.object.mode_set(mode='EDIT')
+
+
+
+
 class SP_Props_Group(bpy.types.PropertyGroup):
 
     combs_scale : bpy.props.FloatProperty(
     name="Combs Scale",
     description="Curvature Combs Scale",
     default=0.1,
-    min=0,
+    soft_min=0,
     update=scale_combs
     )
+
+    active_segment_degree : bpy.props.IntProperty(
+    name="Degree",
+    description="Segment Degree. Change it by selecting the first point of the segment (try both ends to know which is the first)",
+    default=3,
+    min=0,
+    max=10,
+    update=set_seg_degree
+    )
+
 
 
 class SP_OT_show_only_curves(bpy.types.Operator):
@@ -733,6 +763,14 @@ class SP_OT_solidify(bpy.types.Operator):
 
 #TODO
 # Bridge patches
+
+
+
+
+
+
+
+
 
 
 
