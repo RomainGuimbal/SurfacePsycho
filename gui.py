@@ -126,21 +126,26 @@ class SP_PT_MainPanel(bpy.types.Panel):
             # Endpoints
             self.layout.label(text="Endpoints")
             row = self.layout.row()
-
             sub = row.row(align=True)
             sub.operator("sp.assign_as_endpoint", text="Assign")
             sub.operator("sp.remove_from_endpoints", text="Remove")
-
             sub = row.row(align=True)
             sub.operator("sp.select_endpoints", text="Select")
 
             # Segment Degree
-            # self.layout.label(text="Degree")
+            self.layout.label(text="NURBS")
             self.layout.use_property_split = True
             self.layout.use_property_decorate = False
             col = self.layout.column()
             col.prop(context.scene.sp_properties, "active_segment_degree", text="Degree")
-            
+
+            # Circles
+            self.layout.label(text="Circle")
+            row = self.layout.row()
+            sub = row.row(align=True)
+            sub.operator("sp.assign_as_circle", text="Assign")
+            sub.operator("sp.remove_from_circles", text="Remove")
+
         
 
 class SP_PT_ViewPanel(bpy.types.Panel):

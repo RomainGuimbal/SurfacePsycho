@@ -586,6 +586,52 @@ class SP_OT_select_endpoints(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class SP_OT_assign_as_circle(bpy.types.Operator):
+    bl_idname = "sp.assign_as_circle"
+    bl_label = "Assign as Circle"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        objs = context.objects_in_mode
+
+        for o in objs :
+            # Switch to object mode to modify vertex groups
+            bpy.ops.object.mode_set(mode='OBJECT')  
+            # Ensure "circles" vertex group exists
+            if "Circle" not in o.vertex_groups:
+                o.vertex_groups.new(name="Circle")
+            
+            vg = o.vertex_groups["Circle"]
+            
+            # Add selected vertices to the vertex group
+            for v in o.data.vertices:
+                if v.select:
+                    vg.add([v.index], 1.0, 'REPLACE')
+            bpy.ops.object.mode_set(mode='EDIT') 
+        return {'FINISHED'}
+    
+
+
+class SP_OT_remove_from_circles(bpy.types.Operator):
+    bl_idname = "sp.remove_from_circles"
+    bl_label = "Remove from Circles"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        objs = context.objects_in_mode
+        for o in objs :
+            bpy.ops.object.mode_set(mode='OBJECT')
+            # Ensure "Endpoints" vertex group exists
+            if "Circle" in o.vertex_groups:
+                vg = o.vertex_groups["Circle"]
+                
+                # Remove selected vertices to the vertex group
+                for v in o.data.vertices:
+                    if v.select:
+                        vg.remove([v.index])
+            bpy.ops.object.mode_set(mode='EDIT')
+        return {'FINISHED'}
+    
 
 
 class SP_OT_add_trim_contour(bpy.types.Operator):
@@ -742,7 +788,6 @@ class SP_Props_Group(bpy.types.PropertyGroup):
     )
 
 
-
 class SP_OT_show_only_curves(bpy.types.Operator):
     #TODO
     #Store the state before ?
@@ -785,9 +830,11 @@ classes = [
     SP_OT_add_flat_patch,
     SP_OT_add_library,
     SP_OT_add_trim_contour,
+    SP_OT_assign_as_circle,
     SP_OT_assign_as_endpoint,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_psychopatch_to_bl_nurbs,
+    SP_OT_remove_from_circles,
     SP_OT_remove_from_endpoints,
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,
