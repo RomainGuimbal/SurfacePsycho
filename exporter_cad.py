@@ -5,6 +5,7 @@ from mathutils import Vector
 from os.path import dirname, abspath, isfile
 from .utils import *
 import copy
+from collections import Counter
 
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
@@ -68,6 +69,8 @@ class SP_Edge_export:
                 self.circle_arc()
             case 4 :
                 self.circle()
+            case None :
+                return None
 
         # make segment
         if geom_surf == None:
@@ -207,7 +210,7 @@ def auto_knot_and_mult(p_count, degree, isclamped = True, isperiodic = False):
 
 
 class SP_Wire_export :
-    def __init__(self, cp_aligned_attrs : dict, seg_algined_attrs : dict, geom_surf=None, geom_plane=None ) :
+    def __init__(self, cp_aligned_attrs : dict, seg_aligned_attrs : dict, geom_surf=None, geom_plane=None ) :
         # Get attributes
         ## CP aligned
         self.CP = [Vector(v) for v in cp_aligned_attrs['CP']]
@@ -219,13 +222,13 @@ class SP_Wire_export :
         
 
         ## Segment aligned
-        self.segs_degrees = seg_algined_attrs['degree']
-        self.segs_p_counts = seg_algined_attrs['p_count']
+        self.segs_degrees = seg_aligned_attrs['degree']
+        self.segs_p_counts = seg_aligned_attrs['p_count']
         self.seg_count = len(self.segs_p_counts)
-        self.isclamped_per_edge = seg_algined_attrs['isclamped']
-        self.isperiodic_per_edge = seg_algined_attrs['isperiodic']
-        if 'circle' in list(cp_aligned_attrs.keys()):
-            self.circle_att_seg_aligned = cp_aligned_attrs['circle']
+        self.isclamped_per_seg = seg_aligned_attrs['isclamped']
+        self.isperiodic_per_seg = seg_aligned_attrs['isperiodic']
+        if 'circle' in list(seg_aligned_attrs.keys()):
+            self.circle_att_seg_aligned = seg_aligned_attrs['circle']
         else :
             self.circle_att_seg_aligned = [0.0]*self.seg_count
         
@@ -233,7 +236,7 @@ class SP_Wire_export :
         self.geom_surf = geom_surf
         self.geom_plane = geom_plane
 
-        self.isclosed = sum([s -1 for s in self.segs_p_counts]) == len(self.CP) or (self.seg_count==1 and self.isclamped_per_edge[0])
+        self.isclosed = sum([s -1 for s in self.segs_p_counts]) == len(self.CP) or (sum(self.isperiodic_per_seg)>0)
 
         # Bezier if no degree
         if self.segs_degrees==None:
@@ -249,10 +252,10 @@ class SP_Wire_export :
             if i>0:
                 p_count_accumulate[i] += p_count_accumulate[i-1]-1
         
-        self.seg_first_P_id = [0] + [p-1 for p in p_count_accumulate[:len(self.segs_p_counts)-1]]
+        self.seg_first_P_id = [0] + [p-1 for p in p_count_accumulate[:self.seg_count-1]]
+        # self.p_count_accumulate = p_count_accumulate[:len(self.segs_p_counts)]
 
-
-    def get_attr_per_edge(self, attr) -> list[list]:
+    def get_attr_per_seg(self, attr) -> list[list]:
         split_attr=[]
         inf = 0
         sup = self.segs_p_counts[0]
@@ -267,7 +270,7 @@ class SP_Wire_export :
         return split_attr
     
 
-    def get_single_val_attr_per_edge(self, attr) -> list:
+    def get_single_val_attr_per_seg(self, attr) -> list:
         split_attr=[]
         fp = self.seg_first_P_id
         for i in fp :
@@ -277,7 +280,6 @@ class SP_Wire_export :
 
     def get_topods_wire_3d(self):
         wire_p_count=len(self.CP)
-        segment_count = len(self.segs_p_counts)
 
         # Create CP 3D
         controlPoints = TColgp_Array1OfPnt(1, wire_p_count)
@@ -287,9 +289,9 @@ class SP_Wire_export :
                 pnt = GeomAPI_ProjectPointOnSurf(pnt, self.geom_plane).Point(1)
             controlPoints.SetValue(i+1, pnt)
         
-        # Split attrs per edge
-        vec_cp_per_edge = self.get_attr_per_edge(self.CP)
-        weight = self.get_attr_per_edge(self.weight_attr)
+        # Split attrs per segment
+        vec_cp_per_seg = self.get_attr_per_seg(self.CP)
+        weight = self.get_attr_per_seg(self.weight_attr)
         edges_degrees = self.segs_degrees
         
         flat_normal = None
@@ -297,14 +299,14 @@ class SP_Wire_export :
             flat_normal = self.geom_plane.Pln().Axis().Direction()
 
         # Make Edges
-        edges_list = [SP_Edge_export({'CP': vec_cp_per_edge[i],'weight':weight[i]},
+        edges_list = [SP_Edge_export({'CP': vec_cp_per_seg[i],'weight':weight[i]},
                                     {'degree':edges_degrees[i],
                                     'circle':self.circle_att_seg_aligned[i],
-                                    'isclamped':self.isclamped_per_edge[i],
-                                    'isperiodic':self.isperiodic_per_edge[i],},
+                                    'isclamped':self.isclamped_per_seg[i],
+                                    'isperiodic':self.isperiodic_per_seg[i],},
                                     flat_normal=flat_normal,
-                                    single_seg = segment_count == 1
-                                    ).topods_edge for i in range(segment_count)]
+                                    single_seg = self.seg_count == 1
+                                    ).topods_edge for i in range(self.seg_count)]
 
         # Make contour
         makeWire = BRepBuilderAPI_MakeWire()
@@ -325,17 +327,17 @@ class SP_Wire_export :
             pnt = gp_Pnt2d(self.CP[i][1], self.CP[i][0]) # INVERTED
             controlPoints.SetValue(i+1, pnt)
 
-        # Split attrs per edge
-        vec_cp_per_edge = self.get_attr_per_edge(self.CP)
-        weight = self.get_attr_per_edge(self.weight_attr)
+        # Split attrs per segment
+        vec_cp_per_seg = self.get_attr_per_seg(self.CP)
+        weight = self.get_attr_per_seg(self.weight_attr)
         edges_degrees = self.segs_degrees
         
         # Make Edges
-        edges_list = [SP_Edge_export({'CP':vec_cp_per_edge[i],'weight':weight[i]},
+        edges_list = [SP_Edge_export({'CP':vec_cp_per_seg[i],'weight':weight[i]},
                                     {'degree':edges_degrees[i], 
                                     'circle':self.circle_att_seg_aligned[i],
-                                    'isclamped':self.isclamped_per_edge,
-                                    'isperiodic':self.isperiodic_per_edge,},
+                                    'isclamped':self.isclamped_per_seg,
+                                    'isperiodic':self.isperiodic_per_seg,},
                                     geom_surf=self.geom_surf,
                                     single_seg = segment_count==1,
                                     is2D = True
@@ -391,13 +393,15 @@ class SP_Contour_export :
     def __init__(self, ob, cp_attr_name, p_count_attr_name, scale = 1, is2D = False, geom_surf=None, geom_plane=None):
         # Check if trimmed
         try :
-            segs_p_counts = get_attribute_by_name(ob, p_count_attr_name, 'int')
+            self.segs_p_counts = get_attribute_by_name(ob, p_count_attr_name, 'int')
             self.wire_index = get_attribute_by_name(ob, 'Wire', 'int')
             self.has_wire = True
         except Exception: # No trim
             self.has_wire = False
 
         if self.has_wire :
+            
+
             # Get total_p_count
             self.total_p_count = 0
             for i,wi in enumerate(self.wire_index):
@@ -407,18 +411,19 @@ class SP_Contour_export :
         
             # crop self.wire_index
             self.wire_index = self.wire_index[:self.total_p_count]
+            self.p_count_per_wire = Counter(self.wire_index)
 
             # Get segment count
-            segment_count = 0
-            for p in segs_p_counts:
+            self.segment_count = 0
+            for p in self.segs_p_counts:
                 if p>0:
-                    segment_count += 1
+                    self.segment_count += 1
                 else :
                     break
             
             #crop segs_p_counts
-            self.segs_p_counts = segs_p_counts[:segment_count]
-            self.segs_p_counts_per_wire = self.split_seg_attr_per_wire(segs_p_counts)
+            self.segs_p_counts = self.segs_p_counts[:self.segment_count]
+            self.segs_p_counts_per_wire = self.split_seg_attr_per_wire(self.segs_p_counts)
             
             # Get CP aligned attrs
             ## CP
@@ -426,49 +431,49 @@ class SP_Contour_export :
             points*=scale
             if is2D :
                 points = [Vector((p[1], p[0], 0.0)) for p in points]
-            points_per_wire = self.split_cp_attr_per_wire(points)
+            points_per_wire = self.split_cp_attr_per_wire(points[:self.total_p_count])
 
             ## Weight
             try :
                 weight_attr = get_attribute_by_name(ob, 'Weight', 'float', self.total_p_count)
             except KeyError:
                 weight_attr = [1.0]*self.total_p_count
-            weight_per_wire = self.split_cp_attr_per_wire(weight_attr)  
+            weight_per_wire = self.split_cp_attr_per_wire(weight_attr[:self.total_p_count])  
 
 
             # Get seg aligned attrs
             ## Circle
             try :
-                self.circle_att = get_attribute_by_name(ob, 'Circle', 'float', self.total_p_count)
+                self.circle_att = get_attribute_by_name(ob, 'Circle', 'float', self.segment_count)
             except KeyError:
-                self.circle_att = [0.0]*segment_count
+                self.circle_att = [0.0]*self.segment_count
             circle_att_per_wire = self.split_seg_attr_per_wire(self.circle_att)  
 
             ## Degree
             try :
                 try :
                     try :
-                        segs_degrees = get_attribute_by_name(ob, 'Contour Degree', 'int', len(segs_p_counts))
+                        segs_degrees = get_attribute_by_name(ob, 'Contour Degree', 'int', self.segment_count)
                     except KeyError :
-                        segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', len(segs_p_counts))
+                        segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', self.segment_count)
                 except KeyError :
-                    segs_degrees = get_attribute_by_name(ob, 'Contour Order', 'int', len(segs_p_counts))
+                    segs_degrees = get_attribute_by_name(ob, 'Contour Order', 'int', self.segment_count)
             except KeyError :
-                segs_degrees = [c-1 for c in segs_p_counts]
+                segs_degrees = [c-1 for c in self.segs_p_counts]
             segs_degrees_per_wire = self.split_seg_attr_per_wire(segs_degrees)  
 
             ## IsClamped
             try :
-                isclamped = get_attribute_by_name(ob, 'IsClamped', 'bool', segment_count)
+                isclamped = get_attribute_by_name(ob, 'IsClamped', 'bool', self.segment_count)
             except KeyError:
-                isclamped = [True]*segment_count
+                isclamped = [True]*self.segment_count
             isclamped_per_wire = self.split_seg_attr_per_wire(isclamped)
 
             ## IsPeriodic
             try :
-                isperiodic = get_attribute_by_name(ob, 'IsPeriodic', 'bool', segment_count)
+                isperiodic = get_attribute_by_name(ob, 'IsPeriodic', 'bool', self.segment_count)
             except KeyError:
-                isperiodic = [False]*segment_count
+                isperiodic = [False]*self.segment_count
             isperiodic_per_wire = self.split_seg_attr_per_wire(isperiodic)           
             
             # Build wires
@@ -482,54 +487,42 @@ class SP_Contour_export :
                                                     'circle':circle_att_per_wire[w]},
                                                     geom_surf=geom_surf, geom_plane=geom_plane,)
     
+    def split_cp_attr_per_wire(self, attr):
+        # Prepare dict
+        attr_dict_per_wire = {}
+        for w in set(self.wire_index):
+            attr_dict_per_wire[w]=[]
+
+        # Fill dict
+        for i,a in enumerate(attr[:self.total_p_count]):
+            attr_dict_per_wire[self.wire_index[i]].append(a)
+
+        return attr_dict_per_wire
 
     def split_seg_attr_per_wire(self, attr):
-        wir = self.wire_index
-        attr_dict_per_wire = {}
+        wire_index_order = list(dict.fromkeys(self.wire_index))
+        wir_i = 0
+        wir_key = wire_index_order[wir_i]
+        added_cp_count = 0
+        
         # Prepare dict
-        for w in set(wir):
+        attr_dict_per_wire = {}
+        for w in set(self.wire_index):
             attr_dict_per_wire[w]=[]
-        # Fill dict
-        for i,a in enumerate(attr[:len(self.wire_index)]):
-            attr_dict_per_wire[wir[i]].append(a)
+
+        # Itterate over segments
+        for i, att_val in enumerate(attr[:self.segment_count]) :
+            if added_cp_count >= self.p_count_per_wire[wir_key]:
+                wir_i +=1
+                wir_key = wire_index_order[wir_i]
+                added_cp_count = 0
+            
+            seg_p_count_curr = self.segs_p_counts[i]
+            added_cp_count += seg_p_count_curr-1
+            attr_dict_per_wire[wir_key].append(att_val)
 
         return attr_dict_per_wire
     
-
-    def split_cp_attr_per_wire(self, attr):
-        p_count = self.segs_p_counts_per_wire
-        attr_dict_per_wire = {}
-        w_prev = self.wire_index[0]
-        build_attr = []
-        seg_p_added = 0
-        seg_p_count_curr = self.segs_p_counts[0]
-        seg_curr_id = 0
-
-        for i, w_cur in enumerate(self.wire_index) :
-            # wire first point
-            if w_cur != w_prev :
-                attr_dict_per_wire[w_prev]=build_attr
-                build_attr = []
-
-            # Add point
-            build_attr.append(attr[i])
-            seg_p_added += 1
-            
-            # Segment last point
-            if seg_p_added == seg_p_count_curr-1 :
-                seg_curr_id+=1
-                if i<self.total_p_count-1:
-                    seg_p_count_curr = self.segs_p_counts[seg_curr_id]
-                seg_p_added = 0
-
-            w_prev = w_cur
-
-        # Build last wire
-        attr_dict_per_wire[w_prev]=build_attr
-
-        return attr_dict_per_wire
-
-
 
 
 
