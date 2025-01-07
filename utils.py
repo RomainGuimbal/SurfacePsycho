@@ -94,7 +94,6 @@ def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
             attribute = attribute[0:len_attr]
             attribute = [bool(a) for a in attribute]
 
-
         case 'int':
             len_raw = len(ge.attributes[name].data)
             if len_attr==None :
