@@ -86,7 +86,7 @@ class SP_Edge_export:
         if self.p_count < 2:
             print('Error : Invalid segment')
         elif self.p_count ==2 :
-            if circle_exists and self.seg_attrs['circle'] > 0 and self.single_seg :
+            if circle_exists and self.seg_attrs['circle'] > 0.1 and self.single_seg :
                 return 4 #circle
             else:
                 return 0 #line
@@ -141,17 +141,21 @@ class SP_Edge_export:
             self.geom = Geom_BezierCurve(segment_point_array)
 
     def bspline(self):
+        isclamped = self.seg_attrs['isclamped'] if not None else True
+        is_unclamped_periodic = (self.seg_attrs['isperiodic'] if not None else False) and not isclamped
+        degree = self.seg_attrs['degree']        
+
+        if is_unclamped_periodic :
+            self.p_count-=1
+            self.vec_cp = self.vec_cp[:-1]
+            self.cp_aligned_attrs['weight'] = self.cp_aligned_attrs['weight'][:-1]
+        
         if self.is2D :
             segment_point_array = vec_list_to_gp_pnt2d(self.vec_cp)
         else :
             segment_point_array = vec_list_to_gp_pnt(self.vec_cp)
 
-        isclamped = self.seg_attrs['isclamped'] if not None else True
-        is_unclamped_periodic = (self.seg_attrs['isperiodic'] if not None else False) and not isclamped
-        degree = self.seg_attrs['degree']
-        
         tcol_weights = float_list_to_tcolstd(self.cp_aligned_attrs['weight'])
-        
         # TODO custom knot/mult per edge, no design yet
         # try :
         #     if isclamped :
@@ -182,18 +186,18 @@ class SP_Edge_export:
 
 
 
-def auto_knot_and_mult(p_count, degree, isclamped = True, isperiodic = False):
+def auto_knot_and_mult(p_count, degree, isclamped = True, is_unclamped_periodic = False):
     if isclamped :
         knot_length = p_count - degree + 1
         knot_att = [r/(knot_length-1) for r in range(knot_length)]
         mult_att = [degree+1] + [1]*(knot_length-2) + [degree+1]
-    elif isperiodic :
+    elif is_unclamped_periodic :
         knot_length = p_count + 1
         knot_att = list(range(-degree, p_count + 1 + degree))
         mult_att = [1]*knot_length
     else :
         knot_length = p_count + degree + 1
-        knot_att = list(range(knot_length))#[r/(knot_length-1) for r in range(knot_length)]
+        knot_att = list(range(knot_length)) #[r/(knot_length-1) for r in range(knot_length)]
         mult_att = [1]*knot_length
         
     knot = TColStd_Array1OfReal(1, knot_length)
@@ -201,6 +205,7 @@ def auto_knot_and_mult(p_count, degree, isclamped = True, isperiodic = False):
     for i in range(knot_length):
         knot.SetValue(i+1, knot_att[i])
         mult.SetValue(i+1, mult_att[i])
+    
     return knot, mult
 
 
@@ -272,8 +277,7 @@ class SP_Wire_export :
 
     def get_single_val_attr_per_seg(self, attr) -> list:
         split_attr=[]
-        fp = self.seg_first_P_id
-        for i in fp :
+        for i in self.seg_first_P_id :
             split_attr.append(attr[i])
         return split_attr
 
