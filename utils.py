@@ -251,6 +251,11 @@ def add_vertex_group(object, name, values):
 def tcolstd_array1_to_list(array):
     return [array.Value(i) for i in range(array.Lower(), array.Upper() + 1)]
 
+def gp_list_to_arrayofpnt(array: list):
+    tcol = TColgp_Array1OfPnt(1, len(array))
+    for i in range(len(array)):
+        tcol.SetValue(i+1, gp_Pnt(array[i].X(), array[i].Y(), array[i].Z()))
+    return tcol
 
 def float_list_to_tcolstd(array: list):
     tcol = TColStd_Array1OfReal(1, len(array))

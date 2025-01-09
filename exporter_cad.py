@@ -13,8 +13,8 @@ if file_dirname not in sys.path:
 
 
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
-from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment
-from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle
+from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment, GC_MakeCircle
+from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle, GCE2d_MakeCircle
 from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_Plane, Geom_BezierCurve, Geom_BSplineCurve
 from OCP.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
 from OCP.GeomAdaptor import GeomAdaptor_Surface
@@ -40,22 +40,25 @@ class SP_Edge_export:
     def __init__(self, cp_aligned_attrs : dict[str:list], seg_attrs : dict[str:float],
                                                                         is2D = False, 
                                                                         geom_surf = None, 
-                                                                        flat_normal = None, 
+                                                                        geom_plane = None, 
                                                                         single_seg = False ) :
         self.vec_cp = cp_aligned_attrs['CP']
         self.gp_cp = []
-        for v in self.vec_cp :
-            if is2D:
-                self.gp_cp.append(gp_Pnt2d(v[0], v[1]))
-            else :
-                self.gp_cp.append(gp_Pnt(v[0], v[1], v[2]))
-
         self.p_count = len(self.vec_cp)
         self.seg_attrs = seg_attrs
         self.cp_aligned_attrs = cp_aligned_attrs
         self.is2D = is2D
-        self.flat_normal = flat_normal
+        self.geom_plane = geom_plane
         self.single_seg = single_seg
+
+        for v in self.vec_cp :
+            if is2D:
+                self.gp_cp.append(gp_Pnt2d(v[0], v[1]))
+            else :
+                pnt = gp_Pnt(v[0], v[1], v[2])
+                if self.geom_plane != None:
+                    pnt = GeomAPI_ProjectPointOnSurf(pnt, self.geom_plane).Point(1)
+                self.gp_cp.append(pnt)
         
         type = self.get_type()
         match type :
@@ -109,51 +112,50 @@ class SP_Edge_export:
             makesegment = GCE2d_MakeArcOfCircle(self.gp_cp[0], self.gp_cp[1], self.gp_cp[2]) 
         else :
             makesegment = GC_MakeArcOfCircle(self.gp_cp[0], self.gp_cp[1], self.gp_cp[2])
-        self.geom = makesegment.Value() 
+        self.geom = makesegment.Value()
 
     def circle(self):
         radius = (self.vec_cp[0]-self.vec_cp[1]).length
         if self.is2D :
             p_center = gp_Pnt2d(self.vec_cp[0][0], self.vec_cp[0][1])
-            circle = gp_Circ2d(gp_Ax2d(p_center, gp_Dir2d(self.vec_cp[1][0]-self.vec_cp[0][0], self.vec_cp[1][1]-self.vec_cp[0][1])), radius)
-            self.geom = circle
+            makesegment = GCE2d_MakeCircle(gp_Ax2d(p_center, gp_Dir2d(self.vec_cp[1][0]-self.vec_cp[0][0], self.vec_cp[1][1]-self.vec_cp[0][1])), radius)
+            self.geom = makesegment.Value()
 
-        elif self.flat_normal is not None:
-            p_center = gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2])
+        else :
+            if self.geom_plane != None:
+                p_center = GeomAPI_ProjectPointOnSurf(gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2]), self.geom_plane).Point(1)
+            else :
+                p_center = gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2])
             dir1 = gp_Dir(self.vec_cp[1][0]-self.vec_cp[0][0],
                           self.vec_cp[1][1]-self.vec_cp[0][1],
                           self.vec_cp[1][2]-self.vec_cp[0][2])
 
-            pl_normal_vec = [self.flat_normal.X(), self.flat_normal.Y(), self.flat_normal.Z()]
-
-            dir2_vec = np.cross(pl_normal_vec, self.vec_cp[0]-self.vec_cp[1])
-            dir2= gp_Dir(dir2_vec[0], dir2_vec[1], dir2_vec[2])
-
-            circle = gp_Circ(gp_Ax2(p_center, dir1, dir2), radius)
-            self.geom = circle
+            makesegment = GC_MakeCircle(gp_Ax1(p_center, dir1), radius)
+            self.geom = makesegment.Value()
     
     def bezier(self):
         if self.is2D :
             segment_point_array = vec_list_to_gp_pnt2d(self.vec_cp)
             self.geom = Geom2d_BezierCurve(segment_point_array)
         else :
-            segment_point_array = vec_list_to_gp_pnt(self.vec_cp)
+            segment_point_array = gp_list_to_arrayofpnt(self.gp_cp)
             self.geom = Geom_BezierCurve(segment_point_array)
 
     def bspline(self):
         isclamped = self.seg_attrs['isclamped'] if not None else True
         is_unclamped_periodic = (self.seg_attrs['isperiodic'] if not None else False) and not isclamped
-        degree = self.seg_attrs['degree']        
+        degree = self.seg_attrs['degree']
 
         if is_unclamped_periodic :
             self.p_count-=1
             self.vec_cp = self.vec_cp[:-1]
+            self.gp_cp = self.gp_cp[:-1]
             self.cp_aligned_attrs['weight'] = self.cp_aligned_attrs['weight'][:-1]
         
         if self.is2D :
             segment_point_array = vec_list_to_gp_pnt2d(self.vec_cp)
         else :
-            segment_point_array = vec_list_to_gp_pnt(self.vec_cp)
+            segment_point_array = gp_list_to_arrayofpnt(self.gp_cp)
 
         tcol_weights = float_list_to_tcolstd(self.cp_aligned_attrs['weight'])
         # TODO custom knot/mult per edge, no design yet
@@ -225,7 +227,6 @@ class SP_Wire_export :
         else :
             self.weight_attr = [1.0]*self.p_count
         
-
         ## Segment aligned
         self.segs_degrees = seg_aligned_attrs['degree']
         self.segs_p_counts = seg_aligned_attrs['p_count']
@@ -260,6 +261,7 @@ class SP_Wire_export :
         self.seg_first_P_id = [0] + [p-1 for p in p_count_accumulate[:self.seg_count-1]]
         # self.p_count_accumulate = p_count_accumulate[:len(self.segs_p_counts)]
 
+
     def get_attr_per_seg(self, attr) -> list[list]:
         split_attr=[]
         inf = 0
@@ -285,30 +287,18 @@ class SP_Wire_export :
     def get_topods_wire_3d(self):
         wire_p_count=len(self.CP)
 
-        # Create CP 3D
-        controlPoints = TColgp_Array1OfPnt(1, wire_p_count)
-        for i in range(wire_p_count):
-            pnt = gp_Pnt(self.CP[i][0], self.CP[i][1], self.CP[i][2])
-            if self.geom_plane != None:
-                pnt = GeomAPI_ProjectPointOnSurf(pnt, self.geom_plane).Point(1)
-            controlPoints.SetValue(i+1, pnt)
-        
         # Split attrs per segment
         vec_cp_per_seg = self.get_attr_per_seg(self.CP)
         weight = self.get_attr_per_seg(self.weight_attr)
         edges_degrees = self.segs_degrees
         
-        flat_normal = None
-        if self.geom_plane is not None :
-            flat_normal = self.geom_plane.Pln().Axis().Direction()
-
         # Make Edges
         edges_list = [SP_Edge_export({'CP': vec_cp_per_seg[i],'weight':weight[i]},
                                     {'degree':edges_degrees[i],
                                     'circle':self.circle_att_seg_aligned[i],
                                     'isclamped':self.isclamped_per_seg[i],
                                     'isperiodic':self.isperiodic_per_seg[i],},
-                                    flat_normal=flat_normal,
+                                    geom_plane=self.geom_plane,
                                     single_seg = self.seg_count == 1
                                     ).topods_edge for i in range(self.seg_count)]
 
@@ -394,7 +384,8 @@ class SP_Wire_export :
 
 
 class SP_Contour_export :
-    def __init__(self, ob, cp_attr_name, p_count_attr_name, scale = 1, is2D = False, geom_surf=None, geom_plane=None):
+    def __init__(self, ob, cp_attr_name, p_count_attr_name, isclamped_attr_name, isperiodic_attr_name, 
+                 scale = 1, is2D = False, geom_surf=None, geom_plane=None):
         # Check if trimmed
         try :
             self.segs_p_counts = get_attribute_by_name(ob, p_count_attr_name, 'int')
@@ -404,8 +395,6 @@ class SP_Contour_export :
             self.has_wire = False
 
         if self.has_wire :
-            
-
             # Get total_p_count
             self.total_p_count = 0
             for i,wi in enumerate(self.wire_index):
@@ -468,14 +457,14 @@ class SP_Contour_export :
 
             ## IsClamped
             try :
-                isclamped = get_attribute_by_name(ob, 'IsClamped', 'bool', self.segment_count)
+                isclamped = get_attribute_by_name(ob, isclamped_attr_name, 'bool', self.segment_count)
             except KeyError:
                 isclamped = [True]*self.segment_count
             isclamped_per_wire = self.split_seg_attr_per_wire(isclamped)
-
+            
             ## IsPeriodic
             try :
-                isperiodic = get_attribute_by_name(ob, 'IsPeriodic', 'bool', self.segment_count)
+                isperiodic = get_attribute_by_name(ob, isperiodic_attr_name, 'bool', self.segment_count)
             except KeyError:
                 isperiodic = [False]*self.segment_count
             isperiodic_per_wire = self.split_seg_attr_per_wire(isperiodic)           
@@ -582,7 +571,7 @@ def new_brep_bezier_face(o, context, scale=1000):
     geom_surf = Geom_BezierSurface(controlPoints)
 
     # Build trim contour
-    contour = SP_Contour_export(ob, 'CP_trim_contour_UV', 'CP_count_trim_contour_UV', is2D = True, geom_surf=geom_surf)
+    contour = SP_Contour_export(ob, 'CP_trim_contour_UV', 'CP_count_trim_contour_UV', 'IsClamped_trim_contour', 'IsPeriodic_trim_contour', is2D = True, geom_surf=geom_surf)
     
     if not contour.has_wire :
         return geom_to_topods_face(geom_surf)
@@ -641,7 +630,7 @@ def new_brep_NURBS_face(o, context, scale=1000):
     geom_surf = Geom_BSplineSurface(poles, uknots, vknots, umult, vmult, degree_u, degree_v, isperiodic_u, isperiodic_v)
 
     # Build trim contour
-    contour = SP_Contour_export(ob, 'CP_trim_contour_UV', 'CP_count_trim_contour_UV', is2D = True, geom_surf=geom_surf)
+    contour = SP_Contour_export(ob, 'CP_trim_contour_UV', 'CP_count_trim_contour_UV', 'IsClamped_trim_contour', 'IsPeriodic_trim_contour', is2D = True, geom_surf=geom_surf)
     if not contour.has_wire :
         return geom_to_topods_face(geom_surf)
     else :
@@ -733,7 +722,7 @@ def new_brep_flat_face(o, context, scale=1000):
     geom_pl = Geom_Plane(pl)
 
     # Build Contour
-    wires = SP_Contour_export(ob, 'CP_planar', 'CP_count', scale, geom_plane = geom_pl).wires_dict
+    wires = SP_Contour_export(ob, 'CP_planar', 'CP_count', 'IsClamped', 'IsPeriodic', scale, geom_plane = geom_pl).wires_dict
 
     # Get occ wires
     outer_wire = wires[-1].get_topods_wire_3d()
