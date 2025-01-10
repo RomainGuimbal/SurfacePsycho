@@ -329,8 +329,14 @@ class SP_Contour_import :
         range_u, range_v = max_u - min_u, max_v - min_v
 
         for i,v in enumerate(self.verts) :
-            x=max(0, min(1, (v[0]-min_u)/range_u))
-            y=max(0, min(1, (v[1]-min_v)/range_v))
+            if range_u !=0.0 :
+                x=max(0, min(1, (v[0]-min_u)/range_u))
+            else :
+                x = v[0]
+            if range_v !=0.0 :
+                y=max(0, min(1, (v[1]-min_v)/range_v))
+            else :
+                y = v[1]
             self.verts[i] = Vector((x, y, 0))
 
 
