@@ -60,12 +60,13 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     faces: BoolProperty(name="Faces", description="Import Faces", default=True)
     trim_contours: BoolProperty(name="Trim Contours", description="Import faces with their trim contours", default=True)
     curves: BoolProperty(name="Curves", description="Import Curves", default=False)
+    scale: FloatProperty(name="Scale", default=.001, precision=3)
 
     def modal(self, context, event):
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,})
+        import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,}, self.scale)
         self.report({'INFO'}, 'Some surface types may have been ignored')
         return {'RUNNING_MODAL'}
 

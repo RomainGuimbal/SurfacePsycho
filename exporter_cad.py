@@ -313,7 +313,6 @@ class SP_Wire_export :
     
     def get_topods_wire_2d(self):
         wire_p_count = len(self.CP)
-        segment_count = len(self.segs_p_counts)
 
         # Create 2D points
         controlPoints = TColgp_Array1OfPnt2d(1, wire_p_count)
@@ -333,9 +332,9 @@ class SP_Wire_export :
                                     'isclamped':self.isclamped_per_seg,
                                     'isperiodic':self.isperiodic_per_seg,},
                                     geom_surf=self.geom_surf,
-                                    single_seg = segment_count==1,
+                                    single_seg = self.seg_count==1,
                                     is2D = True
-                                    ).topods_edge for i in range(segment_count)]
+                                    ).topods_edge for i in range(self.seg_count)]
 
         # Make contour
         makeWire = BRepBuilderAPI_MakeWire()
@@ -398,7 +397,7 @@ class SP_Contour_export :
             # Get total_p_count
             self.total_p_count = 0
             for i,wi in enumerate(self.wire_index):
-                if wi ==0:
+                if wi == 0:
                     break
                 self.total_p_count+=1
         
@@ -453,7 +452,7 @@ class SP_Contour_export :
                     segs_degrees = get_attribute_by_name(ob, 'Contour Order', 'int', self.segment_count)
             except KeyError :
                 segs_degrees = [c-1 for c in self.segs_p_counts]
-            segs_degrees_per_wire = self.split_seg_attr_per_wire(segs_degrees)  
+            segs_degrees_per_wire = self.split_seg_attr_per_wire(segs_degrees)
 
             ## IsClamped
             try :
@@ -496,23 +495,27 @@ class SP_Contour_export :
         wire_index_order = list(dict.fromkeys(self.wire_index))
         wir_i = 0
         wir_key = wire_index_order[wir_i]
-        added_cp_count = 0
+        added_cp_count = 0 + self.p_count_per_wire[wir_key]==2 # all contour wires is closed except full circles
         
         # Prepare dict
         attr_dict_per_wire = {}
         for w in set(self.wire_index):
-            attr_dict_per_wire[w]=[]
+            attr_dict_per_wire[w]=[]       
 
         # Itterate over segments
         for i, att_val in enumerate(attr[:self.segment_count]) :
             if added_cp_count >= self.p_count_per_wire[wir_key]:
                 wir_i +=1
                 wir_key = wire_index_order[wir_i]
-                added_cp_count = 0
-            
+                added_cp_count = 0 + self.p_count_per_wire[wir_key]==2 # all contour wires is closed except full circles
+
+            attr_dict_per_wire[wir_key].append(att_val)
             seg_p_count_curr = self.segs_p_counts[i]
             added_cp_count += seg_p_count_curr-1
-            attr_dict_per_wire[wir_key].append(att_val)
+
+
+            
+
 
         return attr_dict_per_wire
     
@@ -679,20 +682,30 @@ def new_brep_curve(o, context, scale=1000):
     # is clamped
     is_clamped = get_attribute_by_name(ob, 'IsClamped', 'first_bool')
 
+    # Degree
     try :
         segs_degrees = get_attribute_by_name(ob, 'Degree', 'int', segment_count)
     except Exception :
-        segs_degrees = None
+        segs_degrees = None 
+    
+    # Circles
+    try :
+        circle_att = get_attribute_by_name(ob, 'Circle', 'float', segment_count)
+    except KeyError:
+        circle_att = [0.0]*segment_count
 
     # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
-    points*=scale # Unit correction
+    points*=scale # Unit correction*
+
+   
 
     wire = SP_Wire_export({'CP':points},
                         {'p_count':segs_p_counts,
                         'degree':segs_degrees,                           
                         'isperiodic':[is_closed]*segment_count,
-                        'isclamped':[is_clamped]*segment_count})
+                        'isclamped':[is_clamped]*segment_count,
+                        'circle': circle_att})
     brep_wire = wire.get_topods_wire_3d()
 
     return brep_wire

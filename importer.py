@@ -338,6 +338,10 @@ class SP_Contour_import :
             else :
                 y = v[1]
             self.verts[i] = Vector((x, y, 0))
+    
+    def switch_u_and_v(self):
+        self.verts = [Vector((v.y, v.x, v.z)) for v in self.verts]
+
 
 
 
@@ -354,6 +358,7 @@ class SP_Surface_import :
         if trims_enabled :
             contour = SP_Contour_import(face)
             contour.rebound(uv_bounds)
+            contour.switch_u_and_v()
             istrivial = contour.is_trivial()
             if istrivial :
                 print("Trivial contour skipped")
@@ -431,7 +436,7 @@ def build_SP_cylinder(brepFace : TopoDS_Face, collection, trims_enabled, scale =
 
 
 
-def build_SP_bezier_patch(brepFace, collection, trims_enabled):
+def build_SP_bezier_patch(brepFace, collection, trims_enabled, scale = 0.001):
     bezier_surface = BRepAdaptor_Surface(brepFace).Surface().Bezier()
 
     u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
@@ -440,7 +445,7 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled):
     for u in range(1, u_count + 1):
         for v in range(1, v_count + 1):
             pole = bezier_surface.Pole(u, v)
-            vector_pts[u-1, v-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
+            vector_pts[u-1, v-1] = Vector((pole.X(), pole.Y(), pole.Z()))*scale
 
             weight = bezier_surface.Weight(u, v)
             if weight!=1.0:
@@ -456,12 +461,16 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled):
 
 
 
-def build_SP_NURBS_patch(topods_face, collection, trims_enabled):
+def build_SP_NURBS_patch(topods_face, collection, trims_enabled, scale = 0.001):
     # Patch attributes
     bspline_surface = BRepAdaptor_Surface(topods_face).Surface().BSpline()
     u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
     udeg = bspline_surface.UDegree()
     vdeg = bspline_surface.VDegree()
+    u_closed = bspline_surface.IsUClosed()
+    v_closed = bspline_surface.IsVClosed()
+    u_periodic = bspline_surface.IsUPeriodic()
+    v_periodic = bspline_surface.IsVPeriodic()
     uv_bounds = bspline_surface.Bounds()
     u_knots = normalize_array(tcolstd_array1_to_list(bspline_surface.UKnots()))
     v_knots = normalize_array(tcolstd_array1_to_list(bspline_surface.VKnots()))
@@ -483,18 +492,25 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled):
 
     # CP Grid
     custom_weight = False
-    vector_pts = np.zeros((u_count, v_count), dtype=Vector)
-    weights = np.zeros((u_count, v_count), dtype=float)
-    for u in range(1, u_count + 1):
-        for v in range(1, v_count + 1):
-            pole = bspline_surface.Pole(u, v)
-            vector_pts[u-1, v-1] = Vector((pole.X()/1000, pole.Y()/1000, pole.Z()/1000))
+    vector_pts = np.zeros((v_count + v_closed, u_count + u_closed), dtype=Vector)
+    weights = np.zeros((v_count + v_closed, u_count + u_closed), dtype=float)
+    for u in range(u_count):
+        for v in range(v_count):
+            pole = bspline_surface.Pole(u+1, v+1)
+            vector_pts[v, u] = Vector((pole.X(), pole.Y(), pole.Z()))*scale
             
-            weight = bspline_surface.Weight(u, v)
-            weights[u-1, v-1] = weight
+            weight = bspline_surface.Weight(u+1, v+1)
+            weights[v, u] = weight
             
             # Custom weight flag, true if 1 weight is not 1.0
             custom_weight = custom_weight or weight!=1.0
+
+    if u_closed :
+        vector_pts[:,u_count] = vector_pts[:,0]
+        weights[:,u_count] = weights[:,0]
+    if v_closed :
+        vector_pts[v_count,:] = vector_pts[0,:]
+        weights[v_count,:] = weights[0,:]
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
@@ -502,10 +518,10 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled):
     sp_surf = SP_Surface_import(topods_face, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
     
     if custom_knot:
-        sp_surf.assign_vertex_gr("Knot U", v_knots)# TO FIX U AND V INVERTED
-        sp_surf.assign_vertex_gr("Knot V", u_knots)# TO FIX U AND V INVERTED
-        sp_surf.assign_vertex_gr("Multiplicity U", np.array(v_mult)/10)# TO FIX U AND V INVERTED
-        sp_surf.assign_vertex_gr("Multiplicity V", np.array(u_mult)/10)# TO FIX U AND V INVERTED
+        sp_surf.assign_vertex_gr("Knot U", u_knots)
+        sp_surf.assign_vertex_gr("Knot V", v_knots)
+        sp_surf.assign_vertex_gr("Multiplicity U", np.array(u_mult)/10)
+        sp_surf.assign_vertex_gr("Multiplicity V", np.array(v_mult)/10)
 
     if custom_weight:
         # Since Nurbs trim contour uses "weight" attr too, set all trim contour weights to 1.0. To improve later
@@ -513,15 +529,19 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled):
         weights.extend([1.0]*(len(sp_surf.ob.data.vertices)-len(weights)))
         sp_surf.assign_vertex_gr("Weight", weights)
         print("Weights are not fully supported yet")
-        # sp_surf.add_modifier(ob, "SP - NURBS Weighting")
-        # TO NORMALIZE + factor
-        # assign vertex group to modifier # change_node_socket_value
+        # TODO : assign attribute instead
     
+    # If 1 mult not 1 or no custom knot -> clamp 
     u_clamped = any(m!=1 for m in u_mult) or not custom_knot
     v_clamped = any(m!=1 for m in v_mult) or not custom_knot
 
     # Meshing
-    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Degree V": udeg, "Degree U": vdeg, "Use Trim Contour":trims_enabled, "Scaling Method": 1, "Endpoint U" : v_clamped, "Endpoint V" : u_clamped }, pin=True)# TO FIX U AND V INVERTED
+    sp_surf.add_modifier("SP - NURBS Patch Meshing", {"Degree V": vdeg, "Degree U": udeg,# INVERTED /!\
+                        "Resolution U": 10,
+                        "Resolution V": 10, 
+                        "Use Trim Contour":trims_enabled, "Scaling Method": 1,
+                        "Endpoint U" : u_clamped, "Endpoint V" : v_clamped,
+                        "Cyclic U": u_periodic,  "Cyclic V": v_periodic}, pin=True)
     return True
 
 
@@ -734,22 +754,22 @@ def import_face_nodegroups(shape_hierarchy):
     append_multiple_node_groups(to_import_ng_names)
 
 
-def process_topods_face(face, collection, trims_enabled):
+def process_topods_face(face, collection, trims_enabled, scale):
     ft= get_face_type_id(face)
     match ft:
         case 0:
-            build_SP_flat(face, collection)
+            build_SP_flat(face, collection, scale)
         case 1:
-            build_SP_cylinder(face, collection, trims_enabled)
+            build_SP_cylinder(face, collection, trims_enabled, scale)
         case 5:
-            build_SP_bezier_patch(face, collection, trims_enabled)
+            build_SP_bezier_patch(face, collection, trims_enabled, scale)
         case 6:
-            build_SP_NURBS_patch(face, collection, trims_enabled)
+            build_SP_NURBS_patch(face, collection, trims_enabled, scale)
         case _ :
             print("Unsupported Face Type : " + get_face_type_name(face))
     return True
 
-def build_SP_from_brep(shape, collection, enabled_entities, scale = 1000):
+def build_SP_from_brep(shape, collection, enabled_entities, scale = .001):
     # Create the hierarchy
     shape_hierarchy = ShapeHierarchy()
     shape_hierarchy.process_shape(shape)
@@ -767,7 +787,7 @@ def build_SP_from_brep(shape, collection, enabled_entities, scale = 1000):
         import_face_nodegroups(shape_hierarchy)
 
         for _, face in shape_hierarchy.faces.items():# TODO ThreadPool
-            process_topods_face(face, collection, trims_enabled)
+            process_topods_face(face, collection, trims_enabled, scale)
             progress+=1
             wm.progress_update(progress)
 
@@ -788,7 +808,7 @@ def build_SP_from_brep(shape, collection, enabled_entities, scale = 1000):
 
 
 
-def import_cad(filepath, context, enabled_entities):
+def import_cad(filepath, context, enabled_entities, scale=.001):
     if splitext(split(filepath)[1])[1] in ['.step','.stp','.STEP', '.STP']:
         step_reader = STEPControl_Reader()
         status = step_reader.ReadFile(filepath)
@@ -814,7 +834,7 @@ def import_cad(filepath, context, enabled_entities):
     # import cProfile
     # profiler = cProfile.Profile()
     # profiler.enable()
-    build_SP_from_brep(shape, new_collection, enabled_entities)
+    build_SP_from_brep(shape, new_collection, enabled_entities, scale)
     # profiler.disable()
     # profiler.print_stats()
 
