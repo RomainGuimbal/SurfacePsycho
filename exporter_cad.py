@@ -242,6 +242,9 @@ class SP_Wire_export :
         self.geom_surf = geom_surf
         self.geom_plane = geom_plane
 
+        # Is closed : per wire
+        # Is periodic : per segment
+
         self.isclosed = sum([s -1 for s in self.segs_p_counts]) == len(self.CP) or (sum(self.isperiodic_per_seg)>0)
 
         # Bezier if no degree
@@ -294,11 +297,11 @@ class SP_Wire_export :
         
         # Make Edges
         edges_list = [SP_Edge_export({'CP': vec_cp_per_seg[i],'weight':weight[i]},
-                                    {'degree':edges_degrees[i],
-                                    'circle':self.circle_att_seg_aligned[i],
-                                    'isclamped':self.isclamped_per_seg[i],
-                                    'isperiodic':self.isperiodic_per_seg[i],},
-                                    geom_plane=self.geom_plane,
+                                    {'degree': edges_degrees[i],
+                                    'circle': self.circle_att_seg_aligned[i],
+                                    'isclamped': self.isclamped_per_seg[i],
+                                    'isperiodic': self.isperiodic_per_seg[i],},
+                                    geom_plane = self.geom_plane,
                                     single_seg = self.seg_count == 1
                                     ).topods_edge for i in range(self.seg_count)]
 
@@ -495,8 +498,8 @@ class SP_Contour_export :
         wire_index_order = list(dict.fromkeys(self.wire_index))
         wir_i = 0
         wir_key = wire_index_order[wir_i]
-        added_cp_count = 0 + self.p_count_per_wire[wir_key]==2 # all contour wires is closed except full circles
-        
+        added_cp_count = 0 
+
         # Prepare dict
         attr_dict_per_wire = {}
         for w in set(self.wire_index):
@@ -504,18 +507,21 @@ class SP_Contour_export :
 
         # Itterate over segments
         for i, att_val in enumerate(attr[:self.segment_count]) :
-            if added_cp_count >= self.p_count_per_wire[wir_key]:
-                wir_i +=1
-                wir_key = wire_index_order[wir_i]
-                added_cp_count = 0 + self.p_count_per_wire[wir_key]==2 # all contour wires is closed except full circles
+            if self.p_count_per_wire[wir_key]==2 : # circle case
+                attr_dict_per_wire[wir_key].append(att_val)
+                if i < self.segment_count-1 :
+                    wir_i +=1
+                    wir_key = wire_index_order[wir_i]
+                    added_cp_count = 0
+            else :
+                attr_dict_per_wire[wir_key].append(att_val)
+                seg_p_count_curr = self.segs_p_counts[i]
+                added_cp_count += seg_p_count_curr-1
 
-            attr_dict_per_wire[wir_key].append(att_val)
-            seg_p_count_curr = self.segs_p_counts[i]
-            added_cp_count += seg_p_count_curr-1
-
-
-            
-
+                if added_cp_count > self.p_count_per_wire[wir_key]-1 and i < self.segment_count-1:
+                    wir_i +=1
+                    wir_key = wire_index_order[wir_i]
+                    added_cp_count = 0
 
         return attr_dict_per_wire
     
