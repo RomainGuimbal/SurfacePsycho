@@ -518,7 +518,7 @@ class SP_Contour_export :
                 seg_p_count_curr = self.segs_p_counts[i]
                 added_cp_count += seg_p_count_curr-1
 
-                if added_cp_count > self.p_count_per_wire[wir_key]-1 and i < self.segment_count-1:
+                if added_cp_count >= self.p_count_per_wire[wir_key]-1 and i < self.segment_count-1:
                     wir_i +=1
                     wir_key = wire_index_order[wir_i]
                     added_cp_count = 0
