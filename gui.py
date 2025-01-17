@@ -61,7 +61,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     trim_contours: BoolProperty(name="Trim Contours", description="Import faces with their trim contours", default=True)
     curves: BoolProperty(name="Curves", description="Import Curves", default=False)
     scale: FloatProperty(name="Scale", default=.001, precision=3)
-    resolution : IntProperty(name="Resolution", default=10, soft_min = 6, soft_max=512)
+    resolution : IntProperty(name="Resolution", default=10, soft_min = 6, soft_max=256)
 
     def modal(self, context, event):
         return {'PASS_THROUGH'}

@@ -78,7 +78,7 @@ class SP_Edge_import :
         elif curve_type == GeomAbs_BezierCurve :
             self.bezier(edge_adaptor)
         elif curve_type == GeomAbs_BSplineCurve :
-            self.bspline(edge_adaptor, is2D)
+            self.bspline(edge_adaptor)
         elif curve_type == GeomAbs_Circle :
             self.circle(edge_adaptor)
         else :
