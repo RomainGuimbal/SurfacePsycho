@@ -135,7 +135,7 @@ class SP_Edge_import :
         self.degree = bspline.Degree()
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
         self.type = EDGES_TYPES['nurbs']
-        self.degree_att = [bspline.Degree()] + [0.0]*(p_count-2) + [bspline.Degree()]
+        self.degree_att = [bspline.Degree()/10] + [0.0]*(p_count-2) + [bspline.Degree()/10]
         self.circle_att = [0.0]*p_count
         if edge_adaptor.BSpline().Multiplicity(1) == 1 : # unclamped periodic
             self.endpoints_att = [0.0]*p_count
@@ -225,7 +225,7 @@ class SP_Wire_import :
             self.circle_att.extend(sp_edge.circle_att[:-1])
             
         # Add last point for single edge wire
-        if len(topods_edges)==1: # Unclosed control mesh structure for single segment wire (for now just for the circle case) 
+        if len(topods_edges)==1 : # Unclosed control mesh structure for single segment wire (for now just for the circle case) 
                                  # OR closed single wire
                                  # OR single segment curve
             # if sp_edge.isclosed :
@@ -234,12 +234,11 @@ class SP_Wire_import :
             self.degree_att.append(sp_edge.degree_att[-1])
             self.circle_att.append(sp_edge.circle_att[-1])
 
-        # circle
-        if e_type == EDGES_TYPES['circle']: # implicitly single segment wire
+        # Open mesh structure
+        if e_type == EDGES_TYPES['circle'] or not topods_wire.Closed(): 
             self.bmesh_edges = [(i, i+1) for i in range(len(self.CP)-1)]
-        elif not sp_edge.isclosed :
-            self.bmesh_edges = [(i, i+1) for i in range(len(self.CP)-1)]
-        else : # Closed mesh structure
+        # Closed mesh structure
+        else :
             self.bmesh_edges = [(i, ((i+1)%len(self.CP))) for i in range(len(self.CP))]
 
 
