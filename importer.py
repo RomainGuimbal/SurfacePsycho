@@ -69,7 +69,7 @@ class SP_Edge_import :
                 curve_type = edge_adaptor.GetType()
             
             self.isclosed = edge_adaptor.IsClosed()
-            self.isperiodic = edge_adaptor.IsPeriodic()
+            self.isunclampedperiodic = False 
 
             if curve_type == GeomAbs_Line :
                 self.line(edge_adaptor)
@@ -77,6 +77,7 @@ class SP_Edge_import :
                 self.bezier(edge_adaptor)
             elif curve_type == GeomAbs_BSplineCurve :
                 self.bspline(edge_adaptor, is2D)
+                self.isunclampedperiodic = edge_adaptor.BSpline().Multiplicity(1) == 1
             elif curve_type == GeomAbs_Circle :
                 self.circle(edge_adaptor)
             else :
@@ -170,7 +171,7 @@ class SP_Edge_import :
 
 
 class SP_Wire_import :
-    def __init__(self, topods_wire: TopoDS_Wire=None, scale=0.001, CP =[], topods_face = None, segs_p_counts=None, segs_degrees=None):
+    def __init__(self, topods_wire: TopoDS_Wire=None, scale=1, CP =[], topods_face = None, segs_p_counts=None, segs_degrees=None):
         self.CP = [] #Vectors, bmesh format
         # Import
         if topods_wire!=None:
@@ -183,17 +184,12 @@ class SP_Wire_import :
             # self.mult_att = [] #float
             self.circle_att = []
 
-            # if topods_face == None :
-            #     self.constructor_3d_space(topods_wire, scale)
-            # else :
-            #     self.constructor_uv_space(topods_wire, topods_face)
-
         topods_edges = get_edges_from_wire(topods_wire)
         wire_is_reversed = topods_wire.Orientation() == 1
 
         #Edges
         for e in topods_edges :
-            sp_edge = SP_Edge_import(e)
+            sp_edge = SP_Edge_import(e, topods_face)
             sp_edge.scale(scale)
             e_vert = sp_edge.verts
             e_degree = sp_edge.degree
@@ -205,7 +201,7 @@ class SP_Wire_import :
 
             self.CP.extend(e_vert[:-1])
             
-            if not sp_edge.isperiodic:
+            if not sp_edge.isunclampedperiodic:
                 self.endpoints_att.extend([1.0]+[0.0]*(len(e_vert)-2))
             else :
                 self.endpoints_att.extend([0.0]*(len(e_vert)-1))
@@ -241,59 +237,6 @@ class SP_Wire_import :
         else : # Closed mesh structure
             self.bmesh_edges = [(i, ((i+1)%len(self.CP))) for i in range(len(self.CP))]
 
-        
-
-    
-    # def constructor_3d_space(self, topods_wire: TopoDS_Wire, scale):
-        
-
-    # def constructor_uv_space(self, topods_wire, topods_face):
-    #     topods_edges = get_edges_from_wire(topods_wire)
-    #     wire_is_reversed = topods_wire.Orientation() == 1
-
-    #     #Edges
-    #     for e in topods_edges :
-    #         sp_edge = SP_Edge_import(e, topods_face)
-    #         e_vert = sp_edge.verts
-    #         e_degree = sp_edge.degree
-    #         e_type = sp_edge.type
-            
-    #         # Reverse
-    #         if (e.Orientation() != TopAbs_FORWARD) != wire_is_reversed :
-    #             e_vert.reverse()
-            
-    #         self.CP.extend(e_vert[:-1])
-    #         if e.isclosed :
-    #             self.CP.extend(e_vert[-1])
-
-    #         if not e.isperiodic:
-    #             self.endpoints_att.extend([1.0]+[0.0]*(len(e_vert)-2))
-    #         else :
-    #             self.endpoints_att.extend([0.0]*(len(e_vert)-1))
-
-    #         if e_degree!=None:
-    #             self.degree_att.extend([e_degree/10]+[0.0]*(len(e_vert)-2))
-    #         else :
-    #             self.degree_att.extend([0.0]*(len(e_vert)-1))
-            
-    #         # is arc :
-    #         if e_type == EDGES_TYPES['circle_arc'] or e_type == EDGES_TYPES['circle']:
-    #             self.circle_att.extend([0.0, 1.0])
-    #         else :
-    #             self.circle_att.extend([0.0]*(len(e_vert)-1))
-
-    #     if len(topods_edges)==1: # Unclosed mesh wire (for now just for the circle case)
-    #             self.CP.append(e_vert[-1])
-    #             self.degree_att.append(0.0)
-    #             self.endpoints_att.append(0.0)
-    #             self.bmesh_edges = [(i, i+1) for i in range(len(self.CP)-1)]
-                
-    #             if e_type == EDGES_TYPES['circle']:
-    #                 self.CP.reverse()
-    #                 self.circle_att.reverse()
-
-    #     else : # Closed
-    #         self.bmesh_edges = [(i, ((i+1)%len(self.CP))) for i in range(len(self.CP))]
 
 
 
