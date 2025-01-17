@@ -131,25 +131,9 @@ def svg_path_string_from_wires(wires, plane):
 def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100, color_mode="material"):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
 
-    # get total_p_count
-    total_p_count, segment_count= 0, 0
-    for p in segs_p_counts:
-        if p>0:
-            total_p_count += p-1
-            segment_count += 1
-        if p==0:
-            break
-    
-    segs_p_counts = segs_p_counts[:segment_count]
-
-    # Get CP position attr
-    points = get_attribute_by_name(ob, 'CP_planar', 'vec3', total_p_count)
-    
     # Wires
-    wires_dict = SP_Contour_export(ob, points, total_p_count, segs_p_counts)
-    
+    wires_dict = SP_Contour_export(ob, 'CP_planar', 'CP_count', 'IsClamped', 'IsPeriodic')
     
     # SVG path attributes
     if color_mode == "object":
