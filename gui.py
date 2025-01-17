@@ -12,7 +12,7 @@ from .importer import import_cad
 from .exporter_cad import export_step, export_iges
 from .exporter_svg import export_svg
 
-from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty
+from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
 
 
@@ -61,12 +61,13 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     trim_contours: BoolProperty(name="Trim Contours", description="Import faces with their trim contours", default=True)
     curves: BoolProperty(name="Curves", description="Import Curves", default=False)
     scale: FloatProperty(name="Scale", default=.001, precision=3)
+    resolution : IntProperty(name="Resolution", default=10, soft_min = 6, soft_max=512)
 
     def modal(self, context, event):
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,}, self.scale)
+        import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,}, self.scale, self.resolution)
         self.report({'INFO'}, 'Some surface types may have been ignored')
         return {'RUNNING_MODAL'}
 
