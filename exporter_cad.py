@@ -119,7 +119,9 @@ class SP_Edge_export:
         radius = (self.vec_cp[0]-self.vec_cp[1]).length
         if self.is2D :
             p_center = gp_Pnt2d(self.vec_cp[0][0], self.vec_cp[0][1])
-            makesegment = GCE2d_MakeCircle(gp_Ax2d(p_center, gp_Dir2d(self.vec_cp[1][0]-self.vec_cp[0][0], self.vec_cp[1][1]-self.vec_cp[0][1])), radius)
+            p_other = gp_Pnt2d(self.vec_cp[1][0], self.vec_cp[1][1])
+            
+            makesegment = GCE2d_MakeCircle(p_center, p_other)
             self.geom = makesegment.Value()
 
         else :
@@ -145,7 +147,7 @@ class SP_Edge_export:
             self.geom = Geom_BezierCurve(segment_point_array)
 
     def bspline(self):
-        isclamped = self.seg_attrs['isclamped'] if not None else True
+        isclamped = self.seg_attrs['isclamped'][0] if not None else True
         is_unclamped_periodic = (self.seg_attrs['isperiodic'] if not None else False) and not isclamped
         degree = self.seg_attrs['degree']
 
@@ -237,9 +239,9 @@ class SP_Wire_export :
         self.geom_plane = geom_plane
         
         ## Segment aligned
-        self.segs_degrees = seg_aligned_attrs['degree']
         self.segs_p_counts = seg_aligned_attrs['p_count']
         self.seg_count = len(self.segs_p_counts)
+        self.segs_degrees = seg_aligned_attrs['degree']
         self.isclamped_per_seg = seg_aligned_attrs['isclamped']
         self.isperiodic_per_seg = seg_aligned_attrs['isperiodic']
         if 'circle' in list(seg_aligned_attrs.keys()):
@@ -252,10 +254,6 @@ class SP_Wire_export :
         ## Is periodic : per segment
 
         self.isclosed = sum([s -1 for s in self.segs_p_counts]) == len(self.CP) or (sum(self.isperiodic_per_seg)>0)
-
-        # Bezier if no degree
-        if self.segs_degrees==None:
-            self.segs_degrees = [c-1 for c in self.segs_p_counts]
 
         p_count = 0 #(total)
         p_count_accumulate = self.segs_p_counts[:]
@@ -276,7 +274,8 @@ class SP_Wire_export :
         inf = 0
         sup = self.segs_p_counts[0]
         for i in range(self.seg_count) :
-            if i==self.seg_count-1 and self.isclosed :
+            # for last segment but not only segment
+            if i==self.seg_count-1 and self.isclosed and self.seg_count>1 and self.circle_att_seg_aligned[i]<0.1:
                 split_attr.append(attr[inf:len(self.CP)]+[attr[0]])
             else :
                 split_attr.append(attr[inf:sup])
@@ -285,13 +284,6 @@ class SP_Wire_export :
                     sup = inf + self.segs_p_counts[i+1]
         return split_attr
     
-
-    def get_single_val_attr_per_seg(self, attr) -> list:
-        split_attr=[]
-        for i in self.seg_first_P_id :
-            split_attr.append(attr[i])
-        return split_attr
-
     
     def get_topods_wire(self): #split because not needed with svg. Can be judged unnecessary
         # Split attrs per segment
@@ -656,7 +648,7 @@ def new_brep_curve(o, context, scale=1000):
     
     # 1 point less if closed
     is_closed = get_attribute_by_name(ob, 'IsPeriodic', 'first_bool')
-    total_p_count -= is_closed
+    total_p_count -= is_closed and segment_count>1
 
     # is clamped
     is_clamped = get_attribute_by_name(ob, 'IsClamped', 'first_bool')
@@ -677,7 +669,6 @@ def new_brep_curve(o, context, scale=1000):
     points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
     points*=scale # Unit correction*
 
-   
 
     wire = SP_Wire_export({'CP':points},
                         {'p_count':segs_p_counts,

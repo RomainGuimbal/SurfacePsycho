@@ -133,7 +133,7 @@ def new_svg_fill(o, context, plane, origin=Vector((0,0,0)), scale=100, color_mod
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
 
     # Wires
-    wires_dict = SP_Contour_export(ob, 'CP_planar', 'CP_count', 'IsClamped', 'IsPeriodic')
+    wires_dict = SP_Contour_export(ob, 'CP_planar', 'CP_count', 'IsClamped', 'IsPeriodic').wires_dict
     
     # SVG path attributes
     if color_mode == "object":
