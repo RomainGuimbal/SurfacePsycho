@@ -51,6 +51,7 @@ class SP_Edge_export:
         self.geom_plane = geom_plane
         self.single_seg = single_seg
 
+        # Create GP points
         for v in self.vec_cp :
             if is2D:
                 self.gp_cp.append(gp_Pnt2d(v[0], v[1]))
@@ -126,6 +127,7 @@ class SP_Edge_export:
                 p_center = GeomAPI_ProjectPointOnSurf(gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2]), self.geom_plane).Point(1)
             else :
                 p_center = gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2])
+            
             dir1 = gp_Dir(self.vec_cp[1][0]-self.vec_cp[0][0],
                           self.vec_cp[1][1]-self.vec_cp[0][1],
                           self.vec_cp[1][2]-self.vec_cp[0][2])
@@ -361,6 +363,7 @@ class SP_Contour_export :
         try :
             self.segs_p_counts = get_attribute_by_name(ob, p_count_attr_name, 'int')
             self.wire_index = get_attribute_by_name(ob, 'Wire', 'int')
+            self.seg_count_per_wire = get_attribute_by_name(ob, 'seg_count_per_wire', 'int')
             self.has_wire = True
         except Exception: # No trim
             self.has_wire = False
@@ -373,9 +376,15 @@ class SP_Contour_export :
                     break
                 self.total_p_count+=1
         
-            # crop self.wire_index
+            # crop wire_index
             self.wire_index = self.wire_index[:self.total_p_count]
             self.p_count_per_wire = Counter(self.wire_index)
+            
+            # crop seg_count_per_wire
+            self.wire_index_order = list(dict.fromkeys(self.wire_index))
+            self.wir_count = len(self.wire_index_order)
+            self.seg_count_per_wire = self.seg_count_per_wire[:self.wir_count]
+            
 
             # Get segment count
             self.segment_count = 0
@@ -408,10 +417,10 @@ class SP_Contour_export :
             # Get seg aligned attrs
             ## Circle
             try :
-                self.circle_att = get_attribute_by_name(ob, 'Circle', 'float', self.segment_count)
+                circle_att = get_attribute_by_name(ob, 'Circle', 'float', self.segment_count)
             except KeyError:
-                self.circle_att = [0.0]*self.segment_count
-            circle_att_per_wire = self.split_seg_attr_per_wire(self.circle_att)  
+                circle_att = [0.0]*self.segment_count
+            circle_att_per_wire = self.split_seg_attr_per_wire(circle_att)  
 
             ## Degree
             try :
@@ -465,11 +474,9 @@ class SP_Contour_export :
     
 
     def split_seg_attr_per_wire(self, attr):
-        wire_index_order = list(dict.fromkeys(self.wire_index))
         wir_i = 0
-        wir_key = wire_index_order[wir_i]
-        added_cp_count = 0 
-        wire_count = len(wire_index_order)
+        wir_key = self.wire_index_order[wir_i]
+        seg_added = 0
 
         # Prepare dict
         attr_dict_per_wire = {}
@@ -477,22 +484,14 @@ class SP_Contour_export :
             attr_dict_per_wire[w]=[]
 
         # Itterate over segments
-        for i, att_val in enumerate(attr[:self.segment_count]) :
-            if self.p_count_per_wire[wir_key]==2 : # circle case
-                attr_dict_per_wire[wir_key].append(att_val)
-                if i < self.segment_count-1 :
-                    wir_i +=1
-                    wir_key = wire_index_order[wir_i]
-                    added_cp_count = 0
-            else :
-                attr_dict_per_wire[wir_key].append(att_val)
-                seg_p_count_curr = self.segs_p_counts[i]
-                added_cp_count += seg_p_count_curr-1
+        for i, att_val in enumerate(attr[:self.segment_count]) :           
+            seg_added += 1
+            attr_dict_per_wire[wir_key].append(att_val)
 
-                if added_cp_count >= self.p_count_per_wire[wir_key]-1 and i < self.segment_count-1 and wir_i < wire_count - 1:
-                    wir_i +=1
-                    wir_key = wire_index_order[wir_i]
-                    added_cp_count = 0
+            if seg_added >= self.seg_count_per_wire[wir_i] and wir_i < self.wir_count-1:
+                wir_i+=1
+                wir_key = self.wire_index_order[wir_i]
+                seg_added = 0
 
         return attr_dict_per_wire
     
