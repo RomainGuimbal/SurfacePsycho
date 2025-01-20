@@ -125,14 +125,15 @@ class SP_Edge_export:
         else :
             if self.geom_plane != None:
                 p_center = GeomAPI_ProjectPointOnSurf(gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2]), self.geom_plane).Point(1)
+                normal_dir = self.geom_plane.Pln().Axis().Direction()
             else :
-                p_center = gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2])
-            
-            dir1 = gp_Dir(self.vec_cp[1][0]-self.vec_cp[0][0],
-                          self.vec_cp[1][1]-self.vec_cp[0][1],
-                          self.vec_cp[1][2]-self.vec_cp[0][2])
+                p_center = gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2])         
+                normal_dir = gp_Dir(np.cross((self.vec_cp[1][0]-self.vec_cp[0][0],
+                            self.vec_cp[1][1]-self.vec_cp[0][1],
+                            self.vec_cp[1][2]-self.vec_cp[0][2]), [1.0,.0,.0]))
 
-            makesegment = GC_MakeCircle(gp_Ax1(p_center, dir1), radius)
+
+            makesegment = GC_MakeCircle(gp_Ax1(p_center, normal_dir), radius)
             self.geom = makesegment.Value()
     
     def bezier(self):
