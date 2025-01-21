@@ -8,6 +8,8 @@ The long term goal is a full class A surfacing tool accessible by anyone.
 
 [Documentation](https://github.com/RomainGuimbal/SurfacePsycho/wiki#surfacepsycho-blender-addon-documentation) 
 
+[Discord](https://discord.gg/MJdxMBM6pm)
+
 [BlenderArtists thread](https://blenderartists.org/t/surfacepsycho-addon-project/1487629)
 
 [>>> Alpha release and test file here <<<](https://acideromineh.gumroad.com/l/SurfacePsycho)
