@@ -8,29 +8,30 @@ from .utils import *
 # from OCP.Geom2dAdaptor import Geom2dAdaptor_Curve
 # from OCP.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 from OCP.BRep import BRep_Builder
-from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface
-from OCP.BRepAdaptor import BRepAdaptor_Surface #BRepAdaptor_Curve
+from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface #BRepAdaptor_Curve
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line
 from OCP.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 from OCP.GeomAPI import GeomAPI_ProjectPointOnCurve
 from OCP.gp import gp_Pnt, gp_Pnt2d
 from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
-from OCP.IGESControl import IGESControl_Controller, IGESControl_Reader
-from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB
+from OCP.IGESCAFControl import IGESCAFControl_Reader
+# from OCP.IGESControl import IGESControl_Controller, IGESControl_Reader
+# from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB
 from OCP.STEPCAFControl import STEPCAFControl_Reader
 from OCP.STEPControl import STEPControl_Reader
-from OCP.STEPControl import STEPControl_Reader
-from OCP.TDF import TDF_LabelSequence, TDF_Label
+from OCP.TCollection import TCollection_ExtendedString
+# from OCP.TDF import TDF_LabelSequence, TDF_Label
 from OCP.TDocStd import TDocStd_Document
 from OCP.TopAbs import TopAbs_FORWARD, TopAbs_REVERSED, TopAbs_INTERNAL, TopAbs_EXTERNAL, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
-from OCP.TopExp import TopExp_Explorer
 from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS, TopoDS_Iterator, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
 from OCP.TopTools import TopTools_IndexedMapOfShape
+from OCP.XCAFApp import XCAFApp_Application
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorTool
-import OCP.TopAbs as TopAbs
 import OCP.GeomAbs as GeomAbs
+import OCP.TopAbs as TopAbs
+
 
 from .utils import list_of_shapes_to_compound
 
@@ -307,7 +308,7 @@ class SP_Contour_import :
 
 
 class SP_Surface_import :
-    def __init__(self, face : TopoDS_Face, collection, trims_enabled : bool, uv_bounds, CPvert, CPedges, CPfaces, ob_name = "STEP Patch", scale=0.001):
+    def __init__(self, face : TopoDS_Face, doc, collection, trims_enabled : bool, uv_bounds, CPvert, CPedges, CPfaces, ob_name = "STEP Patch", scale=0.001):
         self.trims_enabled = trims_enabled
         self.face = face
         self.uv_bounds = uv_bounds
@@ -322,7 +323,7 @@ class SP_Surface_import :
             contour.switch_u_and_v()
             istrivial = contour.is_trivial()
             if istrivial :
-                print("Trivial contour skipped")
+                # print("Trivial contour skipped")
                 self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
                 del contour
             else :
@@ -330,9 +331,12 @@ class SP_Surface_import :
         else :
             self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
 
-        mesh = bpy.data.meshes.new("Patch CP")
+        name, color = get_shape_name_and_color(face, doc)
+        if name == None:
+            name = ob_name
+        mesh = bpy.data.meshes.new(name)
         mesh.from_pydata(self.vert, self.edges, self.faces, False)
-        self.ob = bpy.data.objects.new(ob_name, mesh)
+        self.ob = bpy.data.objects.new(name, mesh)
         self.ob.matrix_world = get_shape_transform(face, scale)
         
         if trims_enabled and not istrivial :
@@ -359,7 +363,7 @@ class SP_Surface_import :
 
 
 
-def build_SP_cylinder(topods_face : TopoDS_Face, collection, trims_enabled, scale = 0.001) :
+def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cylinder = face_adpator.Surface().Cylinder()
     geom_cylinder = Geom_CylindricalSurface(gp_cylinder)
@@ -394,7 +398,7 @@ def build_SP_cylinder(topods_face : TopoDS_Face, collection, trims_enabled, scal
 
     CPvert = [loc_vec, xaxis_vec*length + loc_vec, raduis_vert]
     CP_edges = [(0,1)]
-    sp_surf = SP_Surface_import(topods_face, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
+    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
     sp_surf.add_modifier("SP - Cylindrical Meshing", 
                          {"Use Trim Contour":trims_enabled, 
                           "Flip Normals" : topods_face.Orientation()==TopAbs_REVERSED,
@@ -404,7 +408,7 @@ def build_SP_cylinder(topods_face : TopoDS_Face, collection, trims_enabled, scal
 
 
 
-def build_SP_bezier_patch(topods_face, collection, trims_enabled, scale = 0.001, resolution = 16):
+def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0.001, resolution = 16):
     bezier_surface = BRepAdaptor_Surface(topods_face).Surface().Bezier()
 
     u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
@@ -422,7 +426,7 @@ def build_SP_bezier_patch(topods_face, collection, trims_enabled, scale = 0.001,
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
 
-    sp_surf = SP_Surface_import(topods_face, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
+    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
     sp_surf.add_modifier("SP - Bezier Patch Meshing", 
                            {"Use Trim Contour":trims_enabled,
                             "Resolution U": resolution,
@@ -434,7 +438,7 @@ def build_SP_bezier_patch(topods_face, collection, trims_enabled, scale = 0.001,
 
 
 
-def build_SP_NURBS_patch(topods_face, collection, trims_enabled, scale = 0.001, resolution = 10):
+def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.001, resolution = 10):
     # Patch attributes
     bspline_surface = BRepAdaptor_Surface(topods_face).Surface().BSpline()
     u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
@@ -488,7 +492,7 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled, scale = 0.001, 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
     
-    sp_surf = SP_Surface_import(topods_face, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
+    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
     
     if custom_knot:
         sp_surf.assign_vertex_gr("Knot U", u_knots)
@@ -525,7 +529,7 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled, scale = 0.001, 
 
 
 
-def build_SP_curve(topodsEdge, collection, scale = 0.001, resolution = 16) :
+def build_SP_curve(topodsEdge, doc, collection, scale = 0.001, resolution = 16) :
     sp_edge = SP_Edge_import(topodsEdge)
     sp_edge.scale(scale)
     verts = sp_edge.verts
@@ -540,9 +544,12 @@ def build_SP_curve(topodsEdge, collection, scale = 0.001, resolution = 16) :
     edges = [(i,i+1) for i in range(len(verts)-1)]
 
     # create object
+    name, color = get_shape_name_and_color(topodsEdge, doc)
+    if name == None:
+        name = "STEP Curve"
     mesh = bpy.data.meshes.new("Curve CP")
     mesh.from_pydata(verts, edges, [], False)
-    ob = bpy.data.objects.new('STEP curve', mesh)
+    ob = bpy.data.objects.new(name, mesh)
     ob.matrix_world = get_shape_transform(topodsEdge, scale)
 
     # Assign vertex groups
@@ -564,7 +571,7 @@ def build_SP_curve(topodsEdge, collection, scale = 0.001, resolution = 16) :
 
 
 
-def build_SP_flat(topods_face, collection, scale = 0.001):
+def build_SP_flat(topods_face, doc, collection, scale = 0.001):
     # Get contour
     contour = SP_Contour_import(topods_face, scale)
     verts = contour.verts
@@ -574,9 +581,12 @@ def build_SP_flat(topods_face, collection, scale = 0.001):
     circle_att = contour.circles
 
     # Create object
-    mesh = bpy.data.meshes.new("FlatPatch CP")
+    name, color = get_shape_name_and_color(topods_face, doc)
+    if name == None:
+        name = "STEP FlatPatch"
+    mesh = bpy.data.meshes.new(name)
     mesh.from_pydata(verts, edges, [], False)
-    ob = bpy.data.objects.new('STEP FlatPatch', mesh)
+    ob = bpy.data.objects.new(name, mesh)
     ob.matrix_world = get_shape_transform(topods_face, scale)
 
     # Assign vertex groups
@@ -721,17 +731,17 @@ def import_face_nodegroups(shape_hierarchy):
 
 
 
-def process_topods_face(topods_face, collection, trims_enabled, scale, resolution):
+def process_topods_face(topods_face, doc, collection, trims_enabled, scale, resolution):
     ft= get_face_type_id(topods_face)
     match ft:
         case GeomAbs.GeomAbs_Plane:
-            build_SP_flat(topods_face, collection, scale)
+            build_SP_flat(topods_face, doc, collection, scale)
         case GeomAbs.GeomAbs_Cylinder:
-            build_SP_cylinder(topods_face, collection, trims_enabled, scale, )
+            build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale, )
         case GeomAbs.GeomAbs_BezierSurface:
-            build_SP_bezier_patch(topods_face, collection, trims_enabled, scale, resolution)
+            build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_BSplineSurface:
-            build_SP_NURBS_patch(topods_face, collection, trims_enabled, scale, resolution)
+            build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case _ :
             print("Unsupported Face Type : " + get_face_type_name(topods_face))
     return True
@@ -740,7 +750,7 @@ def process_topods_face(topods_face, collection, trims_enabled, scale, resolutio
 
 
 
-def build_SP_from_brep(shape, context, container_name, enabled_entities, scale = .001, resolution = 10):
+def build_SP_from_brep(shape, doc, container_name, enabled_entities, scale = .001, resolution = 10):
     # Create hierarchy and collections
     shape_hierarchy = ShapeHierarchy(shape, container_name)
 
@@ -757,7 +767,7 @@ def build_SP_from_brep(shape, context, container_name, enabled_entities, scale =
         import_face_nodegroups(shape_hierarchy)
 
         for face,col in shape_hierarchy.faces:# TODO ThreadPool
-            process_topods_face(face, col, trims_enabled, scale, resolution)
+            process_topods_face(face, doc, col, trims_enabled, scale, resolution)
             progress+=1
             wm.progress_update(progress)
 
@@ -766,7 +776,7 @@ def build_SP_from_brep(shape, context, container_name, enabled_entities, scale =
         append_node_group("SP - Curve Meshing")
 
         for edge, col in shape_hierarchy.edges:
-            build_SP_curve(edge, col, scale, resolution)
+            build_SP_curve(edge, doc, col, scale, resolution)
             progress+=1
             wm.progress_update(progress)
 
@@ -781,21 +791,26 @@ def build_SP_from_brep(shape, context, container_name, enabled_entities, scale =
 
 
 
-def import_cad(filepath, context, enabled_entities, scale=.001, resolution=10):
-    if splitext(split(filepath)[1])[1] in ['.step','.stp','.STEP', '.STP']:
-        step_reader = STEPControl_Reader()
+def import_cad(filepath, enabled_entities, scale=.001, resolution=10):
+    # Create document
+    doc = TDocStd_Document("MDTV-CAF")
+    app = XCAFApp_Application.GetApplication_()
+    app.NewDocument(TCollection_ExtendedString("MDTV-CAF"), doc)
+
+    if splitext(split(filepath)[1])[1].lower() in ['.step', '.stp']:
+        step_reader = STEPCAFControl_Reader()
         status = step_reader.ReadFile(filepath)
         if status != IFSelect_RetDone:
             raise ValueError("Error reading STEP file")
-        step_reader.TransferRoots()
+        step_reader.Transfer(doc)
         shape = step_reader.OneShape()
 
-    elif splitext(split(filepath)[1])[1] in ['.igs','.iges','.IGES', '.IGS']:
-        iges_reader = IGESControl_Reader()
+    elif splitext(split(filepath)[1])[1].lower() in ['.igs', '.iges']:
+        iges_reader = IGESCAFControl_Reader()
         status = iges_reader.ReadFile(filepath)
         if status != IFSelect_RetDone:
             raise ValueError("Error reading IGES file")
-        iges_reader.TransferRoots()
+        iges_reader.Transfer(doc)
         shape = iges_reader.OneShape()
     
     container_name = splitext(split(filepath)[1])[0]
@@ -803,7 +818,7 @@ def import_cad(filepath, context, enabled_entities, scale=.001, resolution=10):
     # import cProfile
     # profiler = cProfile.Profile()
     # profiler.enable()
-    build_SP_from_brep(shape, context, container_name, enabled_entities, scale, resolution)
+    build_SP_from_brep(shape, doc, container_name, enabled_entities, scale, resolution)
     # profiler.disable()
     # profiler.print_stats()
 
@@ -819,336 +834,337 @@ def import_cad(filepath, context, enabled_entities, scale=.001, resolution=10):
 
 
 
-###########################
-# Step import OCC Extends #
-###########################
 
-def read_step_file(filename, as_compound=True, verbosity=True):
-    """read the STEP file and returns a compound
-    filename: the file path
-    verbosity: optional, False by default.
-    as_compound: True by default. If there are more than one shape at root,
-    gather all shapes into one compound. Otherwise returns a list of shapes.
-    """
-    if not isfile(filename):
-        raise FileNotFoundError(f"{filename} not found.")
+# ###########################
+# # Step import OCC Extends #
+# ###########################
 
-    step_reader = STEPControl_Reader()
-    status = step_reader.ReadFile(filename)
+# def read_step_file(filename, as_compound=True, verbosity=True):
+#     """read the STEP file and returns a compound
+#     filename: the file path
+#     verbosity: optional, False by default.
+#     as_compound: True by default. If there are more than one shape at root,
+#     gather all shapes into one compound. Otherwise returns a list of shapes.
+#     """
+#     if not isfile(filename):
+#         raise FileNotFoundError(f"{filename} not found.")
 
-    if status != IFSelect_RetDone:
-        raise AssertionError("Error: can't read file.")
-    if verbosity:
-        failsonly = False
-        step_reader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity)
-        step_reader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity)
-    transfer_result = step_reader.TransferRoots()
-    if not transfer_result:
-        raise AssertionError("Transfer failed.")
-    _nbs = step_reader.NbShapes()
-    if _nbs == 0:
-        raise AssertionError("No shape to transfer.")
-    if _nbs == 1:  # most cases
-        return step_reader.Shape(1)
-    if _nbs > 1:
-        print("Number of shapes:", _nbs)
-        shps = []
-        # loop over root shapes
-        for k in range(1, _nbs + 1):
-            new_shp = step_reader.Shape(k)
-            if not new_shp.IsNull():
-                shps.append(new_shp)
-        if as_compound:
-            compound, result = list_of_shapes_to_compound(shps)
-            if not result:
-                print("Warning: all shapes were not added to the compound")
-            return compound
-        print("Warning, returns a list of shapes.")
-        return shps
-    return None
+#     step_reader = STEPControl_Reader()
+#     status = step_reader.ReadFile(filename)
 
-
-
-def read_step_file_with_names_colors(filename):
-    """Returns list of tuples (topods_shape, label, color)
-    Use OCAF.
-    """
-    if not isfile(filename):
-        raise FileNotFoundError(f"{filename} not found.")
-    # the list:
-    output_shapes = {}
-
-    # create an handle to a document
-    doc = TDocStd_Document("pythonocc-doc-step-import")
-
-    # Get root assembly
-    shape_tool = XCAFDoc_DocumentTool.ShapeTool(doc.Main())
-    color_tool = XCAFDoc_DocumentTool.ColorTool(doc.Main())
-    # layer_tool = XCAFDoc_DocumentTool_LayerTool(doc.Main())
-    # mat_tool = XCAFDoc_DocumentTool_MaterialTool(doc.Main())
-
-    step_reader = STEPCAFControl_Reader()
-    step_reader.SetColorMode(True)
-    step_reader.SetLayerMode(True)
-    step_reader.SetNameMode(True)
-    step_reader.SetMatMode(True)
-    step_reader.SetGDTMode(True)
-
-    status = step_reader.ReadFile(filename)
-    if status == IFSelect_RetDone:
-        step_reader.Transfer(doc)
-
-    locs = []
-
-    def _get_sub_shapes(lab, loc):
-        # global cnt, lvl
-        # cnt += 1
-        # print("\n[%d] level %d, handling LABEL %s\n" % (cnt, lvl, _get_label_name(lab)))
-        # print()
-        # print(lab.DumpToString())
-        # print()
-        # print("Is Assembly    :", shape_tool.IsAssembly(lab))
-        # print("Is Free        :", shape_tool.IsFree(lab))
-        # print("Is Shape       :", shape_tool.IsShape(lab))
-        # print("Is Compound    :", shape_tool.IsCompound(lab))
-        # print("Is Component   :", shape_tool.IsComponent(lab))
-        # print("Is SimpleShape :", shape_tool.IsSimpleShape(lab))
-        # print("Is Reference   :", shape_tool.IsReference(lab))
-
-        # users = TDF_LabelSequence()
-        # users_cnt = shape_tool.GetUsers(lab, users)
-        # print("Nr Users       :", users_cnt)
-
-        l_subss = TDF_LabelSequence()
-        shape_tool.GetSubShapes(lab, l_subss)
-        # print("Nb subshapes   :", l_subss.Length())
-        l_comps = TDF_LabelSequence()
-        shape_tool.GetComponents(lab, l_comps)
-        # print("Nb components  :", l_comps.Length())
-        # print()
-        name = lab.GetLabelName()
-        print("Name :", name)
-
-        if shape_tool.IsAssembly(lab):
-            l_c = TDF_LabelSequence()
-            shape_tool.GetComponents(lab, l_c)
-            for i in range(l_c.Length()):
-                label = l_c.Value(i + 1)
-                if shape_tool.IsReference(label):
-                    # print("\n########  reference label :", label)
-                    label_reference = TDF_Label()
-                    shape_tool.GetReferredShape(label, label_reference)
-                    loc = shape_tool.GetLocation(label)
-                    # print("    loc          :", loc)
-                    # trans = loc.Transformation()
-                    # print("    tran form    :", trans.Form())
-                    # rot = trans.GetRotation()
-                    # print("    rotation     :", rot)
-                    # print("    X            :", rot.X())
-                    # print("    Y            :", rot.Y())
-                    # print("    Z            :", rot.Z())
-                    # print("    W            :", rot.W())
-                    # tran = trans.TranslationPart()
-                    # print("    translation  :", tran)
-                    # print("    X            :", tran.X())
-                    # print("    Y            :", tran.Y())
-                    # print("    Z            :", tran.Z())
-
-                    locs.append(loc)
-                    # print(">>>>")
-                    # lvl += 1
-                    _get_sub_shapes(label_reference, loc)
-                    # lvl -= 1
-                    # print("<<<<")
-                    locs.pop()
-
-        elif shape_tool.IsSimpleShape(lab):
-            # print("\n########  simpleshape label :", lab)
-            shape = shape_tool.GetShape(lab)
-            # print("    all ass locs   :", locs)
-
-            loc = TopLoc_Location()
-            for l in locs:
-                # print("    take loc       :", l)
-                loc = loc.Multiplied(l)
-
-            # trans = loc.Transformation()
-            # print("    FINAL loc    :")
-            # print("    tran form    :", trans.Form())
-            # rot = trans.GetRotation()
-            # print("    rotation     :", rot)
-            # print("    X            :", rot.X())
-            # print("    Y            :", rot.Y())
-            # print("    Z            :", rot.Z())
-            # print("    W            :", rot.W())
-            # tran = trans.TranslationPart()
-            # print("    translation  :", tran)
-            # print("    X            :", tran.X())
-            # print("    Y            :", tran.Y())
-            # print("    Z            :", tran.Z())
-            c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
-            color_set = False
-            if (
-                color_tool.GetInstanceColor(shape, 0, c)
-                or color_tool.GetInstanceColor(shape, 1, c)
-                or color_tool.GetInstanceColor(shape, 2, c)
-            ):
-                color_tool.SetInstanceColor(shape, 0, c)
-                color_tool.SetInstanceColor(shape, 1, c)
-                color_tool.SetInstanceColor(shape, 2, c)
-                color_set = True
-                n = c.Name(c.Red(), c.Green(), c.Blue())
-                print(
-                    "    instance color Name & RGB: ",
-                    c,
-                    n,
-                    c.Red(),
-                    c.Green(),
-                    c.Blue(),
-                )
-
-            if not color_set:
-                if (
-                    XCAFDoc_ColorTool.GetColor(lab, 0, c)
-                    or XCAFDoc_ColorTool.GetColor(lab, 1, c)
-                    or XCAFDoc_ColorTool.GetColor(lab, 2, c)
-                ):
-                    color_tool.SetInstanceColor(shape, 0, c)
-                    color_tool.SetInstanceColor(shape, 1, c)
-                    color_tool.SetInstanceColor(shape, 2, c)
-
-                    n = c.Name(c.Red(), c.Green(), c.Blue())
-                    print(
-                        "    shape color Name & RGB: ",
-                        c,
-                        n,
-                        c.Red(),
-                        c.Green(),
-                        c.Blue(),
-                    )
-
-            shape_disp = BRepBuilderAPI_Transform(shape, loc.Transformation()).Shape()
-            if shape_disp not in output_shapes:
-                output_shapes[shape_disp] = [lab.GetLabelName(), c]
-            for i in range(l_subss.Length()):
-                lab_subs = l_subss.Value(i + 1)
-                # print("\n########  simpleshape subshape label :", lab)
-                shape_sub = shape_tool.GetShape(lab_subs)
-
-                c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
-                color_set = False
-                if (
-                    color_tool.GetInstanceColor(shape_sub, 0, c)
-                    or color_tool.GetInstanceColor(shape_sub, 1, c)
-                    or color_tool.GetInstanceColor(shape_sub, 2, c)
-                ):
-                    color_tool.SetInstanceColor(shape_sub, 0, c)
-                    color_tool.SetInstanceColor(shape_sub, 1, c)
-                    color_tool.SetInstanceColor(shape_sub, 2, c)
-                    color_set = True
-                    n = c.Name(c.Red(), c.Green(), c.Blue())
-                    print(
-                        "    instance color Name & RGB: ",
-                        c,
-                        n,
-                        c.Red(),
-                        c.Green(),
-                        c.Blue(),
-                    )
-
-                if not color_set:
-                    if (
-                        XCAFDoc_ColorTool.GetColor(lab_subs, 0, c)
-                        or XCAFDoc_ColorTool.GetColor(lab_subs, 1, c)
-                        or XCAFDoc_ColorTool.GetColor(lab_subs, 2, c)
-                    ):
-                        color_tool.SetInstanceColor(shape, 0, c)
-                        color_tool.SetInstanceColor(shape, 1, c)
-                        color_tool.SetInstanceColor(shape, 2, c)
-
-                        n = c.Name(c.Red(), c.Green(), c.Blue())
-                        print(
-                            "    shape color Name & RGB: ",
-                            c,
-                            n,
-                            c.Red(),
-                            c.Green(),
-                            c.Blue(),
-                        )
-                shape_to_disp = BRepBuilderAPI_Transform(
-                    shape_sub, loc.Transformation()
-                ).Shape()
-                # position the subshape to display
-                if shape_to_disp not in output_shapes:
-                    output_shapes[shape_to_disp] = [lab_subs.GetLabelName(), c]
-
-    def _get_shapes():
-        labels = TDF_LabelSequence()
-        shape_tool.GetFreeShapes(labels)
-        # global cnt
-        # cnt += 1
-
-        print()
-        print("Number of shapes at root :", labels.Length())
-        print()
-        for i in range(labels.Length()):
-            root_item = labels.Value(i + 1)
-            _get_sub_shapes(root_item, None)
-
-    _get_shapes()
-    return output_shapes
+#     if status != IFSelect_RetDone:
+#         raise AssertionError("Error: can't read file.")
+#     if verbosity:
+#         failsonly = False
+#         step_reader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity)
+#         step_reader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity)
+#     transfer_result = step_reader.TransferRoots()
+#     if not transfer_result:
+#         raise AssertionError("Transfer failed.")
+#     _nbs = step_reader.NbShapes()
+#     if _nbs == 0:
+#         raise AssertionError("No shape to transfer.")
+#     if _nbs == 1:  # most cases
+#         return step_reader.Shape(1)
+#     if _nbs > 1:
+#         print("Number of shapes:", _nbs)
+#         shps = []
+#         # loop over root shapes
+#         for k in range(1, _nbs + 1):
+#             new_shp = step_reader.Shape(k)
+#             if not new_shp.IsNull():
+#                 shps.append(new_shp)
+#         if as_compound:
+#             compound, result = list_of_shapes_to_compound(shps)
+#             if not result:
+#                 print("Warning: all shapes were not added to the compound")
+#             return compound
+#         print("Warning, returns a list of shapes.")
+#         return shps
+#     return None
 
 
 
+# def read_step_file_with_names_colors(filename):
+#     """Returns list of tuples (topods_shape, label, color)
+#     Use OCAF.
+#     """
+#     if not isfile(filename):
+#         raise FileNotFoundError(f"{filename} not found.")
+#     # the list:
+#     output_shapes = {}
+
+#     # create an handle to a document
+#     doc = TDocStd_Document("pythonocc-doc-step-import")
+
+#     # Get root assembly
+#     shape_tool = XCAFDoc_DocumentTool.ShapeTool(doc.Main())
+#     color_tool = XCAFDoc_DocumentTool.ColorTool(doc.Main())
+#     # layer_tool = XCAFDoc_DocumentTool_LayerTool(doc.Main())
+#     # mat_tool = XCAFDoc_DocumentTool_MaterialTool(doc.Main())
+
+#     step_reader = STEPCAFControl_Reader()
+#     step_reader.SetColorMode(True)
+#     step_reader.SetLayerMode(True)
+#     step_reader.SetNameMode(True)
+#     step_reader.SetMatMode(True)
+#     step_reader.SetGDTMode(True)
+
+#     status = step_reader.ReadFile(filename)
+#     if status == IFSelect_RetDone:
+#         step_reader.Transfer(doc)
+
+#     locs = []
+
+#     def _get_sub_shapes(lab, loc):
+#         # global cnt, lvl
+#         # cnt += 1
+#         # print("\n[%d] level %d, handling LABEL %s\n" % (cnt, lvl, _get_label_name(lab)))
+#         # print()
+#         # print(lab.DumpToString())
+#         # print()
+#         # print("Is Assembly    :", shape_tool.IsAssembly(lab))
+#         # print("Is Free        :", shape_tool.IsFree(lab))
+#         # print("Is Shape       :", shape_tool.IsShape(lab))
+#         # print("Is Compound    :", shape_tool.IsCompound(lab))
+#         # print("Is Component   :", shape_tool.IsComponent(lab))
+#         # print("Is SimpleShape :", shape_tool.IsSimpleShape(lab))
+#         # print("Is Reference   :", shape_tool.IsReference(lab))
+
+#         # users = TDF_LabelSequence()
+#         # users_cnt = shape_tool.GetUsers(lab, users)
+#         # print("Nr Users       :", users_cnt)
+
+#         l_subss = TDF_LabelSequence()
+#         shape_tool.GetSubShapes(lab, l_subss)
+#         # print("Nb subshapes   :", l_subss.Length())
+#         l_comps = TDF_LabelSequence()
+#         shape_tool.GetComponents(lab, l_comps)
+#         # print("Nb components  :", l_comps.Length())
+#         # print()
+#         name = lab.GetLabelName()
+#         print("Name :", name)
+
+#         if shape_tool.IsAssembly(lab):
+#             l_c = TDF_LabelSequence()
+#             shape_tool.GetComponents(lab, l_c)
+#             for i in range(l_c.Length()):
+#                 label = l_c.Value(i + 1)
+#                 if shape_tool.IsReference(label):
+#                     # print("\n########  reference label :", label)
+#                     label_reference = TDF_Label()
+#                     shape_tool.GetReferredShape(label, label_reference)
+#                     loc = shape_tool.GetLocation(label)
+#                     # print("    loc          :", loc)
+#                     # trans = loc.Transformation()
+#                     # print("    tran form    :", trans.Form())
+#                     # rot = trans.GetRotation()
+#                     # print("    rotation     :", rot)
+#                     # print("    X            :", rot.X())
+#                     # print("    Y            :", rot.Y())
+#                     # print("    Z            :", rot.Z())
+#                     # print("    W            :", rot.W())
+#                     # tran = trans.TranslationPart()
+#                     # print("    translation  :", tran)
+#                     # print("    X            :", tran.X())
+#                     # print("    Y            :", tran.Y())
+#                     # print("    Z            :", tran.Z())
+
+#                     locs.append(loc)
+#                     # print(">>>>")
+#                     # lvl += 1
+#                     _get_sub_shapes(label_reference, loc)
+#                     # lvl -= 1
+#                     # print("<<<<")
+#                     locs.pop()
+
+#         elif shape_tool.IsSimpleShape(lab):
+#             # print("\n########  simpleshape label :", lab)
+#             shape = shape_tool.GetShape(lab)
+#             # print("    all ass locs   :", locs)
+
+#             loc = TopLoc_Location()
+#             for l in locs:
+#                 # print("    take loc       :", l)
+#                 loc = loc.Multiplied(l)
+
+#             # trans = loc.Transformation()
+#             # print("    FINAL loc    :")
+#             # print("    tran form    :", trans.Form())
+#             # rot = trans.GetRotation()
+#             # print("    rotation     :", rot)
+#             # print("    X            :", rot.X())
+#             # print("    Y            :", rot.Y())
+#             # print("    Z            :", rot.Z())
+#             # print("    W            :", rot.W())
+#             # tran = trans.TranslationPart()
+#             # print("    translation  :", tran)
+#             # print("    X            :", tran.X())
+#             # print("    Y            :", tran.Y())
+#             # print("    Z            :", tran.Z())
+#             c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
+#             color_set = False
+#             if (
+#                 color_tool.GetInstanceColor(shape, 0, c)
+#                 or color_tool.GetInstanceColor(shape, 1, c)
+#                 or color_tool.GetInstanceColor(shape, 2, c)
+#             ):
+#                 color_tool.SetInstanceColor(shape, 0, c)
+#                 color_tool.SetInstanceColor(shape, 1, c)
+#                 color_tool.SetInstanceColor(shape, 2, c)
+#                 color_set = True
+#                 n = c.Name(c.Red(), c.Green(), c.Blue())
+#                 print(
+#                     "    instance color Name & RGB: ",
+#                     c,
+#                     n,
+#                     c.Red(),
+#                     c.Green(),
+#                     c.Blue(),
+#                 )
+
+#             if not color_set:
+#                 if (
+#                     XCAFDoc_ColorTool.GetColor(lab, 0, c)
+#                     or XCAFDoc_ColorTool.GetColor(lab, 1, c)
+#                     or XCAFDoc_ColorTool.GetColor(lab, 2, c)
+#                 ):
+#                     color_tool.SetInstanceColor(shape, 0, c)
+#                     color_tool.SetInstanceColor(shape, 1, c)
+#                     color_tool.SetInstanceColor(shape, 2, c)
+
+#                     n = c.Name(c.Red(), c.Green(), c.Blue())
+#                     print(
+#                         "    shape color Name & RGB: ",
+#                         c,
+#                         n,
+#                         c.Red(),
+#                         c.Green(),
+#                         c.Blue(),
+#                     )
+
+#             shape_disp = BRepBuilderAPI_Transform(shape, loc.Transformation()).Shape()
+#             if shape_disp not in output_shapes:
+#                 output_shapes[shape_disp] = [lab.GetLabelName(), c]
+#             for i in range(l_subss.Length()):
+#                 lab_subs = l_subss.Value(i + 1)
+#                 # print("\n########  simpleshape subshape label :", lab)
+#                 shape_sub = shape_tool.GetShape(lab_subs)
+
+#                 c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
+#                 color_set = False
+#                 if (
+#                     color_tool.GetInstanceColor(shape_sub, 0, c)
+#                     or color_tool.GetInstanceColor(shape_sub, 1, c)
+#                     or color_tool.GetInstanceColor(shape_sub, 2, c)
+#                 ):
+#                     color_tool.SetInstanceColor(shape_sub, 0, c)
+#                     color_tool.SetInstanceColor(shape_sub, 1, c)
+#                     color_tool.SetInstanceColor(shape_sub, 2, c)
+#                     color_set = True
+#                     n = c.Name(c.Red(), c.Green(), c.Blue())
+#                     print(
+#                         "    instance color Name & RGB: ",
+#                         c,
+#                         n,
+#                         c.Red(),
+#                         c.Green(),
+#                         c.Blue(),
+#                     )
+
+#                 if not color_set:
+#                     if (
+#                         XCAFDoc_ColorTool.GetColor(lab_subs, 0, c)
+#                         or XCAFDoc_ColorTool.GetColor(lab_subs, 1, c)
+#                         or XCAFDoc_ColorTool.GetColor(lab_subs, 2, c)
+#                     ):
+#                         color_tool.SetInstanceColor(shape, 0, c)
+#                         color_tool.SetInstanceColor(shape, 1, c)
+#                         color_tool.SetInstanceColor(shape, 2, c)
+
+#                         n = c.Name(c.Red(), c.Green(), c.Blue())
+#                         print(
+#                             "    shape color Name & RGB: ",
+#                             c,
+#                             n,
+#                             c.Red(),
+#                             c.Green(),
+#                             c.Blue(),
+#                         )
+#                 shape_to_disp = BRepBuilderAPI_Transform(
+#                     shape_sub, loc.Transformation()
+#                 ).Shape()
+#                 # position the subshape to display
+#                 if shape_to_disp not in output_shapes:
+#                     output_shapes[shape_to_disp] = [lab_subs.GetLabelName(), c]
+
+#     def _get_shapes():
+#         labels = TDF_LabelSequence()
+#         shape_tool.GetFreeShapes(labels)
+#         # global cnt
+#         # cnt += 1
+
+#         print()
+#         print("Number of shapes at root :", labels.Length())
+#         print()
+#         for i in range(labels.Length()):
+#             root_item = labels.Value(i + 1)
+#             _get_sub_shapes(root_item, None)
+
+#     _get_shapes()
+#     return output_shapes
 
 
 
 
-###########################
-# IGES import OCC Extends #
-###########################
-def read_iges_file(
-    filename, return_as_shapes=False, verbosity=False, visible_only=False
-):
-    """read the IGES file and returns a compound
-    filename: the file path
-    return_as_shapes: optional, False by default. If True returns a list of shapes,
-                      else returns a single compound
-    verbosity: optionl, False by default.
-    """
-    if not isfile(filename):
-        raise FileNotFoundError(f"{filename} not found.")
 
-    IGESControl_Controller.Init()
 
-    iges_reader = IGESControl_Reader()
-    iges_reader.SetReadVisible(visible_only)
-    status = iges_reader.ReadFile(filename)
 
-    if status != IFSelect_RetDone:  # check status
-        raise IOError("Cannot read IGES file")
+# ###########################
+# # IGES import OCC Extends #
+# ###########################
+# def read_iges_file(
+#     filename, return_as_shapes=False, verbosity=False, visible_only=False
+# ):
+#     """read the IGES file and returns a compound
+#     filename: the file path
+#     return_as_shapes: optional, False by default. If True returns a list of shapes,
+#                       else returns a single compound
+#     verbosity: optionl, False by default.
+#     """
+#     if not isfile(filename):
+#         raise FileNotFoundError(f"{filename} not found.")
 
-    if verbosity:
-        failsonly = False
-        iges_reader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity)
-        iges_reader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity)
-    iges_reader.ClearShapes()
-    iges_reader.TransferRoots()
-    nbr = iges_reader.NbShapes()
+#     IGESControl_Controller.Init()
 
-    _shapes = []
-    for i in range(1, nbr + 1):
-        a_shp = iges_reader.Shape(i)
-        if not a_shp.IsNull():
-            _shapes.append(a_shp)
+#     iges_reader = IGESControl_Reader()
+#     iges_reader.SetReadVisible(visible_only)
+#     status = iges_reader.ReadFile(filename)
 
-    # create a compound and store all shapes
-    if not return_as_shapes:
-        builder = BRep_Builder()
-        compound = TopoDS_Compound()
-        builder.MakeCompound(compound)
-        for s in _shapes:
-            builder.Add(compound, s)
-        return [compound]
+#     if status != IFSelect_RetDone:  # check status
+#         raise IOError("Cannot read IGES file")
 
-    return _shapes
+#     if verbosity:
+#         failsonly = False
+#         iges_reader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity)
+#         iges_reader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity)
+#     iges_reader.ClearShapes()
+#     iges_reader.TransferRoots()
+#     nbr = iges_reader.NbShapes()
+
+#     _shapes = []
+#     for i in range(1, nbr + 1):
+#         a_shp = iges_reader.Shape(i)
+#         if not a_shp.IsNull():
+#             _shapes.append(a_shp)
+
+#     # create a compound and store all shapes
+#     if not return_as_shapes:
+#         builder = BRep_Builder()
+#         compound = TopoDS_Compound()
+#         builder.MakeCompound(compound)
+#         for s in _shapes:
+#             builder.Add(compound, s)
+#         return [compound]
+
+#     return _shapes

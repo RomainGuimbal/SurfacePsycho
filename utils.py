@@ -17,6 +17,11 @@ from OCP.TColStd import TColStd_Array1OfReal
 from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Circ2d, gp_Dir2d #, gp_Vec
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
+from OCP.TDataStd import TDataStd_Name
+from OCP.TDF import TDF_Label
+from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorGen
+from OCP.Quantity import Quantity_Color
+
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
@@ -416,6 +421,25 @@ def get_shape_transform(shape, scale=1):
                 matrix[i][j] = gp_trsf.Value(i+1, j+1)
     return matrix
 
+
+def get_shape_name_and_color(shape, doc):
+    name = None
+    color = (0.8, 0.8, 0.8)
+    
+    # Get shape label
+    label = TDF_Label()
+    if XCAFDoc_DocumentTool.ShapeTool_GetID(doc).FindShape(shape, label):
+        # Get name
+        name_attr = TDataStd_Name()
+        if label.FindAttribute(TDataStd_Name.GetID_(), name_attr):
+            name = name_attr.Get().PrintToString()
+        
+        # Get color
+        color_tool = XCAFDoc_DocumentTool.ColorTool_(doc.Main())
+        color = Quantity_Color()
+        if color_tool.GetColor(shape, XCAFDoc_ColorGen, color):
+            color = (color.Red(), color.Green(), color.Blue())
+    return name, color
 
 
 EDGES_TYPES = {'line' : 0,

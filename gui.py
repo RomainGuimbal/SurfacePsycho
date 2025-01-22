@@ -67,7 +67,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        import_cad(self.filepath, context, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,}, self.scale, self.resolution)
+        import_cad(self.filepath, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,}, self.scale, self.resolution)
         self.report({'INFO'}, 'Some surface types may have been ignored')
         return {'RUNNING_MODAL'}
 
