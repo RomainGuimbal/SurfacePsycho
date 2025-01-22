@@ -23,7 +23,7 @@ from OCP.STEPControl import STEPControl_Reader
 from OCP.STEPControl import STEPControl_Reader
 from OCP.TDF import TDF_LabelSequence, TDF_Label
 from OCP.TDocStd import TDocStd_Document
-from OCP.TopAbs import TopAbs_FORWARD, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
+from OCP.TopAbs import TopAbs_FORWARD, TopAbs_REVERSED, TopAbs_INTERNAL, TopAbs_EXTERNAL, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
 from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS, TopoDS_Iterator, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
@@ -267,7 +267,7 @@ class SP_Contour_import :
         is_trivial_trim = False
         if len(self.verts) == 4 :
 
-            print(self.verts)
+            # print(self.verts)
 
             t1 = self.verts == [Vector((0.0,0.0,0.0)), Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)),]
             t2 = self.verts == [Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)), Vector((0.0,0.0,0.0)),]
@@ -333,6 +333,7 @@ class SP_Surface_import :
         mesh = bpy.data.meshes.new("Patch CP")
         mesh.from_pydata(self.vert, self.edges, self.faces, False)
         self.ob = bpy.data.objects.new(ob_name, mesh)
+        self.ob.matrix_world = get_shape_transform(face, scale)
         
         if trims_enabled and not istrivial :
             self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(contour.verts))
@@ -358,8 +359,8 @@ class SP_Surface_import :
 
 
 
-def build_SP_cylinder(brepFace : TopoDS_Face, collection, trims_enabled, scale = 0.001) :
-    face_adpator = BRepAdaptor_Surface(brepFace)
+def build_SP_cylinder(topods_face : TopoDS_Face, collection, trims_enabled, scale = 0.001) :
+    face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cylinder = face_adpator.Surface().Cylinder()
     geom_cylinder = Geom_CylindricalSurface(gp_cylinder)
     
@@ -387,21 +388,24 @@ def build_SP_cylinder(brepFace : TopoDS_Face, collection, trims_enabled, scale =
     uv_bounds = (fake_uv_bounds[1], fake_uv_bounds[0], -length/2, length/2) # -np.pi/2
     min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
 
-    print(f"Cylinder UV bounds : {(min_u, max_u, min_v, max_v)}")
+    # print(f"Cylinder UV bounds : {(min_u, max_u, min_v, max_v)}")
 
     raduis_vert = Vector((zaxis_vec*radius) + loc_vec)
 
     CPvert = [loc_vec, xaxis_vec*length + loc_vec, raduis_vert]
     CP_edges = [(0,1)]
-    sp_surf = SP_Surface_import(brepFace, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
-    sp_surf.add_modifier("SP - Cylindrical Meshing", {"Use Trim Contour":trims_enabled, "Scaling Method":1}, pin=True)
+    sp_surf = SP_Surface_import(topods_face, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
+    sp_surf.add_modifier("SP - Cylindrical Meshing", 
+                         {"Use Trim Contour":trims_enabled, 
+                          "Flip Normals" : topods_face.Orientation()==TopAbs_REVERSED,
+                          "Scaling Method":1,}, pin=True)
     return True
 
 
 
 
-def build_SP_bezier_patch(brepFace, collection, trims_enabled, scale = 0.001, resolution = 16):
-    bezier_surface = BRepAdaptor_Surface(brepFace).Surface().Bezier()
+def build_SP_bezier_patch(topods_face, collection, trims_enabled, scale = 0.001, resolution = 16):
+    bezier_surface = BRepAdaptor_Surface(topods_face).Surface().Bezier()
 
     u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
     uv_bounds = bezier_surface.Bounds()
@@ -418,11 +422,12 @@ def build_SP_bezier_patch(brepFace, collection, trims_enabled, scale = 0.001, re
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
 
-    sp_surf = SP_Surface_import(brepFace, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
+    sp_surf = SP_Surface_import(topods_face, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
     sp_surf.add_modifier("SP - Bezier Patch Meshing", 
                            {"Use Trim Contour":trims_enabled,
                             "Resolution U": resolution,
                             "Resolution V": resolution,
+                            "Flip Normals" : topods_face.Orientation()==TopAbs_REVERSED,
                             "Scaling Method":1}, pin=True)
     return True
 
@@ -449,8 +454,8 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled, scale = 0.001, 
     custom_knot = False
     if any(x not in [min(u_knots), max(u_knots)] for x in u_knots) or any(x not in [min(v_knots), max(v_knots)] for x in v_knots):
         custom_knot = True
-        print(u_knots)
-        print(v_knots)
+        # print(u_knots)
+        # print(v_knots)
     # TODO
     # else :
     #    Convert to bezier then
@@ -509,6 +514,7 @@ def build_SP_NURBS_patch(topods_face, collection, trims_enabled, scale = 0.001, 
                         "Degree U": udeg,# INVERTED /!\
                         "Resolution U": resolution,
                         "Resolution V": resolution, 
+                        "Flip Normals" : topods_face.Orientation()==TopAbs_REVERSED,
                         "Use Trim Contour":trims_enabled, "Scaling Method": 1,
                         "Endpoint U" : u_clamped, "Endpoint V" : v_clamped,
                         "Cyclic U": u_periodic,  "Cyclic V": v_periodic}, pin=True)
@@ -537,6 +543,7 @@ def build_SP_curve(topodsEdge, collection, scale = 0.001, resolution = 16) :
     mesh = bpy.data.meshes.new("Curve CP")
     mesh.from_pydata(verts, edges, [], False)
     ob = bpy.data.objects.new('STEP curve', mesh)
+    ob.matrix_world = get_shape_transform(topodsEdge, scale)
 
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", endpoints)
@@ -557,9 +564,9 @@ def build_SP_curve(topodsEdge, collection, scale = 0.001, resolution = 16) :
 
 
 
-def build_SP_flat(topodsFace, collection, scale = 0.001):
+def build_SP_flat(topods_face, collection, scale = 0.001):
     # Get contour
-    contour = SP_Contour_import(topodsFace, scale)
+    contour = SP_Contour_import(topods_face, scale)
     verts = contour.verts
     edges = contour.edges
     endpoints = contour.endpoints
@@ -570,6 +577,7 @@ def build_SP_flat(topodsFace, collection, scale = 0.001):
     mesh = bpy.data.meshes.new("FlatPatch CP")
     mesh.from_pydata(verts, edges, [], False)
     ob = bpy.data.objects.new('STEP FlatPatch', mesh)
+    ob.matrix_world = get_shape_transform(topods_face, scale)
 
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", endpoints)
@@ -578,7 +586,9 @@ def build_SP_flat(topodsFace, collection, scale = 0.001):
     
     # add modifier
     collection.objects.link(ob)
-    add_sp_modifier(ob, "SP - FlatPatch Meshing", {'Orient': True}, pin=True)
+    add_sp_modifier(ob, "SP - FlatPatch Meshing", 
+                    {'Orient': True,
+                    "Flip Normal" : topods_face.Orientation()==TopAbs_REVERSED,}, pin=True)
     
     return True
 
@@ -615,7 +625,7 @@ class ShapeHierarchy:
 
     def create_shape_hierarchy(self, shape, parent_col):
         hierarchy = {}
-
+        
         match shape.ShapeType():
             case TopAbs.TopAbs_COMPOUND :
                 hierarchy[parent_col] = []

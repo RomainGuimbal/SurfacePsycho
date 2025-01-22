@@ -392,7 +392,6 @@ def get_wires_from_face(face: TopoDS_Face):
     return wires
 
 
-
 def get_edges_from_wire(wire : TopoDS_Wire) -> List[TopoDS_Edge]:
     edges = []
     explorer = TopExp_Explorer(wire, TopAbs_EDGE)
@@ -406,6 +405,17 @@ def get_edges_from_wire(wire : TopoDS_Wire) -> List[TopoDS_Edge]:
     return edges
 
 
+def get_shape_transform(shape, scale=1):
+    gp_trsf = shape.Location().Transformation()
+    matrix = Matrix()
+    for i in range(3): #row
+        for j in range(4) : #col
+            if j == 3 :
+                matrix[i][j] = gp_trsf.Value(i+1, j+1)*scale
+            else :
+                matrix[i][j] = gp_trsf.Value(i+1, j+1)
+    return matrix
+
 
 
 EDGES_TYPES = {'line' : 0,
@@ -414,8 +424,6 @@ EDGES_TYPES = {'line' : 0,
                'circle_arc' : 3,
                'circle' : 4,
                }
-
-
 
 
 def replace_all_instances_of_node_group(old_name, new_name):
