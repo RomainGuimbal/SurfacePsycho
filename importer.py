@@ -26,7 +26,7 @@ from OCP.TDocStd import TDocStd_Document
 from OCP.TopAbs import TopAbs_FORWARD, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
 from OCP.TopLoc import TopLoc_Location
-from OCP.TopoDS import TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
+from OCP.TopoDS import TopoDS, TopoDS_Iterator, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
 from OCP.TopTools import TopTools_IndexedMapOfShape
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorTool
 import OCP.TopAbs as TopAbs
@@ -592,125 +592,101 @@ def build_SP_flat(topodsFace, collection, scale = 0.001):
 
 class ShapeHierarchy:
     def __init__(self, shape, container_name):
-        self.faces = []
+        self.faces = [] # tuples (face, collection)
+        self.edges = [] # tuples (edges, collection)
         self.hierarchy = {}
-        
-        # Create container collection
-        container_collection = bpy.data.collections.new(container_name)
-        bpy.context.scene.collection.children.link(container_collection)
-        self.hierarchy = self.create_shape_hierarchy(shape, container_collection)
+        container_collection = self.create_collection(container_name)
+        self.hierarchy[container_collection] = []
+        iterator = TopoDS_Iterator(shape)
+        while iterator.More():
+            self.hierarchy[container_collection].append(self.create_shape_hierarchy(iterator.Value(), container_collection))
+            iterator.Next()
 
     def create_collection(self, name, parent=None):
         new_collection = bpy.data.collections.new(name)
 
         # If no parent, link to scene collection
-        if parent is None:
+        if parent is None :
             bpy.context.scene.collection.children.link(new_collection)
         else:
             parent.children.link(new_collection)
 
         return new_collection
 
-    def create_shape_hierarchy(self, shape, parent=None):
+    def create_shape_hierarchy(self, shape, parent_col):
         hierarchy = {}
-        
+
         match shape.ShapeType():
             case TopAbs.TopAbs_COMPOUND :
-                hierarchy['Compound'] = []
-                new_collection = self.create_collection('Compound', parent)
-
-                # Explore different children types
-                for subshape_type in [TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_FACE, TopAbs_EDGE]:
-                    exp = TopExp_Explorer(shape, subshape_type)
-                    while exp.More():
-                        hierarchy['Compound'].append(self.create_shape_hierarchy(exp.Current(), new_collection))
-                        exp.Next()
+                hierarchy[parent_col] = []
+                new_collection = self.create_collection('Compound', parent_col)
+                iterator = TopoDS_Iterator(shape)
+                while iterator.More():
+                    hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
+                    iterator.Next()
 
             case TopAbs.TopAbs_COMPSOLID :
-                hierarchy['CompSolid'] = []
-                new_collection = self.create_collection('CompSolid', parent)
-                exp = TopExp_Explorer(shape, TopAbs_SOLID)
-                while exp.More():
-                    hierarchy['CompSolid'].append(self.create_shape_hierarchy(exp.Current(), new_collection))
-                    exp.Next()
+                hierarchy[parent_col] = []
+                new_collection = self.create_collection('CompSolid', parent_col)
+                iterator = TopoDS_Iterator(shape)
+                while iterator.More():
+                    hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
+                    iterator.Next()
         
             case TopAbs.TopAbs_SOLID:
-                hierarchy['Solid'] = []
-                new_collection = self.create_collection('Solid', parent)
-                exp = TopExp_Explorer(shape, TopAbs_SHELL)
-                while exp.More():
-                    hierarchy['Solid'].append(self.create_shape_hierarchy(exp.Current(), new_collection))
-                    exp.Next()
+                hierarchy[parent_col] = []
+                new_collection = self.create_collection('Solid', parent_col)
+                iterator = TopoDS_Iterator(shape)
+                while iterator.More():
+                    hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
+                    iterator.Next()
         
             case TopAbs.TopAbs_SHELL:
-                hierarchy['Shell'] = []
-                new_collection = self.create_collection('Shell', parent)
-                exp = TopExp_Explorer(shape, TopAbs_FACE)
-                while exp.More():
-                    hierarchy['Shell'].append(self.create_shape_hierarchy(exp.Current(), new_collection))
-                    exp.Next()
+                hierarchy[parent_col] = []
+                new_collection = self.create_collection('Shell', parent_col)
+                iterator = TopoDS_Iterator(shape)
+                while iterator.More():
+                    hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
+                    iterator.Next()
         
             case TopAbs.TopAbs_FACE:
                 face = TopoDS.Face_s(shape)
                 hierarchy['Face'] = face
-                self.faces.append(face)
-                # self.add_face_to_flat_list(face)
+                self.faces.append((face, parent_col))
         
-            # case TopAbs.TopAbs_EDGE:
-            #     edge = TopoDS.Edge_s(shape)
-            #     hierarchy['Edge'] = self.add_edge(edge)
-        
+            case TopAbs.TopAbs_EDGE:
+                edge = TopoDS.Edge_s(shape)
+                hierarchy['Edge'] = edge
+                self.edges.append((edge, parent_col))
+                
         return hierarchy
 
 
-# def create_collection_hierarchy(hierarchy, parent=None): #Fuse with create_shape_hierarchy
-#     #Recursively create Blender collections from a dictionary hierarchy.
-#     created_collections = {}
+### TOFIX some edges are not imported with new method, but they where imported with function bellow
+# def find_free_edges(shape):
+#     edge_map = TopTools_IndexedMapOfShape()
+#     face_map = TopTools_IndexedMapOfShape()
     
-#     for key, content in hierarchy.items():
-#         # Create new collection
-#         new_collection = bpy.data.collections.new(key)
-#         created_collections[key] = new_collection
-        
-#         # If no parent, link to scene collection
-#         if parent is None:
-#             bpy.context.scene.collection.children.link(new_collection)
-#         else:
-#             parent.children.link(new_collection)
-            
-#         # Recursively process children if they exist
-#         if isinstance(content, dict):
-#             child_collections = create_collection_hierarchy(content, new_collection)
-#             created_collections.update(child_collections)
+#     exp = TopExp_Explorer(shape, TopAbs_EDGE)
+#     while exp.More():
+#         edge_map.Add(exp.Current())
+#         exp.Next()
     
-#     return created_collections
-
-
-
-def find_free_edges(shape):
-    edge_map = TopTools_IndexedMapOfShape()
-    face_map = TopTools_IndexedMapOfShape()
+#     exp = TopExp_Explorer(shape, TopAbs_FACE)
+#     while exp.More():
+#         face = TopoDS.Face_s(exp.Current())
+#         face_exp = TopExp_Explorer(face, TopAbs_EDGE)
+#         while face_exp.More():
+#             face_map.Add(face_exp.Current())
+#             face_exp.Next()
+#         exp.Next()
     
-    exp = TopExp_Explorer(shape, TopAbs_EDGE)
-    while exp.More():
-        edge_map.Add(exp.Current())
-        exp.Next()
+#     free_edges = []
+#     for i in range(1, edge_map.Size() + 1):
+#         if not face_map.Contains(edge_map.FindKey(i)):
+#             free_edges.append(TopoDS.Edge_s(edge_map.FindKey(i)))
     
-    exp = TopExp_Explorer(shape, TopAbs_FACE)
-    while exp.More():
-        face = TopoDS.Face_s(exp.Current())
-        face_exp = TopExp_Explorer(face, TopAbs_EDGE)
-        while face_exp.More():
-            face_map.Add(face_exp.Current())
-            face_exp.Next()
-        exp.Next()
-    
-    free_edges = []
-    for i in range(1, edge_map.Size() + 1):
-        if not face_map.Contains(edge_map.FindKey(i)):
-            free_edges.append(TopoDS.Edge_s(edge_map.FindKey(i)))
-    
-    return free_edges
+#     return free_edges
 
 
 
@@ -718,7 +694,7 @@ def import_face_nodegroups(shape_hierarchy):
     to_import_ng_names = set()
     face_encountered = set()
 
-    for face in shape_hierarchy.faces: 
+    for face, _ in shape_hierarchy.faces: 
         ft= get_face_type_id(face)
         face_encountered.add(ft)
         match ft:
@@ -732,6 +708,7 @@ def import_face_nodegroups(shape_hierarchy):
                 to_import_ng_names.add("SP - NURBS Patch Meshing")
     
     append_multiple_node_groups(to_import_ng_names)
+
 
 
 def process_topods_face(topods_face, collection, trims_enabled, scale, resolution):
@@ -753,54 +730,40 @@ def process_topods_face(topods_face, collection, trims_enabled, scale, resolutio
 
 
 
-
-
-
-
-
-
-
 def build_SP_from_brep(shape, context, container_name, enabled_entities, scale = .001, resolution = 10):
-    
-    # Create container collection
-    
-    # container_collection = bpy.data.collections.new(container_name)
-    # context.scene.collection.children.link(container_collection)
-    # context.view_layer.active_layer_collection = context.view_layer.layer_collection.children[container_name]
-
-    
-    # Create the hierarchy
+    # Create hierarchy and collections
     shape_hierarchy = ShapeHierarchy(shape, container_name)
 
-    # # progress cursor
-    # wm = bpy.context.window_manager
-    # face_count = len(shape_hierarchy.faces)
-    # wm.progress_begin(0, face_count)
-    # progress = 0
+    # progress cursor
+    wm = bpy.context.window_manager
+    face_count = len(shape_hierarchy.faces) + len(shape_hierarchy.edges)
+    wm.progress_begin(0, face_count)
+    progress = 0
 
-    # trims_enabled = enabled_entities["trim_contours"]
+    trims_enabled = enabled_entities["trim_contours"]
 
-    # # Create SP faces
-    # if enabled_entities["faces"]:
-    #     import_face_nodegroups(shape_hierarchy)
+    # Create SP faces
+    if enabled_entities["faces"]:
+        import_face_nodegroups(shape_hierarchy)
 
-    #     for face in shape_hierarchy.faces:# TODO ThreadPool
-    #         process_topods_face(face, container_collection, trims_enabled, scale, resolution)
-    #         progress+=1
-    #         wm.progress_update(progress)
+        for face,col in shape_hierarchy.faces:# TODO ThreadPool
+            process_topods_face(face, col, trims_enabled, scale, resolution)
+            progress+=1
+            wm.progress_update(progress)
 
-    # # Create SP free edges
-    # if enabled_entities["curves"]:
-    #     append_node_group("SP - Curve Meshing")
+    # Create SP free edges
+    if enabled_entities["curves"]:
+        append_node_group("SP - Curve Meshing")
 
-    #     for edge in find_free_edges(shape):
-    #         build_SP_curve(edge, container_collection, scale, resolution)
+        for edge, col in shape_hierarchy.edges:
+            build_SP_curve(edge, col, scale, resolution)
+            progress+=1
+            wm.progress_update(progress)
 
-    # # # TODO : Add brep relations (face connections...)
+    # TODO : Add brep relations (face connections...)
     
-    # # wm.progress_end()
+    wm.progress_end()
     return True
-
 
 
 
