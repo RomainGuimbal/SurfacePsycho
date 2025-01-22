@@ -591,45 +591,63 @@ def build_SP_flat(topodsFace, collection, scale = 0.001):
 
 
 class ShapeHierarchy:
-    def __init__(self, shape):
+    def __init__(self, shape, container_name):
         self.faces = []
         self.hierarchy = {}
-        self.hierarchy = self.create_shape_hierarchy(shape)
-    
-    # def add_face_to_flat_list(self, face):
-    #     if face not in self.faces:
-    #         self.faces.append(face)
+        
+        # Create container collection
+        container_collection = bpy.data.collections.new(container_name)
+        bpy.context.scene.collection.children.link(container_collection)
+        self.hierarchy = self.create_shape_hierarchy(shape, container_collection)
 
-    def create_shape_hierarchy(self, shape):
+    def create_collection(self, name, parent=None):
+        new_collection = bpy.data.collections.new(name)
+
+        # If no parent, link to scene collection
+        if parent is None:
+            bpy.context.scene.collection.children.link(new_collection)
+        else:
+            parent.children.link(new_collection)
+
+        return new_collection
+
+    def create_shape_hierarchy(self, shape, parent=None):
         hierarchy = {}
+        
         match shape.ShapeType():
             case TopAbs.TopAbs_COMPOUND :
                 hierarchy['Compound'] = []
+                new_collection = self.create_collection('Compound', parent)
+
+                # Explore different children types
                 for subshape_type in [TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_FACE, TopAbs_EDGE]:
                     exp = TopExp_Explorer(shape, subshape_type)
                     while exp.More():
-                        hierarchy['Compound'].append(self.create_shape_hierarchy(exp.Current()))
+                        hierarchy['Compound'].append(self.create_shape_hierarchy(exp.Current(), new_collection))
                         exp.Next()
 
             case TopAbs.TopAbs_COMPSOLID :
                 hierarchy['CompSolid'] = []
+                new_collection = self.create_collection('CompSolid', parent)
                 exp = TopExp_Explorer(shape, TopAbs_SOLID)
                 while exp.More():
-                    hierarchy['CompSolid'].append(self.create_shape_hierarchy(exp.Current()))
+                    hierarchy['CompSolid'].append(self.create_shape_hierarchy(exp.Current(), new_collection))
                     exp.Next()
         
             case TopAbs.TopAbs_SOLID:
                 hierarchy['Solid'] = []
+                new_collection = self.create_collection('Solid', parent)
                 exp = TopExp_Explorer(shape, TopAbs_SHELL)
                 while exp.More():
-                    hierarchy['Solid'].append(self.create_shape_hierarchy(exp.Current()))
+                    hierarchy['Solid'].append(self.create_shape_hierarchy(exp.Current(), new_collection))
                     exp.Next()
         
             case TopAbs.TopAbs_SHELL:
                 hierarchy['Shell'] = []
+                new_collection = self.create_collection('Shell', parent)
                 exp = TopExp_Explorer(shape, TopAbs_FACE)
                 while exp.More():
-                    hierarchy['Shell'].append(self.create_shape_hierarchy(exp.Current()))
+                    hierarchy['Shell'].append(self.create_shape_hierarchy(exp.Current(), new_collection))
                     exp.Next()
         
             case TopAbs.TopAbs_FACE:
@@ -643,6 +661,30 @@ class ShapeHierarchy:
             #     hierarchy['Edge'] = self.add_edge(edge)
         
         return hierarchy
+
+
+# def create_collection_hierarchy(hierarchy, parent=None): #Fuse with create_shape_hierarchy
+#     #Recursively create Blender collections from a dictionary hierarchy.
+#     created_collections = {}
+    
+#     for key, content in hierarchy.items():
+#         # Create new collection
+#         new_collection = bpy.data.collections.new(key)
+#         created_collections[key] = new_collection
+        
+#         # If no parent, link to scene collection
+#         if parent is None:
+#             bpy.context.scene.collection.children.link(new_collection)
+#         else:
+#             parent.children.link(new_collection)
+            
+#         # Recursively process children if they exist
+#         if isinstance(content, dict):
+#             child_collections = create_collection_hierarchy(content, new_collection)
+#             created_collections.update(child_collections)
+    
+#     return created_collections
+
 
 
 def find_free_edges(shape):
@@ -711,27 +753,6 @@ def process_topods_face(topods_face, collection, trims_enabled, scale, resolutio
 
 
 
-def create_collection_hierarchy(hierarchy, parent=None):
-    #Recursively create Blender collections from a dictionary hierarchy.
-    created_collections = {}
-    
-    for key, content in hierarchy.items():
-        # Create new collection
-        new_collection = bpy.data.collections.new(key)
-        created_collections[key] = new_collection
-        
-        # If no parent, link to scene collection
-        if parent is None:
-            bpy.context.scene.collection.children.link(new_collection)
-        else:
-            parent.children.link(new_collection)
-            
-        # Recursively process children if they exist
-        if isinstance(content, dict):
-            child_collections = create_collection_hierarchy(content, new_collection)
-            created_collections.update(child_collections)
-    
-    return created_collections
 
 
 
@@ -743,43 +764,41 @@ def build_SP_from_brep(shape, context, container_name, enabled_entities, scale =
     
     # Create container collection
     
-    container_collection = bpy.data.collections.new(container_name)
-    context.scene.collection.children.link(container_collection)
-    context.view_layer.active_layer_collection = context.view_layer.layer_collection.children[container_name]
+    # container_collection = bpy.data.collections.new(container_name)
+    # context.scene.collection.children.link(container_collection)
+    # context.view_layer.active_layer_collection = context.view_layer.layer_collection.children[container_name]
 
     
     # Create the hierarchy
-    shape_hierarchy = ShapeHierarchy(shape)
+    shape_hierarchy = ShapeHierarchy(shape, container_name)
+
+    # # progress cursor
+    # wm = bpy.context.window_manager
+    # face_count = len(shape_hierarchy.faces)
+    # wm.progress_begin(0, face_count)
+    # progress = 0
+
+    # trims_enabled = enabled_entities["trim_contours"]
+
+    # # Create SP faces
+    # if enabled_entities["faces"]:
+    #     import_face_nodegroups(shape_hierarchy)
+
+    #     for face in shape_hierarchy.faces:# TODO ThreadPool
+    #         process_topods_face(face, container_collection, trims_enabled, scale, resolution)
+    #         progress+=1
+    #         wm.progress_update(progress)
+
+    # # Create SP free edges
+    # if enabled_entities["curves"]:
+    #     append_node_group("SP - Curve Meshing")
+
+    #     for edge in find_free_edges(shape):
+    #         build_SP_curve(edge, container_collection, scale, resolution)
+
+    # # # TODO : Add brep relations (face connections...)
     
-    collection_map = create_collection_hierarchy(shape_hierarchy.hierarchy, parent=container_collection)
-
-    # progress cursor
-    wm = bpy.context.window_manager
-    face_count = len(shape_hierarchy.faces)
-    wm.progress_begin(0, face_count)
-    progress = 0
-
-    trims_enabled = enabled_entities["trim_contours"]
-
-    # Create SP faces
-    if enabled_entities["faces"]:
-        import_face_nodegroups(shape_hierarchy)
-
-        for face in shape_hierarchy.faces:# TODO ThreadPool
-            process_topods_face(face, container_collection, trims_enabled, scale, resolution)
-            progress+=1
-            wm.progress_update(progress)
-
-    # Create SP free edges
-    if enabled_entities["curves"]:
-        append_node_group("SP - Curve Meshing")
-
-        for edge in find_free_edges(shape):
-            build_SP_curve(edge, container_collection, scale, resolution)
-
-    # # TODO : Add brep relations (face connections...)
-    
-    # wm.progress_end()
+    # # wm.progress_end()
     return True
 
 
