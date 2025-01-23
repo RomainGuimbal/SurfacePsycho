@@ -108,7 +108,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         bpy.context.collection.objects.link(self.obj)
 
         add_sp_modifier(self.obj, "SP - Reorder Grid Index", add_mode = True)
-        add_sp_modifier(self.obj, "SP - Bezier Patch Continuities", add_mode = True)
+        add_sp_modifier(self.obj, "SP - Bezier Patch Continuities", {"Continuity Level" : 3}, add_mode = True)
         add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", pin=True, add_mode = True)
 
         # Set object location to 3D cursor
