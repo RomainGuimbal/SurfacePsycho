@@ -14,7 +14,7 @@ from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
 from OCP.TopoDS import TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
 from OCP.TColStd import TColStd_Array1OfReal
-from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Circ2d, gp_Dir2d #, gp_Vec
+from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Trsf, gp_Circ2d, gp_Dir2d #, gp_Vec
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 from OCP.TDataStd import TDataStd_Name
@@ -68,8 +68,11 @@ def get_face_type_name(TopoDSface : TopoDS_Face):
 
 
 def geom_type_of_object(o, context):
-    if o.type == 'EMPTY' and o.instance_collection != None :
-        return 'collection_instance'
+    if o.type == 'EMPTY' :
+        if o.instance_collection != None :
+            return 'instance'
+        else :
+            return 'empty'
     else : 
         ob = o.evaluated_get(context.evaluated_depsgraph_get())
         if hasattr(ob.data, "attributes") :
@@ -412,6 +415,11 @@ def get_edges_from_wire(wire : TopoDS_Wire) -> List[TopoDS_Edge]:
 
 def get_shape_transform(shape, scale=1):
     gp_trsf = shape.Location().Transformation()
+    matrix = gp_trsf_to_blender_matrix(gp_trsf, scale)
+    return matrix
+
+
+def gp_trsf_to_blender_matrix(gp_trsf, scale=1):
     matrix = Matrix()
     for i in range(3): #row
         for j in range(4) : #col
@@ -421,24 +429,35 @@ def get_shape_transform(shape, scale=1):
                 matrix[i][j] = gp_trsf.Value(i+1, j+1)
     return matrix
 
+def blender_matrix_to_gp_trsf(mat : Matrix, scale=1):
+    gp_trsf = gp_Trsf()
+    gp_trsf.SetValues(mat[0][0], mat[0][1], mat[0][2], mat[0][3]*scale,
+                      mat[1][0], mat[1][1], mat[1][2], mat[1][3]*scale,
+                      mat[2][0], mat[2][1], mat[2][2], mat[2][3]*scale)
+    return gp_trsf
+
+
+
+
+
 
 def get_shape_name_and_color(shape, doc):
     name = None
     color = (0.8, 0.8, 0.8)
-    
-    # Get shape label
-    label = TDF_Label()
-    if XCAFDoc_DocumentTool.ShapeTool_GetID(doc).FindShape(shape, label):
-        # Get name
-        name_attr = TDataStd_Name()
-        if label.FindAttribute(TDataStd_Name.GetID_(), name_attr):
-            name = name_attr.Get().PrintToString()
-        
-        # Get color
-        color_tool = XCAFDoc_DocumentTool.ColorTool_(doc.Main())
-        color = Quantity_Color()
-        if color_tool.GetColor(shape, XCAFDoc_ColorGen, color):
-            color = (color.Red(), color.Green(), color.Blue())
+    if doc !=None :
+        # Get shape label
+        label = TDF_Label()
+        if XCAFDoc_DocumentTool.ShapeTool_GetID(doc).FindShape(shape, label):
+            # Get name
+            name_attr = TDataStd_Name()
+            if label.FindAttribute(TDataStd_Name.GetID_(), name_attr):
+                name = name_attr.Get().PrintToString()
+            
+            # Get color
+            color_tool = XCAFDoc_DocumentTool.ColorTool_(doc.Main())
+            color = Quantity_Color()
+            if color_tool.GetColor(shape, XCAFDoc_ColorGen, color):
+                color = (color.Red(), color.Green(), color.Blue())
     return name, color
 
 

@@ -12,7 +12,7 @@ if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
 
-from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeSolid
 from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment, GC_MakeCircle
 from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle, GCE2d_MakeCircle
 from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_Plane, Geom_BezierCurve, Geom_BSplineCurve
@@ -27,9 +27,9 @@ from OCP.ShapeFix import ShapeFix_Face
 from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
-from OCP.TopoDS import TopoDS_Shape, TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
+from OCP.TopoDS import TopoDS_Shape, TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound, TopoDS_Iterator
 # from OCP.TopTools import TopTools_Array1OfShape
-
+import OCP.TopAbs as TopAbs
 
 
 ##############################
@@ -526,8 +526,7 @@ def geom_to_topods_face(geom_surf = None, outer_wire = None, inner_wires=[]):
 
 
 
-
-def new_brep_bezier_face(o, context, scale=1000):
+def bezier_face_to_topods(o, context, scale=1000):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
@@ -564,7 +563,7 @@ def new_brep_bezier_face(o, context, scale=1000):
 
 
 
-def new_brep_NURBS_face(o, context, scale=1000):
+def NURBS_face_to_topods(o, context, scale=1000):
     # Get attributes
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
@@ -629,8 +628,7 @@ def new_brep_NURBS_face(o, context, scale=1000):
 
 
 
-# class SP_Curve_obj_export :?
-def new_brep_curve(o, context, scale=1000):
+def curve_to_topods(o, context, scale=1000):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     segs_p_counts = get_attribute_by_name(ob, 'CP_count', 'int')
@@ -676,16 +674,16 @@ def new_brep_curve(o, context, scale=1000):
                         'isperiodic':[is_closed]*segment_count,
                         'isclamped':[is_clamped]*segment_count,
                         'circle': circle_att}, is2D = False)
-    brep_wire = wire.get_topods_wire()
+    topods_wire = wire.get_topods_wire()
 
-    return brep_wire
-
-
+    return topods_wire
 
 
 
 
-def new_brep_flat_face(o, context, scale=1000):
+
+
+def flat_patch_to_topods(o, context, scale=1000):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     
@@ -721,6 +719,14 @@ def new_brep_flat_face(o, context, scale=1000):
 
 
 
+def empty_to_topods(o, context, scale=1000):
+
+    # Orient and offset
+    gp_trsf = blender_matrix_to_gp_trsf(o.matrix_world, scale)
+    gp_pln = gp_Pln(gp_Pnt(0,0,0), gp_Dir(0,0,1)).Transformed(gp_trsf)
+    # gp_pnt = TopoDS_Vertex(gp_Pnt(0,0,0).Transformed(gp_trsf)) vertices cannot be exported :c
+    topods_plane = geom_to_topods_face(Geom_Plane(gp_pln))
+    return topods_plane
 
 
 
@@ -730,8 +736,7 @@ def new_brep_flat_face(o, context, scale=1000):
 
 
 
-
-def mirror_brep(o, shape, scale=1000):
+def mirror_topods_shape(o, shape, scale=1000):
     ms = BRepBuilderAPI_Sewing(1e-1)
     ms.SetNonManifoldMode(True)
     ms.Add(shape)
@@ -811,6 +816,7 @@ def prepare_brep(context, use_selection, axis_up, axis_forward, scale = 1000):
     aShape = TopoDS_Shape()
     aSew = BRepBuilderAPI_Sewing(1e-1)
     SPobj_count=0
+    separated_shapes_list = []
 
     if use_selection:
         initial_selection = context.selected_objects
@@ -830,25 +836,25 @@ def prepare_brep(context, use_selection, axis_up, axis_forward, scale = 1000):
             match gto :
                 case "bezier_surf" :
                     SPobj_count +=1
-                    af = new_brep_bezier_face(o, context, scale)
-                    aSew.Add(mirror_brep(o, af, scale))
+                    af = bezier_face_to_topods(o, context, scale)
+                    aSew.Add(mirror_topods_shape(o, af, scale))
 
                 case "NURBS_surf" :
                     SPobj_count +=1
-                    nf = new_brep_NURBS_face(o, context, scale)
-                    aSew.Add(mirror_brep(o, nf, scale))
+                    nf = NURBS_face_to_topods(o, context, scale)
+                    aSew.Add(mirror_topods_shape(o, nf, scale))
 
                 case "planar" :
                     SPobj_count +=1
-                    pf = new_brep_flat_face(o, context, scale)
-                    aSew.Add(mirror_brep(o, pf, scale))
+                    pf = flat_patch_to_topods(o, context, scale)
+                    aSew.Add(mirror_topods_shape(o, pf, scale))
 
                 case "curve" :
                     SPobj_count +=1
-                    cu = new_brep_curve(o, context, scale)
-                    aSew.Add(mirror_brep(o, cu, scale))
+                    cu = curve_to_topods(o, context, scale)
+                    aSew.Add(mirror_topods_shape(o, cu, scale))
 
-                # case "collection_instance":
+                # case "instance":
                 #     pass
                     # self.report({'INFO'}, 'Collection instances will not export')
                     # empty_mw = o.matrix_world
@@ -858,23 +864,60 @@ def prepare_brep(context, use_selection, axis_up, axis_forward, scale = 1000):
                     #     dupli.matrix_world = empty_mw @ dupli.matrix_world # not recursive compliant? :/
                     #     obj_newly_real.append(dupli) #flag the new objects
                     #     context.scene.collection.objects.link(dupli)
+                
+                case "empty" :
+                    empty = empty_to_topods(o, context, scale)
+                    separated_shapes_list.append(empty)
+
 
         obj_list=[]
         for onr in obj_newly_real:
             obj_list.append(onr)
             obj_to_del.append(onr)
-
-    for o in obj_to_del : # clear realized objects
+    
+    if SPobj_count==0 :
+            return None
+    
+    # clear realized objects
+    for o in obj_to_del : 
         bpy.data.objects.remove(o, do_unlink=True)
 
+    # Sew
     aSew.SetNonManifoldMode(True)
     aSew.Perform()
     aShape = aSew.SewedShape()
     
-    if SPobj_count>0 :
-        return aShape
+    # Shell(s) to solid(s)
+    # if compound, decompose
+    if aShape.ShapeType() == TopAbs.TopAbs_COMPOUND :
+        # shells to solids :
+        iterator = TopoDS_Iterator(aShape)
+        while iterator.More():
+            sh = iterator.Value()
+            if sh.ShapeType() == TopAbs.TopAbs_SHELL :
+                make_solid = BRepBuilderAPI_MakeSolid(sh)
+                if make_solid.IsDone():
+                    separated_shapes_list.append(make_solid.Solid())
+                else :
+                    separated_shapes_list.append(sh)
+                    print("None Manifold Shell ?")
+            else :
+                print(f"Unexpected shape of type {TopAbs.ShapeTypeToString(sh.ShapeType())}")
+            iterator.Next()
+    # Single shell
+    elif aShape.ShapeType() == TopAbs.TopAbs_SHELL :
+        make_solid = BRepBuilderAPI_MakeSolid(aShape)
+        if make_solid.IsDone():
+            separated_shapes_list.append(make_solid.Solid())
+        else :
+            separated_shapes_list.append(aShape)
+            print("None Manifold Shell ?")
     else :
-        return None
+        separated_shapes_list.append(aShape)
+        print(f"Unexpected shape of type {TopAbs.ShapeTypeToString(aShape.ShapeType())}")
+
+    return aShape
+
 
 
 
