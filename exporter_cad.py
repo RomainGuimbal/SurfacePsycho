@@ -13,6 +13,7 @@ if file_dirname not in sys.path:
 
 
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeSolid
+from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment, GC_MakeCircle
 from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle, GCE2d_MakeCircle
 from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_Plane, Geom_BezierCurve, Geom_BSplineCurve
@@ -27,7 +28,7 @@ from OCP.ShapeFix import ShapeFix_Face
 from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
-from OCP.TopoDS import TopoDS_Shape, TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound, TopoDS_Iterator
+from OCP.TopoDS import TopoDS_Shape, TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound, TopoDS_Iterator, TopoDS_Shell, TopoDS_Solid
 # from OCP.TopTools import TopTools_Array1OfShape
 import OCP.TopAbs as TopAbs
 
@@ -888,35 +889,10 @@ def prepare_brep(context, use_selection, axis_up, axis_forward, scale = 1000):
     aShape = aSew.SewedShape()
     
     # Shell(s) to solid(s)
-    # if compound, decompose
-    if aShape.ShapeType() == TopAbs.TopAbs_COMPOUND :
-        # shells to solids :
-        iterator = TopoDS_Iterator(aShape)
-        while iterator.More():
-            sh = iterator.Value()
-            if sh.ShapeType() == TopAbs.TopAbs_SHELL :
-                make_solid = BRepBuilderAPI_MakeSolid(sh)
-                if make_solid.IsDone():
-                    separated_shapes_list.append(make_solid.Solid())
-                else :
-                    separated_shapes_list.append(sh)
-                    print("None Manifold Shell ?")
-            else :
-                print(f"Unexpected shape of type {TopAbs.ShapeTypeToString(sh.ShapeType())}")
-            iterator.Next()
-    # Single shell
-    elif aShape.ShapeType() == TopAbs.TopAbs_SHELL :
-        make_solid = BRepBuilderAPI_MakeSolid(aShape)
-        if make_solid.IsDone():
-            separated_shapes_list.append(make_solid.Solid())
-        else :
-            separated_shapes_list.append(aShape)
-            print("None Manifold Shell ?")
-    else :
-        separated_shapes_list.append(aShape)
-        print(f"Unexpected shape of type {TopAbs.ShapeTypeToString(aShape.ShapeType())}")
+    separated_shapes_list.extend(shells_to_solids(aShape))
+    compound = shape_list_to_compound(separated_shapes_list)
 
-    return aShape
+    return compound
 
 
 

@@ -8,11 +8,12 @@ from typing import List, Tuple
 from os.path import dirname, abspath, join
 
 from OCP.BRep import BRep_Builder
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
-from OCP.TopoDS import TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
+from OCP.TopoDS import TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound, TopoDS_Iterator, TopoDS_Shell, TopoDS_Solid
 from OCP.TColStd import TColStd_Array1OfReal
 from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Trsf, gp_Circ2d, gp_Dir2d #, gp_Vec
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
@@ -21,6 +22,8 @@ from OCP.TDataStd import TDataStd_Name
 from OCP.TDF import TDF_Label
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorGen
 from OCP.Quantity import Quantity_Color
+from OCP.BRepCheck import BRepCheck_Analyzer
+import OCP.TopAbs as TopAbs
 
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
@@ -534,3 +537,50 @@ def list_of_shapes_to_compound(
             continue
         the_builder.Add(the_compound, shp)
     return the_compound, all_shapes_converted
+
+
+
+def shape_list_to_compound(shape_list : list[TopoDS_Shape]) -> TopoDS_Compound :
+    builder = BRep_Builder()
+    compound = TopoDS_Compound()
+    builder.MakeCompound(compound)
+    
+    for shape in shape_list:
+        builder.Add(compound, shape)
+    
+    return compound
+
+
+def shells_to_solids(topods_shape : TopoDS_Shape):
+    separated_shapes_list =[]
+    # if compound, decompose
+    if topods_shape.ShapeType() == TopAbs.TopAbs_COMPOUND :
+        # shells to solids :
+        iterator = TopoDS_Iterator(topods_shape)
+        while iterator.More():
+            sh = iterator.Value()
+            if sh.ShapeType() == TopAbs.TopAbs_SHELL :
+                make_solid = BRepBuilderAPI_MakeSolid(TopoDS.Shell_s(sh))
+                analyzer = BRepCheck_Analyzer(make_solid.Shape())
+                if make_solid.IsDone() and analyzer.IsValid():
+                    separated_shapes_list.append(make_solid.Solid())
+                else :
+                    separated_shapes_list.append(sh)
+                    print("None Manifold Shell")
+            else :
+                print(f"Unexpected shape of type {topods_shape.ShapeType()}")
+            iterator.Next()
+    # Single shell
+    elif topods_shape.ShapeType() == TopAbs.TopAbs_SHELL :
+        make_solid = BRepBuilderAPI_MakeSolid(TopoDS.Shell_s(topods_shape))
+        analyzer = BRepCheck_Analyzer(make_solid.Shape())
+        if make_solid.IsDone() and analyzer.IsValid():
+            separated_shapes_list.append(make_solid.Solid())
+        else :
+            separated_shapes_list.append(topods_shape)
+            print("None Manifold Shell")
+    else :
+        separated_shapes_list.append(topods_shape)
+        print(f"Unexpected shape of type {topods_shape.ShapeType()}")
+
+    return separated_shapes_list
