@@ -817,8 +817,8 @@ class SP_OT_add_oriented_empty(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
-        obj = context.objects_in_mode[0]
         if bpy.context.mode == 'EDIT_MESH' :
+            obj = context.objects_in_mode[0]
             bm = bmesh.from_edit_mesh(obj.data)
             
             # Get selected vertices

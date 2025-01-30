@@ -8,7 +8,8 @@ from . import macros
 # from .macros import SP_Props_Group
 
 
-from .importer import import_cad
+from .importer import prepare_import, topods_to_sp_patch_generator, topods_to_sp_curve_generator, ShapeHierarchy, import_face_nodegroups
+from .utils import append_node_group
 from .exporter_cad import export_step, export_iges
 from .exporter_svg import export_svg
 
@@ -59,17 +60,86 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
     faces: BoolProperty(name="Faces", description="Import Faces", default=True)
     trim_contours: BoolProperty(name="Trim Contours", description="Import faces with their trim contours", default=True)
-    curves: BoolProperty(name="Curves", description="Import Curves", default=False)
+    curves: BoolProperty(name="Curves", description="Import Curves", default=True)
     scale: FloatProperty(name="Scale", default=.001, precision=3)
     resolution : IntProperty(name="Resolution", default=10, soft_min = 6, soft_max=256)
 
-    def modal(self, context, event):
-        return {'PASS_THROUGH'}
-
     def execute(self, context):
-        import_cad(self.filepath, {"faces":self.faces, "curves":self.curves, "trim_contours":self.trim_contours,}, self.scale, self.resolution)
-        self.report({'INFO'}, 'Some surface types may have been ignored')
+        # Initialize your CAD import generator
+        shape, doc, container_name = prepare_import(self.filepath)
+        
+        # Create hierarchy and collections
+        shape_hierarchy = ShapeHierarchy(shape, container_name)
+        shape_count= len(shape_hierarchy.faces) + len(shape_hierarchy.edges)
+
+        # Face generator
+        if self.faces:
+            import_face_nodegroups(shape_hierarchy)
+            self.generator1 = topods_to_sp_patch_generator(shape_hierarchy.faces, doc, self.trim_contours, self.scale, self.resolution)
+        self.generator1_active = self.faces
+
+         # Curve generator
+        if self.curves:
+            append_node_group("SP - Curve Meshing")
+            self.generator2 = topods_to_sp_curve_generator(shape_hierarchy.edges, doc, self.scale, self.resolution)
+        self.generator2_active = self.curves
+
+        self.objects_processed = 0
+        self.batch_size = 500  # Adjust based on performance
+        
+        # Setup progress bar
+        wm = context.window_manager
+        wm.progress_begin(0, shape_count)  # Set total to your object count
+        
+        # Add timer to trigger modal updates
+        self.timer = wm.event_timer_add(0.01, window=context.window)
+        wm.modal_handler_add(self)
+        
+        # import cProfile
+        # profiler = cProfile.Profile()
+        # profiler.enable()
+
+        # profiler.disable()
+        # profiler.print_stats()
+        
+        #self.report({'INFO'}, 'Shapes of unsupported types are ignored')
         return {'RUNNING_MODAL'}
+    
+    def modal(self, context, event):
+        if event.type == 'TIMER':
+            for _ in range(self.batch_size):
+                if self.generator1_active:
+                    try:
+                        # Run a step of generator 1 if it's still active
+                        next(self.generator1)
+                        self.objects_processed += 1
+                    except StopIteration:
+                        # Mark generator 1 as finished
+                        self.generator1_active = False
+                
+                if self.generator2_active:
+                    try:
+                        # Run a step of generator 2 if it's still active
+                        next(self.generator2)
+                        self.objects_processed += 1
+                    except StopIteration:
+                        # Mark generator 2 as finished
+                        self.generator2_active = False
+                # Update progress
+                context.window_manager.progress_update(self.objects_processed)
+
+            if not self.generator1_active and not self.generator2_active:
+                # Both tasks are done
+                context.window_manager.progress_end()
+                context.window_manager.event_timer_remove(self.timer)
+                return {'FINISHED'}
+
+            # Redraw the UI
+            context.area.tag_redraw()
+            
+            return {'PASS_THROUGH'}
+        
+        return {'PASS_THROUGH'}
 
 
 

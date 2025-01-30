@@ -746,49 +746,17 @@ def process_topods_face(topods_face, doc, collection, trims_enabled, scale, reso
 
 
 
+def topods_to_sp_patch_generator(faces, doc, trims_enabled, scale, resolution):
+    for f, col in faces :
+        process_topods_face(f, doc, col, trims_enabled, scale, resolution)
+        yield
 
-def build_SP_from_brep(shape, doc, container_name, enabled_entities, scale = .001, resolution = 10):
-    # Create hierarchy and collections
-    shape_hierarchy = ShapeHierarchy(shape, container_name)
+def topods_to_sp_curve_generator(edges, doc, scale, resolution):
+    for e, col in edges :
+        build_SP_curve(e, doc, col, scale, resolution)
+        yield
 
-    # progress cursor
-    wm = bpy.context.window_manager
-    face_count = len(shape_hierarchy.faces) + len(shape_hierarchy.edges)
-    wm.progress_begin(0, face_count)
-    progress = 0
-
-    trims_enabled = enabled_entities["trim_contours"]
-
-    # Create SP faces
-    if enabled_entities["faces"]:
-        import_face_nodegroups(shape_hierarchy)
-
-        for face, col in shape_hierarchy.faces:# TODO ThreadPool
-            process_topods_face(face, doc, col, trims_enabled, scale, resolution)
-            progress+=1
-            wm.progress_update(progress)
-
-    # Create SP free edges
-    if enabled_entities["curves"]:
-        append_node_group("SP - Curve Meshing")
-
-        for edge, col in shape_hierarchy.edges:
-            build_SP_curve(edge, doc, col, scale, resolution)
-            progress+=1
-            wm.progress_update(progress)
-
-    # TODO : Add brep relations (face connections...)
-    
-    wm.progress_end()
-    return True
-
-
-
-
-
-
-
-def import_cad(filepath, enabled_entities, scale=.001, resolution=10):
+def prepare_import(filepath):
     # Create document
     doc = None
 
@@ -814,12 +782,7 @@ def import_cad(filepath, enabled_entities, scale=.001, resolution=10):
     
     container_name = splitext(split(filepath)[1])[0]
 
-    # import cProfile
-    # profiler = cProfile.Profile()
-    # profiler.enable()
-    build_SP_from_brep(shape, doc, container_name, enabled_entities, scale, resolution)
-    # profiler.disable()
-    # profiler.print_stats()
+    return shape, doc, container_name
 
 
 

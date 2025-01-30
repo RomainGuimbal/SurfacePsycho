@@ -17,14 +17,13 @@ from OCP.TopoDS import TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Sha
 from OCP.TColStd import TColStd_Array1OfReal
 from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Trsf, gp_Circ2d, gp_Dir2d #, gp_Vec
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
-from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
+from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal, TColStd_HArray1OfReal, TColStd_HArray1OfInteger
 from OCP.TDataStd import TDataStd_Name
 from OCP.TDF import TDF_Label
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorGen
 from OCP.Quantity import Quantity_Color
 from OCP.BRepCheck import BRepCheck_Analyzer
 import OCP.TopAbs as TopAbs
-
 
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
@@ -260,7 +259,11 @@ def add_vertex_group(object, name, values):
 
 
 def tcolstd_array1_to_list(array):
-    return [array.Value(i) for i in range(array.Lower(), array.Upper() + 1)]
+    # Check if it's a handle and extract the array
+    if isinstance(array, TColStd_HArray1OfReal) or isinstance(array, TColStd_HArray1OfInteger) :
+        return list(array)
+    else:
+        return [array.Value(i) for i in range(array.Lower(), array.Upper() + 1)]
 
 def gp_list_to_arrayofpnt(array: list):
     tcol = TColgp_Array1OfPnt(1, len(array))
