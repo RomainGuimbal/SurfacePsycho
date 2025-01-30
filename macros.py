@@ -810,7 +810,63 @@ class SP_OT_solidify(bpy.types.Operator):
 # Bridge patches
 
 
+class SP_OT_add_oriented_empty(bpy.types.Operator):
+    bl_idname = "sp.add_oriented_empty"
+    bl_label = "Add Oriented Empty"
+    bl_description = "Add oriented empty from 3 vertices"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        obj = context.objects_in_mode[0]
+        if bpy.context.mode == 'EDIT_MESH' :
+            bm = bmesh.from_edit_mesh(obj.data)
+            
+            # Get selected vertices
+            selected_verts = [v for v in bm.verts if v.select]
+            
+            if len(selected_verts) < 3:
+                self.report({'INFO'}, "Select 3 vertices")
+                return {'CANCELLED'}
+            
+            # Get the first three selected vertices
+            v1, v2, v3 = selected_verts[:3]
 
+            # For display later
+            longest_length = (max(max((v1.co - v2.co).length, (v2.co - v3.co).length), (v3.co - v1.co).length))/1.9
+            
+            # Calculate the centroid of the triangle
+            centroid = (v1.co + v2.co + v3.co) / 3
+            
+            # Calculate the normal of the triangle
+            normal = (v2.co - v1.co).cross(v3.co - v1.co).normalized()
+            
+            # Calculate the rotation matrix to align the empty's Z-axis with the normal
+            z_axis = normal
+            x_axis = (v2.co - v1.co).normalized()
+            y_axis = z_axis.cross(x_axis).normalized()
+            
+            rotation_matrix = Matrix((x_axis, y_axis, z_axis)).transposed()
+            
+            # Create the empty
+            bpy.ops.object.mode_set(mode='OBJECT')
+            empty = bpy.data.objects.new("OrientedEmpty", None)
+            bpy.context.collection.objects.link(empty)
+            
+            # Set the empty's location and rotation
+            empty.location = centroid
+            empty.rotation_mode = 'QUATERNION'
+            empty.rotation_quaternion = rotation_matrix.to_quaternion()
+        
+            # Force update the object's transformation matrices
+            context.view_layer.update()
+            empty.matrix_world =  obj.matrix_world @ empty.matrix_world
+
+            # Empty display
+            empty.empty_display_type = 'CUBE'
+            empty.empty_display_size = longest_length
+            empty.scale = Vector((1.0, 1.0, 0.0))
+        
+        return {'FINISHED'}
 
 
 
@@ -829,6 +885,7 @@ classes = [
     SP_OT_add_curve,
     SP_OT_add_flat_patch,
     SP_OT_add_library,
+    SP_OT_add_oriented_empty,
     SP_OT_add_trim_contour,
     SP_OT_assign_as_circle,
     SP_OT_assign_as_endpoint,
