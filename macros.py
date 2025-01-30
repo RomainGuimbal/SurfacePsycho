@@ -864,7 +864,7 @@ class SP_OT_add_oriented_empty(bpy.types.Operator):
             # Empty display
             empty.empty_display_type = 'CUBE'
             empty.empty_display_size = longest_length
-            empty.scale = Vector((1.0, 1.0, 0.0))
+            empty.scale = Vector((1.0, 1.0, 0.01))
         
         return {'FINISHED'}
 

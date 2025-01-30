@@ -556,12 +556,14 @@ def shape_list_to_compound(shape_list : list[TopoDS_Shape]) -> TopoDS_Compound :
 
 def shells_to_solids(topods_shape : TopoDS_Shape):
     separated_shapes_list =[]
+    
     # if compound, decompose
     if topods_shape.ShapeType() == TopAbs.TopAbs_COMPOUND :
         # shells to solids :
         iterator = TopoDS_Iterator(topods_shape)
         while iterator.More():
             sh = iterator.Value()
+            # Shell
             if sh.ShapeType() == TopAbs.TopAbs_SHELL :
                 make_solid = BRepBuilderAPI_MakeSolid(TopoDS.Shell_s(sh))
                 analyzer = BRepCheck_Analyzer(make_solid.Shape())
@@ -570,9 +572,14 @@ def shells_to_solids(topods_shape : TopoDS_Shape):
                 else :
                     separated_shapes_list.append(sh)
                     print("None Manifold Shell")
+            # Face
+            elif sh.ShapeType() == TopAbs.TopAbs_FACE :
+                separated_shapes_list.append(sh)
+            # Other
             else :
                 print(f"Unexpected shape of type {topods_shape.ShapeType()}")
             iterator.Next()
+
     # Single shell
     elif topods_shape.ShapeType() == TopAbs.TopAbs_SHELL :
         make_solid = BRepBuilderAPI_MakeSolid(TopoDS.Shell_s(topods_shape))
@@ -582,6 +589,10 @@ def shells_to_solids(topods_shape : TopoDS_Shape):
         else :
             separated_shapes_list.append(topods_shape)
             print("None Manifold Shell")
+    # Face
+    elif sh.ShapeType() == TopAbs.TopAbs_FACE :
+        separated_shapes_list.append(topods_shape)
+    # other
     else :
         separated_shapes_list.append(topods_shape)
         print(f"Unexpected shape of type {topods_shape.ShapeType()}")
