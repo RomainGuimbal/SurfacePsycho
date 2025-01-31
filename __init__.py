@@ -24,22 +24,7 @@ bl_info = {
 }
 
 import bpy
-import os
 import sys
-
-def add_ocp_dll_path():
-    site_packages = next(p for p in sys.path if 'site-packages' in p)
-    platlib_path = os.path.join(site_packages, 'cadquery_ocp-7.7.2.data', 'platlib')
-    
-    try:
-        os.add_dll_directory(platlib_path)
-        print(f"Added DLL directory: {platlib_path}")
-    except Exception as e:
-        print(f"Could not add DLL directory: {e}")
-
-# Call this before importing any OCP modules
-add_ocp_dll_path()
-
 
 from os.path import dirname
 file_dirname = dirname(__file__)
