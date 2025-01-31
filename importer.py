@@ -398,7 +398,7 @@ def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled,
     sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
     sp_surf.add_modifier("SP - Cylindrical Meshing", 
                          {"Use Trim Contour":trims_enabled, 
-                          "Flip Normals" : topods_face.Orientation()==TopAbs_REVERSED,
+                          "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
                           "Scaling Method":1,}, pin=True)
     return True
 
@@ -428,7 +428,7 @@ def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0
                            {"Use Trim Contour":trims_enabled,
                             "Resolution U": resolution,
                             "Resolution V": resolution,
-                            "Flip Normals" : topods_face.Orientation()==TopAbs_REVERSED,
+                            "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
                             "Scaling Method":1}, pin=True)
     return True
 
@@ -515,7 +515,7 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
                         "Degree U": udeg,# INVERTED /!\
                         "Resolution U": resolution,
                         "Resolution V": resolution, 
-                        "Flip Normals" : topods_face.Orientation()==TopAbs_REVERSED,
+                        "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
                         "Use Trim Contour":trims_enabled, "Scaling Method": 1,
                         "Endpoint U" : u_clamped, "Endpoint V" : v_clamped,
                         "Cyclic U": u_periodic,  "Cyclic V": v_periodic}, pin=True)
@@ -595,7 +595,7 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
     collection.objects.link(ob)
     add_sp_modifier(ob, "SP - FlatPatch Meshing", 
                     {'Orient': True,
-                    "Flip Normal" : topods_face.Orientation()==TopAbs_REVERSED,}, pin=True)
+                    "Flip Normal" : topods_face.Orientation()!=TopAbs_REVERSED,}, pin=True)
     
     return True
 
