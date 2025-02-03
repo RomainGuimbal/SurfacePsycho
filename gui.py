@@ -89,7 +89,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         
         # Setup progress bar
         wm = context.window_manager
-        wm.progress_begin(0, shape_count)  # Set total to your object count
+        wm.progress_begin(0, shape_count)
         
         # Add timer to trigger modal updates
         self.timer = wm.event_timer_add(0.01, window=context.window)
@@ -129,7 +129,6 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
                 context.window_manager.progress_update(self.objects_processed)
 
             if not self.generator1_active and not self.generator2_active:
-                # Both tasks are done
                 context.window_manager.progress_end()
                 context.window_manager.event_timer_remove(self.timer)
                 return {'FINISHED'}

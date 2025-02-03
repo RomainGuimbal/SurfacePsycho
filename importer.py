@@ -191,7 +191,7 @@ class SP_Edge_import :
 
 
 class SP_Wire_import :
-    def __init__(self, topods_wire: TopoDS_Wire=None, scale=1, CP =[], topods_face = None, segs_p_counts=None, segs_degrees=None):
+    def __init__(self, topods_wire: TopoDS_Wire, scale=1, topods_face = None):
         self.CP = [] #Vectors, bmesh format
         # Import
         if topods_wire!=None:
@@ -250,9 +250,9 @@ class SP_Contour_import :
 
         for w in self.wires :
             if scale!=None:
-                sp_wire = SP_Wire_import(topods_wire=w, scale = scale)
+                sp_wire = SP_Wire_import(w, scale = scale)
             else :
-                sp_wire = SP_Wire_import(topods_wire=w, topods_face=topodsface)
+                sp_wire = SP_Wire_import(w, topods_face=topodsface)
                 
             _, self.edges, _ = join_mesh_entities(self.verts, self.edges, [], sp_wire.CP, sp_wire.bmesh_edges, [])
             self.verts.extend(sp_wire.CP)
@@ -335,6 +335,11 @@ class SP_Surface_import :
         mesh.from_pydata(self.vert, self.edges, self.faces, False)
         self.ob = bpy.data.objects.new(name, mesh)
         self.ob.matrix_world = get_shape_transform(face, scale)
+
+        if len(color)==3:
+            self.ob.color = list(color) + [1.]
+        elif len(color)==4 :
+            self.ob.color = color
         
         if trims_enabled and not istrivial :
             self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(contour.verts))
@@ -526,35 +531,51 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
 
 
 
-def build_SP_curve(topodsEdge, doc, collection, scale = 0.001, resolution = 16) :
-    sp_edge = SP_Edge_import(topodsEdge)
-    sp_edge.scale(scale)
-    verts = sp_edge.verts
-    edge_degree = sp_edge.degree
-
-    endpoints = [1.0] + [0.0]*(len(verts)-2) + [1.0]
-    if edge_degree!=None:
-        degree_att=[edge_degree/10]+[0.0]*(len(verts)-1)
+def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
+    if shape.ShapeType() == TopAbs.TopAbs_WIRE:
+        sp_wire = SP_Wire_import(shape, scale=scale)
+        verts = sp_wire.CP
+        edges = sp_wire.bmesh_edges
+        endpoints = sp_wire.endpoints_att
+        degree_att = sp_wire.degree_att
+        circle_att = sp_wire.circle_att
     else :
-        degree_att=[0.0]*(len(verts))
+        sp_edge = SP_Edge_import(shape)
+        sp_edge.scale(scale)
+        verts = sp_edge.verts
+        edge_degree = sp_edge.degree
 
-    edges = [(i,i+1) for i in range(len(verts)-1)]
+        endpoints = [1.0] + [0.0]*(len(verts)-2) + [1.0]
+        if edge_degree!=None:
+            degree_att=[edge_degree/10]+[0.0]*(len(verts)-1)
+        else :
+            degree_att=[0.0]*(len(verts))
+
+        if sp_edge.type == EDGES_TYPES['circle']:
+            circle_att = [0.0, 1.0, 0.0]
+        else :
+            circle_att = [0.0]*(len(verts))
+
+        edges = [(i,i+1) for i in range(len(verts)-1)]
 
     # create object
-    name, color = get_shape_name_and_color(topodsEdge, doc)
+    name, color = get_shape_name_and_color(shape, doc)
     if name == None:
         name = "STEP Curve"
     mesh = bpy.data.meshes.new("Curve CP")
     mesh.from_pydata(verts, edges, [], False)
     ob = bpy.data.objects.new(name, mesh)
-    ob.matrix_world = get_shape_transform(topodsEdge, scale)
+    ob.matrix_world = get_shape_transform(shape, scale)
+    
+    if len(color)==3:
+        ob.color = list(color) + [1.]
+    elif len(color)==4 :
+        ob.color = color
 
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", endpoints)
     add_vertex_group(ob, "Degree", degree_att)
-
-    if sp_edge.type == EDGES_TYPES['circle']:
-        add_vertex_group(ob, "Circle", [0.0, 1.0, 0.0])
+    add_vertex_group(ob, "Circle", circle_att)
 
     # add modifier
     collection.objects.link(ob)
@@ -585,6 +606,11 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
     mesh.from_pydata(verts, edges, [], False)
     ob = bpy.data.objects.new(name, mesh)
     ob.matrix_world = get_shape_transform(topods_face, scale)
+
+    if len(color)==3:
+        ob.color = list(color) + [1.]
+    elif len(color)==4 :
+        ob.color = color
 
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", endpoints)
@@ -666,10 +692,21 @@ class ShapeHierarchy:
                     hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
                     iterator.Next()
         
-            case TopAbs.TopAbs_FACE:
+            case TopAbs.TopAbs_FACE: # must be before wire and edge
                 face = TopoDS.Face_s(shape)
                 hierarchy['Face'] = face
                 self.faces.append((face, parent_col))
+
+            case TopAbs.TopAbs_WIRE:
+                wire = TopoDS.Wire_s(shape)
+                hierarchy['Wire'] = wire
+                self.edges.append((wire, parent_col))
+                # hierarchy[parent_col] = []
+                # new_collection = self.create_collection('Wire', parent_col)
+                # iterator = TopoDS_Iterator(shape)
+                # while iterator.More():
+                #     hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
+                #     iterator.Next()
         
             case TopAbs.TopAbs_EDGE:
                 edge = TopoDS.Edge_s(shape)
@@ -793,13 +830,114 @@ def prepare_import(filepath):
 
 
 
+#######################################
+# Step import adapted from Build 123d #
+#######################################
+
+
+
+# def import_step(filepath):
+
+#     def get_name(label: TDF_Label) -> str:
+#         """Extract name and format"""
+#         name = ""
+#         std_name = TDataStd_Name()
+#         if label.FindAttribute(TDataStd_Name.GetID_s(), std_name):
+#             name = TCollection_AsciiString(std_name.Get()).ToCString()
+#         # Remove characters that cause ocp_vscode to fail
+#         clean_name = "".join(ch for ch in name if unicodedata.category(ch)[0] != "C")
+#         return clean_name.translate(str.maketrans(" .()", "____"))
+
+#     def get_color(shape: TopoDS_Shape) -> Quantity_ColorRGBA:
+#         """Get the color - take that of the largest Face if multiple"""
+
+#         def get_col(obj: TopoDS_Shape) -> Quantity_ColorRGBA:
+#             col = Quantity_ColorRGBA()
+#             if (
+#                 color_tool.GetColor(obj, XCAFDoc_ColorCurv, col)
+#                 or color_tool.GetColor(obj, XCAFDoc_ColorGen, col)
+#                 or color_tool.GetColor(obj, XCAFDoc_ColorSurf, col)
+#             ):
+#                 return col
+
+#         shape_color = get_col(shape)
+
+#         colors = {}
+#         face_explorer = TopExp_Explorer(shape, TopAbs_FACE)
+#         while face_explorer.More():
+#             current_face = face_explorer.Current()
+#             properties = GProp_GProps()
+#             BRepGProp.SurfaceProperties_s(current_face, properties)
+#             area = properties.Mass()
+#             color = get_col(current_face)
+#             if color is not None:
+#                 colors[area] = color
+#             face_explorer.Next()
+
+#         # If there are multiple colors, return the one from the largest face
+#         if colors:
+#             shape_color = sorted(colors.items())[-1][1]
+
+#         return shape_color
+
+#     def build_assembly(parent_tdf_label: TDF_Label | None = None) -> list[TopoDS_Shape]:
+#         """Recursively extract object into an assembly"""
+#         sub_tdf_labels = TDF_LabelSequence()
+#         if parent_tdf_label is None:
+#             shape_tool.GetFreeShapes(sub_tdf_labels)
+#         else:
+#             shape_tool.GetComponents_s(parent_tdf_label, sub_tdf_labels)
+
+#         sub_shapes: list[TopoDS_Shape] = []
+#         for i in range(sub_tdf_labels.Length()):
+#             sub_tdf_label = sub_tdf_labels.Value(i + 1)
+#             if shape_tool.IsReference_s(sub_tdf_label):
+#                 ref_tdf_label = TDF_Label()
+#                 shape_tool.GetReferredShape_s(sub_tdf_label, ref_tdf_label)
+#             else:
+#                 ref_tdf_label = sub_tdf_label
+
+#             sub_topo_shape = downcast(shape_tool.GetShape_s(ref_tdf_label))
+#             if shape_tool.IsAssembly_s(ref_tdf_label):
+#                 sub_shape = TopoDS_Compound()
+#                 sub_shape.children = build_assembly(ref_tdf_label)
+#             else:
+#                 sub_shape = topods_lut[type(sub_topo_shape)](sub_topo_shape)
+
+#             sub_shape.color = get_color(sub_topo_shape)
+#             sub_shape.label = get_name(ref_tdf_label)
+#             sub_shape.move(shape_tool.GetLocation_s(sub_tdf_label))
+
+#             sub_shapes.append(sub_shape)
+#         return sub_shapes
+
+#     fmt = TCollection_ExtendedString("XCAF")
+#     doc = TDocStd_Document(fmt)
+#     shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
+#     color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
+#     reader = STEPCAFControl_Reader()
+#     reader.SetNameMode(True)
+#     reader.SetColorMode(True)
+#     reader.SetLayerMode(True)
+#     reader.ReadFile(filepath)
+#     reader.Transfer(doc)
+
+#     root = TopoDS_Compound()
+#     root.children = build_assembly()
+#     # Remove empty Compound wrapper if single free object
+#     if len(root.children) == 1:
+#         root = root.children[0]
+
+#     return root, doc
 
 
 
 
-###########################
-# Step import OCC Extends #
-###########################
+
+
+########################################
+# Step import adapted from OCC Extends #
+########################################
 
 def read_step_file(filename, as_compound=True, verbosity=True):
     """read the STEP file and returns a compound
@@ -927,7 +1065,7 @@ def read_step_file_with_names_colors(filename):
                     # print("\n########  reference label :", label)
                     label_reference = TDF_Label()
                     shape_tool.GetReferredShape(label, label_reference)
-                    loc = shape_tool.GetLocation(label)
+                    loc = shape_tool.GetLocation_s(label)
                     # print("    loc          :", loc)
                     # trans = loc.Transformation()
                     # print("    tran form    :", trans.Form())

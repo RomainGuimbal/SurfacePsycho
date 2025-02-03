@@ -590,7 +590,7 @@ def shells_to_solids(topods_shape : TopoDS_Shape):
             separated_shapes_list.append(topods_shape)
             print("None Manifold Shell")
     # Face
-    elif sh.ShapeType() == TopAbs.TopAbs_FACE :
+    elif topods_shape.ShapeType() == TopAbs.TopAbs_FACE :
         separated_shapes_list.append(topods_shape)
     # other
     else :

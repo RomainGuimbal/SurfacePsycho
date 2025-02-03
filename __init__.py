@@ -31,8 +31,6 @@ file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
-
-
 from . import gui
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
