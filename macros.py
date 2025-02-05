@@ -27,7 +27,7 @@ class SP_OT_quick_export(bpy.types.Operator):
             dir = context.preferences.filepaths.temporary_directory
         pathstr = dir + str(datetime.today())[:-7].replace('-','').replace(' ','-').replace(':','')
 
-        export_isdone = export_step(context, f"{pathstr}.step", True)
+        export_isdone = export_step(context, f"{pathstr}.step", True, 1000, 1e-1)
         if export_isdone:
             self.report({'INFO'}, f"Step file exported as {pathstr}.step")
         else :
@@ -108,7 +108,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         bpy.context.collection.objects.link(self.obj)
 
         add_sp_modifier(self.obj, "SP - Reorder Grid Index", add_mode = True)
-        add_sp_modifier(self.obj, "SP - Bezier Patch Continuities", {"Continuity Level" : 3}, add_mode = True)
+        add_sp_modifier(self.obj, "SP - Connect Bezier Patch", {"Continuity Level" : 3}, add_mode = True)
         add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", pin=True, add_mode = True)
 
         # Set object location to 3D cursor

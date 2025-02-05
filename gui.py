@@ -28,9 +28,10 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
     # axis_up: EnumProperty(default='Z')
     # axis_forward: EnumProperty(default='Y')
     scale: FloatProperty(name="Scale", default=1000, min=0)
+    sew_tolerance_exponent : IntProperty(name= "Sewing Tolerance Exponent", description="In millimeter, after scale have been applied (-1 = 0.1mm)", default = -1, soft_min = -10, soft_max=0)
 
     def execute(self, context):
-        export_step(context, self.filepath, self.use_selection, 'Z', 'Y', self.scale)
+        export_step(context, self.filepath, self.use_selection, self.scale, 10**self.sew_tolerance_exponent, 'Z', 'Y', )
         return {'FINISHED'}
 
 
@@ -45,9 +46,11 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
     # axis_up: EnumProperty(default='Z')
     # axis_forward: EnumProperty(default='Y')
     scale: FloatProperty(name="Scale", default=1000, min=0)
+    sew_tolerance_exponent : IntProperty(name= "Sewing Tolerance Exponent", description="In millimeter, after scale have been applied (-1 = 0.1mm)", default = -1, soft_min = -10, soft_max=0)
+
 
     def execute(self, context):
-        export_iges(context, self.filepath, self.use_selection, 'Z', 'Y', self.scale)
+        export_iges(context, self.filepath, self.use_selection, self.scale, 10**self.sew_tolerance_exponent, 'Z', 'Y')
         return {'FINISHED'}
 
 @orientation_helper(axis_forward='Y', axis_up='Z')

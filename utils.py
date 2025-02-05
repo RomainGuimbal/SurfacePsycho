@@ -69,7 +69,7 @@ def get_face_type_name(TopoDSface : TopoDS_Face):
 
 
 
-def geom_type_of_object(o, context):
+def sp_type_of_object(o, context):
     if o.type == 'EMPTY' :
         if o.instance_collection != None :
             return 'instance'
@@ -78,9 +78,10 @@ def geom_type_of_object(o, context):
     else : 
         ob = o.evaluated_get(context.evaluated_depsgraph_get())
         if hasattr(ob.data, "attributes") :
-            for k in ob.data.attributes.keys() :
-                if k in TYPES_FROM_CP_ATTR.keys():
+            for k in TYPES_FROM_CP_ATTR.keys():
+                if k in ob.data.attributes.keys() :
                     return TYPES_FROM_CP_ATTR[k]
+    return None 
 
 
 def get_attribute_by_name(ob_deps_graph, name, type='vec3', len_attr=None):
@@ -598,3 +599,5 @@ def shells_to_solids(topods_shape : TopoDS_Shape):
         print(f"Unexpected shape of type {topods_shape.ShapeType()}")
 
     return separated_shapes_list
+
+

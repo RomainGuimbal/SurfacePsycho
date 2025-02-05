@@ -28,6 +28,7 @@ from OCP.ShapeFix import ShapeFix_Face
 from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
+from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS_Shape, TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound, TopoDS_Iterator, TopoDS_Shell, TopoDS_Solid
 # from OCP.TopTools import TopTools_Array1OfShape
 import OCP.TopAbs as TopAbs
@@ -813,100 +814,150 @@ def mirror_topods_shape(o, shape, scale=1000):
 
 
 
-def prepare_brep(context, use_selection, axis_up, axis_forward, scale = 1000):
-    aShape = TopoDS_Shape()
-    aSew = BRepBuilderAPI_Sewing(1e-1)
-    SPobj_count=0
-    separated_shapes_list = []
+# not a true hierarchy. too complex for now
+class ShapeHierarchy_export:
+    def __init__(self, context, use_selection = True, scale=1000):
+        self.scale = scale
+        self.context = context
+        self.use_selection = use_selection
 
-    if use_selection:
-        initial_selection = context.selected_objects
-    else :
-        initial_selection = context.visible_objects
-    obj_list = initial_selection
-    obj_to_del = []
+        objs, shapes, empties, instances = self.create_shape_hierarchy(context.scene.collection)
+        self.shapes = shapes
+        self.instances = instances
+        self.empties = empties
+        self.obj_shapes = {} #{obj: shape}
+        for i, o in enumerate(objs) :
+            self.obj_shapes[o] = shapes[i]
+        
 
-    #TODO replace with recursive version
+    def create_shape_hierarchy(self, parent):
+        objs, shapes, empties, instances = [], [], [], []
 
-    while(len(obj_list)>0): # itterates until ob_list is empty
-        obj_newly_real = []
+        for child in parent.children :
+            o, s, e, i = self.create_shape_hierarchy(child)
+            objs.extend(o)
+            shapes.extend(s)
+            empties.extend(e)
+            instances.extend(i)
 
-        for o in obj_list:
-            gto = geom_type_of_object(o, context)
-
-            match gto :
-                case "bezier_surf" :
-                    SPobj_count +=1
-                    af = bezier_face_to_topods(o, context, scale)
-                    aSew.Add(mirror_topods_shape(o, af, scale))
-
-                case "NURBS_surf" :
-                    SPobj_count +=1
-                    nf = NURBS_face_to_topods(o, context, scale)
-                    aSew.Add(mirror_topods_shape(o, nf, scale))
-
-                case "planar" :
-                    SPobj_count +=1
-                    pf = flat_patch_to_topods(o, context, scale)
-                    aSew.Add(mirror_topods_shape(o, pf, scale))
-
-                case "curve" :
-                    SPobj_count +=1
-                    cu = curve_to_topods(o, context, scale)
-                    aSew.Add(mirror_topods_shape(o, cu, scale))
-
-                # case "instance":
-                #     pass
-                    # self.report({'INFO'}, 'Collection instances will not export')
-                    # empty_mw = o.matrix_world
-                    # for co in o.instance_collection.all_objects : #select all object of collection linked to o
-                    #     dupli = co.copy()
-                    #     dupli.data = co.data.copy()
-                    #     dupli.matrix_world = empty_mw @ dupli.matrix_world # not recursive compliant? :/
-                    #     obj_newly_real.append(dupli) #flag the new objects
-                    #     context.scene.collection.objects.link(dupli)
+        for o in parent.objects :
+            if (not self.use_selection) or (o in self.context.selected_objects):
+                sp_type = sp_type_of_object(o, self.context)
+                if sp_type == None:
+                    pass
+                elif sp_type == "instance":
+                    # empties/instances are listed for later
+                    instances.append(o)
+                elif sp_type == "empty":
+                    empties.append(o)
+                    # treat empties later as they should not be sew (and are instances of the same compound)
+                    # empty_to_topods(object, context, scale)
+                else :
+                    s = blender_object_to_topods_shapes(self.context, o, sp_type, self.scale)
+                    objs.append(o)
+                    shapes.append(s)
+        
+        return objs, shapes, empties, instances
                 
-                case "empty" :
-                    empty = empty_to_topods(o, context, scale)
-                    separated_shapes_list.append(empty)
 
 
-        obj_list=[]
-        for onr in obj_newly_real:
-            obj_list.append(onr)
-            obj_to_del.append(onr)
+def blender_object_to_topods_shapes(context, object, sp_type, scale = 1000):
+    match sp_type :
+        case "bezier_surf" :
+            af = bezier_face_to_topods(object, context, scale)
+            shape = mirror_topods_shape(object, af, scale)
+
+        case "NURBS_surf" :
+            nf = NURBS_face_to_topods(object, context, scale)
+            shape = mirror_topods_shape(object, nf, scale)
+
+        case "planar" :
+            pf = flat_patch_to_topods(object, context, scale)
+            shape = mirror_topods_shape(object, pf, scale)
+
+        case "curve" :
+            cu = curve_to_topods(object, context, scale)
+            shape = mirror_topods_shape(object, cu, scale)
+        
+        case _ :
+            raise Exception("Invalid type")
+
+    return shape
+
+
+
+def blender_instances_to_topods_instances(context, hierarchy, scale = 1000, sew_tolerance=1e-1):
+    sewed_shapes_list = []
+
+    for ins in hierarchy.instances :
+        to_sew_shape_list = []
+        ins_obj = ins.instance_collection.objects
+
+        # add obj of child collections (doesn't support nested instances)
+        for col in ins.instance_collection.children_recursive :
+            for o in col.objects :
+                ins_obj.append(o)
+
+        for o in ins_obj :
+            sp_type = sp_type_of_object(o, context)
+            if sp_type not in (None, "instance", "empty"):
+                if o in hierarchy.obj_shapes.keys() :
+                    shape = hierarchy.obj_shapes[o]
+                else :
+                    shape = blender_object_to_topods_shapes(context, o, sp_type, scale)
+                
+                # o.matrix_world @ ins.matrix_world
+                trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
+                location = TopLoc_Location(trsf)
+                instance = shape.Located(location)
+                to_sew_shape_list.append(instance)
+        # each collection instance is sewed separately
+        sewed_shapes_list.append(sew_shapes(to_sew_shape_list, sew_tolerance))  
     
-    if SPobj_count==0 :
-            return None
-    
-    # clear realized objects
-    for o in obj_to_del : 
-        bpy.data.objects.remove(o, do_unlink=True)
+    return sewed_shapes_list
+
+
+def sew_shapes(shape_list, tolerance=1e-1):
+    aSew = BRepBuilderAPI_Sewing(tolerance)
+    for shape in shape_list:
+        aSew.Add(shape)
 
     # Sew
     aSew.SetNonManifoldMode(True)
     aSew.Perform()
-    aShape = aSew.SewedShape()
     
-    # Shell(s) to solid(s)
-    separated_shapes_list.extend(shells_to_solids(aShape))
-    compound = shape_list_to_compound(separated_shapes_list)
+    return aSew.SewedShape()
 
+
+def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
+    separated_shapes_list = []
+    hierarchy = ShapeHierarchy_export(context, use_selection, scale)
+    if len(hierarchy.shapes) > 0 :
+        sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
+        separated_shapes_list.extend(shells_to_solids(sewed))
+    
+    if len(hierarchy.instances) > 0 :
+        sewed_instances_list = blender_instances_to_topods_instances(context, hierarchy, scale)
+        for s in sewed_instances_list :
+            separated_shapes_list.extend(shells_to_solids(s))
+
+    if len(separated_shapes_list)>0:
+        compound = shape_list_to_compound(separated_shapes_list)
+    else :
+        return None
     return compound
 
 
-
-
-def export_step(context, filepath, use_selection, axis_up='Z', axis_forward='Y', scale =1000):
-    brep_shapes = prepare_brep(context, use_selection, axis_up, axis_forward, scale)
+def export_step(context, filepath, use_selection, scale, sew_tolerance, axis_up='Z', axis_forward='Y'):
+    brep_shapes = prepare_export(context, use_selection, scale, sew_tolerance)
     if brep_shapes is not None :
         write_step_file(brep_shapes, filepath, application_protocol="AP203")
         return True
     else:
         return False
 
-def export_iges(context, filepath, use_selection, axis_up='Z', axis_forward='Y', scale =1000):
-    brep_shapes = prepare_brep(context, use_selection, axis_up, axis_forward, scale)
+def export_iges(context, filepath, use_selection, scale, sew_tolerance, axis_up='Z', axis_forward='Y'):
+    brep_shapes = prepare_export(context, use_selection, scale, sew_tolerance)
     if brep_shapes is not None :
         write_iges_file(brep_shapes, filepath)
         return True

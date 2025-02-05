@@ -350,7 +350,6 @@ class SP_Surface_import :
         collection.objects.link(self.ob)
 
 
-
     def assign_vertex_gr(self, name, values):
         add_vertex_group(self.ob, name, values)
         
@@ -439,7 +438,7 @@ def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0
 
 
 
-
+    
 def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.001, resolution = 10):
     # Patch attributes
     bspline_surface = BRepAdaptor_Surface(topods_face).Surface().BSpline()
@@ -632,7 +631,6 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
 
 
 
-
 class ShapeHierarchy:
     def __init__(self, shape, container_name):
         self.faces = [] # tuples (face, collection)
@@ -701,12 +699,6 @@ class ShapeHierarchy:
                 wire = TopoDS.Wire_s(shape)
                 hierarchy['Wire'] = wire
                 self.edges.append((wire, parent_col))
-                # hierarchy[parent_col] = []
-                # new_collection = self.create_collection('Wire', parent_col)
-                # iterator = TopoDS_Iterator(shape)
-                # while iterator.More():
-                #     hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
-                #     iterator.Next()
         
             case TopAbs.TopAbs_EDGE:
                 edge = TopoDS.Edge_s(shape)
@@ -714,33 +706,6 @@ class ShapeHierarchy:
                 self.edges.append((edge, parent_col))
                 
         return hierarchy
-
-
-### TOFIX some edges are not imported with new method, but they where imported with function bellow
-# def find_free_edges(shape):
-#     edge_map = TopTools_IndexedMapOfShape()
-#     face_map = TopTools_IndexedMapOfShape()
-    
-#     exp = TopExp_Explorer(shape, TopAbs_EDGE)
-#     while exp.More():
-#         edge_map.Add(exp.Current())
-#         exp.Next()
-    
-#     exp = TopExp_Explorer(shape, TopAbs_FACE)
-#     while exp.More():
-#         face = TopoDS.Face_s(exp.Current())
-#         face_exp = TopExp_Explorer(face, TopAbs_EDGE)
-#         while face_exp.More():
-#             face_map.Add(face_exp.Current())
-#             face_exp.Next()
-#         exp.Next()
-    
-#     free_edges = []
-#     for i in range(1, edge_map.Size() + 1):
-#         if not face_map.Contains(edge_map.FindKey(i)):
-#             free_edges.append(TopoDS.Edge_s(edge_map.FindKey(i)))
-    
-#     return free_edges
 
 
 
@@ -833,8 +798,6 @@ def prepare_import(filepath):
 #######################################
 # Step import adapted from Build 123d #
 #######################################
-
-
 
 # def import_step(filepath):
 
