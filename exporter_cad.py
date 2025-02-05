@@ -12,7 +12,7 @@ if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
 
-from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeSolid
+from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy, BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeSolid
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment, GC_MakeCircle
 from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle, GCE2d_MakeCircle
@@ -738,11 +738,10 @@ def empty_to_topods(o, context, scale=1000):
 
 
 
-def mirror_topods_shape(o, shape, scale=1000):
-    ms = BRepBuilderAPI_Sewing(1e-1)
+def mirror_topods_shape(o, shape, scale=1000, sew_tolerance = 1e-1):
+    ms = BRepBuilderAPI_Sewing(sew_tolerance)
     ms.SetNonManifoldMode(True)
     ms.Add(shape)
-    mshape = TopoDS_Shape()
 
     ms.Perform()
     shape = ms.SewedShape()
@@ -783,17 +782,17 @@ def mirror_topods_shape(o, shape, scale=1000):
 
             for i in range(7): # 7 = 8 mirror configs -1 original config
                 if configurations[i]:
-                    if symtype[i]==1:#sym planaire
+                    if symtype[i]==1:# planar sym
                         base = rot@(Vector([xscales[i],yscales[i],zscales[i]]))
                         atrsf = gp_Trsf()
                         atrsf.SetMirror(gp_Ax2(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]), gp_Dir(base.x, base.y, base.z)))
                     
-                    elif symtype[i]==2 :#sym axiale
+                    elif symtype[i]==2 :# axis sym
                         base = rot@(Vector([xscales[i]-1,abs(yscales[i]-1),abs(zscales[i]-1)])) 
                         atrsf = gp_Trsf()
                         atrsf.SetMirror(gp_Ax1(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]), gp_Dir(base.x, base.y, base.z)))
                     
-                    else :#sym centrale
+                    else :# centric sym
                         atrsf = gp_Trsf()
                         atrsf.SetMirror(gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2]))
                     
@@ -816,10 +815,11 @@ def mirror_topods_shape(o, shape, scale=1000):
 
 # not a true hierarchy. too complex for now
 class ShapeHierarchy_export:
-    def __init__(self, context, use_selection = True, scale=1000):
-        self.scale = scale
+    def __init__(self, context, use_selection = True, scale=1000, sew_tolerance = 1e-1):
         self.context = context
         self.use_selection = use_selection
+        self.scale = scale
+        self.sew_tolerance = sew_tolerance
 
         objs, shapes, empties, instances = self.create_shape_hierarchy(context.scene.collection)
         self.shapes = shapes
@@ -853,7 +853,7 @@ class ShapeHierarchy_export:
                     # treat empties later as they should not be sew (and are instances of the same compound)
                     # empty_to_topods(object, context, scale)
                 else :
-                    s = blender_object_to_topods_shapes(self.context, o, sp_type, self.scale)
+                    s = blender_object_to_topods_shapes(self.context, o, sp_type, self.scale, self.sew_tolerance)
                     objs.append(o)
                     shapes.append(s)
         
@@ -861,23 +861,23 @@ class ShapeHierarchy_export:
                 
 
 
-def blender_object_to_topods_shapes(context, object, sp_type, scale = 1000):
+def blender_object_to_topods_shapes(context, object, sp_type, scale = 1000, sew_tolerance = 1e-1):
     match sp_type :
         case "bezier_surf" :
             af = bezier_face_to_topods(object, context, scale)
-            shape = mirror_topods_shape(object, af, scale)
+            shape = mirror_topods_shape(object, af, scale, sew_tolerance)
 
         case "NURBS_surf" :
             nf = NURBS_face_to_topods(object, context, scale)
-            shape = mirror_topods_shape(object, nf, scale)
+            shape = mirror_topods_shape(object, nf, scale, sew_tolerance)
 
         case "planar" :
             pf = flat_patch_to_topods(object, context, scale)
-            shape = mirror_topods_shape(object, pf, scale)
+            shape = mirror_topods_shape(object, pf, scale, sew_tolerance)
 
         case "curve" :
             cu = curve_to_topods(object, context, scale)
-            shape = mirror_topods_shape(object, cu, scale)
+            shape = mirror_topods_shape(object, cu, scale, sew_tolerance)
         
         case _ :
             raise Exception("Invalid type")
@@ -890,30 +890,42 @@ def blender_instances_to_topods_instances(context, hierarchy, scale = 1000, sew_
     sewed_shapes_list = []
 
     for ins in hierarchy.instances :
-        to_sew_shape_list = []
-        ins_obj = ins.instance_collection.objects
+        if ins.scale == Vector((1.0,1.0,1.0)):
+            #     print(f"Scale not 1, instance is realized (Scale = {ins.scale})")
 
-        # add obj of child collections (doesn't support nested instances)
-        for col in ins.instance_collection.children_recursive :
-            for o in col.objects :
-                ins_obj.append(o)
+            to_sew_shape_list = []
+            ins_obj = ins.instance_collection.objects
+            
+            # add obj of child collections (doesn't support nested instances)
+            for col in ins.instance_collection.children_recursive :
+                for o in col.objects :
+                    ins_obj.append(o)
 
-        for o in ins_obj :
-            sp_type = sp_type_of_object(o, context)
-            if sp_type not in (None, "instance", "empty"):
-                if o in hierarchy.obj_shapes.keys() :
-                    shape = hierarchy.obj_shapes[o]
-                else :
-                    shape = blender_object_to_topods_shapes(context, o, sp_type, scale)
-                
-                # o.matrix_world @ ins.matrix_world
-                trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
-                location = TopLoc_Location(trsf)
-                instance = shape.Located(location)
-                to_sew_shape_list.append(instance)
-        # each collection instance is sewed separately
-        sewed_shapes_list.append(sew_shapes(to_sew_shape_list, sew_tolerance))  
-    
+            for o in ins_obj :
+                sp_type = sp_type_of_object(o, context)
+                if sp_type not in (None, "instance", "empty"):
+                    
+                    if o in hierarchy.obj_shapes.keys():
+                        shape = hierarchy.obj_shapes[o]
+                    else :
+                        shape = blender_object_to_topods_shapes(context, o, sp_type, scale, sew_tolerance)
+
+                    trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
+                    trsf.SetScaleFactor(1)
+                    # trsf = gp_Trsf()
+                    # trsf.SetRotation(blender_to_gp_quaternion(ins.rotation_quaternion))
+                    # trsf.SetTranslationPart(blender_to_gp_vec(ins.location*scale))
+                    location = TopLoc_Location(trsf)
+                    instance = shape.Located(location)
+                    to_sew_shape_list.append(instance)
+
+                    # trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
+                    # to_sew_shape_list.append(BRepBuilderAPI_Transform(shape, trsf, True).Shape())
+            # each collection instance is sewed separately
+            sewed_shapes_list.append(sew_shapes(to_sew_shape_list, sew_tolerance))  
+        else :
+            print("Scaled instances cannot be exported")
+        
     return sewed_shapes_list
 
 

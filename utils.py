@@ -1,7 +1,7 @@
 import bpy
 # import bmesh
 import numpy as np
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 import math
 from math import isclose
 from typing import List, Tuple
@@ -15,7 +15,7 @@ from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
 from OCP.TopoDS import TopoDS, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound, TopoDS_Iterator, TopoDS_Shell, TopoDS_Solid
 from OCP.TColStd import TColStd_Array1OfReal
-from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Trsf, gp_Circ2d, gp_Dir2d #, gp_Vec
+from OCP.gp import gp_Pnt, gp_Quaternion, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Trsf, gp_Circ2d, gp_Dir2d, gp_Vec
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal, TColStd_HArray1OfReal, TColStd_HArray1OfInteger
 from OCP.TDataStd import TDataStd_Name
@@ -290,6 +290,8 @@ def vec_list_to_gp_pnt(array: list):
         tcol.SetValue(i+1, gp_Pnt(array[i][0], array[i][1], array[i][2]))
     return tcol
 
+def blender_to_gp_vec(vec : Vector):
+    return gp_Vec(vec.x, vec.y, vec.z)
 
 def normalize_array(array):
     mini = min(array)
@@ -443,9 +445,14 @@ def blender_matrix_to_gp_trsf(mat : Matrix, scale=1):
                       mat[2][0], mat[2][1], mat[2][2], mat[2][3]*scale)
     return gp_trsf
 
+# def get_scale_of_transform_matrix(mat : Matrix):
+#     x = math.sqrt(mat[0][0]**2 + mat[0][1]**2 + mat[0][2]**2)
+#     y = math.sqrt(mat[1][0]**2 + mat[1][1]**2 + mat[1][2]**2)
+#     z = math.sqrt(mat[2][0]**2 + mat[2][1]**2 + mat[2][2]**2)
+#     return x,y,z
 
-
-
+def blender_to_gp_quaternion(rot : Quaternion):
+    return gp_Quaternion(rot[0], rot[1], rot[2], rot[3])
 
 
 def get_shape_name_and_color(shape, doc):
