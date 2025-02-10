@@ -11,7 +11,7 @@ import unicodedata
 from OCP.BRep import BRep_Builder
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface #BRepAdaptor_Curve
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
-from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line
+from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line, Geom_ToroidalSurface
 from OCP.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 from OCP.GeomAPI import GeomAPI_ProjectPointOnCurve
 from OCP.gp import gp_Pnt, gp_Pnt2d
@@ -140,7 +140,9 @@ class SP_Edge_import :
             self.endpoints_att = [0.0]*p_count
         else :
             self.endpoints_att = [1.0] + [0.0]*(p_count-2) + [1.0]
+        
         # TODO output the knot, multiplicities and weights
+        # self.weights = 
     
 
     def circle(self, edge_adaptor):
@@ -305,10 +307,10 @@ class SP_Contour_import :
 
 
 class SP_Surface_import :
-    def __init__(self, face : TopoDS_Face, doc, collection, trims_enabled : bool, uv_bounds, CPvert, CPedges, CPfaces, ob_name = "STEP Patch", scale=0.001):
+    def __init__(self, face : TopoDS_Face, doc, collection, trims_enabled : bool, CPvert, CPedges, CPfaces, ob_name = "STEP Patch", scale=0.001, uv_bounds=None):
         self.trims_enabled = trims_enabled
         self.face = face
-        self.uv_bounds = uv_bounds
+        # self.uv_bounds = uv_bounds
         self.CPvert = CPvert
         self.CPedges = CPedges
         self.CPfaces = CPfaces
@@ -316,7 +318,8 @@ class SP_Surface_import :
         
         if trims_enabled :
             contour = SP_Contour_import(face)
-            contour.rebound(uv_bounds)
+            if uv_bounds!=None :
+                contour.rebound(uv_bounds)
             contour.switch_u_and_v()
             istrivial = contour.is_trivial()
             if istrivial :
@@ -356,6 +359,10 @@ class SP_Surface_import :
     def add_modifier(self, name, settings_dict = {}, pin=False):
         add_sp_modifier(self.ob, name, settings_dict, pin = pin)
 
+    def assign_float_attribute(self, name, values):
+        add_float_attribute(self.ob, name, values)
+
+
 
 
 
@@ -367,7 +374,7 @@ class SP_Surface_import :
 def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cylinder = face_adpator.Surface().Cylinder()
-    geom_cylinder = Geom_CylindricalSurface(gp_cylinder)
+    # geom_cylinder = Geom_CylindricalSurface(gp_cylinder)
     
     gpaxis= gp_cylinder.Axis()
     xaxis = gpaxis.Direction()
@@ -376,35 +383,68 @@ def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled,
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
     zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
 
-    aPnt1 = face_adpator.Value(face_adpator.FirstUParameter(), face_adpator.FirstVParameter())
-    aPnt2 = face_adpator.Value(face_adpator.LastUParameter(), face_adpator.LastVParameter())
+    # aPnt1 = face_adpator.Value(face_adpator.FirstUParameter(), face_adpator.FirstVParameter())
+    # aPnt2 = face_adpator.Value(face_adpator.LastUParameter(), face_adpator.LastVParameter())
 
-    aGeomAxis = Geom_Line(gpaxis)
-    p1 = GeomAPI_ProjectPointOnCurve(aPnt1, aGeomAxis).Point(1)
-    p2 = GeomAPI_ProjectPointOnCurve(aPnt2, aGeomAxis).Point(1)
-    length = p1.Distance(p2)*scale
+    # aGeomAxis = Geom_Line(gpaxis)
+    # p1 = GeomAPI_ProjectPointOnCurve(aPnt1, aGeomAxis).Point(1)
+    # p2 = GeomAPI_ProjectPointOnCurve(aPnt2, aGeomAxis).Point(1)
+    # # length = p1.Distance(p2)*scale
 
     location = gp_cylinder.Location()
-    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale)) - xaxis_vec*length/2
+    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale)) #- xaxis_vec*length/2
     radius = gp_cylinder.Radius()*scale
 
+    # fake_uv_bounds = geom_cylinder.Bounds()
+    # uv_bounds = (fake_uv_bounds[1], fake_uv_bounds[0], -length/2, length/2) # -np.pi/2
+    # min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
 
-    fake_uv_bounds = geom_cylinder.Bounds()
-    uv_bounds = (fake_uv_bounds[1], fake_uv_bounds[0], -length/2, length/2) # -np.pi/2
-    min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
-
-    # print(f"Cylinder UV bounds : {(min_u, max_u, min_v, max_v)}")
+    # # print(f"Cylinder UV bounds : {(min_u, max_u, min_v, max_v)}")
 
     raduis_vert = Vector((zaxis_vec*radius) + loc_vec)
 
-    CPvert = [loc_vec, xaxis_vec*length + loc_vec, raduis_vert]
+    CPvert = [loc_vec, xaxis_vec*scale + loc_vec, raduis_vert]
     CP_edges = [(0,1)]
-    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, uv_bounds, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
+    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
     sp_surf.add_modifier("SP - Cylindrical Meshing", 
                          {"Use Trim Contour":trims_enabled, 
                           "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
                           "Scaling Method":1,}, pin=True)
     return True
+
+
+
+
+def build_SP_torus(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
+    face_adpator = BRepAdaptor_Surface(topods_face)
+    gp_torus = face_adpator.Surface().Torus()
+    
+    gpaxis= gp_torus.Axis()
+    xaxis = gpaxis.Direction()
+    yaxis = gp_torus.YAxis().Direction()
+    xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
+    yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
+    zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
+
+    location = gp_torus.Location()
+    origin_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale))
+    major_radius = gp_torus.MajorRadius()*scale
+
+    minor_radius =  gp_torus.MinorRadius()*scale
+    raduis_vert = Vector((zaxis_vec*major_radius) + origin_vec)
+    
+    CPvert = [origin_vec, raduis_vert, -xaxis_vec*minor_radius + raduis_vert]
+    CP_edges = [(0,1),(1,2)]
+    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], ob_name= "STEP Torus")
+    sp_surf.add_modifier("SP - Toroidal Meshing",
+                          {"Use Trim Contour":trims_enabled,
+                          "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
+                          "Scaling Method" : 1,
+                          "Resolution U" : 16,
+                          "Resolution V" : 32}, pin=True)
+    return True
+
+
 
 
 
@@ -427,7 +467,7 @@ def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
 
-    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
+    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert.tolist(), [], CPfaces, uv_bounds = uv_bounds)
     sp_surf.add_modifier("SP - Bezier Patch Meshing", 
                            {"Use Trim Contour":trims_enabled,
                             "Resolution U": resolution,
@@ -439,7 +479,7 @@ def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0
 
 
     
-def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.001, resolution = 10):
+def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.001, resolution = 16):
     # Patch attributes
     bspline_surface = BRepAdaptor_Surface(topods_face).Surface().BSpline()
     u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
@@ -471,7 +511,7 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
     # CP Grid
     custom_weight = False
     vector_pts = np.zeros((v_count + v_closed, u_count + u_closed), dtype=Vector)
-    weights = np.zeros((v_count + v_closed, u_count + u_closed), dtype=float)
+    weights = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
     for u in range(u_count):
         for v in range(v_count):
             pole = bspline_surface.Pole(u+1, v+1)
@@ -493,23 +533,21 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
     
-    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, uv_bounds, CPvert.tolist(), [], CPfaces)
+    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert.tolist(), [], CPfaces, uv_bounds = uv_bounds)
     
     if custom_knot:
         sp_surf.assign_vertex_gr("Knot U", u_knots)
         sp_surf.assign_vertex_gr("Knot V", v_knots)
-        sp_surf.assign_vertex_gr("Multiplicity U", np.array(u_mult)/10)
-        sp_surf.assign_vertex_gr("Multiplicity V", np.array(v_mult)/10)
+        sp_surf.assign_float_attribute("Multiplicity U", (np.array(u_mult)/10).tolist())
+        sp_surf.assign_float_attribute("Multiplicity V", (np.array(v_mult)/10).tolist())
 
     if custom_weight:
         # Since Nurbs trim contour uses "weight" attr too, set all trim contour weights to 1.0. To improve later
         weights = weights.flatten().tolist()
         weights.extend([1.0]*(len(sp_surf.ob.data.vertices)-len(weights)))
-        sp_surf.assign_vertex_gr("Weight", weights)
-        print("Weights are not fully supported yet")
-        # TODO : assign attribute instead
+        sp_surf.assign_float_attribute("Weight", weights)
     
-    # If 1 mult not 1 or no custom knot -> clamp 
+    # If 1 mult not 1 or no custom knot -> clamp
     u_clamped = any(m!=1 for m in u_mult) or not custom_knot
     v_clamped = any(m!=1 for m in v_mult) or not custom_knot
 
@@ -725,6 +763,8 @@ def import_face_nodegroups(shape_hierarchy):
                 to_import_ng_names.add("SP - Bezier Patch Meshing")
             case GeomAbs.GeomAbs_BSplineSurface:
                 to_import_ng_names.add("SP - NURBS Patch Meshing")
+            case GeomAbs.GeomAbs_Torus:
+                to_import_ng_names.add("SP - Toroidal Meshing")
     
     append_multiple_node_groups(to_import_ng_names)
 
@@ -736,11 +776,13 @@ def process_topods_face(topods_face, doc, collection, trims_enabled, scale, reso
         case GeomAbs.GeomAbs_Plane:
             build_SP_flat(topods_face, doc, collection, scale)
         case GeomAbs.GeomAbs_Cylinder:
-            build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale, )
+            build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale )
         case GeomAbs.GeomAbs_BezierSurface:
             build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_BSplineSurface:
             build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
+        case GeomAbs.GeomAbs_Torus:
+            build_SP_torus(topods_face, doc, collection, trims_enabled, scale )
         case _ :
             print("Unsupported Face Type : " + get_face_type_name(topods_face))
     return True
