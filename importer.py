@@ -374,7 +374,6 @@ class SP_Surface_import :
 def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cylinder = face_adpator.Surface().Cylinder()
-    # geom_cylinder = Geom_CylindricalSurface(gp_cylinder)
     
     gpaxis= gp_cylinder.Axis()
     xaxis = gpaxis.Direction()
@@ -383,23 +382,9 @@ def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled,
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
     zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
 
-    # aPnt1 = face_adpator.Value(face_adpator.FirstUParameter(), face_adpator.FirstVParameter())
-    # aPnt2 = face_adpator.Value(face_adpator.LastUParameter(), face_adpator.LastVParameter())
-
-    # aGeomAxis = Geom_Line(gpaxis)
-    # p1 = GeomAPI_ProjectPointOnCurve(aPnt1, aGeomAxis).Point(1)
-    # p2 = GeomAPI_ProjectPointOnCurve(aPnt2, aGeomAxis).Point(1)
-    # # length = p1.Distance(p2)*scale
-
     location = gp_cylinder.Location()
-    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale)) #- xaxis_vec*length/2
+    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale))
     radius = gp_cylinder.Radius()*scale
-
-    # fake_uv_bounds = geom_cylinder.Bounds()
-    # uv_bounds = (fake_uv_bounds[1], fake_uv_bounds[0], -length/2, length/2) # -np.pi/2
-    # min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
-
-    # # print(f"Cylinder UV bounds : {(min_u, max_u, min_v, max_v)}")
 
     raduis_vert = Vector((zaxis_vec*radius) + loc_vec)
 
@@ -444,6 +429,56 @@ def build_SP_torus(topods_face : TopoDS_Face, doc, collection, trims_enabled, sc
                           "Resolution V" : 32}, pin=True)
     return True
 
+
+
+def build_SP_sphere(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
+    face_adpator = BRepAdaptor_Surface(topods_face)
+    gp_sphere = face_adpator.Surface().Sphere()
+    
+    gpaxis= gp_sphere.XAxis()
+    xaxis = gpaxis.Direction()
+    yaxis = gp_sphere.YAxis().Direction()
+    xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
+    yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
+    zaxis_vec = Vector(np.cross(yaxis_vec, xaxis_vec))
+
+    location = gp_sphere.Location()
+    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale))
+    radius = gp_sphere.Radius()*scale
+
+    CPvert = [loc_vec - zaxis_vec*radius, loc_vec + zaxis_vec*radius, yaxis_vec*radius + loc_vec]
+    CP_edges = [(0,1)]
+    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], ob_name= "STEP Sphere")
+    sp_surf.add_modifier("SP - Spherical Meshing", 
+                         {"Use Trim Contour":trims_enabled, 
+                          "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
+                          "Scaling Method":1,}, pin=True)
+    return True
+
+
+def build_SP_cone(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
+    face_adpator = BRepAdaptor_Surface(topods_face)
+    gp_cone = face_adpator.Surface().Cone()
+    
+    gpaxis= gp_cone.Axis()
+    axis = gpaxis.Direction()
+    yaxis = gp_cone.YAxis().Direction()
+    axis_vec = Vector([axis.X(), axis.Y(), axis.Z()])
+    yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
+    # zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
+
+    location = gp_cone.Location()
+    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale))
+    radius = gp_cone.RefRadius()
+    
+    CPvert = [loc_vec, loc_vec + yaxis_vec*radius*scale, axis_vec*math.cos(gp_cone.SemiAngle())*scale + loc_vec + yaxis_vec*(math.sin(gp_cone.SemiAngle())+radius)*scale,  axis_vec*math.cos(gp_cone.SemiAngle())*scale + loc_vec]
+    CP_edges = [(0,1),(1,2),(2,3)]
+    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], ob_name= "STEP Cone")
+    sp_surf.add_modifier("SP - Conical Meshing", 
+                         {"Use Trim Contour":trims_enabled, 
+                          "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
+                          "Scaling Method":1,}, pin=True)
+    return True
 
 
 
@@ -765,6 +800,10 @@ def import_face_nodegroups(shape_hierarchy):
                 to_import_ng_names.add("SP - NURBS Patch Meshing")
             case GeomAbs.GeomAbs_Torus:
                 to_import_ng_names.add("SP - Toroidal Meshing")
+            case GeomAbs.GeomAbs_Sphere:
+                to_import_ng_names.add("SP - Spherical Meshing")
+            case GeomAbs.GeomAbs_Cone:
+                to_import_ng_names.add("SP - Conical Meshing")
     
     append_multiple_node_groups(to_import_ng_names)
 
@@ -783,6 +822,10 @@ def process_topods_face(topods_face, doc, collection, trims_enabled, scale, reso
             build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_Torus:
             build_SP_torus(topods_face, doc, collection, trims_enabled, scale )
+        case GeomAbs.GeomAbs_Sphere:
+            build_SP_sphere(topods_face, doc, collection, trims_enabled, scale ) 
+        case GeomAbs.GeomAbs_Cone:
+            build_SP_cone(topods_face, doc, collection, trims_enabled, scale )
         case _ :
             print("Unsupported Face Type : " + get_face_type_name(topods_face))
     return True
