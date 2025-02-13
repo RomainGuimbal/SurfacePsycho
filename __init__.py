@@ -14,7 +14,7 @@
 bl_info = {
     "name": "Surface Psycho",
     "author": "Romain Guimbal",
-    "version": (0, 7),
+    "version": (0, 8),
     "blender": (4, 3, 0),
     "description": "Precision Surface Design",
     "warning": "Alpha",
@@ -26,11 +26,6 @@ bl_info = {
 import bpy
 import sys
 
-from os.path import dirname
-file_dirname = dirname(__file__)
-if file_dirname not in sys.path:
-    sys.path.append(file_dirname)
-
 from . import gui
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
@@ -41,7 +36,6 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
         col = layout.column()
         col.operator("sp.add_library", text="Add Assets Path")
 
-
 def register():
     gui.register()
     bpy.utils.register_class(SP_AddonPreferences)
@@ -49,7 +43,6 @@ def register():
 def unregister():
     bpy.utils.unregister_class(SP_AddonPreferences)
     gui.unregister()
-
 
 if __name__ == "__main__":
     register()
