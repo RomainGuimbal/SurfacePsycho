@@ -155,7 +155,6 @@ class SP_OT_add_library(bpy.types.Operator):
     bl_label = "Add Library"
     bl_options = {'REGISTER', 'UNDO'}
     def execute(self, context):
-
         #create lib
         asset_lib_path = join(dirname(abspath(__file__)),"assets")
         paths = [a.path for a in bpy.context.preferences.filepaths.asset_libraries]

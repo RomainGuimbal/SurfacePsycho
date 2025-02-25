@@ -100,7 +100,7 @@ gr_curve_flat = [
 "SP - Blend Curve",
 "SP - Compose FlatPatch From Sides",
 "SP - Continuities between Segments",
-"SP - Control Grid from Internal Curves",
+"SP - Loft from Internal Curves",
 "SP - Convert Flat Patch to Bezier Patch",
 "SP - Copy Curve or FlatPatch",
 "SP - Copy Flat Patch Side",
@@ -125,7 +125,7 @@ gr_curve_flat = [
 "SP - Raise or Lower Order of Selected Segment",
 "SP - Reorder Curve Index",
 "SP - Reorder Curve Selection",
-# "SP - Sample Curve Degree + 1 Points",
+ "SP - Sample Curve Degree + 1 Points",
 "SP - Split Curve",
 "SP - Switch Curve Direction",
 "SP - Text to Curve or FlatPatch",
@@ -136,15 +136,12 @@ gr_curve_flat = [
 ]
 
 # BEZIER SURF
-filepath_surf = "//..\..\Bezier-Quest\Bezier_surface.blend"
+filepath_surf = "//..\..\Bezier-Quest\SP - Bezier surface.blend"
 obj_surf = ["Bezier Patch"]
 gr_surf = [
-#"SP - Angle Side Bicubic",
-"SP - Bezier Patch Continuities with Curve",
-"SP - Bezier Patch Continuities with Flat Patch",
 "SP - Auto Midpoints Linear",
-"SP - Blend Flat Patches",
-"SP - Blend Bezier Surface",
+"SP - Blend Surfaces",
+"SP - Connect Bezier Patch",
 "SP - Connect Patch to Trim Contour",
 "SP - Convert Contour",
 "SP - Crop or Extend Patch",
@@ -156,18 +153,16 @@ gr_surf = [
 "SP - Flatten Patch Side",
 "SP - Gradient Map",
 "SP - Loft",
-"SP - Mesh Face Loop to Ruled Surface",
 "SP - Mirror Patch Control Points",
 "SP - Patch Normals",
 "SP - Raise or Lower Order Bezier Patch",
 "SP - Reorder Grid Index",
+"SP - Ruled Surface from Mesh Loop",
 "SP - Select Patch Range",
 "SP - Sew and Symmetrize",
 #"SP - Sweep Linear Bicubic",
 #"SP - Sweep Bicubic",
-#"SP - Bezier Patch Continuities",
 #"SP - Auto Snap Continuities",
-#"SP - Continuities Bicubic",
 #"SP - Straighten Rows",
 ]
 
@@ -181,6 +176,7 @@ gr_nurbs=[
 "SP - NURBS Patch Meshing",
 "SP - NURBS Weighting",
 "SP - Set Knot NURBS Patch",
+"SP - NURBS to Bezier Patch [Naive slow]"
 ]
 
 
@@ -189,6 +185,9 @@ filepath_other= "//..\..\Bezier-Quest\SP - Other Primitives.blend"
 #obj_other=[""]
 gr_other=[
 "SP - Cylindrical Meshing",
+"SP - Toroidal Meshing",
+"SP - Spherical Meshing",
+"SP - Conical Meshing",
 ]
 
 # SHAPES
@@ -230,10 +229,10 @@ full_list = gr_surf + gr_curve_flat + gr_nurbs + [
 "SP - Bezier Patch Meshing",
 ]
 
-for ng in full_list:
-    bpy.ops.sp.replace_node_group(target_name=ng+".001", new_name=ng)
-    
-bpy.ops.sp.replace_node_group(target_name="SP - Bezier Patch Meshing.100", new_name = "SP - Bezier Patch Meshing")
+#for ng in full_list:
+#    bpy.ops.sp.replace_node_group(target_name=ng+".001", new_name=ng)
+#    
+#bpy.ops.sp.replace_node_group(target_name="SP - Bezier Patch Meshing.100", new_name = "SP - Bezier Patch Meshing")
 
 
 
@@ -245,6 +244,14 @@ for ng in bpy.data.node_groups :
         if ng.users == 0 :
             bpy.data.node_groups.remove(ng)
            
+for ng in bpy.data.node_groups :
+   if ng.users == 0 and ng.asset_data == None :
+       bpy.data.node_groups.remove(ng)
+       
+for ng in bpy.data.node_groups :
+   if ng.users == 0 and ng.asset_data == None :
+       bpy.data.node_groups.remove(ng)
+       
 for ng in bpy.data.node_groups :
    if ng.users == 0 and ng.asset_data == None :
        bpy.data.node_groups.remove(ng)

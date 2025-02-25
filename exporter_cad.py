@@ -12,7 +12,7 @@ if file_dirname not in sys.path:
     sys.path.append(file_dirname)
 
 
-from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy, BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeSolid
+from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy, BRepBuilderAPI_GTransform, BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_Transform, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeSolid
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment, GC_MakeCircle
 from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle, GCE2d_MakeCircle
@@ -20,7 +20,7 @@ from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_Plane, Geom_B
 from OCP.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
 from OCP.GeomAdaptor import GeomAdaptor_Surface
 from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
-from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Circ2d, gp_Dir2d, gp_Vec, gp_Vec2d
+from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Circ2d, gp_Dir2d, gp_Vec, gp_Vec2d, gp_GTrsf, gp_Mat
 from OCP.IFSelect import IFSelect_RetDone
 from OCP.IGESControl import IGESControl_Writer
 from OCP.Interface import Interface_Static
@@ -841,7 +841,7 @@ class ShapeHierarchy_export:
             instances.extend(i)
 
         for o in parent.objects :
-            if (not self.use_selection) or (o in self.context.selected_objects):
+            if ((not self.use_selection) or (o in self.context.selected_objects)) and (not o.hide_viewport):
                 sp_type = sp_type_of_object(o, self.context)
                 if sp_type == None:
                     pass
@@ -891,40 +891,43 @@ def blender_instances_to_topods_instances(context, hierarchy, scale = 1000, sew_
 
     for ins in hierarchy.instances :
         if ins.scale == Vector((1.0,1.0,1.0)):
-            #     print(f"Scale not 1, instance is realized (Scale = {ins.scale})")
+            print(f"Scale not 1, instance is realized (Scale = {ins.scale})")
 
-            to_sew_shape_list = []
-            ins_obj = ins.instance_collection.objects
-            
-            # add obj of child collections (doesn't support nested instances)
-            for col in ins.instance_collection.children_recursive :
-                for o in col.objects :
-                    ins_obj.append(o)
+        to_sew_shape_list = []
+        ins_obj = ins.instance_collection.objects
+        
+        # add obj of child collections (doesn't support nested instances)
+        for col in ins.instance_collection.children_recursive :
+            for o in col.objects :
+                ins_obj.append(o)
 
-            for o in ins_obj :
-                sp_type = sp_type_of_object(o, context)
-                if sp_type not in (None, "instance", "empty"):
-                    
-                    if o in hierarchy.obj_shapes.keys():
-                        shape = hierarchy.obj_shapes[o]
-                    else :
-                        shape = blender_object_to_topods_shapes(context, o, sp_type, scale, sew_tolerance)
+        for o in ins_obj :
+            sp_type = sp_type_of_object(o, context)
+            if sp_type not in (None, "instance", "empty"):
+                if o in hierarchy.obj_shapes.keys():
+                    shape = hierarchy.obj_shapes[o]
+                elif not o.hide_viewport:
+                    shape = blender_object_to_topods_shapes(context, o, sp_type, scale, sew_tolerance)
 
+                if ins.scale == Vector((1.0,1.0,1.0)):
                     trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
                     trsf.SetScaleFactor(1)
-                    # trsf = gp_Trsf()
-                    # trsf.SetRotation(blender_to_gp_quaternion(ins.rotation_quaternion))
-                    # trsf.SetTranslationPart(blender_to_gp_vec(ins.location*scale))
                     location = TopLoc_Location(trsf)
                     instance = shape.Located(location)
                     to_sew_shape_list.append(instance)
-
-                    # trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
-                    # to_sew_shape_list.append(BRepBuilderAPI_Transform(shape, trsf, True).Shape())
+                else :
+                    trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
+                    trsf.SetScaleFactor(1)
+                    scalingMatrix = gp_Mat()
+                    scalingMatrix.SetDiagonal(ins.scale.x, ins.scale.y, ins.scale.z)
+                    gtrsf = gp_GTrsf()
+                    gtrsf.SetVectorialPart(scalingMatrix)
+                    shape = BRepBuilderAPI_GTransform(shape, gtrsf, True).Shape()
+                    shape = BRepBuilderAPI_Transform(shape, trsf, False).Shape()
+                    to_sew_shape_list.append(shape)
+                
             # each collection instance is sewed separately
-            sewed_shapes_list.append(sew_shapes(to_sew_shape_list, sew_tolerance))  
-        else :
-            print("Scaled instances cannot be exported")
+            sewed_shapes_list.append(sew_shapes(to_sew_shape_list, sew_tolerance))
         
     return sewed_shapes_list
 
@@ -942,12 +945,20 @@ def sew_shapes(shape_list, tolerance=1e-1):
 
 
 def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
+    import cProfile
+    profiler = cProfile.Profile()
+    profiler.enable()
+
+    
     separated_shapes_list = []
     hierarchy = ShapeHierarchy_export(context, use_selection, scale)
+
+    # prepare shapes
     if len(hierarchy.shapes) > 0 :
         sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
         separated_shapes_list.extend(shells_to_solids(sewed))
     
+    # prepare instances
     if len(hierarchy.instances) > 0 :
         sewed_instances_list = blender_instances_to_topods_instances(context, hierarchy, scale)
         for s in sewed_instances_list :
@@ -957,6 +968,9 @@ def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
         compound = shape_list_to_compound(separated_shapes_list)
     else :
         return None
+    
+    profiler.disable()
+    profiler.print_stats()
     return compound
 
 

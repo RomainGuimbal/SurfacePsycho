@@ -227,6 +227,22 @@ def add_vertex_group(object, name, values):
     return True
 
 
+def add_float_attribute(object, name, values):
+    if name not in object.data.attributes:
+        att = object.data.attributes.new(name=name, type="FLOAT", domain="POINT")
+    
+    length_diff = len(object.data.vertices) - len(values)
+
+    if length_diff == 0:
+        att.data.foreach_set("value", values)
+    elif length_diff > 0:
+        att.data.foreach_set("value", values+[0.0]*length_diff)
+    elif length_diff < 0:
+        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
+        return False
+    
+    return True
+
 # Done but I am not convinced
 # def add_multiple_vertex_group(object, vert_groups_dict : dict[str:list[float]]):
 #     # vert_groups_dict as {"mygroup": [values],...}
