@@ -21,7 +21,6 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, 
 class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
     bl_idname = "sp.step_export"
     bl_label = "Export STEP"
-
     filename_ext = ".step"
     filter_glob: StringProperty(default="*.step", options={'HIDDEN'}, maxlen=255)
     use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
@@ -39,7 +38,6 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
 class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
     bl_idname = "sp.iges_export"
     bl_label = "Export IGES"
-
     filename_ext = ".iges"
     filter_glob: StringProperty(default="*.iges", options={'HIDDEN'}, maxlen=255)
     use_selection: BoolProperty(name="Selected Only", description="Selected only", default=True)
@@ -191,7 +189,6 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row = self.layout.row()
             row.operator("sp.replace_node_group", text="Replace Node Group", icon="UV_SYNC_SELECT")
             
-
         if context.mode == 'OBJECT' or context.mode == 'EDIT_MESH' :
             row = self.layout.row()
             row.operator("sp.add_trim_contour", text="Add Trim Contour", icon="MOD_MESHDEFORM")
@@ -205,6 +202,13 @@ class SP_PT_MainPanel(bpy.types.Panel):
             sub.operator("sp.remove_from_endpoints", text="Remove")
             sub = row.row(align=True)
             sub.operator("sp.select_endpoints", text="Select")
+
+            # Weight
+            self.layout.label(text="Weight")
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col = self.layout.column()
+            col.prop(context.scene.sp_properties, "active_vert_weight", text="Weight")
 
             # Segment Degree
             self.layout.label(text="NURBS")
@@ -230,7 +234,6 @@ class SP_PT_ViewPanel(bpy.types.Panel):
     bl_region_type = "UI"
     bl_category = "Surface Psycho"
     
-
     def draw(self, context):
         row = self.layout.row()
         row.operator("sp.toggle_control_geom", text="Toggle Control Geometry", icon="OUTLINER_DATA_LATTICE")
@@ -251,7 +254,6 @@ class SP_PT_SelectPanel(bpy.types.Panel):
     bl_region_type = "UI"
     bl_category = "Surface Psycho"
     
-
     def draw(self, context):
         # self.layout.label(text="Select Entities")
         layout = self.layout
@@ -277,7 +279,6 @@ def menu_curve(self, context):
     self.layout.separator()
     if context.mode == 'OBJECT':
         self.layout.operator("sp.add_curve", text="PsychoCurve", icon="CURVE_NCURVE")
-
 
 def menu_convert(self, context):
     self.layout.separator()

@@ -51,7 +51,7 @@ def get_face_type_id(TopoDSface : TopoDS_Face):
 
 def get_face_type_name(TopoDSface : TopoDS_Face):
     surface_type = get_face_type_id(TopoDSface)
-    type_names = {
+    type_names = { # Actual constants from occt
         GeomAbs_Plane: "Plane", #0
         GeomAbs_Cylinder: "Cylinder", #1
         GeomAbs_Cone: "Cone", #2
@@ -75,12 +75,18 @@ def sp_type_of_object(o, context):
             return 'instance'
         else :
             return 'empty'
-    else : 
-        ob = o.evaluated_get(context.evaluated_depsgraph_get())
-        if hasattr(ob.data, "attributes") :
-            for k in TYPES_FROM_CP_ATTR.keys():
-                if k in ob.data.attributes.keys() :
-                    return TYPES_FROM_CP_ATTR[k]
+        
+    for m in o.modifiers:
+        if m.type == 'NODES' and m.node_group:
+            if m.node_group.name =="SP - Compound Meshing":
+                return 'compound'
+
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    if hasattr(ob.data, "attributes") :
+        for k in TYPES_FROM_CP_ATTR.keys():
+            if k in ob.data.attributes.keys() :
+                return TYPES_FROM_CP_ATTR[k]
+    
     return None 
 
 

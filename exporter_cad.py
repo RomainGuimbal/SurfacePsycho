@@ -821,17 +821,19 @@ class ShapeHierarchy_export:
         self.scale = scale
         self.sew_tolerance = sew_tolerance
 
-        objs, shapes, empties, instances = self.create_shape_hierarchy(context.scene.collection)
+        objs, shapes, empties, instances, compounds = self.create_shape_hierarchy(context.scene.collection)
         self.shapes = shapes
         self.instances = instances
         self.empties = empties
+        self.compounds = compounds
+
         self.obj_shapes = {} #{obj: shape}
         for i, o in enumerate(objs) :
             self.obj_shapes[o] = shapes[i]
         
 
     def create_shape_hierarchy(self, parent):
-        objs, shapes, empties, instances = [], [], [], []
+        objs, shapes, empties, instances, compounds = [], [], [], [], []
 
         for child in parent.children :
             o, s, e, i = self.create_shape_hierarchy(child)
@@ -839,6 +841,7 @@ class ShapeHierarchy_export:
             shapes.extend(s)
             empties.extend(e)
             instances.extend(i)
+            compounds.extend(i)
 
         for o in parent.objects :
             if ((not self.use_selection) or (o in self.context.selected_objects)) and (not o.hide_viewport):
@@ -852,18 +855,28 @@ class ShapeHierarchy_export:
                     empties.append(o)
                     # treat empties later as they should not be sew (and are instances of the same compound)
                     # empty_to_topods(object, context, scale)
+                elif sp_type == 'compound':
+                    dg = self.context.evaluated_depsgraph_get()
+                    ob = o.evaluated_get(dg)
+                    for inst in dg.object_instances :
+                        if inst.is_instance and inst.parent == ob :
+                    #         blender_object_to_topods_shapes(self.context, o, sp_type, self.scale, self.sew_tolerance)
+                    # sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
+                    # separated_shapes_list.extend(shells_to_solids(sewed))
+                                # compounds.append(o)
+                            pass
                 else :
                     s = blender_object_to_topods_shapes(self.context, o, sp_type, self.scale, self.sew_tolerance)
                     objs.append(o)
                     shapes.append(s)
         
-        return objs, shapes, empties, instances
+        return objs, shapes, empties, instances, compounds
                 
 
 
 def blender_object_to_topods_shapes(context, object, sp_type, scale = 1000, sew_tolerance = 1e-1):
     match sp_type :
-        case "bezier_surf" :
+        case "bezier_surf":
             af = bezier_face_to_topods(object, context, scale)
             shape = mirror_topods_shape(object, af, scale, sew_tolerance)
 
@@ -957,6 +970,13 @@ def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
     if len(hierarchy.shapes) > 0 :
         sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
         separated_shapes_list.extend(shells_to_solids(sewed))
+        
+    # prepare compound objects
+    if len(hierarchy.compouds) > 0 :
+        pass
+        # 
+        # sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
+        # separated_shapes_list.extend(shells_to_solids(sewed))
     
     # prepare instances
     if len(hierarchy.instances) > 0 :
@@ -965,13 +985,13 @@ def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
             separated_shapes_list.extend(shells_to_solids(s))
 
     if len(separated_shapes_list)>0:
-        compound = shape_list_to_compound(separated_shapes_list)
+        root_compound = shape_list_to_compound(separated_shapes_list)
     else :
         return None
     
     profiler.disable()
     profiler.print_stats()
-    return compound
+    return root_compound
 
 
 def export_step(context, filepath, use_selection, scale, sew_tolerance, axis_up='Z', axis_forward='Y'):

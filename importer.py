@@ -57,6 +57,7 @@ class SP_Edge_import :
         self.type = None
         self.circle_att = []
         self.endpoints_att = []
+        self.weight = []
         
         # Edge adaptor
         # 3D
@@ -105,6 +106,7 @@ class SP_Edge_import :
         self.degree_att = [0.0,0.0]
         self.circle_att = [0.0,0.0]
         self.endpoints_att = [1.0,1.0]
+        self.weight = [0.0,0.0]
         # if edge!=None :
         #     start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
         #     end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
@@ -124,8 +126,7 @@ class SP_Edge_import :
         self.degree_att = [0.0]*p_count
         self.circle_att = [0.0]*p_count
         self.endpoints_att = [1.0] + [0.0]*(p_count-2) + [1.0]
-
-        # TODO output weights
+        self.weight = [bezier.Weight(i+1) for i in range(p_count)]
 
     def bspline(self, edge_adaptor):
         bspline = edge_adaptor.BSpline()
@@ -140,10 +141,8 @@ class SP_Edge_import :
             self.endpoints_att = [0.0]*p_count
         else :
             self.endpoints_att = [1.0] + [0.0]*(p_count-2) + [1.0]
-        
-        # TODO output the knot, multiplicities and weights
-        # self.weights = 
-    
+        self.weight = [bspline.Weight(i+1) for i in range(p_count)]
+        # TODO output the knot, multiplicities
 
     def circle(self, edge_adaptor):
         arc_method = False
@@ -160,6 +159,7 @@ class SP_Edge_import :
             self.degree_att = [0.0,0.0,0.0]
             self.circle_att = [0.0,1.0,0.0]
             self.endpoints_att = [1.0,0.0,1.0]
+            self.weight = [0.0,0.0,0.0]
 
         else:
             # arc from 3 pts
@@ -178,6 +178,7 @@ class SP_Edge_import :
                 self.degree_att = [0.0,0.0]
                 self.circle_att = [1.0,1.0]
                 self.endpoints_att = [1.0,1.0]
+                self.weight = [0.0,0.0]
             else: # arc
                 mid_t = (max_t - min_t)/2 + min_t
                 mid_point = edge_adaptor.Value(mid_t)
@@ -187,6 +188,7 @@ class SP_Edge_import :
                 self.degree_att = [0.0,0.0,0.0]
                 self.circle_att = [0.0,1.0,0.0]
                 self.endpoints_att = [1.0,0.0,1.0]
+                self.weight = [0.0,0.0,0.0]
 
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
 
@@ -203,7 +205,7 @@ class SP_Wire_import :
             self.degree_att = []
             self.circle_att = []
             # self.knot_att = []
-            # self.weight_att = []
+            self.weight_att = []
             # self.mult_att = []
 
         topods_edges = get_edges_from_wire(topods_wire)
@@ -224,6 +226,7 @@ class SP_Wire_import :
             self.endpoints_att.extend(sp_edge.endpoints_att[:-1])
             self.degree_att.extend(sp_edge.degree_att[:-1])
             self.circle_att.extend(sp_edge.circle_att[:-1])
+            self.weight_att.append(sp_edge.weight[:-1])
             
         # Add last point for single edge wire
         if len(topods_edges)==1 : # Unclosed control mesh structure for single segment wire (for now just for the circle case) 
@@ -234,6 +237,7 @@ class SP_Wire_import :
             self.endpoints_att.append(sp_edge.endpoints_att[-1])
             self.degree_att.append(sp_edge.degree_att[-1])
             self.circle_att.append(sp_edge.circle_att[-1])
+            self.weight_att.append(sp_edge.weight[-1])
 
         # Open mesh structure
         if e_type == EDGES_TYPES['circle'] or not topods_wire.Closed(): 
@@ -248,8 +252,8 @@ class SP_Wire_import :
 class SP_Contour_import :
     def __init__(self, topodsface,  scale = None):
         self.wires = get_wires_from_face(topodsface)
-        self.verts, self.edges, self.endpoints, self.degrees, self.circles = [], [], [], [], []
-
+        self.verts, self.edges, self.endpoints, self.degrees, self.circles, self.weight = [], [], [], [], [], []
+        
         for w in self.wires :
             if scale!=None:
                 sp_wire = SP_Wire_import(w, scale = scale)
@@ -261,6 +265,7 @@ class SP_Contour_import :
             self.endpoints.extend(sp_wire.endpoints_att)
             self.degrees.extend(sp_wire.degree_att)
             self.circles.extend(sp_wire.circle_att)
+            self.weight.extend(sp_wire.weight_att)
     
     # For square contour following the patch bounds
     def is_trivial(self):
@@ -314,7 +319,7 @@ class SP_Surface_import :
         self.CPvert = CPvert
         self.CPedges = CPedges
         self.CPfaces = CPfaces
-        self.vert, self.edges, self.faces = [],[],[]
+        self.vert, self.edges, self.faces = [], [], []
         
         if trims_enabled :
             contour = SP_Contour_import(face)
@@ -349,6 +354,8 @@ class SP_Surface_import :
             self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + contour.endpoints)
             self.assign_vertex_gr("Degree", [0.0]*len(CPvert) + contour.degrees)
             self.assign_vertex_gr("Circle", [0.0]*len(CPvert) + contour.circles)
+        
+        # weights
 
         collection.objects.link(self.ob)
 
@@ -490,25 +497,33 @@ def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0
     u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
     uv_bounds = bezier_surface.Bounds()
     vector_pts = np.zeros((u_count, v_count), dtype=Vector)
+    weight = np.ones((v_count, u_count), dtype=float)
     for u in range(1, u_count + 1):
         for v in range(1, v_count + 1):
             pole = bezier_surface.Pole(u, v)
             vector_pts[u-1, v-1] = Vector((pole.X(), pole.Y(), pole.Z()))*scale
 
-            weight = bezier_surface.Weight(u, v)
-            if weight!=1.0:
-                print("Weighted Bezier not supported")
-
+            weight[u,v] = bezier_surface.Weight(u, v)
+    
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
-
+   
+    # standard surface
     sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert.tolist(), [], CPfaces, uv_bounds = uv_bounds)
+    
+    # Weight
+    weight = weight.flatten().tolist()
+    weight.extend(sp_surf.weight)
+    sp_surf.assign_float_attribute("Weight", weight)
+    
+    # Modifier
     sp_surf.add_modifier("SP - Bezier Patch Meshing", 
                            {"Use Trim Contour":trims_enabled,
                             "Resolution U": resolution,
                             "Resolution V": resolution,
                             "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
                             "Scaling Method":1}, pin=True)
+
     return True
 
 
@@ -532,38 +547,33 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
     
     # Custom knot
     custom_knot = False
+    # not custom if sequence a...a,b...b (bezier)
     if any(x not in [min(u_knots), max(u_knots)] for x in u_knots) or any(x not in [min(v_knots), max(v_knots)] for x in v_knots):
         custom_knot = True
-        # print(u_knots)
-        # print(v_knots)
     # TODO
     # else :
     #    Convert to bezier then
     #    build_SP_BezierPatch(...)
 
-    # vertex aligned attributes
+    # Vertex aligned attributes
 
     # CP Grid
-    custom_weight = False
     vector_pts = np.zeros((v_count + v_closed, u_count + u_closed), dtype=Vector)
-    weights = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
+    weight = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
     for u in range(u_count):
         for v in range(v_count):
             pole = bspline_surface.Pole(u+1, v+1)
             vector_pts[v, u] = Vector((pole.X(), pole.Y(), pole.Z()))*scale
             
             weight = bspline_surface.Weight(u+1, v+1)
-            weights[v, u] = weight
-            
-            # Custom weight flag, true if 1 weight is not 1.0
-            custom_weight = custom_weight or weight!=1.0
+            weight[v, u] = weight
 
     if u_closed :
         vector_pts[:,u_count] = vector_pts[:,0]
-        weights[:,u_count] = weights[:,0]
+        weight[:,u_count] = weight[:,0]
     if v_closed :
         vector_pts[v_count,:] = vector_pts[0,:]
-        weights[v_count,:] = weights[0,:]
+        weight[v_count,:] = weight[0,:]
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
@@ -576,11 +586,10 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
         sp_surf.assign_float_attribute("Multiplicity U", (np.array(u_mult)/10).tolist())
         sp_surf.assign_float_attribute("Multiplicity V", (np.array(v_mult)/10).tolist())
 
-    if custom_weight:
-        # Since Nurbs trim contour uses "weight" attr too, set all trim contour weights to 1.0. To improve later
-        weights = weights.flatten().tolist()
-        weights.extend([1.0]*(len(sp_surf.ob.data.vertices)-len(weights)))
-        sp_surf.assign_float_attribute("Weight", weights)
+    # Weight
+    weight = weight.flatten().tolist()
+    weight.extend(sp_surf.weight)
+    sp_surf.assign_float_attribute("Weight", weight)
     
     # If 1 mult not 1 or no custom knot -> clamp
     u_clamped = any(m!=1 for m in u_mult) or not custom_knot

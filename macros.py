@@ -766,6 +766,25 @@ def set_seg_degree(self, context):
 
 
 
+def set_vert_weight(self, context):
+    objs = context.objects_in_mode
+    for o in objs :
+        bpy.ops.object.mode_set(mode='OBJECT')
+        p_count = len(o.data.vertices)
+
+        val = [1.0]*p_count
+        if "Weight" not in o.data.attributes :
+            o.data.attributes.new(name="Weight", type="FLOAT", domain="POINT")
+        else :
+            o.data.attributes["Weight"].data.foreach_get("value", val)
+        for i,v in enumerate(o.data.vertices):
+            if v.select:
+                val[i] = self.active_vert_weight
+
+        o.data.attributes["Weight"].data.foreach_set("value", val)
+        bpy.ops.object.mode_set(mode='EDIT')
+
+
 
 class SP_Props_Group(bpy.types.PropertyGroup):
 
@@ -779,11 +798,19 @@ class SP_Props_Group(bpy.types.PropertyGroup):
 
     active_segment_degree : bpy.props.IntProperty(
     name="Degree",
-    description="Segment Degree. Change it by selecting the first point of the segment (try both ends to know which is the first)",
+    description="Segment Degree. Change it by selecting the first point of the segment (try both ends to know which one is the first)",
     default=3,
     min=0,
     max=10,
     update=set_seg_degree
+    )
+
+    active_vert_weight : bpy.props.FloatProperty(
+    name="Weight",
+    description="Control point weight of rational spline",
+    default=1.0,
+    min=0,
+    update=set_vert_weight
     )
 
 
@@ -908,7 +935,7 @@ classes = [
 def register():
     for c in classes:
         bpy.utils.register_class(c)
-    bpy.types.Scene.sp_properties = bpy.props.PointerProperty(type=SP_Props_Group) 
+    bpy.types.Scene.sp_properties = bpy.props.PointerProperty(type=SP_Props_Group)
 
 def unregister():
     del bpy.types.Scene.sp_properties
