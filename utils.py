@@ -37,7 +37,7 @@ TYPES_FROM_CP_ATTR = {        'CP_bezier_surf':'bicubic_surf',
                               'CP_NURBS_curve':'NURBS_curve',
                                  'CP_cylinder':'cylinder',
                                     'CP_torus':'torus',
-                                    'CP_conic':'conic',
+                                'angle_radius':'cone',
                                    'CP_sphere':'sphere',
                                'CP_swept_surf':'swept_surf',
                           'CP_revolution_surf':'revolution_surf',}

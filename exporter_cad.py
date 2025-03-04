@@ -16,11 +16,11 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy, BRepBuilderAPI_GTransform, B
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment, GC_MakeCircle
 from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle, GCE2d_MakeCircle
-from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_Plane, Geom_BezierCurve, Geom_BSplineCurve
+from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_Plane, Geom_BezierCurve, Geom_BSplineCurve, Geom_ToroidalSurface, Geom_ConicalSurface, Geom_CylindricalSurface
 from OCP.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
 from OCP.GeomAdaptor import GeomAdaptor_Surface
 from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
-from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Circ2d, gp_Dir2d, gp_Vec, gp_Vec2d, gp_GTrsf, gp_Mat
+from OCP.gp import gp_Pnt, gp_Dir, gp_Pln, gp_Trsf, gp_Ax1, gp_Ax2, gp_Ax3, gp_Circ, gp_Ax2d, gp_Pnt2d, gp_Circ2d, gp_Dir2d, gp_Vec, gp_Vec2d, gp_GTrsf, gp_Mat
 from OCP.IFSelect import IFSelect_RetDone
 from OCP.IGESControl import IGESControl_Writer
 from OCP.Interface import Interface_Static
@@ -533,7 +533,7 @@ def bezier_face_to_topods(o, context, scale=1000):
     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
     points = get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', u_count*v_count)
-    points *= scale #unit correction
+    points *= scale
 
     controlPoints = TColgp_Array2OfPnt(1, u_count, 1, v_count)
     for i in range(v_count):
@@ -571,7 +571,7 @@ def NURBS_face_to_topods(o, context, scale=1000):
     u_count = get_attribute_by_name(ob, 'CP_count', 'first_int')
     v_count = get_attribute_by_name(ob, 'CP_count', 'second_int')
     points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', u_count*v_count)
-    points *= scale #unit correction
+    points *= scale
     degree_u, degree_v = get_attribute_by_name(ob, 'Degrees', 'int', 2)
     try:
         isclamped_u, isclamped_v = get_attribute_by_name(ob, 'IsClamped', 'bool', 2)
@@ -623,6 +623,37 @@ def NURBS_face_to_topods(o, context, scale=1000):
 
 
 
+def cone_face_to_topods(o, context, scale=1000):
+    # Get attr
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    origin, dir1, dir2 = get_attribute_by_name(ob, 'axis3', 'vec3', 3)
+    semi_angle, radius = get_attribute_by_name(ob, 'angle_radius', 'float', 2)
+    # radius *= scale
+
+    # Create geom
+    axis3 = gp_Ax3(gp_Pnt(origin[0], origin[1], origin[2]), gp_Dir(dir1[0], dir1[1], dir1[2]), gp_Dir(dir2[0], dir2[1], dir2[2]))
+    geom_surf = Geom_ConicalSurface(axis3, semi_angle, 0.0)
+
+    # Build trim contour
+    contour = SP_Contour_export(ob, 'CP_trim_contour_UV', 'CP_count_trim_contour_UV', 'IsClamped_trim_contour',
+                                'IsPeriodic_trim_contour', is2D = True, geom_surf=geom_surf)
+    
+    # Create topods face
+    if not contour.has_wire :
+        return geom_to_topods_face(geom_surf)
+    else :
+        wires = contour.wires_dict
+
+    # Get topods wires
+    outer_wire = wires[-1].get_topods_wire()
+    inner_wires=[]
+    for k in wires.keys():
+        if k!=-1:
+            inner_wires.append(wires[k].get_topods_wire())
+
+    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+    return face
+
 
 
 
@@ -667,7 +698,7 @@ def curve_to_topods(o, context, scale=1000):
 
     # Get CP position attr
     points = get_attribute_by_name(ob, 'CP_curve', 'vec3', total_p_count)
-    points*=scale # Unit correction*
+    points*=scale
 
 
     wire = SP_Wire_export({'CP':points},
@@ -836,12 +867,12 @@ class ShapeHierarchy_export:
         objs, shapes, empties, instances, compounds = [], [], [], [], []
 
         for child in parent.children :
-            o, s, e, i = self.create_shape_hierarchy(child)
+            o, s, e, i, c = self.create_shape_hierarchy(child)
             objs.extend(o)
             shapes.extend(s)
             empties.extend(e)
             instances.extend(i)
-            compounds.extend(i)
+            compounds.extend(c)
 
         for o in parent.objects :
             if ((not self.use_selection) or (o in self.context.selected_objects)) and (not o.hide_viewport):
@@ -849,7 +880,6 @@ class ShapeHierarchy_export:
                 if sp_type == None:
                     pass
                 elif sp_type == "instance":
-                    # empties/instances are listed for later
                     instances.append(o)
                 elif sp_type == "empty":
                     empties.append(o)
@@ -876,26 +906,30 @@ class ShapeHierarchy_export:
 
 def blender_object_to_topods_shapes(context, object, sp_type, scale = 1000, sew_tolerance = 1e-1):
     match sp_type :
+        case "cone":
+            shape = cone_face_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+
         case "bezier_surf":
-            af = bezier_face_to_topods(object, context, scale)
-            shape = mirror_topods_shape(object, af, scale, sew_tolerance)
+            shape = bezier_face_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
         case "NURBS_surf" :
-            nf = NURBS_face_to_topods(object, context, scale)
-            shape = mirror_topods_shape(object, nf, scale, sew_tolerance)
+            shape = NURBS_face_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
         case "planar" :
-            pf = flat_patch_to_topods(object, context, scale)
-            shape = mirror_topods_shape(object, pf, scale, sew_tolerance)
+            shape = flat_patch_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
         case "curve" :
-            cu = curve_to_topods(object, context, scale)
-            shape = mirror_topods_shape(object, cu, scale, sew_tolerance)
+            shape = curve_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
         
         case _ :
             raise Exception("Invalid type")
 
-    return shape
+    return shape_mirrored
 
 
 
@@ -903,11 +937,11 @@ def blender_instances_to_topods_instances(context, hierarchy, scale = 1000, sew_
     sewed_shapes_list = []
 
     for ins in hierarchy.instances :
-        if ins.scale == Vector((1.0,1.0,1.0)):
+        if ins.scale != Vector((1.0,1.0,1.0)):
             print(f"Scale not 1, instance is realized (Scale = {ins.scale})")
 
         to_sew_shape_list = []
-        ins_obj = ins.instance_collection.objects
+        ins_obj = list(ins.instance_collection.objects)
         
         # add obj of child collections (doesn't support nested instances)
         for col in ins.instance_collection.children_recursive :
@@ -939,9 +973,9 @@ def blender_instances_to_topods_instances(context, hierarchy, scale = 1000, sew_
                     shape = BRepBuilderAPI_Transform(shape, trsf, False).Shape()
                     to_sew_shape_list.append(shape)
                 
-            # each collection instance is sewed separately
-            sewed_shapes_list.append(sew_shapes(to_sew_shape_list, sew_tolerance))
-        
+        # each collection instance is sewed separately
+        sewed_shapes_list.append(sew_shapes(to_sew_shape_list, sew_tolerance))
+    
     return sewed_shapes_list
 
 
@@ -958,10 +992,9 @@ def sew_shapes(shape_list, tolerance=1e-1):
 
 
 def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
-    import cProfile
-    profiler = cProfile.Profile()
-    profiler.enable()
-
+    # import cProfile
+    # profiler = cProfile.Profile()
+    # profiler.enable()
     
     separated_shapes_list = []
     hierarchy = ShapeHierarchy_export(context, use_selection, scale)
@@ -972,7 +1005,7 @@ def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
         separated_shapes_list.extend(shells_to_solids(sewed))
         
     # prepare compound objects
-    if len(hierarchy.compouds) > 0 :
+    if len(hierarchy.compounds) > 0 :
         pass
         # 
         # sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
@@ -989,8 +1022,8 @@ def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
     else :
         return None
     
-    profiler.disable()
-    profiler.print_stats()
+    # profiler.disable()
+    # profiler.print_stats()
     return root_compound
 
 

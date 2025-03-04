@@ -327,8 +327,23 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.append(menu_export_svg)
+
+    #TODO
+    # # Add hotkey
+    # wm = bpy.context.window_manager
+    # kc = wm.keyconfigs.addon
+    # if kc:
+    #     km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
+    #     kmi = km.keymap_items.new(OBJECT_OT_CustomOp.bl_idname, type='W', value='PRESS', ctrl=True)
+    #     addon_keymaps.append((km, kmi))
     
-def unregister():
+def unregister():  
+    #TODO
+    # # # Remove hotkey
+    # for km, kmi in addon_keymaps:
+    #     km.keymap_items.remove(kmi)
+    # addon_keymaps.clear()
+
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_svg)
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)
