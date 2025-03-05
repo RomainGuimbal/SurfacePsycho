@@ -235,14 +235,16 @@ def add_vertex_group(object, name, values):
 
 def add_float_attribute(object, name, values):
     if name not in object.data.attributes:
-        att = object.data.attributes.new(name=name, type="FLOAT", domain="POINT")
+        object.data.attributes.new(name=name, type="FLOAT", domain="POINT")
+        object.data.update()
     
     length_diff = len(object.data.vertices) - len(values)
-
+    att = object.data.attributes[name]
+    
     if length_diff == 0:
-        att.data.foreach_set("value", values)
+        att.data.foreach_set('value', np.array(values))
     elif length_diff > 0:
-        att.data.foreach_set("value", values+[0.0]*length_diff)
+        att.data.foreach_set('value', np.array(values+[0.0]*length_diff))
     elif length_diff < 0:
         print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
         return False

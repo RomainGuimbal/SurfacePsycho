@@ -219,6 +219,43 @@ def auto_knot_and_mult(p_count, degree, isclamped = True, is_unclamped_periodic 
 
 
 
+def get_patch_knot_and_mult(ob, u_count, v_count, degree_u, degree_v, isclamped_u, isclamped_v, isperiodic_u, isperiodic_v):
+    try :
+        try:
+            umult_att = get_attribute_by_name(ob, 'MultiplicityU', 'int') #space removed as a temp solution to avoid vertex group collision
+            u_length = sum(np.asarray(umult_att)>0)
+        except KeyError :
+            umult_att = get_attribute_by_name(ob, 'MultiplicityU', 'float')
+            u_length = int(sum(np.asarray(umult_att)>0))
+        uknots_att = get_attribute_by_name(ob, 'KnotU', 'float', u_length)
+
+        try:
+            vmult_att = get_attribute_by_name(ob, 'MultiplicityV', 'int')
+            v_length = sum(np.asarray(vmult_att)>0)
+        except Exception :
+            vmult_att = get_attribute_by_name(ob, 'MultiplicityV', 'float')
+            v_length = int(sum(np.asarray(vmult_att)>0))
+        vknots_att = get_attribute_by_name(ob, 'KnotV', 'float', v_length)
+
+    except KeyError: # No custom knot
+        uknot, umult = auto_knot_and_mult(u_count, degree_u, isclamped_u, isperiodic_u) 
+        vknot, vmult = auto_knot_and_mult(v_count, degree_v, isclamped_v, isperiodic_v)
+        return uknot, vknot, umult, vmult
+    
+    uknot = TColStd_Array1OfReal(1, u_length)
+    umult = TColStd_Array1OfInteger(1, u_length)
+    for i in range(u_length):
+        uknot.SetValue(i+1, uknots_att[i])
+        umult.SetValue(i+1, umult_att[i])
+
+    vknot = TColStd_Array1OfReal(1, v_length)
+    vmult = TColStd_Array1OfInteger(1, v_length)
+    for i in range(v_length):
+        vknot.SetValue(i+1, vknots_att[i])
+        vmult.SetValue(i+1, vmult_att[i])
+    
+    return uknot, vknot, umult, vmult
+
 
 
 
@@ -580,18 +617,7 @@ def NURBS_face_to_topods(o, context, scale=1000):
         isclamped_u, isclamped_v, isperiodic_u, isperiodic_v = True, True, False, False
 
     # Knots and Multiplicities
-    try : 
-        knot_u = get_attribute_by_name(ob, 'Knot U', 'int')
-        knot_v = get_attribute_by_name(ob, 'Knot V', 'int')
-        mult_u = get_attribute_by_name(ob, 'Multiplicity U', 'int')
-        mult_v = get_attribute_by_name(ob, 'Multiplicity V', 'int')
-
-        # TODO (not auto)
-        uknots, umult = auto_knot_and_mult(u_count, degree_u, isclamped_u, isperiodic_u) # TODO 
-        vknots, vmult = auto_knot_and_mult(v_count, degree_v, isclamped_v, isperiodic_v) # TODO
-    except KeyError: # No custom knot
-        uknots, umult = auto_knot_and_mult(u_count, degree_u, isclamped_u, isperiodic_u) 
-        vknots, vmult = auto_knot_and_mult(v_count, degree_v, isclamped_v, isperiodic_v)
+    uknots, vknots, umult, vmult = get_patch_knot_and_mult(ob, u_count, v_count, degree_u, degree_v, isclamped_u, isclamped_v, isperiodic_u, isperiodic_v)
 
     # Poles grid
     poles = TColgp_Array2OfPnt(1, u_count, 1, v_count)

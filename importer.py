@@ -333,8 +333,10 @@ class SP_Surface_import :
                 del contour
             else :
                 self.vert, self.edges, self.faces = join_mesh_entities(CPvert, CPedges, CPfaces, contour.verts, contour.edges, [])           
+            self.weight = contour.weight
         else :
             self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
+            self.weight = []
 
         name, color = get_shape_name_and_color(face, doc)
         if name == None:
@@ -565,8 +567,8 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
             pole = bspline_surface.Pole(u+1, v+1)
             vector_pts[v, u] = Vector((pole.X(), pole.Y(), pole.Z()))*scale
             
-            weight = bspline_surface.Weight(u+1, v+1)
-            weight[v, u] = weight
+            w = bspline_surface.Weight(u+1, v+1)
+            weight[v, u] = w
 
     if u_closed :
         vector_pts[:,u_count] = vector_pts[:,0]
