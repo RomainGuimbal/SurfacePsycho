@@ -143,7 +143,7 @@ class SP_OT_add_curvatures_probe(bpy.types.Operator):
     bl_idname = "sp.add_curvatures_probe"
     bl_label = "Add Curvatures Probe"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Object inspect curvature. Bind to surface in modifier's properties"
+    bl_description = "Discrete mesh curvature inspector object. Bind to any surface through modifier properties"
 
     def execute(self, context):
         append_object_by_name("SP - Curvatures Probe", context)
@@ -633,6 +633,56 @@ class SP_OT_remove_from_circles(bpy.types.Operator):
     
 
 
+
+class SP_OT_assign_as_ellipse(bpy.types.Operator):
+    bl_idname = "sp.assign_as_ellipse"
+    bl_label = "Assign as Ellipse"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        objs = context.objects_in_mode
+
+        for o in objs :
+            # Switch to object mode to modify vertex groups
+            bpy.ops.object.mode_set(mode='OBJECT')  
+            # Ensure "Ellipses" vertex group exists
+            if "Ellipse" not in o.vertex_groups:
+                o.vertex_groups.new(name="Ellipse")
+            
+            vg = o.vertex_groups["Ellipse"]
+            
+            # Add selected vertices to the vertex group
+            for v in o.data.vertices:
+                if v.select:
+                    vg.add([v.index], 1.0, 'REPLACE')
+            bpy.ops.object.mode_set(mode='EDIT') 
+        return {'FINISHED'}
+    
+
+
+class SP_OT_remove_from_ellipses(bpy.types.Operator):
+    bl_idname = "sp.remove_from_ellipses"
+    bl_label = "Remove from Ellipses"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        objs = context.objects_in_mode
+        for o in objs :
+            bpy.ops.object.mode_set(mode='OBJECT')
+            # Ensure "Endpoints" vertex group exists
+            if "Ellipse" in o.vertex_groups:
+                vg = o.vertex_groups["Ellipse"]
+                
+                # Remove selected vertices to the vertex group
+                for v in o.data.vertices:
+                    if v.select:
+                        vg.remove([v.index])
+            bpy.ops.object.mode_set(mode='EDIT')
+        return {'FINISHED'}
+    
+
+
+
 class SP_OT_add_trim_contour(bpy.types.Operator):
     bl_idname = "sp.add_trim_contour"
     bl_label = "Add Trim Contour"
@@ -914,10 +964,12 @@ classes = [
     SP_OT_add_oriented_empty,
     SP_OT_add_trim_contour,
     SP_OT_assign_as_circle,
+    SP_OT_assign_as_ellipse,
     SP_OT_assign_as_endpoint,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_from_circles,
+    SP_OT_remove_from_ellipses,
     SP_OT_remove_from_endpoints,
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,

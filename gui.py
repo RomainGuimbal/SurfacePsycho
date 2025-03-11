@@ -163,20 +163,12 @@ class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
-
-
-
-
-
-
-
-
 class SP_PT_MainPanel(bpy.types.Panel):
     bl_idname = "SP_PT_MainPanel"
     bl_label = "Surface Psycho"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Tool"
+    bl_category = "Item"
     
     def draw(self, context):
         if context.mode == 'OBJECT':
@@ -185,46 +177,8 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row.operator("sp.quick_export", text="Quick export as .STEP", icon="EXPORT")
         
             row = self.layout.row()
-            row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR")
-            row = self.layout.row()
             row.operator("sp.replace_node_group", text="Replace Node Group", icon="UV_SYNC_SELECT")
             
-        if context.mode == 'OBJECT' or context.mode == 'EDIT_MESH' :
-            row = self.layout.row()
-            row.operator("sp.add_trim_contour", text="Add Trim Contour", icon="MOD_MESHDEFORM")
-
-        if context.mode == 'EDIT_MESH':
-            # Endpoints
-            self.layout.label(text="Endpoints")
-            row = self.layout.row()
-            sub = row.row(align=True)
-            sub.operator("sp.assign_as_endpoint", text="Assign")
-            sub.operator("sp.remove_from_endpoints", text="Remove")
-            sub = row.row(align=True)
-            sub.operator("sp.select_endpoints", text="Select")
-
-            # Weight
-            self.layout.label(text="Weight")
-            self.layout.use_property_split = True
-            self.layout.use_property_decorate = False
-            col = self.layout.column()
-            col.prop(context.scene.sp_properties, "active_vert_weight", text="Weight")
-
-            # Segment Degree
-            self.layout.label(text="NURBS")
-            self.layout.use_property_split = True
-            self.layout.use_property_decorate = False
-            col = self.layout.column()
-            col.prop(context.scene.sp_properties, "active_segment_degree", text="Degree")
-
-            # Circles
-            self.layout.label(text="Circle")
-            row = self.layout.row()
-            sub = row.row(align=True)
-            sub.operator("sp.assign_as_circle", text="Assign")
-            sub.operator("sp.remove_from_circles", text="Remove")
-
-        
 
 class SP_PT_ViewPanel(bpy.types.Panel):
     bl_idname = "SP_PT_ViewPanel"
@@ -245,6 +199,9 @@ class SP_PT_ViewPanel(bpy.types.Panel):
         col = self.layout.column()
         col.prop(context.scene.sp_properties, "combs_scale", text="Combs Scale")
 
+        row = self.layout.row()
+        row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR")
+
 
 class SP_PT_SelectPanel(bpy.types.Panel):
     bl_idname = "SP_PT_SelectPanel"
@@ -255,17 +212,64 @@ class SP_PT_SelectPanel(bpy.types.Panel):
     bl_category = "Surface Psycho"
     
     def draw(self, context):
-        # self.layout.label(text="Select Entities")
-        layout = self.layout
-        split = layout.split(factor=0.5, align=True)
-        col1 = split.column(align=True)
-        col2 = split.column(align=True)
+        if context.mode == 'OBJECT':
+            layout = self.layout
+            split = layout.split(factor=0.5, align=True)
+            col1 = split.column(align=True)
+            col2 = split.column(align=True)
 
-        col1.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
-        col2.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
+            col1.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
+            col2.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
 
 
+class SP_PT_EditPanel(bpy.types.Panel):
+    bl_idname = "SP_PT_EditPanel"
+    bl_parent_id = "SP_PT_MainPanel"
+    bl_label = "Edit"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Surface Psycho"
+    
+    def draw(self, context):
+        if context.mode == 'OBJECT' or context.mode == 'EDIT_MESH' :
+            row = self.layout.row()
+            row.operator("sp.add_trim_contour", text="Add Trim Contour", icon="MOD_MESHDEFORM")
 
+        if context.mode == 'EDIT_MESH':
+            # Endpoints
+            row = self.layout.row()
+            row.label(text="Endpoints")
+            sub = row.row(align=True)
+            sub.operator("sp.assign_as_endpoint", text="Assign")
+            sub.operator("sp.remove_from_endpoints", text="Remove")
+            sub = row.row()
+            sub.operator("sp.select_endpoints", text="Select")
+
+            # Circles
+            row = self.layout.row()
+            row.label(text="Circle")
+            sub = row.row(align=True)
+            sub.operator("sp.assign_as_circle", text="Assign")
+            sub.operator("sp.remove_from_circles", text="Remove")
+
+            # Ellipses
+            row = self.layout.row()
+            row.label(text="Ellipse")
+            sub = row.row(align=True)
+            sub.operator("sp.assign_as_ellipse", text="Assign")
+            sub.operator("sp.remove_from_ellipses", text="Remove")
+
+            # Segment Degree
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col = self.layout.column()
+            col.prop(context.scene.sp_properties, "active_segment_degree", text="NURBS Degree")
+            
+            # Weight
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col = self.layout.column()
+            col.prop(context.scene.sp_properties, "active_vert_weight", text="Weight")
 
 
 def menu_surface(self, context):
@@ -306,6 +310,7 @@ classes = [
     SP_PT_MainPanel,
     SP_PT_ViewPanel,
     SP_PT_SelectPanel,
+    SP_PT_EditPanel,
     SP_OT_ExportSvg,        
     SP_OT_ExportStep,
     SP_OT_ExportIges,
