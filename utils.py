@@ -233,7 +233,7 @@ def add_vertex_group(object, name, values):
     return True
 
 
-def add_float_attribute(object, name, values):
+def add_float_attribute(object, name, values, fallback_value = 0.0):
     if name not in object.data.attributes:
         object.data.attributes.new(name=name, type="FLOAT", domain="POINT")
         object.data.update()
@@ -242,9 +242,29 @@ def add_float_attribute(object, name, values):
     att = object.data.attributes[name]
     
     if length_diff == 0:
-        att.data.foreach_set('value', np.array(values))
+        att.data.foreach_set('value', values)
     elif length_diff > 0:
-        att.data.foreach_set('value', np.array(values+[0.0]*length_diff))
+        values.extend([fallback_value]*length_diff)
+        att.data.foreach_set('value', values)
+    elif length_diff < 0:
+        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
+        return False
+    
+    return True
+
+def add_int_attribute(object, name, values, fallback_value = 0):
+    if name not in object.data.attributes:
+        object.data.attributes.new(name=name, type="INT", domain="POINT")
+        object.data.update()
+    
+    length_diff = len(object.data.vertices) - len(values)
+    att = object.data.attributes[name]
+    
+    if length_diff == 0:
+        att.data.foreach_set('value', values)
+    elif length_diff > 0:
+        values.extend([fallback_value]*length_diff)
+        att.data.foreach_set('value', values)
     elif length_diff < 0:
         print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
         return False
@@ -591,10 +611,12 @@ def shells_to_solids(topods_shape : TopoDS_Shape):
     
     # if compound, decompose
     if topods_shape.ShapeType() == TopAbs.TopAbs_COMPOUND :
+        
         # shells to solids :
         iterator = TopoDS_Iterator(topods_shape)
         while iterator.More():
             sh = iterator.Value()
+
             # Shell
             if sh.ShapeType() == TopAbs.TopAbs_SHELL :
                 make_solid = BRepBuilderAPI_MakeSolid(TopoDS.Shell_s(sh))
@@ -604,12 +626,14 @@ def shells_to_solids(topods_shape : TopoDS_Shape):
                 else :
                     separated_shapes_list.append(sh)
                     print("None Manifold Shell")
-            # Face
-            elif sh.ShapeType() == TopAbs.TopAbs_FACE :
+
+            # Face or wire pass trough
+            elif sh.ShapeType() == TopAbs.TopAbs_FACE or sh.ShapeType() == TopAbs.TopAbs_WIRE:
                 separated_shapes_list.append(sh)
+            
             # Other
             else :
-                print(f"Unexpected shape of type {topods_shape.ShapeType()}")
+                print(f"Unexpected shape of type {sh.ShapeType()}")
             iterator.Next()
 
     # Single shell

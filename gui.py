@@ -30,7 +30,13 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
     sew_tolerance_exponent : IntProperty(name= "Sewing Tolerance Exponent", description="In millimeter, after scale have been applied (-1 = 0.1mm)", default = -1, soft_min = -10, soft_max=0)
 
     def execute(self, context):
-        export_step(context, self.filepath, self.use_selection, self.scale, 10**self.sew_tolerance_exponent, 'Z', 'Y', )
+        export_isdone = export_step(context, self.filepath, self.use_selection, self.scale, 10**self.sew_tolerance_exponent, 'Z', 'Y', )
+        
+        if export_isdone:
+            pass
+            # self.report({'INFO'}, f"Step file exported as {self.filepath}.step")
+        else :
+            self.report({'INFO'}, 'No SurfacePsycho Objects selected')
         return {'FINISHED'}
 
 

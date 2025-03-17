@@ -58,6 +58,8 @@ class SP_Edge_import :
         self.circle_att = []
         self.endpoints_att = []
         self.weight = []
+        self.mult = []
+        self.knot = []
         
         # Edge adaptor
         # 3D
@@ -107,6 +109,9 @@ class SP_Edge_import :
         self.circle_att = [0.0,0.0]
         self.endpoints_att = [1.0,1.0]
         self.weight = [0.0,0.0]
+        self.knot = [0.0,0.0]
+        self.mult = [0,0]
+
         # if edge!=None :
         #     start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
         #     end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
@@ -127,6 +132,8 @@ class SP_Edge_import :
         self.circle_att = [0.0]*p_count
         self.endpoints_att = [1.0] + [0.0]*(p_count-2) + [1.0]
         self.weight = [bezier.Weight(i+1) for i in range(p_count)]
+        self.knot = [0.0]*p_count
+        self.mult = [0]*p_count
 
     def bspline(self, edge_adaptor):
         bspline = edge_adaptor.BSpline()
@@ -142,7 +149,11 @@ class SP_Edge_import :
         else :
             self.endpoints_att = [1.0] + [0.0]*(p_count-2) + [1.0]
         self.weight = [bspline.Weight(i+1) for i in range(p_count)]
-        # TODO output the knot, multiplicities
+
+        knot = normalize_array(tcolstd_array1_to_list(bspline.Knots()))
+        mult = tcolstd_array1_to_list(bspline.Multiplicities())
+        self.knot = knot + [0.0]*(p_count-len(knot))
+        self.mult = mult + [0]*(p_count-len(mult))
 
     def circle(self, edge_adaptor):
         arc_method = False
@@ -160,6 +171,8 @@ class SP_Edge_import :
             self.circle_att = [0.0,1.0,0.0]
             self.endpoints_att = [1.0,0.0,1.0]
             self.weight = [0.0,0.0,0.0]
+            self.knot = [0.0,0.0,0.0]
+            self.mult = [0,0,0]
 
         else:
             # arc from 3 pts
@@ -179,6 +192,8 @@ class SP_Edge_import :
                 self.circle_att = [1.0,1.0]
                 self.endpoints_att = [1.0,1.0]
                 self.weight = [0.0,0.0]
+                self.knot = [0.0,0.0]
+                self.mult = [0,0,0]
             else: # arc
                 mid_t = (max_t - min_t)/2 + min_t
                 mid_point = edge_adaptor.Value(mid_t)
@@ -189,6 +204,8 @@ class SP_Edge_import :
                 self.circle_att = [0.0,1.0,0.0]
                 self.endpoints_att = [1.0,0.0,1.0]
                 self.weight = [0.0,0.0,0.0]
+                self.knot = [0.0,0.0,0.0]
+                self.mult = [0,0,0]
 
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
 
@@ -204,9 +221,9 @@ class SP_Wire_import :
             self.endpoints_att = []
             self.degree_att = []
             self.circle_att = []
-            # self.knot_att = []
             self.weight_att = []
-            # self.mult_att = []
+            self.knot_att = []
+            self.mult_att = []
 
         topods_edges = get_edges_from_wire(topods_wire)
         is_wire_forward = topods_wire.Orientation() == TopAbs_FORWARD
@@ -226,18 +243,22 @@ class SP_Wire_import :
             self.endpoints_att.extend(sp_edge.endpoints_att[:-1])
             self.degree_att.extend(sp_edge.degree_att[:-1])
             self.circle_att.extend(sp_edge.circle_att[:-1])
-            self.weight_att.append(sp_edge.weight[:-1])
+            self.weight_att.extend(sp_edge.weight[:-1])
+            self.knot_att.extend(sp_edge.knot[:-1])
+            self.mult_att.extend(sp_edge.mult[:-1])
             
         # Add last point for single edge wire
-        if len(topods_edges)==1 : # Unclosed control mesh structure for single segment wire (for now just for the circle case) 
-                                 # OR closed single wire
-                                 # OR single segment curve
+        if len(topods_edges)==1 : # Skip circle (unclosed control mesh structure for single segment wire)
+                                  # OR closed single wire
+                                  # OR single segment curve
             # if sp_edge.isclosed :
             self.CP.append(e_vert[-1])
             self.endpoints_att.append(sp_edge.endpoints_att[-1])
             self.degree_att.append(sp_edge.degree_att[-1])
             self.circle_att.append(sp_edge.circle_att[-1])
             self.weight_att.append(sp_edge.weight[-1])
+            self.knot_att.append(sp_edge.knot[-1])
+            self.mult_att.append(sp_edge.mult[-1])
 
         # Open mesh structure
         if e_type == EDGES_TYPES['circle'] or not topods_wire.Closed(): 
@@ -252,7 +273,7 @@ class SP_Wire_import :
 class SP_Contour_import :
     def __init__(self, topodsface,  scale = None):
         self.wires = get_wires_from_face(topodsface)
-        self.verts, self.edges, self.endpoints, self.degrees, self.circles, self.weight = [], [], [], [], [], []
+        self.verts, self.edges, self.endpoints, self.degrees, self.circles, self.weight, self.knot, self.mult = [], [], [], [], [], [], [], []
         
         for w in self.wires :
             if scale!=None:
@@ -266,7 +287,9 @@ class SP_Contour_import :
             self.degrees.extend(sp_wire.degree_att)
             self.circles.extend(sp_wire.circle_att)
             self.weight.extend(sp_wire.weight_att)
-    
+            self.knot.extend(sp_wire.knot_att)
+            self.mult.extend(sp_wire.mult_att)
+
     # For square contour following the patch bounds
     def is_trivial(self):
         is_trivial_trim = False
@@ -325,15 +348,21 @@ class SP_Surface_import :
             contour = SP_Contour_import(face)
             if uv_bounds!=None :
                 contour.rebound(uv_bounds)
+
             contour.switch_u_and_v()
             istrivial = contour.is_trivial()
+
             if istrivial :
                 # print("Trivial contour skipped")
                 self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
                 del contour
+                self.weight, self.knot, self.mult = [], [], []
             else :
                 self.vert, self.edges, self.faces = join_mesh_entities(CPvert, CPedges, CPfaces, contour.verts, contour.edges, [])           
-            self.weight = contour.weight
+                self.weight = contour.weight
+                self.knot = contour.knot
+                self.mult = contour.mult
+            
         else :
             self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
             self.weight = []
@@ -356,8 +385,6 @@ class SP_Surface_import :
             self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + contour.endpoints)
             self.assign_vertex_gr("Degree", [0.0]*len(CPvert) + contour.degrees)
             self.assign_vertex_gr("Circle", [0.0]*len(CPvert) + contour.circles)
-        
-        # weights
 
         collection.objects.link(self.ob)
 
@@ -368,8 +395,12 @@ class SP_Surface_import :
     def add_modifier(self, name, settings_dict = {}, pin=False):
         add_sp_modifier(self.ob, name, settings_dict, pin = pin)
 
-    def assign_float_attribute(self, name, values):
-        add_float_attribute(self.ob, name, values)
+    def assign_float_attribute(self, name, values, fallback_value=0.0):
+        add_float_attribute(self.ob, name, values, fallback_value)
+
+    def assign_int_attribute(self, name, values, fallback_value=0):
+        add_int_attribute(self.ob, name, values, fallback_value)
+
 
 
 
@@ -400,10 +431,12 @@ def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled,
     CPvert = [loc_vec, xaxis_vec*scale + loc_vec, raduis_vert]
     CP_edges = [(0,1)]
     sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
+    # sp_surf.assign_int_attribute("Weight", [1.0]*len(CPvert) + contour.weight)
     sp_surf.add_modifier("SP - Cylindrical Meshing", 
                          {"Use Trim Contour":trims_enabled, 
                           "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
                           "Scaling Method":1,}, pin=True)
+    
     return True
 
 
@@ -516,7 +549,11 @@ def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0
     # Weight
     weight = weight.flatten().tolist()
     weight.extend(sp_surf.weight)
-    sp_surf.assign_float_attribute("Weight", weight)
+    sp_surf.assign_float_attribute("Weight", weight, 1.0)
+
+    # Knot & Mult
+    sp_surf.assign_float_attribute("Knot", [0.0]*u_count*v_count + sp_surf.knot)
+    sp_surf.assign_int_attribute("Multiplicity", [0]*u_count*v_count + sp_surf.mult)
     
     # Modifier
     sp_surf.add_modifier("SP - Bezier Patch Meshing", 
@@ -591,7 +628,11 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
     # Weight
     weight = weight.flatten().tolist()
     weight.extend(sp_surf.weight)
-    sp_surf.assign_float_attribute("Weight", weight)
+    sp_surf.assign_float_attribute("Weight", weight, 1.0)
+
+    # Knot & Mult
+    sp_surf.assign_float_attribute("Knot", [0.0]*u_count*v_count + sp_surf.knot)
+    sp_surf.assign_int_attribute("Multiplicity", [0]*u_count*v_count + sp_surf.mult)
     
     # If 1 mult not 1 or no custom knot -> clamp
     u_clamped = any(m!=1 for m in u_mult) or not custom_knot
@@ -622,11 +663,17 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
         endpoints = sp_wire.endpoints_att
         degree_att = sp_wire.degree_att
         circle_att = sp_wire.circle_att
+        weight_att = sp_wire.weight
+        knot_att = sp_wire.knot
+        mult_att = sp_wire.mult
     else :
         sp_edge = SP_Edge_import(shape)
         sp_edge.scale(scale)
         verts = sp_edge.verts
         edge_degree = sp_edge.degree
+        weight_att = sp_edge.weight
+        knot_att = sp_edge.knot
+        mult_att = sp_edge.mult
 
         endpoints = [1.0] + [0.0]*(len(verts)-2) + [1.0]
         if edge_degree!=None:
@@ -659,6 +706,10 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
     add_vertex_group(ob, "Endpoints", endpoints)
     add_vertex_group(ob, "Degree", degree_att)
     add_vertex_group(ob, "Circle", circle_att)
+    add_vertex_group(ob, "Weight", weight_att)
+    add_vertex_group(ob, "Knot", knot_att)
+    add_vertex_group(ob, "Multiplicity", mult_att)
+
 
     # add modifier
     collection.objects.link(ob)
@@ -680,6 +731,9 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
     endpoints = contour.endpoints
     degree_att = contour.degrees
     circle_att = contour.circles
+    weight_att = contour.weight
+    knot_att = contour.knot
+    mult_att = contour.mult
 
     # Create object
     name, color = get_shape_name_and_color(topods_face, doc)
@@ -699,6 +753,9 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
     add_vertex_group(ob, "Endpoints", endpoints)
     add_vertex_group(ob, "Degree", degree_att)
     add_vertex_group(ob, "Circle", circle_att)
+    add_float_attribute(ob, "Weight", weight_att)
+    add_float_attribute(ob, "Knot", knot_att)
+    add_int_attribute(ob, "Mult", mult_att)
     
     # add modifier
     collection.objects.link(ob)
