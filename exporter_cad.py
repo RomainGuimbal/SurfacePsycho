@@ -222,20 +222,20 @@ def auto_knot_and_mult(p_count, degree, isclamped = True, is_unclamped_periodic 
 def get_patch_knot_and_mult(ob, u_count, v_count, degree_u, degree_v, isclamped_u, isclamped_v, isperiodic_u, isperiodic_v):
     try :
         try:
-            umult_att = get_attribute_by_name(ob, 'MultiplicityU', 'int') #space removed as a temp solution to avoid vertex group collision
+            umult_att = get_attribute_by_name(ob, 'Multiplicity U', 'int')
             u_length = sum(np.asarray(umult_att)>0)
         except KeyError :
-            umult_att = get_attribute_by_name(ob, 'MultiplicityU', 'float')
+            umult_att = get_attribute_by_name(ob, 'Multiplicity U', 'float')
             u_length = int(sum(np.asarray(umult_att)>0))
-        uknots_att = get_attribute_by_name(ob, 'KnotU', 'float', u_length)
+        uknots_att = get_attribute_by_name(ob, 'Knot U', 'float', u_length)
 
         try:
-            vmult_att = get_attribute_by_name(ob, 'MultiplicityV', 'int')
+            vmult_att = get_attribute_by_name(ob, 'Multiplicity V', 'int')
             v_length = sum(np.asarray(vmult_att)>0)
         except Exception :
-            vmult_att = get_attribute_by_name(ob, 'MultiplicityV', 'float')
+            vmult_att = get_attribute_by_name(ob, 'Multiplicity V', 'float')
             v_length = int(sum(np.asarray(vmult_att)>0))
-        vknots_att = get_attribute_by_name(ob, 'KnotV', 'float', v_length)
+        vknots_att = get_attribute_by_name(ob, 'Knot V', 'float', v_length)
 
     except KeyError: # No custom knot
         uknot, umult = auto_knot_and_mult(u_count, degree_u, isclamped_u, isperiodic_u) 

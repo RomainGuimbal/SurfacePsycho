@@ -121,11 +121,11 @@ gr_curve_flat = [
 "SP - NURBS to Bezier Curve or FlatPatch",
 "SP - Oblong Wire",
 "SP - Project on Flat Patch",
-"SP - Raise or Lower Curve Order",
+"SP - Raise or Lower Curve Degree",
 "SP - Raise or Lower Order of Selected Segment",
 "SP - Reorder Curve Index",
 "SP - Reorder Curve Selection",
- "SP - Sample Curve Degree + 1 Points",
+"SP - Sample Curve Degree + 1 Points",
 "SP - Split Curve",
 "SP - Switch Curve Direction",
 "SP - Text to Curve or FlatPatch",
@@ -141,11 +141,12 @@ obj_surf = ["Bezier Patch"]
 gr_surf = [
 "SP - Auto Midpoints Linear",
 "SP - Blend Surfaces",
+"SP - Continuity Analysis Bezier Patch",
 "SP - Connect Bezier Patch",
-"SP - Connect Patch to Trim Contour",
 "SP - Convert Contour",
 "SP - Crop or Extend Patch",
 "SP - Crop Patch to Point",
+"SP - Curvature Analysis",
 "SP - Displace Patch",
 "SP - Displace Precisely",
 "SP - Fillet Trim Contour",
@@ -155,7 +156,7 @@ gr_surf = [
 "SP - Loft",
 "SP - Mirror Patch Control Points",
 "SP - Patch Normals",
-"SP - Raise or Lower Order Bezier Patch",
+"SP - Raise or Lower Degree Bezier Patch",
 "SP - Reorder Grid Index",
 "SP - Ruled Surface from Mesh Loop",
 "SP - Select Patch Range",
@@ -176,11 +177,12 @@ gr_nurbs=[
 "SP - NURBS Patch Meshing",
 "SP - NURBS Weighting",
 "SP - Set Knot NURBS Patch",
-"SP - NURBS to Bezier Patch [Naive slow]"
+"SP - NURBS to Bezier Patch [Naive slow]",
+"SP - Crop NURBS Patch"
 ]
 
 
-# NURBS
+# OTHER
 filepath_other= "//..\..\Bezier-Quest\SP - Other Primitives.blend"
 #obj_other=[""]
 gr_other=[

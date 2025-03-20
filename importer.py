@@ -11,9 +11,9 @@ import unicodedata
 from OCP.BRep import BRep_Builder
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface #BRepAdaptor_Curve
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
-from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line, Geom_ToroidalSurface
+# from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line, Geom_ToroidalSurface
 from OCP.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
-from OCP.GeomAPI import GeomAPI_ProjectPointOnCurve
+# from OCP.GeomAPI import GeomAPI_ProjectPointOnCurve
 from OCP.gp import gp_Pnt, gp_Pnt2d
 from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
 # from OCP.IGESCAFControl import IGESCAFControl_Reader
@@ -24,11 +24,11 @@ from OCP.STEPControl import STEPControl_Reader
 from OCP.TCollection import TCollection_ExtendedString, TCollection_AsciiString
 from OCP.TDF import TDF_LabelSequence, TDF_Label
 from OCP.TDocStd import TDocStd_Document
-from OCP.TopAbs import TopAbs_FORWARD, TopAbs_REVERSED, TopAbs_INTERNAL, TopAbs_EXTERNAL, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
+from OCP.TopAbs import TopAbs_FORWARD, TopAbs_REVERSED #, TopAbs_INTERNAL, TopAbs_EXTERNAL, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
 from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS, TopoDS_Iterator, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
-from OCP.TopTools import TopTools_IndexedMapOfShape
-from OCP.XCAFApp import XCAFApp_Application
+# from OCP.TopTools import TopTools_IndexedMapOfShape
+# from OCP.XCAFApp import XCAFApp_Application
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorTool, XCAFDoc_ShapeTool, XCAFDoc_ColorCurv, XCAFDoc_ColorSurf, XCAFDoc_ColorGen 
 import OCP.GeomAbs as GeomAbs
 import OCP.TopAbs as TopAbs
@@ -620,10 +620,10 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
     sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert.tolist(), [], CPfaces, uv_bounds = uv_bounds)
     
     if custom_knot:
-        sp_surf.assign_vertex_gr("Knot U", u_knots)
-        sp_surf.assign_vertex_gr("Knot V", v_knots)
-        sp_surf.assign_float_attribute("Multiplicity U", (np.array(u_mult)/10).tolist())
-        sp_surf.assign_float_attribute("Multiplicity V", (np.array(v_mult)/10).tolist())
+        sp_surf.assign_float_attribute("Knot U", u_knots) # must be attr and not vertex groups to avoid collisions at export
+        sp_surf.assign_float_attribute("Knot V", v_knots)
+        sp_surf.assign_int_attribute("Multiplicity U", u_mult)
+        sp_surf.assign_int_attribute("Multiplicity V", v_mult)
 
     # Weight
     weight = weight.flatten().tolist()
@@ -663,9 +663,9 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
         endpoints = sp_wire.endpoints_att
         degree_att = sp_wire.degree_att
         circle_att = sp_wire.circle_att
-        weight_att = sp_wire.weight
-        knot_att = sp_wire.knot
-        mult_att = sp_wire.mult
+        weight_att = sp_wire.weight_att
+        knot_att = sp_wire.knot_att
+        mult_att = sp_wire.mult_att
     else :
         sp_edge = SP_Edge_import(shape)
         sp_edge.scale(scale)
@@ -707,8 +707,8 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
     add_vertex_group(ob, "Degree", degree_att)
     add_vertex_group(ob, "Circle", circle_att)
     add_vertex_group(ob, "Weight", weight_att)
-    add_vertex_group(ob, "Knot", knot_att)
-    add_vertex_group(ob, "Multiplicity", mult_att)
+    add_float_attribute(ob, "Knot", knot_att)
+    add_int_attribute(ob, "Multiplicity", mult_att)
 
 
     # add modifier
@@ -755,7 +755,7 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
     add_vertex_group(ob, "Circle", circle_att)
     add_float_attribute(ob, "Weight", weight_att)
     add_float_attribute(ob, "Knot", knot_att)
-    add_int_attribute(ob, "Mult", mult_att)
+    add_int_attribute(ob, "Multiplicity", mult_att)
     
     # add modifier
     collection.objects.link(ob)
