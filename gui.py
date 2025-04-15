@@ -5,10 +5,11 @@ import bpy
 import platform
 os = platform.system()
 from . import macros
+from concurrent.futures import ThreadPoolExecutor
 # from .macros import SP_Props_Group
 
 
-from .importer import prepare_import, topods_to_sp_patch_generator, topods_to_sp_curve_generator, ShapeHierarchy, import_face_nodegroups
+from .importer import prepare_import, ShapeHierarchy, import_face_nodegroups, process_topods_face, create_blender_object
 from .utils import append_node_group
 from .exporter_cad import export_step, export_iges
 from .exporter_svg import export_svg
@@ -71,83 +72,137 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     scale: FloatProperty(name="Scale", default=.001, precision=3)
     resolution : IntProperty(name="Resolution", default=16, soft_min = 6, soft_max=256)
 
+    executor = None
+    io_futures = []
+    batches = []
+    current_batch = 0
+    face_processed = 0
+
+    executor_curve = None
+    io_futures_curve = []
+    batches_curve = []
+    current_batch_curve = 0
+    curve_processed = 0
+
     def execute(self, context):
         # Initialize your CAD import generator
-        shape, doc, container_name = prepare_import(self.filepath)
+        shape, self.doc, container_name = prepare_import(self.filepath)
         
         # Create hierarchy and collections
         shape_hierarchy = ShapeHierarchy(shape, container_name)
         shape_count= len(shape_hierarchy.faces) + len(shape_hierarchy.edges)
 
-        # Face generator
+        # Faces
         if self.faces:
             import_face_nodegroups(shape_hierarchy)
-            self.generator1 = topods_to_sp_patch_generator(shape_hierarchy.faces, doc, self.trim_contours, self.scale, self.resolution)
-        self.generator1_active = self.faces
+            batch_size = 500
+            faces = shape_hierarchy.faces
+            self.batches = [faces[i:i+batch_size] for i in range(0, len(faces), batch_size)]
+            self.current_batch = 0
+            self.face_processed = 0
 
-         # Curve generator
-        if self.curves:
-            append_node_group("SP - Curve Meshing")
-            self.generator2 = topods_to_sp_curve_generator(shape_hierarchy.edges, doc, self.scale, self.resolution)
-        self.generator2_active = self.curves
+            # Create thread pool (4 workers - adjust based on your I/O capacity)
+            self.executor = ThreadPoolExecutor(max_workers=16)
+            
+            # Start processing first batch
+            self._submit_io_batch()
 
-        self.objects_processed = 0
-        self.batch_size = 500  # Adjust based on performance
-        
+        # # Curves
+        # if self.curves:
+        #     curves = shape_hierarchy.curves
+        #     self.batches_curve = [curves[i:i+batch_size] for i in range(0, len(curves), batch_size)]
+        #     self.current_batch_curve = 0
+        #     self.curve_processed = 0
+
+        #     # Create thread pool (4 workers - adjust based on your I/O capacity)
+        #     self.executor_curve = ThreadPoolExecutor(max_workers=4)
+            
+        #     # Start processing first batch
+        #     self._submit_io_batch_curve()
+
+                    
         # Setup progress bar
         wm = context.window_manager
-        wm.progress_begin(0, shape_count)
-        
-        # Add timer to trigger modal updates
-        self.timer = wm.event_timer_add(0.01, window=context.window)
         wm.modal_handler_add(self)
-        
-        # import cProfile
-        # profiler = cProfile.Profile()
-        # profiler.enable()
+        wm.progress_begin(0, shape_count)
 
-        # profiler.disable()
-        # profiler.print_stats()
-        
-        #self.report({'INFO'}, 'Shapes of unsupported types are ignored')
         return {'RUNNING_MODAL'}
+
+
+    def _submit_io_batch(self):
+        """Submit I/O work for current batch to thread pool"""
+        batch = self.batches[self.current_batch]
+        self.io_futures = [
+            self.executor.submit(
+                process_topods_face,
+                f,
+                self.doc,
+                col,
+                self.trim_contours, 
+                self.scale, 
+                self.resolution
+            )
+            for f, col in batch
+        ]
     
-    def modal(self, context, event):
-        if event.type == 'TIMER':
-            for _ in range(self.batch_size):
-                if self.generator1_active:
-                    try:
-                        # Run a step of generator 1 if it's still active
-                        next(self.generator1)
-                        self.objects_processed += 1
-                    except StopIteration:
-                        # Mark generator 1 as finished
-                        self.generator1_active = False
-                
-                if self.generator2_active:
-                    try:
-                        # Run a step of generator 2 if it's still active
-                        next(self.generator2)
-                        self.objects_processed += 1
-                    except StopIteration:
-                        # Mark generator 2 as finished
-                        self.generator2_active = False
-                # Update progress
-                context.window_manager.progress_update(self.objects_processed)
 
-            if not self.generator1_active and not self.generator2_active:
-                context.window_manager.progress_end()
-                context.window_manager.event_timer_remove(self.timer)
-                return {'FINISHED'}
-
-            # Redraw the UI
-            context.area.tag_redraw()
-            
-            return {'PASS_THROUGH'}
+    # TO FINISH
+    # def _submit_io_batch_curve(self):
+    #     """Submit I/O work for current batch to thread pool"""
+    #     batch = self.batches[self.current_batch]
+    #     self.io_futures = [
+    #         self.executor.submit(
+    #             process_topods_face,
+    #             f,
+    #             self.doc,
+    #             col,
+    #             self.trim_contours, 
+    #             self.scale, 
+    #             self.resolution
+    #         )
+    #         for f, col in batch
+    #     ]
         
-        return {'PASS_THROUGH'}
 
+    def modal(self, context, event):
+        if event.type == 'ESC':
+            self.cancel(context)
+            return {'CANCELLED'}
 
+        if self.current_batch < len(self.batches):
+            # Check if current batch's I/O is complete
+            if all(f.done() for f in self.io_futures):
+                # Get I/O results
+                io_data = [f.result() for f in self.io_futures]
+                
+                # Create Blender objects in main thread
+                for object_data in io_data:
+                    create_blender_object(object_data)
+                    self.face_processed += 1
+                    
+                    # Update progress
+                    context.window_manager.progress_update(self.face_processed)
+
+                # Update UI
+                context.area.tag_redraw()
+                
+                # Prepare next batch
+                self.current_batch += 1
+                if self.current_batch < len(self.batches):
+                    self._submit_io_batch()
+                else:
+                    context.window_manager.progress_end()
+                    self.executor.shutdown()
+                    return {'FINISHED'}
+        
+
+        return {'RUNNING_MODAL'}
+        # return {'PASS_THROUGH'}, only for timer ?
+
+    def cancel(self, context):
+        if self.executor:
+            self.executor.shutdown(wait=False)
+        context.area.tag_redraw()
 
 
 
@@ -284,6 +339,8 @@ def menu_surface(self, context):
         self.layout.operator("sp.add_bezier_patch", text="Bezier PsychoPatch", icon="SURFACE_NSURFACE")
         self.layout.operator("sp.add_nurbs_patch", text="NURBS PsychoPatch", icon="SURFACE_NSURFACE")
         self.layout.operator("sp.add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE")
+        # self.layout.operator("sp.add_cylinder", text="Cylinder", icon="SURFACE_NCYLINDER")
+        
 
 def menu_curve(self, context):
     self.layout.separator()

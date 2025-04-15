@@ -690,38 +690,28 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
-        
         # set mode
         original_mode = bpy.context.mode
         if original_mode == 'EDIT_MESH':
             selected_objects = context.objects_in_mode
         else:
             selected_objects = context.selected_objects
-        
-        # loop through selection
-        for obj in selected_objects:
 
+        # loop through selection
+        for o in selected_objects:
             #check if supported object
             is_patch=False
-            try :
-                if original_mode=='EDIT_MESH':
-                    bpy.ops.object.mode_set(mode='OBJECT')
-                ob = obj.evaluated_get(context.evaluated_depsgraph_get())
-                points = get_attribute_by_name(ob, 'CP_any_order_surf', 'vec3', 1)
-                is_patch = True
-            except :
-                try :
-                    if original_mode=='EDIT_MESH':
-                        bpy.ops.object.mode_set(mode='OBJECT')
-                    ob = obj.evaluated_get(context.evaluated_depsgraph_get())
-                    points = get_attribute_by_name(ob, 'CP_NURBS_surf', 'vec3', 1)
-                    is_patch = True
-                except :
-                    pass
+            if original_mode=='EDIT_MESH':
+                bpy.ops.object.mode_set(mode='OBJECT')
             
+            for m in o.modifiers :
+                if m.type == "NODES" and m.node_group.name[:5]=='SP - ':
+                    is_patch = True
+                    break
+                
             #add contour
-            if obj.type == 'MESH' and is_patch:
-                self.add_square_inside_mesh(context, obj)
+            if o.type == 'MESH' and is_patch:
+                self.add_square_inside_mesh(context, o)
 
         # Restore the original mode
         if original_mode=='EDIT_MESH':

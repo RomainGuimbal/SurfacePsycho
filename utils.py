@@ -195,7 +195,7 @@ def create_grid(vertices):
 
 
 
-def change_node_socket_value(ob, value, potential_names, socket_type, context):
+def change_node_socket_value(ob : bpy.types.Object, value, potential_names, socket_type, context):
     for m in ob.modifiers :
         if m.type == "NODES" and m.node_group.name[:5]=='SP - ':
             for it in m.node_group.interface.items_tree :
@@ -213,7 +213,7 @@ def change_GN_modifier_settings(modifier, settings_dict):
             print("Modifier settings failed to apply")
 
 
-def add_vertex_group(object, name, values):
+def add_vertex_group(object : bpy.types.Object, name, values):
     if name not in object.vertex_groups:
         object.vertex_groups.new(name=name)
     vg = object.vertex_groups[name]
@@ -233,7 +233,7 @@ def add_vertex_group(object, name, values):
     return True
 
 
-def add_float_attribute(object, name, values, fallback_value = 0.0):
+def add_float_attribute(object : bpy.types.Object, name, values, fallback_value = 0.0):
     if name not in object.data.attributes:
         object.data.attributes.new(name=name, type="FLOAT", domain="POINT")
         object.data.update()
@@ -252,7 +252,7 @@ def add_float_attribute(object, name, values, fallback_value = 0.0):
     
     return True
 
-def add_int_attribute(object, name, values, fallback_value = 0):
+def add_int_attribute(object : bpy.types.Object, name, values, fallback_value = 0):
     if name not in object.data.attributes:
         object.data.attributes.new(name=name, type="INT", domain="POINT")
         object.data.update()

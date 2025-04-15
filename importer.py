@@ -5,6 +5,8 @@ from os.path import abspath, splitext, split, isfile
 from .utils import *
 # from .utils import list_of_shapes_to_compound
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
+import typing
 
 # from OCP.Geom2dAdaptor import Geom2dAdaptor_Curve
 # from OCP.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
@@ -50,7 +52,7 @@ class SP_Pole_import :
 
 
 class SP_Edge_import :
-    def __init__(self, topods_edge : TopoDS_Edge, topods_face = None):
+    def __init__(self, topods_edge : TopoDS_Edge, topods_face = None, scale = None):
         self.verts = None
         self.degree = None
         self.degree_att = []
@@ -95,6 +97,9 @@ class SP_Edge_import :
         if topods_edge.Orientation() != TopAbs_FORWARD and self.type != EDGES_TYPES['circle']:
             self.verts.reverse()
             #circle, endpoints, degree are symmetric
+
+        if scale!=None : 
+            self.scale(scale)
 
     def scale(self, scale_factor):
         self.verts = [v*scale_factor for v in self.verts]
@@ -230,8 +235,7 @@ class SP_Wire_import :
 
         # iterate Edges
         for e in topods_edges :
-            sp_edge = SP_Edge_import(e, topods_face)
-            sp_edge.scale(scale)
+            sp_edge = SP_Edge_import(e, topods_face, scale)
             e_vert = sp_edge.verts
             e_type = sp_edge.type
 
@@ -333,74 +337,58 @@ class SP_Contour_import :
 
 
 
+def generic_import_surface(face : TopoDS_Face, doc, collection, trims_enabled : bool, 
+                            CPvert, CPedges, CPfaces, modifier, attrs={}, ob_name = "STEP Patch",
+                            scale=0.001, uv_bounds=None, weight=None):
+    if weight == None :
+        weight = [1.]*len(CPvert)
 
-class SP_Surface_import :
-    def __init__(self, face : TopoDS_Face, doc, collection, trims_enabled : bool, CPvert, CPedges, CPfaces, ob_name = "STEP Patch", scale=0.001, uv_bounds=None):
-        self.trims_enabled = trims_enabled
-        self.face = face
-        # self.uv_bounds = uv_bounds
-        self.CPvert = CPvert
-        self.CPedges = CPedges
-        self.CPfaces = CPfaces
-        self.vert, self.edges, self.faces = [], [], []
+    transform = get_shape_transform(face, scale)
+    
+    if trims_enabled :
+        contour = SP_Contour_import(face)
+        if uv_bounds!=None :
+            contour.rebound(uv_bounds)
+
+        contour.switch_u_and_v()
+        istrivial = contour.is_trivial()
         
-        if trims_enabled :
-            contour = SP_Contour_import(face)
-            if uv_bounds!=None :
-                contour.rebound(uv_bounds)
+        if istrivial : 
+            del contour
+    
+    if trims_enabled and not istrivial :
+        mesh_data = join_mesh_entities(CPvert, CPedges, CPfaces, contour.verts, contour.edges, [])           
+        attrs = attrs | {'Weight' : weight + contour.weight,
+                'Knot' : [0.0]*len(CPvert) + contour.knot,
+                'Multiplicity': [0.0]*len(CPvert) + contour.mult,
+                'Trim Contour' : [0.0]*len(CPvert) + [1.0]*len(contour.verts),
+                'Endpoints' : [0.0]*len(CPvert) + contour.endpoints,
+                'Degree': [0.0]*len(CPvert) + contour.degrees,
+                'Circle': [0.0]*len(CPvert) + contour.circles,
+                }
+    else :
+        mesh_data = (CPvert, CPedges, CPfaces)
+        attrs = attrs | {'Weight' : weight}
 
-            contour.switch_u_and_v()
-            istrivial = contour.is_trivial()
+    name, color = get_shape_name_and_color(face, doc)
+    if name == None:
+        name = ob_name
 
-            if istrivial :
-                # print("Trivial contour skipped")
-                self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
-                del contour
-                self.weight, self.knot, self.mult = [], [], []
-            else :
-                self.vert, self.edges, self.faces = join_mesh_entities(CPvert, CPedges, CPfaces, contour.verts, contour.edges, [])           
-                self.weight = contour.weight
-                self.knot = contour.knot
-                self.mult = contour.mult
-            
-        else :
-            self.vert, self.edges, self.faces = self.CPvert, self.CPedges, self.CPfaces
-            self.weight = []
-
-        name, color = get_shape_name_and_color(face, doc)
-        if name == None:
-            name = ob_name
-        mesh = bpy.data.meshes.new(name)
-        mesh.from_pydata(self.vert, self.edges, self.faces, False)
-        self.ob = bpy.data.objects.new(name, mesh)
-        self.ob.matrix_world = get_shape_transform(face, scale)
-
-        if len(color)==3:
-            self.ob.color = list(color) + [1.]
-        elif len(color)==4 :
-            self.ob.color = color
+    if len(color)==3:
+        color = list(color) + [1.]
         
-        if trims_enabled and not istrivial :
-            self.assign_vertex_gr("Trim Contour", [0.0]*len(CPvert) + [1.0]*len(contour.verts))
-            self.assign_vertex_gr("Endpoints", [0.0]*len(CPvert) + contour.endpoints)
-            self.assign_vertex_gr("Degree", [0.0]*len(CPvert) + contour.degrees)
-            self.assign_vertex_gr("Circle", [0.0]*len(CPvert) + contour.circles)
+    object_data = {
+        'mesh_data': mesh_data,
+        'name': name,
+        'collection' : collection,
+        'scale': scale,
+        'color': color,
+        'attrs' : attrs,
+        'modifier': modifier,
+        'transform': transform,
+    }
 
-        collection.objects.link(self.ob)
-
-
-    def assign_vertex_gr(self, name, values):
-        add_vertex_group(self.ob, name, values)
-        
-    def add_modifier(self, name, settings_dict = {}, pin=False):
-        add_sp_modifier(self.ob, name, settings_dict, pin = pin)
-
-    def assign_float_attribute(self, name, values, fallback_value=0.0):
-        add_float_attribute(self.ob, name, values, fallback_value)
-
-    def assign_int_attribute(self, name, values, fallback_value=0):
-        add_int_attribute(self.ob, name, values, fallback_value)
-
+    return object_data
 
 
 
@@ -430,14 +418,17 @@ def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled,
 
     CPvert = [loc_vec, xaxis_vec*scale + loc_vec, raduis_vert]
     CP_edges = [(0,1)]
-    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], ob_name= "STEP Cylinder")
-    # sp_surf.assign_int_attribute("Weight", [1.0]*len(CPvert) + contour.weight)
-    sp_surf.add_modifier("SP - Cylindrical Meshing", 
-                         {"Use Trim Contour":trims_enabled, 
-                          "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                          "Scaling Method":1,}, pin=True)
     
-    return True
+    modifier = ("SP - Cylindrical Meshing", 
+                    {"Use Trim Contour":trims_enabled, 
+                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED, 
+                    "Scaling Method":1,},
+                True)
+
+    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
+                                         CPvert, CP_edges, [], modifier, ob_name= "STEP Cylinder")
+    
+    return object_data
 
 
 
@@ -462,14 +453,18 @@ def build_SP_torus(topods_face : TopoDS_Face, doc, collection, trims_enabled, sc
     
     CPvert = [origin_vec, raduis_vert, -xaxis_vec*minor_radius + raduis_vert]
     CP_edges = [(0,1),(1,2)]
-    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], ob_name= "STEP Torus")
-    sp_surf.add_modifier("SP - Toroidal Meshing",
-                          {"Use Trim Contour":trims_enabled,
-                          "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                          "Scaling Method" : 1,
-                          "Resolution U" : 16,
-                          "Resolution V" : 32}, pin=True)
-    return True
+
+    modifier = ("SP - Toroidal Meshing",
+                {"Use Trim Contour":trims_enabled,
+                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
+                    "Scaling Method" : 1,
+                    "Resolution U" : 16,
+                    "Resolution V" : 32}, 
+                True)
+    
+    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], modifier, ob_name= "STEP Torus")
+
+    return object_data
 
 
 
@@ -490,12 +485,15 @@ def build_SP_sphere(topods_face : TopoDS_Face, doc, collection, trims_enabled, s
 
     CPvert = [loc_vec - zaxis_vec*radius, loc_vec + zaxis_vec*radius, yaxis_vec*radius + loc_vec]
     CP_edges = [(0,1)]
-    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], ob_name= "STEP Sphere")
-    sp_surf.add_modifier("SP - Spherical Meshing", 
-                         {"Use Trim Contour":trims_enabled, 
-                          "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                          "Scaling Method":1,}, pin=True)
-    return True
+
+    modifier = ("SP - Spherical Meshing",
+                    {"Use Trim Contour":trims_enabled,
+                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
+                    "Scaling Method":1,}, 
+                True)
+    
+    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], modifier, ob_name= "STEP Sphere")
+    return object_data
 
 
 def build_SP_cone(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
@@ -515,12 +513,15 @@ def build_SP_cone(topods_face : TopoDS_Face, doc, collection, trims_enabled, sca
     
     CPvert = [loc_vec, loc_vec + yaxis_vec*radius*scale, axis_vec*math.cos(gp_cone.SemiAngle())*scale + loc_vec + yaxis_vec*(math.sin(gp_cone.SemiAngle())+radius)*scale,  axis_vec*math.cos(gp_cone.SemiAngle())*scale + loc_vec]
     CP_edges = [(0,1),(1,2),(2,3)]
-    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], ob_name= "STEP Cone")
-    sp_surf.add_modifier("SP - Conical Meshing", 
-                         {"Use Trim Contour":trims_enabled, 
-                          "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                          "Scaling Method":1,}, pin=True)
-    return True
+
+    modifier = ("SP - Conical Meshing", 
+                    {"Use Trim Contour":trims_enabled, 
+                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
+                    "Scaling Method":1,},
+                True)
+    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], modifier, ob_name= "STEP Cone")
+    
+    return object_data
 
 
 
@@ -543,27 +544,18 @@ def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
    
-    # standard surface
-    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert.tolist(), [], CPfaces, uv_bounds = uv_bounds)
-    
-    # Weight
-    weight = weight.flatten().tolist()
-    weight.extend(sp_surf.weight)
-    sp_surf.assign_float_attribute("Weight", weight, 1.0)
+    modifier = ("SP - Bezier Patch Meshing", 
+                    {"Use Trim Contour":trims_enabled,
+                    "Resolution U": resolution,
+                    "Resolution V": resolution,
+                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
+                    "Scaling Method":1}, 
+                True)
 
-    # Knot & Mult
-    sp_surf.assign_float_attribute("Knot", [0.0]*u_count*v_count + sp_surf.knot)
-    sp_surf.assign_int_attribute("Multiplicity", [0]*u_count*v_count + sp_surf.mult)
-    
-    # Modifier
-    sp_surf.add_modifier("SP - Bezier Patch Meshing", 
-                           {"Use Trim Contour":trims_enabled,
-                            "Resolution U": resolution,
-                            "Resolution V": resolution,
-                            "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                            "Scaling Method":1}, pin=True)
-
-    return True
+    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert.tolist(), 
+                                [], CPfaces, modifier, uv_bounds = uv_bounds,
+                                 weight = weight.flatten().tolist())
+    return object_data
 
 
 
@@ -616,39 +608,37 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
-    
-    sp_surf = SP_Surface_import(topods_face, doc, collection, trims_enabled, CPvert.tolist(), [], CPfaces, uv_bounds = uv_bounds)
-    
-    if custom_knot:
-        sp_surf.assign_float_attribute("Knot U", u_knots) # must be attr and not vertex groups to avoid collisions at export
-        sp_surf.assign_float_attribute("Knot V", v_knots)
-        sp_surf.assign_int_attribute("Multiplicity U", u_mult)
-        sp_surf.assign_int_attribute("Multiplicity V", v_mult)
 
-    # Weight
-    weight = weight.flatten().tolist()
-    weight.extend(sp_surf.weight)
-    sp_surf.assign_float_attribute("Weight", weight, 1.0)
-
-    # Knot & Mult
-    sp_surf.assign_float_attribute("Knot", [0.0]*u_count*v_count + sp_surf.knot)
-    sp_surf.assign_int_attribute("Multiplicity", [0]*u_count*v_count + sp_surf.mult)
+    attrs = {}
+    if custom_knot: # must be attr and not vertex groups to avoid collisions at export
+        attrs = {"Knot U" : u_knots,
+                 "Knot V": v_knots,
+                 "Multiplicity U": u_mult,
+                 "Multiplicity V": v_mult
+                }
     
     # If 1 mult not 1 or no custom knot -> clamp
     u_clamped = any(m!=1 for m in u_mult) or not custom_knot
     v_clamped = any(m!=1 for m in v_mult) or not custom_knot
 
     # Meshing
-    sp_surf.add_modifier("SP - NURBS Patch Meshing",
-                       {"Degree V": vdeg, 
-                        "Degree U": udeg,# INVERTED /!\
-                        "Resolution U": resolution,
-                        "Resolution V": resolution, 
-                        "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                        "Use Trim Contour":trims_enabled, "Scaling Method": 1,
-                        "Endpoint U" : u_clamped, "Endpoint V" : v_clamped,
-                        "Cyclic U": u_periodic,  "Cyclic V": v_periodic}, pin=True)
-    return True
+    modifier = ("SP - NURBS Patch Meshing",
+                    {"Degree U": udeg,
+                     "Degree V": vdeg,
+                    "Resolution U": resolution,
+                    "Resolution V": resolution, 
+                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
+                    "Use Trim Contour":trims_enabled, "Scaling Method": 1,
+                    "Endpoint U" : u_clamped, "Endpoint V" : v_clamped,
+                    "Cyclic U": u_periodic,  "Cyclic V": v_periodic}, 
+                True)
+    
+    
+
+    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
+                                         CPvert.tolist(), [], CPfaces, modifier, attrs, uv_bounds = uv_bounds, 
+                                         weight = weight.flatten().tolist())
+    return object_data
 
 
 
@@ -735,35 +725,37 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
     knot_att = contour.knot
     mult_att = contour.mult
 
-    # Create object
     name, color = get_shape_name_and_color(topods_face, doc)
     if name == None:
         name = "STEP FlatPatch"
-    mesh = bpy.data.meshes.new(name)
-    mesh.from_pydata(verts, edges, [], False)
-    ob = bpy.data.objects.new(name, mesh)
-    ob.matrix_world = get_shape_transform(topods_face, scale)
 
     if len(color)==3:
-        ob.color = list(color) + [1.]
-    elif len(color)==4 :
-        ob.color = color
+        color = list(color) + [1.]
 
-    # Assign vertex groups
-    add_vertex_group(ob, "Endpoints", endpoints)
-    add_vertex_group(ob, "Degree", degree_att)
-    add_vertex_group(ob, "Circle", circle_att)
-    add_float_attribute(ob, "Weight", weight_att)
-    add_float_attribute(ob, "Knot", knot_att)
-    add_int_attribute(ob, "Multiplicity", mult_att)
+    modifier = ("SP - FlatPatch Meshing", 
+                {'Orient': True,
+                "Flip Normal" : topods_face.Orientation()!=TopAbs_REVERSED,}, True)
     
-    # add modifier
-    collection.objects.link(ob)
-    add_sp_modifier(ob, "SP - FlatPatch Meshing", 
-                    {'Orient': True,
-                    "Flip Normal" : topods_face.Orientation()!=TopAbs_REVERSED,}, pin=True)
+    attrs = {'Weight' : weight_att,
+            'Knot' : knot_att,
+            'Multiplicity': mult_att,
+            'Endpoints' : endpoints,
+            'Degree': degree_att,
+            'Circle': circle_att,
+            }
     
-    return True
+    object_data = {
+        'mesh_data': (verts, edges, []),
+        'name': name,
+        'collection' : collection,
+        'scale': scale,
+        'color': color,
+        'attrs' : attrs,
+        'modifier': modifier,
+        'transform': Matrix(),
+    }
+
+    return object_data
 
 
 
@@ -881,35 +873,51 @@ def process_topods_face(topods_face, doc, collection, trims_enabled, scale, reso
     ft= get_face_type_id(topods_face)
     match ft:
         case GeomAbs.GeomAbs_Plane:
-            build_SP_flat(topods_face, doc, collection, scale)
+            object_data = build_SP_flat(topods_face, doc, collection, scale)
         case GeomAbs.GeomAbs_Cylinder:
-            build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale )
+            object_data = build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale )
         case GeomAbs.GeomAbs_BezierSurface:
-            build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_BSplineSurface:
-            build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_Torus:
-            build_SP_torus(topods_face, doc, collection, trims_enabled, scale )
+            object_data = build_SP_torus(topods_face, doc, collection, trims_enabled, scale )
         case GeomAbs.GeomAbs_Sphere:
-            build_SP_sphere(topods_face, doc, collection, trims_enabled, scale ) 
+            object_data = build_SP_sphere(topods_face, doc, collection, trims_enabled, scale ) 
         case GeomAbs.GeomAbs_Cone:
-            build_SP_cone(topods_face, doc, collection, trims_enabled, scale )
+            object_data = build_SP_cone(topods_face, doc, collection, trims_enabled, scale )
         case _ :
             print("Unsupported Face Type : " + get_face_type_name(topods_face))
+            return {}
+    return object_data
+
+
+
+def create_blender_object(object_data):
+    if object_data == {}:
+        return False
+    
+    mesh = bpy.data.meshes.new(object_data['name'])
+    vert, edges, faces = object_data['mesh_data']
+    mesh.from_pydata(vert, edges, faces, False)   
+    ob = bpy.data.objects.new(object_data['name'], mesh)
+    ob.matrix_world = object_data['transform']
+    ob.color = object_data['color']
+
+    for name, att in object_data['attrs'].items() :
+        match att[0] :
+            case float() :
+                add_float_attribute(ob, name, att)
+            case int() :
+                add_int_attribute(ob, name, att)
+
+    name, param, pin = object_data['modifier']
+    add_sp_modifier(ob, name, param, pin)
+
+    object_data['collection'].objects.link(ob)
     return True
 
 
-
-
-def topods_to_sp_patch_generator(faces, doc, trims_enabled, scale, resolution):
-    for f, col in faces :
-        process_topods_face(f, doc, col, trims_enabled, scale, resolution)
-        yield
-
-def topods_to_sp_curve_generator(edges, doc, scale, resolution):
-    for e, col in edges :
-        build_SP_curve(e, doc, col, scale, resolution)
-        yield
 
 def prepare_import(filepath):
     # Create document
