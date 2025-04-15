@@ -585,28 +585,15 @@ class SP_OT_select_endpoints(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class SP_OT_assign_as_circle(bpy.types.Operator):
-    bl_idname = "sp.assign_as_circle"
-    bl_label = "Assign as Circle"
+class SP_OT_set_segment_type(bpy.types.Operator):
+    bl_idname = "sp.set_segment_type"
+    bl_label = "Set Segment Type"
     bl_options = {'REGISTER', 'UNDO'}
     
-    def execute(self, context):
-        objs = context.objects_in_mode
+    type : bpy.props.IntProperty(name='Type', description="", default=0, min = 0, max = 5)
 
-        for o in objs :
-            # Switch to object mode to modify vertex groups
-            bpy.ops.object.mode_set(mode='OBJECT')  
-            # Ensure "circles" vertex group exists
-            if "Circle" not in o.vertex_groups:
-                o.vertex_groups.new(name="Circle")
-            
-            vg = o.vertex_groups["Circle"]
-            
-            # Add selected vertices to the vertex group
-            for v in o.data.vertices:
-                if v.select:
-                    vg.add([v.index], 1.0, 'REPLACE')
-            bpy.ops.object.mode_set(mode='EDIT') 
+    def execute(self, context):
+        set_segment_type(context, self.type)
         return {'FINISHED'}
     
 
@@ -833,7 +820,8 @@ class SP_Props_Group(bpy.types.PropertyGroup):
     description="Curvature Combs Scale",
     default=0.1,
     soft_min=0,
-    update=scale_combs
+    update=scale_combs,
+    precision=5
     )
 
     active_segment_degree : bpy.props.IntProperty(
@@ -953,7 +941,7 @@ classes = [
     SP_OT_add_library,
     SP_OT_add_oriented_empty,
     SP_OT_add_trim_contour,
-    SP_OT_assign_as_circle,
+    SP_OT_set_segment_type,
     SP_OT_assign_as_ellipse,
     SP_OT_assign_as_endpoint,
     SP_OT_bl_nurbs_to_psychopatch,

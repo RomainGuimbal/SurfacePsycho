@@ -291,36 +291,33 @@ def add_bool_attribute(object : bpy.types.Object, name, values, fallback_value =
     return True
 
 
+def set_segment_type(context, type):
+    objs = context.objects_in_mode
+    for o in objs :
+        # Switch to object mode
+        bpy.ops.object.mode_set(mode='OBJECT')
 
-# Done but I am not convinced
-# def add_multiple_vertex_group(object, vert_groups_dict : dict[str:list[float]]):
-#     # vert_groups_dict as {"mygroup": [values],...}
+        if "Type" not in o.data.attributes:
+            o.data.attributes.new(name="Type", type="INT", domain="POINT")
+            o.data.update()
+
+        # Get existing values
+        att = o.data.attributes["Type"]
+        values = [0]*len(o.data.vertices)
+        att.data.foreach_get('value', values)
+
+        # Update values     
+        for i, v in enumerate(o.data.vertices):
+            if v.select:
+                values[i] = type 
+                # To improve one day to change all verts between endpoints
+
+        # Set new
+        att.data.foreach_set('value', values)
+
+        bpy.ops.object.mode_set(mode='EDIT') 
     
-#     # Add if don't exist
-#     for name in vert_groups_dict.keys():
-#         if name not in object.vertex_groups:
-#             object.vertex_groups.new(name=name)
-    
-#     # Actual vertex groups
-#     vgs = {k:object.vertex_groups[k] for k in vert_groups_dict.keys()}
-
-#     for v in vert_groups_dict.values():
-#         if len(object.data.vertices) < len(v):
-#             print(f"Error : {len(v)} values on {len(object.data.vertices)} vertices")
-#             return False
-
-#     for i in range(len(object.data.vertices)):
-#         for k,vg_dict in vert_groups_dict.items() :
-#             v = vg_dict.values[i] if i < len(vg_dict.values()) else 0.0
-#             vg = vgs[k]
-#             if v>1. :
-#                 v=1
-#                 print("Warning : vertex group value clamped to 1")
-#             object.data.vertices
-#             if v!=0.0 :
-#                 vg.add([i], v, 'ADD')
-#     return True
-
+    return True
 
 
 

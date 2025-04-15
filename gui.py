@@ -306,19 +306,16 @@ class SP_PT_EditPanel(bpy.types.Panel):
             sub = row.row()
             sub.operator("sp.select_endpoints", text="Select")
 
-            # Circles
+            # Type
             row = self.layout.row()
-            row.label(text="Circle")
             sub = row.row(align=True)
-            sub.operator("sp.assign_as_circle", text="Assign")
-            sub.operator("sp.remove_from_circles", text="Remove")
-
-            # Ellipses
+            sub.operator("sp.set_segment_type", text="Circle", icon = "MESH_CIRCLE").type = 3
+            sub.operator("sp.set_segment_type", text="Arc", icon = "SPHERECURVE").type = 2
+            
             row = self.layout.row()
-            row.label(text="Ellipse")
             sub = row.row(align=True)
-            sub.operator("sp.assign_as_ellipse", text="Assign")
-            sub.operator("sp.remove_from_ellipses", text="Remove")
+            sub.operator("sp.set_segment_type", text="Ellipse", icon = "MESH_CAPSULE").type = 5
+            sub.operator("sp.set_segment_type", text="Arc", icon = "INVERSESQUARECURVE").type = 4
 
             # Segment Degree
             self.layout.use_property_split = True
