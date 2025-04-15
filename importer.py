@@ -14,7 +14,7 @@ from OCP.BRep import BRep_Builder
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface #BRepAdaptor_Curve
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 # from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line, Geom_ToroidalSurface
-from OCP.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
+from OCP.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle, GeomAbs_Ellipse, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 # from OCP.GeomAPI import GeomAPI_ProjectPointOnCurve
 from OCP.gp import gp_Pnt, gp_Pnt2d
 from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
@@ -56,8 +56,7 @@ class SP_Edge_import :
         self.verts = None
         self.degree = None
         self.degree_att = []
-        self.type = None
-        self.circle_att = []
+        self.type_att = []
         self.endpoints_att = []
         self.weight = []
         self.mult = []
@@ -85,20 +84,28 @@ class SP_Edge_import :
             self.bspline(edge_adaptor)
         elif curve_type == GeomAbs_Circle :
             self.circle(edge_adaptor)
+        elif curve_type == GeomAbs_Ellipse :
+            self.ellipse(edge_adaptor)
         else :
             print(f"Unsupported curve type: {curve_type}. Expect inaccurate results")
             start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
             end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
             gp_pnt_poles = [start_point, end_point]
-            self.type = EDGES_TYPES['line']
+            self.type_att = [EDGES_TYPES['line']]*2
             self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
+            self.degree_att = [0,0]
+            self.endpoints_att = [True]*2
+            self.weight = [0.0,0.0]
+            self.knot = [0.0,0.0]
+            self.mult = [0,0]
 
         # Reverse
-        if topods_edge.Orientation() != TopAbs_FORWARD and self.type != EDGES_TYPES['circle']:
+        if topods_edge.Orientation() != TopAbs_FORWARD and self.type_att[0] != EDGES_TYPES['circle']:
             self.verts.reverse()
-            #circle, endpoints, degree are symmetric
+            self.weight.reverse()
+            #type, endpoints, degree are symmetric
 
-        if scale!=None : 
+        if scale!=None :
             self.scale(scale)
 
     def scale(self, scale_factor):
@@ -108,11 +115,10 @@ class SP_Edge_import :
         start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
         end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
         gp_pnt_poles = [start_point, end_point]
-        self.type = EDGES_TYPES['line']
+        self.type_att = [EDGES_TYPES['line']]*2
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
-        self.degree_att = [0.0,0.0]
-        self.circle_att = [0.0,0.0]
-        self.endpoints_att = [1.0,1.0]
+        self.degree_att = [0,0]
+        self.endpoints_att = [True]*2
         self.weight = [0.0,0.0]
         self.knot = [0.0,0.0]
         self.mult = [0,0]
@@ -126,16 +132,14 @@ class SP_Edge_import :
         #     end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
         #     poles = [start_point, end_point]
         
-
     def bezier(self, edge_adaptor):
         bezier = edge_adaptor.Bezier()
         p_count = bezier.NbPoles()
         gp_pnt_poles = [bezier.Pole(i+1) for i in range(p_count)]
-        self.type = EDGES_TYPES['bezier']
+        self.type_att = [EDGES_TYPES['bezier']]*p_count
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
-        self.degree_att = [0.0]*p_count
-        self.circle_att = [0.0]*p_count
-        self.endpoints_att = [1.0] + [0.0]*(p_count-2) + [1.0]
+        self.degree_att = [0]*p_count
+        self.endpoints_att = [True] + [False]*(p_count-2) + [True]
         self.weight = [bezier.Weight(i+1) for i in range(p_count)]
         self.knot = [0.0]*p_count
         self.mult = [0]*p_count
@@ -146,13 +150,12 @@ class SP_Edge_import :
         gp_pnt_poles = [bspline.Pole(i+1) for i in range(p_count)]
         self.degree = bspline.Degree()
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
-        self.type = EDGES_TYPES['nurbs']
-        self.degree_att = [bspline.Degree()/10] + [0.0]*(p_count-2) + [bspline.Degree()/10]
-        self.circle_att = [0.0]*p_count
+        self.type_att = [EDGES_TYPES['nurbs']]*p_count
+        self.degree_att = [bspline.Degree()] + [0]*(p_count-2) + [bspline.Degree()]
         if edge_adaptor.BSpline().Multiplicity(1) == 1 : # unclamped periodic
-            self.endpoints_att = [0.0]*p_count
+            self.endpoints_att = [False]*p_count
         else :
-            self.endpoints_att = [1.0] + [0.0]*(p_count-2) + [1.0]
+            self.endpoints_att = [True] + [False]*(p_count-2) + [True]
         self.weight = [bspline.Weight(i+1) for i in range(p_count)]
 
         knot = normalize_array(tcolstd_array1_to_list(bspline.Knots()))
@@ -161,56 +164,67 @@ class SP_Edge_import :
         self.mult = mult + [0]*(p_count-len(mult))
 
     def circle(self, edge_adaptor):
-        arc_method = False
-        if arc_method :
-            # arc from center
-            start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
-            end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
+        # arc from 3 pts
+        min_t = edge_adaptor.FirstParameter()
+        max_t = edge_adaptor.LastParameter()
+        
+        start_point = edge_adaptor.Value(min_t)
+        end_point = edge_adaptor.Value(max_t)
+        mid_point = edge_adaptor.Value(min_t + math.pi/2)
+        range_t = max_t - min_t
+
+        # full circle
+        if start_point == end_point or isclose(range_t, math.pi*2):
             center = edge_adaptor.Circle().Location()
-            if start_point == end_point:
-                gp_pnt_poles = [start_point, center]
-            else:
-                gp_pnt_poles = [start_point, center, end_point]
+            gp_pnt_poles = [start_point, center, mid_point]
+            self.type_att = [EDGES_TYPES['circle']]*2
+
+        # arc
+        else: 
+            mid_t = (max_t - min_t)/2 + min_t
+            mid_point = edge_adaptor.Value(mid_t)
+            gp_pnt_poles = [start_point, mid_point, end_point]
+            self.type_att = [EDGES_TYPES['circle_arc']]*3
+
+        self.degree_att = [0]*3
+        self.endpoints_att = [True, False, True]
+        self.weight = [0.0]*3
+        self.knot = [0.0]*3
+        self.mult = [0]*3
+        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
+
+    def ellipse(self, edge_adaptor):
+        # arc from 3 pts
+        min_t = edge_adaptor.FirstParameter()
+        max_t = edge_adaptor.LastParameter()
+        
+        start_point = edge_adaptor.Value(min_t)
+        end_point = edge_adaptor.Value(max_t)
+        range_t = max_t - min_t
+
+        axis_point_1 = edge_adaptor.Value(0)
+        axis_point_2 = edge_adaptor.Value(math.pi/2)
+        center = edge_adaptor.Ellipse().Location()
+
+        # full ellipse
+        if start_point == end_point or isclose(range_t, math.pi*2):
             
-            self.degree_att = [0.0,0.0,0.0]
-            self.circle_att = [0.0,1.0,0.0]
-            self.endpoints_att = [1.0,0.0,1.0]
+            gp_pnt_poles = [axis_point_1, center, axis_point_2]
+            self.type_att = [EDGES_TYPES['ellipse']]*3
+            self.degree_att = [0]*3
+            self.endpoints_att = [True, False, True]
             self.weight = [0.0,0.0,0.0]
             self.knot = [0.0,0.0,0.0]
             self.mult = [0,0,0]
-
+        # arc
         else:
-            # arc from 3 pts
-            min_t = edge_adaptor.FirstParameter()
-            max_t = edge_adaptor.LastParameter()
-            
-            start_point = edge_adaptor.Value(min_t)
-            end_point = edge_adaptor.Value(max_t)
-            range_t = max_t - min_t
-
-            # full circle
-            if start_point == end_point or isclose(range_t, math.pi*2):
-                center = edge_adaptor.Circle().Location()
-                gp_pnt_poles = [center, start_point]
-                self.type = EDGES_TYPES['circle']
-                self.degree_att = [0.0,0.0]
-                self.circle_att = [1.0,1.0]
-                self.endpoints_att = [1.0,1.0]
-                self.weight = [0.0,0.0]
-                self.knot = [0.0,0.0]
-                self.mult = [0,0,0]
-            else: # arc
-                mid_t = (max_t - min_t)/2 + min_t
-                mid_point = edge_adaptor.Value(mid_t)
-                gp_pnt_poles = [start_point, mid_point, end_point]
-                self.type = EDGES_TYPES['circle_arc']
-                # self.circle_arc_subtype = 1. # tree_points
-                self.degree_att = [0.0,0.0,0.0]
-                self.circle_att = [0.0,1.0,0.0]
-                self.endpoints_att = [1.0,0.0,1.0]
-                self.weight = [0.0,0.0,0.0]
-                self.knot = [0.0,0.0,0.0]
-                self.mult = [0,0,0]
+            gp_pnt_poles = [start_point, axis_point_1, center, axis_point_2, end_point]
+            self.type_att = [EDGES_TYPES['ellipse_arc']]*5
+            self.degree_att = [0]*5
+            self.endpoints_att = [True] + [False]*3 + [True]
+            self.weight = [0.0,0.0,0.0,0.0,0.0]
+            self.knot = [0.0,0.0,0.0,0.0,0.0]
+            self.mult = [0,0,0,0,0]
 
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
 
@@ -225,10 +239,10 @@ class SP_Wire_import :
             self.bmesh_edges = [] #int tuple
             self.endpoints_att = []
             self.degree_att = []
-            self.circle_att = []
             self.weight_att = []
             self.knot_att = []
             self.mult_att = []
+            self.type_att = []
 
         topods_edges = get_edges_from_wire(topods_wire)
         is_wire_forward = topods_wire.Orientation() == TopAbs_FORWARD
@@ -237,7 +251,6 @@ class SP_Wire_import :
         for e in topods_edges :
             sp_edge = SP_Edge_import(e, topods_face, scale)
             e_vert = sp_edge.verts
-            e_type = sp_edge.type
 
             if not is_wire_forward :
                 e_vert.reverse()
@@ -246,7 +259,7 @@ class SP_Wire_import :
             self.CP.extend(e_vert[:-1])
             self.endpoints_att.extend(sp_edge.endpoints_att[:-1])
             self.degree_att.extend(sp_edge.degree_att[:-1])
-            self.circle_att.extend(sp_edge.circle_att[:-1])
+            self.type_att.extend(sp_edge.type_att[:-1])
             self.weight_att.extend(sp_edge.weight[:-1])
             self.knot_att.extend(sp_edge.knot[:-1])
             self.mult_att.extend(sp_edge.mult[:-1])
@@ -259,15 +272,15 @@ class SP_Wire_import :
             self.CP.append(e_vert[-1])
             self.endpoints_att.append(sp_edge.endpoints_att[-1])
             self.degree_att.append(sp_edge.degree_att[-1])
-            self.circle_att.append(sp_edge.circle_att[-1])
+            self.type_att.append(sp_edge.type_att[-1])
             self.weight_att.append(sp_edge.weight[-1])
             self.knot_att.append(sp_edge.knot[-1])
             self.mult_att.append(sp_edge.mult[-1])
 
-        # Open mesh structure
-        if e_type == EDGES_TYPES['circle'] or not topods_wire.Closed(): 
+        # Open control mesh structure
+        if self.type_att[-1] == EDGES_TYPES['circle'] or self.type_att[-1] == EDGES_TYPES['ellipse'] or not topods_wire.Closed(): 
             self.bmesh_edges = [(i, i+1) for i in range(len(self.CP)-1)]
-        # Closed mesh structure
+        # Closed control mesh structure
         else :
             self.bmesh_edges = [(i, ((i+1)%len(self.CP))) for i in range(len(self.CP))]
 
@@ -277,7 +290,7 @@ class SP_Wire_import :
 class SP_Contour_import :
     def __init__(self, topodsface,  scale = None):
         self.wires = get_wires_from_face(topodsface)
-        self.verts, self.edges, self.endpoints, self.degrees, self.circles, self.weight, self.knot, self.mult = [], [], [], [], [], [], [], []
+        self.verts, self.edges, self.endpoints, self.degrees, self.type_att, self.weight, self.knot, self.mult = [], [], [], [], [], [], [], []
         
         for w in self.wires :
             if scale!=None:
@@ -289,7 +302,7 @@ class SP_Contour_import :
             self.verts.extend(sp_wire.CP)
             self.endpoints.extend(sp_wire.endpoints_att)
             self.degrees.extend(sp_wire.degree_att)
-            self.circles.extend(sp_wire.circle_att)
+            self.type_att.extend(sp_wire.type_att)
             self.weight.extend(sp_wire.weight_att)
             self.knot.extend(sp_wire.knot_att)
             self.mult.extend(sp_wire.mult_att)
@@ -364,7 +377,7 @@ def generic_import_surface(face : TopoDS_Face, doc, collection, trims_enabled : 
                 'Trim Contour' : [0.0]*len(CPvert) + [1.0]*len(contour.verts),
                 'Endpoints' : [0.0]*len(CPvert) + contour.endpoints,
                 'Degree': [0.0]*len(CPvert) + contour.degrees,
-                'Circle': [0.0]*len(CPvert) + contour.circles,
+                'Type': [0.0]*len(CPvert) + contour.type_att,
                 }
     else :
         mesh_data = (CPvert, CPedges, CPfaces)
@@ -652,7 +665,7 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
         edges = sp_wire.bmesh_edges
         endpoints = sp_wire.endpoints_att
         degree_att = sp_wire.degree_att
-        circle_att = sp_wire.circle_att
+        type_att = sp_wire.type_att
         weight_att = sp_wire.weight_att
         knot_att = sp_wire.knot_att
         mult_att = sp_wire.mult_att
@@ -662,6 +675,7 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
         verts = sp_edge.verts
         edge_degree = sp_edge.degree
         weight_att = sp_edge.weight
+        type_att = sp_edge.type_att
         knot_att = sp_edge.knot
         mult_att = sp_edge.mult
 
@@ -670,11 +684,6 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
             degree_att=[edge_degree/10]+[0.0]*(len(verts)-1)
         else :
             degree_att=[0.0]*(len(verts))
-
-        if sp_edge.type == EDGES_TYPES['circle']:
-            circle_att = [0.0, 1.0, 0.0]
-        else :
-            circle_att = [0.0]*(len(verts))
 
         edges = [(i,i+1) for i in range(len(verts)-1)]
 
@@ -695,7 +704,7 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
     # Assign vertex groups
     add_vertex_group(ob, "Endpoints", endpoints)
     add_vertex_group(ob, "Degree", degree_att)
-    add_vertex_group(ob, "Circle", circle_att)
+    add_vertex_group(ob, "Type", type_att)
     add_vertex_group(ob, "Weight", weight_att)
     add_float_attribute(ob, "Knot", knot_att)
     add_int_attribute(ob, "Multiplicity", mult_att)
@@ -720,7 +729,7 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
     edges = contour.edges
     endpoints = contour.endpoints
     degree_att = contour.degrees
-    circle_att = contour.circles
+    type_att = contour.type_att
     weight_att = contour.weight
     knot_att = contour.knot
     mult_att = contour.mult
@@ -741,7 +750,7 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
             'Multiplicity': mult_att,
             'Endpoints' : endpoints,
             'Degree': degree_att,
-            'Circle': circle_att,
+            'Type': type_att,
             }
     
     object_data = {
@@ -906,10 +915,14 @@ def create_blender_object(object_data):
 
     for name, att in object_data['attrs'].items() :
         match att[0] :
-            case float() :
-                add_float_attribute(ob, name, att)
+            case _ if isinstance(att[0], bool) :
+                add_bool_attribute(ob, name, att)
             case int() :
                 add_int_attribute(ob, name, att)
+            case float() :
+                add_float_attribute(ob, name, att)
+            case _ :
+                print("Attribute type issue")
 
     name, param, pin = object_data['modifier']
     add_sp_modifier(ob, name, param, pin)

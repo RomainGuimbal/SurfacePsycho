@@ -271,6 +271,27 @@ def add_int_attribute(object : bpy.types.Object, name, values, fallback_value = 
     
     return True
 
+def add_bool_attribute(object : bpy.types.Object, name, values, fallback_value = False):
+    if name not in object.data.attributes:
+        object.data.attributes.new(name=name, type="BOOLEAN", domain="POINT")
+        object.data.update()
+    
+    length_diff = len(object.data.vertices) - len(values)
+    att = object.data.attributes[name]
+    
+    if length_diff == 0:
+        att.data.foreach_set('value', values)
+    elif length_diff > 0:
+        values.extend([fallback_value]*length_diff)
+        att.data.foreach_set('value', values)
+    elif length_diff < 0:
+        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
+        return False
+    
+    return True
+
+
+
 # Done but I am not convinced
 # def add_multiple_vertex_group(object, vert_groups_dict : dict[str:list[float]]):
 #     # vert_groups_dict as {"mygroup": [values],...}
@@ -519,11 +540,13 @@ def get_shape_name_and_color(shape, doc):
     return name, color
 
 
-EDGES_TYPES = {'line' : 0,
-               'bezier' : 1,
-               'nurbs' : 2,
-               'circle_arc' : 3,
-               'circle' : 4,
+EDGES_TYPES = {'line' : 0, # Not absurd
+               'bezier' : 0,
+               'nurbs' : 1,
+               'circle_arc' : 2,
+               'circle' : 3,
+               'ellipse_arc' : 4,
+               'ellipse' : 5,
                }
 
 
