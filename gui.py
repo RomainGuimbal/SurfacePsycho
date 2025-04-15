@@ -235,52 +235,39 @@ class SP_PT_MainPanel(bpy.types.Panel):
         if context.mode == 'OBJECT':
             row = self.layout.row()
             row.scale_y = 2.0
-            row.operator("sp.quick_export", text="Quick export as .STEP", icon="EXPORT")
+            row.operator("sp.quick_export", text="Quick .STEP Export", icon="EXPORT")
         
+            # Toggle control geom            
             row = self.layout.row()
-            row.operator("sp.replace_node_group", text="Replace Node Group", icon="UV_SYNC_SELECT")
-            
+            row.operator("sp.toggle_control_geom", text="Toggle Control Geometry", icon="OUTLINER_DATA_LATTICE")
 
-class SP_PT_ViewPanel(bpy.types.Panel):
-    bl_idname = "SP_PT_ViewPanel"
-    bl_parent_id = "SP_PT_MainPanel"
-    bl_label = "View"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Surface Psycho"
-    
-    def draw(self, context):
-        row = self.layout.row()
-        row.operator("sp.toggle_control_geom", text="Toggle Control Geometry", icon="OUTLINER_DATA_LATTICE")
-        row = self.layout.row()
-        row.operator("sp.toggle_combs", text="Toggle Combs", icon="PARTICLEMODE")
-
+        # Combs
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
-        col = self.layout.column()
-        col.prop(context.scene.sp_properties, "combs_scale", text="Combs Scale")
-
-        row = self.layout.row()
-        row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR")
-
-
-class SP_PT_SelectPanel(bpy.types.Panel):
-    bl_idname = "SP_PT_SelectPanel"
-    bl_parent_id = "SP_PT_MainPanel"
-    bl_label = "Select"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Surface Psycho"
-    
-    def draw(self, context):
+        heading = self.layout.column(align=True, heading="Combs")
+        row = heading.row(align=True)
+        row.prop(context.scene.sp_properties, "combs_on", text="")
+        sub = row.row()
+        sub.active = context.scene.sp_properties.combs_on
+        sub.prop(context.scene.sp_properties, "combs_scale", text="")
+        
         if context.mode == 'OBJECT':
-            layout = self.layout
-            split = layout.split(factor=0.5, align=True)
-            col1 = split.column(align=True)
-            col2 = split.column(align=True)
+            # Select all
+            row = self.layout.row()
+            row.label(text="Select Visible")
+            sub = row.row(align=True)
+            sub.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
+            sub.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
+        
+            # Add Probe
+            row = self.layout.row()
+            row.operator("sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR")
 
-            col1.operator("sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE")
-            col2.operator("sp.select_visible_surfaces", text="Surfaces", icon="OUTLINER_OB_SURFACE")
+            # Replace node group
+            row = self.layout.row()
+            row.operator("sp.replace_node_group", text="Replace Node Group", icon="UV_SYNC_SELECT")
+
+
 
 
 class SP_PT_EditPanel(bpy.types.Panel):
@@ -368,8 +355,6 @@ def menu_export_svg(self, context):
 
 classes = [
     SP_PT_MainPanel,
-    SP_PT_ViewPanel,
-    SP_PT_SelectPanel,
     SP_PT_EditPanel,
     SP_OT_ExportSvg,        
     SP_OT_ExportStep,

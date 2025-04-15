@@ -192,33 +192,7 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
                                 toggle_side = not m[input_id]
                             m[input_id] = toggle_side
                     m.node_group.interface_update(context)
-        return {'FINISHED'}    
-
-
-class SP_OT_toggle_combs(bpy.types.Operator):
-    bl_idname = "sp.toggle_combs"
-    bl_label = "SP - Toggle Curvature Combs"
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Toggle curvature combs of selected object. The active object determines whether to show or hide"
-
-    def execute(self, context):
-        objects=[ob for ob in context.selected_objects]
-        first_obj_found = False
-        for o in objects:
-            for m in o.modifiers :
-                if m.type == "NODES" and m.node_group.name[:5]=='SP - ':
-                    if 'Combs' in m.node_group.interface.items_tree.keys():
-                        for it in m.node_group.interface.items_tree['Combs'].interface_items :
-                            if it.name in ['Enable', 'U', 'V'] and it.socket_type =='NodeSocketBool':
-                                input_id = it.identifier
-                                if not first_obj_found:
-                                    first_obj_found=True
-                                    toggle_side = not m[input_id]
-                                m[input_id] = toggle_side
-                        m.node_group.interface_update(context)
         return {'FINISHED'}
-
-
 
 class SP_OT_select_visible_curves(bpy.types.Operator):
     bl_idname = "sp.select_visible_curves"
@@ -759,6 +733,18 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
                 vg_endpoint.add([v.index], 1.0, 'ADD')
 
 
+def show_combs(self, context):
+    objects = [ob for ob in context.selected_objects]
+    for o in objects:
+        for m in o.modifiers :
+            if m.type == "NODES" and m.node_group.name[:5]=='SP - ':
+                if 'Combs' in m.node_group.interface.items_tree.keys():
+                    for it in m.node_group.interface.items_tree['Combs'].interface_items :
+                        if it.name in ['Enable', 'U', 'V'] and it.socket_type =='NodeSocketBool':
+                            input_id = it.identifier
+                            m[input_id] = self.combs_on
+                    m.node_group.interface_update(context)
+
 
 def scale_combs(self, context):
     objects=[ob for ob in context.selected_objects]
@@ -819,9 +805,16 @@ class SP_Props_Group(bpy.types.PropertyGroup):
     name="Combs Scale",
     description="Curvature Combs Scale",
     default=0.1,
-    soft_min=0,
+    min=0,
     update=scale_combs,
     precision=5
+    )
+
+    combs_on : bpy.props.BoolProperty(
+    name="Combs on",
+    description="Curvature Combs Scale",
+    default=False,
+    update=show_combs,
     )
 
     active_segment_degree : bpy.props.IntProperty(
@@ -840,7 +833,6 @@ class SP_Props_Group(bpy.types.PropertyGroup):
     min=0,
     update=set_vert_weight
     )
-
 
 class SP_OT_show_only_curves(bpy.types.Operator):
     #TODO
@@ -951,7 +943,6 @@ classes = [
     SP_OT_remove_from_endpoints,
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,
-    SP_OT_toggle_combs,
     SP_OT_toggle_control_geom,
     SP_OT_unify_versions,
     SP_OT_select_endpoints,
