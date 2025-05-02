@@ -764,18 +764,28 @@ def set_seg_degree(self, context):
     objs = context.objects_in_mode
     for o in objs :
         # Switch to object mode to modify vertex groups
-        bpy.ops.object.mode_set(mode='OBJECT')  
-        # Ensure "Endpoints" vertex group exists
-        if "Degree" not in o.vertex_groups:
-            o.vertex_groups.new(name="Degree")
+        bpy.ops.object.mode_set(mode='OBJECT')
         
-        vg = o.vertex_groups["Degree"]
-        
-        # Add selected vertices to the vertex group
-        for v in o.data.vertices:
+        # Ensure "Degree" exists
+        if "Degree" not in o.data.attributes:
+            o.data.attributes.new(name="Degree", type="INT", domain="POINT")
+            # o.data.update()
+
+        # Get existing values
+        att = o.data.attributes["Degree"]
+        values = [0]*len(o.data.vertices)
+        att.data.foreach_get('value', values)
+
+        # Update values     
+        for i, v in enumerate(o.data.vertices):
             if v.select:
-                vg.add([v.index], max(min(self.active_segment_degree/10,1),0), 'REPLACE')
+                values[i] = max(min(self.active_segment_degree,20),0)
+                # To improve one day to change all verts between endpoints
+
+        # Set new
+        att.data.foreach_set('value', values)
         bpy.ops.object.mode_set(mode='EDIT')
+
 
 
 
@@ -790,6 +800,7 @@ def set_vert_weight(self, context):
             o.data.attributes.new(name="Weight", type="FLOAT", domain="POINT")
         else :
             o.data.attributes["Weight"].data.foreach_get("value", val)
+        
         for i,v in enumerate(o.data.vertices):
             if v.select:
                 val[i] = self.active_vert_weight
@@ -807,7 +818,7 @@ class SP_Props_Group(bpy.types.PropertyGroup):
     default=0.1,
     min=0,
     update=scale_combs,
-    precision=5
+    precision=7
     )
 
     combs_on : bpy.props.BoolProperty(

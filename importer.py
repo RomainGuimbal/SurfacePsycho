@@ -50,9 +50,8 @@ class SP_Pole_import :
     
         # self.weight ?
 
-
-class SP_Edge_import :
-    def __init__(self, topods_edge : TopoDS_Edge, topods_face = None, scale = None):
+class SP_Curve_no_edge_import :
+    def __init__(self, adaptor_curve, scale = None):
         self.verts = None
         self.degree = None
         self.degree_att = []
@@ -62,34 +61,27 @@ class SP_Edge_import :
         self.mult = []
         self.knot = []
         
-        # Edge adaptor
-        # 3D
-        if topods_face is None:
-            is2D=False
-            edge_adaptor = BRepAdaptor_Curve(topods_edge)
-            curve_type = edge_adaptor.Curve().GetType()
-        #2D
-        else :
-            is2D=True
-            edge_adaptor = BRepAdaptor_Curve2d(topods_edge, topods_face)
-            curve_type = edge_adaptor.GetType()
+        try :
+            curve_type = adaptor_curve.Curve().GetType()
+        except AttributeError:
+            curve_type = adaptor_curve.GetType()
         
-        self.isclosed = edge_adaptor.IsClosed()
+        self.isclosed = adaptor_curve.IsClosed()
 
         if curve_type == GeomAbs_Line :
-            self.line(edge_adaptor)
+            self.line(adaptor_curve)
         elif curve_type == GeomAbs_BezierCurve :
-            self.bezier(edge_adaptor)
+            self.bezier(adaptor_curve)
         elif curve_type == GeomAbs_BSplineCurve :
-            self.bspline(edge_adaptor)
+            self.bspline(adaptor_curve)
         elif curve_type == GeomAbs_Circle :
-            self.circle(edge_adaptor)
+            self.circle(adaptor_curve)
         elif curve_type == GeomAbs_Ellipse :
-            self.ellipse(edge_adaptor)
+            self.ellipse(adaptor_curve)
         else :
             print(f"Unsupported curve type: {curve_type}. Expect inaccurate results")
-            start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
-            end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
+            start_point = adaptor_curve.Value(adaptor_curve.FirstParameter())
+            end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
             gp_pnt_poles = [start_point, end_point]
             self.type_att = [EDGES_TYPES['line']]*2
             self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
@@ -98,12 +90,6 @@ class SP_Edge_import :
             self.weight = [0.0,0.0]
             self.knot = [0.0,0.0]
             self.mult = [0,0]
-
-        # Reverse
-        if topods_edge.Orientation() != TopAbs_FORWARD and self.type_att[0] != EDGES_TYPES['circle']:
-            self.verts.reverse()
-            self.weight.reverse()
-            #type, endpoints, degree are symmetric
 
         if scale!=None :
             self.scale(scale)
@@ -226,7 +212,40 @@ class SP_Edge_import :
             self.knot = [0.0,0.0,0.0,0.0,0.0]
             self.mult = [0,0,0,0,0]
 
-        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
+        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]   
+    
+
+
+
+class SP_Edge_import :
+    def __init__(self, topods_edge : TopoDS_Edge, topods_face = None, scale = None):  
+        # Edge adaptor
+        # 3D
+        if topods_face is None:
+            edge_adaptor = BRepAdaptor_Curve(topods_edge)
+        #2D
+        else :
+            edge_adaptor = BRepAdaptor_Curve2d(topods_edge, topods_face)
+        
+        sp_curve_no_edge = SP_Curve_no_edge_import(edge_adaptor, scale)
+
+        self.verts = sp_curve_no_edge.verts
+        self.degree = sp_curve_no_edge.degree
+        self.degree_att = sp_curve_no_edge.degree_att
+        self.type_att = sp_curve_no_edge.type_att
+        self.endpoints_att = sp_curve_no_edge.endpoints_att
+        self.weight = sp_curve_no_edge.weight
+        self.mult = sp_curve_no_edge.mult
+        self.knot = sp_curve_no_edge.knot
+
+        # Reverse
+        if topods_edge.Orientation() != TopAbs_FORWARD and self.type_att[0] != EDGES_TYPES['circle']:
+            self.verts.reverse()
+            self.weight.reverse()
+            #type, endpoints, degree are symmetric
+
+        self.isclosed = sp_curve_no_edge.isclosed
+
 
 
 
@@ -373,11 +392,11 @@ def generic_import_surface(face : TopoDS_Face, doc, collection, trims_enabled : 
         mesh_data = join_mesh_entities(CPvert, CPedges, CPfaces, contour.verts, contour.edges, [])           
         attrs = attrs | {'Weight' : weight + contour.weight,
                 'Knot' : [0.0]*len(CPvert) + contour.knot,
-                'Multiplicity': [0.0]*len(CPvert) + contour.mult,
-                'Trim Contour' : [0.0]*len(CPvert) + [1.0]*len(contour.verts),
-                'Endpoints' : [0.0]*len(CPvert) + contour.endpoints,
-                'Degree': [0.0]*len(CPvert) + contour.degrees,
-                'Type': [0.0]*len(CPvert) + contour.type_att,
+                'Multiplicity': [0]*len(CPvert) + contour.mult,
+                'Trim Contour' : [False]*len(CPvert) + [True]*len(contour.verts),
+                'Endpoints' : [False]*len(CPvert) + contour.endpoints,
+                'Degree': [0]*len(CPvert) + contour.degrees,
+                'Type': [0]*len(CPvert) + contour.type_att,
                 }
     else :
         mesh_data = (CPvert, CPedges, CPfaces)
@@ -412,7 +431,7 @@ def generic_import_surface(face : TopoDS_Face, doc, collection, trims_enabled : 
 
 
 
-def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
+def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001, resolution = 16) :
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cylinder = face_adpator.Surface().Cylinder()
     
@@ -435,7 +454,10 @@ def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled,
     modifier = ("SP - Cylindrical Meshing", 
                     {"Use Trim Contour":trims_enabled, 
                     "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED, 
-                    "Scaling Method":1,},
+                    "Scaling Method":1,
+                    "Resolution U" : resolution,
+                    "Resolution V" : resolution*2
+                    },
                 True)
 
     object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
@@ -446,7 +468,7 @@ def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled,
 
 
 
-def build_SP_torus(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
+def build_SP_torus(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001, resolution=16) :
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_torus = face_adpator.Surface().Torus()
     
@@ -471,8 +493,8 @@ def build_SP_torus(topods_face : TopoDS_Face, doc, collection, trims_enabled, sc
                 {"Use Trim Contour":trims_enabled,
                     "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
                     "Scaling Method" : 1,
-                    "Resolution U" : 16,
-                    "Resolution V" : 32}, 
+                    "Resolution U" : resolution,
+                    "Resolution V" : resolution*2}, 
                 True)
     
     object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], modifier, ob_name= "STEP Torus")
@@ -481,7 +503,7 @@ def build_SP_torus(topods_face : TopoDS_Face, doc, collection, trims_enabled, sc
 
 
 
-def build_SP_sphere(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
+def build_SP_sphere(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001, resolution = 16) :
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_sphere = face_adpator.Surface().Sphere()
     
@@ -502,14 +524,16 @@ def build_SP_sphere(topods_face : TopoDS_Face, doc, collection, trims_enabled, s
     modifier = ("SP - Spherical Meshing",
                     {"Use Trim Contour":trims_enabled,
                     "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                    "Scaling Method":1,}, 
+                    "Scaling Method":1,
+                    "Resolution U" : resolution,
+                    "Resolution V" : resolution*2}, 
                 True)
     
     object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], modifier, ob_name= "STEP Sphere")
     return object_data
 
 
-def build_SP_cone(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001) :
+def build_SP_cone(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001, resolution=16) :
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cone = face_adpator.Surface().Cone()
     
@@ -530,7 +554,9 @@ def build_SP_cone(topods_face : TopoDS_Face, doc, collection, trims_enabled, sca
     modifier = ("SP - Conical Meshing", 
                     {"Use Trim Contour":trims_enabled, 
                     "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                    "Scaling Method":1,},
+                    "Scaling Method":1,
+                    "Resolution U" : resolution,
+                    "Resolution V" : resolution*2},
                 True)
     object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], modifier, ob_name= "STEP Cone")
     
@@ -679,11 +705,11 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
         knot_att = sp_edge.knot
         mult_att = sp_edge.mult
 
-        endpoints = [1.0] + [0.0]*(len(verts)-2) + [1.0]
+        endpoints = [True] + [False]*(len(verts)-2) + [True]
         if edge_degree!=None:
-            degree_att=[edge_degree/10]+[0.0]*(len(verts)-1)
+            degree_att=[edge_degree]+[0]*(len(verts)-1)
         else :
-            degree_att=[0.0]*(len(verts))
+            degree_att=[0]*(len(verts))
 
         edges = [(i,i+1) for i in range(len(verts)-1)]
 
@@ -722,7 +748,7 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
 
 
 
-def build_SP_flat(topods_face, doc, collection, scale = 0.001):
+def build_SP_flat(topods_face, doc, collection, scale = 0.001, resolution = 16):
     # Get contour
     contour = SP_Contour_import(topods_face, scale)
     verts = contour.verts
@@ -743,7 +769,8 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
 
     modifier = ("SP - FlatPatch Meshing", 
                 {'Orient': True,
-                "Flip Normal" : topods_face.Orientation()!=TopAbs_REVERSED,}, True)
+                "Flip Normal" : topods_face.Orientation()!=TopAbs_REVERSED,
+                "Resolution" : resolution*2}, True)
     
     attrs = {'Weight' : weight_att,
             'Knot' : knot_att,
@@ -768,8 +795,31 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001):
 
 
 
+def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution):
+    adapt_surf = BRepAdaptor_Surface(topods_face).Surface()
+    adapt_curve = adapt_surf.BasisCurve()
 
+    curve_no_edge = SP_Curve_no_edge_import(adapt_curve, scale)
+    
+    gpdir = adapt_surf.Direction()
+    CPvert = curve_no_edge.verts
+    CPvert.insert(CPvert[0] + Vector((gpdir.X(), gpdir.Y(), gpdir.Z())))
 
+    CPedges = [(i,i+1) for i in range(len(CPvert)-1)]
+    
+    modifier = ("SP - Surface of Extrusion Meshing", 
+                    {"Use Trim Contour" : trims_enabled, 
+                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED, 
+                    "Scaling Method" : 1,
+                    "Resolution U" : resolution,
+                    "Resolution V" : resolution
+                    },
+                True)
+
+    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
+                                         CPvert, CPedges, [], modifier, ob_name= "STEP Extrusion")
+    
+    return object_data
 
 
 
@@ -873,7 +923,10 @@ def import_face_nodegroups(shape_hierarchy):
                 to_import_ng_names.add("SP - Spherical Meshing")
             case GeomAbs.GeomAbs_Cone:
                 to_import_ng_names.add("SP - Conical Meshing")
-    
+            case GeomAbs.GeomAbs_SurfaceOfExtrusion:
+                to_import_ng_names.add("SP - Surface of Extrusion Meshing")
+            # case GeomAbs.GeomAbs_SurfaceOfRevolution:
+            #     to_import_ng_names.add("SP - Surface of Revolution Meshing")
     append_multiple_node_groups(to_import_ng_names)
 
 
@@ -882,19 +935,22 @@ def process_topods_face(topods_face, doc, collection, trims_enabled, scale, reso
     ft= get_face_type_id(topods_face)
     match ft:
         case GeomAbs.GeomAbs_Plane:
-            object_data = build_SP_flat(topods_face, doc, collection, scale)
+            object_data = build_SP_flat(topods_face, doc, collection, scale, resolution)
         case GeomAbs.GeomAbs_Cylinder:
-            object_data = build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale )
+            object_data = build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_BezierSurface:
             object_data = build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_BSplineSurface:
             object_data = build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_Torus:
-            object_data = build_SP_torus(topods_face, doc, collection, trims_enabled, scale )
+            object_data = build_SP_torus(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_Sphere:
-            object_data = build_SP_sphere(topods_face, doc, collection, trims_enabled, scale ) 
+            object_data = build_SP_sphere(topods_face, doc, collection, trims_enabled, scale, resolution) 
         case GeomAbs.GeomAbs_Cone:
-            object_data = build_SP_cone(topods_face, doc, collection, trims_enabled, scale )
+            object_data = build_SP_cone(topods_face, doc, collection, trims_enabled, scale, resolution)
+        case GeomAbs.GeomAbs_SurfaceOfExtrusion:
+            object_data = build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution)
+        # case GeomAbs.GeomAbs_SurfaceOfRevolution:
         case _ :
             print("Unsupported Face Type : " + get_face_type_name(topods_face))
             return {}
@@ -907,8 +963,7 @@ def create_blender_object(object_data):
         return False
     
     mesh = bpy.data.meshes.new(object_data['name'])
-    vert, edges, faces = object_data['mesh_data']
-    mesh.from_pydata(vert, edges, faces, False)   
+    mesh.from_pydata(*object_data['mesh_data'], False)   
     ob = bpy.data.objects.new(object_data['name'], mesh)
     ob.matrix_world = object_data['transform']
     ob.color = object_data['color']
@@ -917,9 +972,9 @@ def create_blender_object(object_data):
         match att[0] :
             case _ if isinstance(att[0], bool) :
                 add_bool_attribute(ob, name, att)
-            case int() :
+            case _ if isinstance(att[0], int) :
                 add_int_attribute(ob, name, att)
-            case float() :
+            case _ if isinstance(att[0], float) :
                 add_float_attribute(ob, name, att)
             case _ :
                 print("Attribute type issue")

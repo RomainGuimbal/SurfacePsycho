@@ -5,7 +5,10 @@ import bpy
 import platform
 os = platform.system()
 from . import macros
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from queue import Queue, Empty
+import threading
+import functools
 # from .macros import SP_Props_Group
 
 
@@ -66,143 +69,138 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
     filename_ext = ".step;.stp;.iges;.igs"
     filter_glob: StringProperty(default="*.step;*.stp;*.iges;*.igs", options={'HIDDEN'}, maxlen=255)
-    faces: BoolProperty(name="Faces", description="Import Faces", default=True)
-    trim_contours: BoolProperty(name="Trim Contours", description="Import faces with their trim contours", default=True)
-    curves: BoolProperty(name="Curves", description="Import Curves", default=True)
+    faces_on: BoolProperty(name="Faces", description="Import Faces", default=True)
+    trims_on: BoolProperty(name="Trim Contours", description="Import faces with their trim contours", default=True)
+    curves_on: BoolProperty(name="Curves", description="Import Curves", default=True)
     scale: FloatProperty(name="Scale", default=.001, precision=3)
     resolution : IntProperty(name="Resolution", default=16, soft_min = 6, soft_max=256)
 
-    executor = None
-    io_futures = []
-    batches = []
-    current_batch = 0
-    face_processed = 0
+    io_pool = ThreadPoolExecutor(max_workers=30)  # I/O workers
+    result_queue = Queue()  # Thread-safe object creation queue
+    stop_event = threading.Event()
+    faces_processed = 0
+    active_timers = set()
+    # executor_curve = None
+    # io_futures_curve = []
+    # batches_curve = []
+    # current_batch_curve = 0
+    # curve_processed = 0
 
-    executor_curve = None
-    io_futures_curve = []
-    batches_curve = []
-    current_batch_curve = 0
-    curve_processed = 0
+    ##### TODO add curves back
 
     def execute(self, context):
+        self.context = context
         # Initialize your CAD import generator
         shape, self.doc, container_name = prepare_import(self.filepath)
         
         # Create hierarchy and collections
         shape_hierarchy = ShapeHierarchy(shape, container_name)
-        shape_count= len(shape_hierarchy.faces) + len(shape_hierarchy.edges)
+        self.shape_count = len(shape_hierarchy.faces) #+ len(shape_hierarchy.edges)
 
-        # Faces
-        if self.faces:
-            import_face_nodegroups(shape_hierarchy)
-            batch_size = 500
-            faces = shape_hierarchy.faces
-            self.batches = [faces[i:i+batch_size] for i in range(0, len(faces), batch_size)]
-            self.current_batch = 0
-            self.face_processed = 0
-
-            # Create thread pool (4 workers - adjust based on your I/O capacity)
-            self.executor = ThreadPoolExecutor(max_workers=16)
-            
-            # Start processing first batch
-            self._submit_io_batch()
-
-        # # Curves
-        # if self.curves:
-        #     curves = shape_hierarchy.curves
-        #     self.batches_curve = [curves[i:i+batch_size] for i in range(0, len(curves), batch_size)]
-        #     self.current_batch_curve = 0
-        #     self.curve_processed = 0
-
-        #     # Create thread pool (4 workers - adjust based on your I/O capacity)
-        #     self.executor_curve = ThreadPoolExecutor(max_workers=4)
-            
-        #     # Start processing first batch
-        #     self._submit_io_batch_curve()
-
-                    
         # Setup progress bar
         wm = context.window_manager
+        wm.progress_begin(0, self.shape_count)
+
+        if self.faces_on:
+            import_face_nodegroups(shape_hierarchy)
+            faces = shape_hierarchy.faces
+            
+            # Start I/O workers
+            for f, col in faces:
+                self.io_pool.submit(
+                    self.process_face_io,
+                    f, col, self.trims_on, 
+                    self.scale, self.resolution
+                )
+
+            # Start object creation thread
+            threading.Thread(target=self._object_creator).start()    
+
+        # Use modal timer instead of modal() for better control
+        self._timer = context.window_manager.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
-        wm.progress_begin(0, shape_count)
-
         return {'RUNNING_MODAL'}
-
-
-    def _submit_io_batch(self):
-        """Submit I/O work for current batch to thread pool"""
-        batch = self.batches[self.current_batch]
-        self.io_futures = [
-            self.executor.submit(
-                process_topods_face,
-                f,
-                self.doc,
-                col,
-                self.trim_contours, 
-                self.scale, 
-                self.resolution
-            )
-            for f, col in batch
-        ]
-    
-
-    # TO FINISH
-    # def _submit_io_batch_curve(self):
-    #     """Submit I/O work for current batch to thread pool"""
-    #     batch = self.batches[self.current_batch]
-    #     self.io_futures = [
-    #         self.executor.submit(
-    #             process_topods_face,
-    #             f,
-    #             self.doc,
-    #             col,
-    #             self.trim_contours, 
-    #             self.scale, 
-    #             self.resolution
-    #         )
-    #         for f, col in batch
-    #     ]
-        
 
     def modal(self, context, event):
+        if self.faces_processed >= self.shape_count :
+            self.stop_event.set()
+            context.window_manager.progress_end()
+
+        if event.type == 'TIMER' and self._timer:
+            # Check for completion
+            if self.stop_event.is_set() and self.result_queue.empty():
+                self._cleanup(context)
+                return {'FINISHED'}
+            
         if event.type == 'ESC':
-            self.cancel(context)
+            self.stop_event.set()
+            self.io_pool.shutdown(wait=False)
+            context.window_manager.progress_end()
             return {'CANCELLED'}
-
-        if self.current_batch < len(self.batches):
-            # Check if current batch's I/O is complete
-            if all(f.done() for f in self.io_futures):
-                # Get I/O results
-                io_data = [f.result() for f in self.io_futures]
                 
-                # Create Blender objects in main thread
-                for object_data in io_data:
-                    create_blender_object(object_data)
-                    self.face_processed += 1
-                    
-                    # Update progress
-                    context.window_manager.progress_update(self.face_processed)
+        return {'PASS_THROUGH'}
+    
 
-                # Update UI
-                context.area.tag_redraw()
+    def process_face_io(self, f, col, trims_on, scale, resolution):
+        """Pure I/O - runs in worker threads"""
+        # Data gathering
+        processed_data = process_topods_face(f, self.doc, col, trims_on, scale, resolution)
+
+        # Pass to main thread via queue
+        self.result_queue.put((processed_data))
+
+    def _object_creator(self):
+        """Dedicated thread for Blender object creation"""
+        while not self.stop_event.is_set():
+            try:
+                data = self.result_queue.get(timeout=0.1)
                 
-                # Prepare next batch
-                self.current_batch += 1
-                if self.current_batch < len(self.batches):
-                    self._submit_io_batch()
-                else:
-                    context.window_manager.progress_end()
-                    self.executor.shutdown()
-                    return {'FINISHED'}
-        
+                # Create timer with unique ID
+                timer_id = str(hash(str(data)))
+                callback = functools.partial(
+                    self._safe_create_object,
+                    object_data=data,
+                    timer_id=timer_id
+                )
+                
+                bpy.app.timers.register(
+                    callback,
+                    first_interval=0.0001,
+                    persistent=True
+                )
+                self.active_timers.add(timer_id)
+                
+            except Empty:
+                continue
 
-        return {'RUNNING_MODAL'}
-        # return {'PASS_THROUGH'}, only for timer ?
+    def _safe_create_object(self, object_data, timer_id):
+        """Main-thread object creation"""
+        try:
+            create_blender_object(object_data)
+            self.faces_processed += 1
+            # Update progress
+            self.context.window_manager.progress_update(self.faces_processed)
+            
+            # Force UI update
+            for window in bpy.context.window_manager.windows:
+                window.screen.areas[0].tag_redraw()
+            
+        finally:
+            self.active_timers.discard(timer_id)
+        return None  # Single-shot timer
 
-    def cancel(self, context):
-        if self.executor:
-            self.executor.shutdown(wait=False)
-        context.area.tag_redraw()
+    def _cleanup(self, context):
+            """Proper resource cleanup"""
+            if self._timer:
+                context.window_manager.event_timer_remove(self._timer)
+            self.io_pool.shutdown(wait=False)
+            
+            # Clear any remaining timers
+            for timer_id in list(self.active_timers):
+                # Timers will self-clean when they run
+                pass
+
+
 
 
 
@@ -294,6 +292,9 @@ class SP_PT_EditPanel(bpy.types.Panel):
             sub.operator("sp.select_endpoints", text="Select")
 
             # Type
+            row = self.layout.row()
+            row.operator("sp.set_segment_type", text="Spline", icon = "MOD_CURVE").type = 0
+
             row = self.layout.row()
             sub = row.row(align=True)
             sub.operator("sp.set_segment_type", text="Circle", icon = "MESH_CIRCLE").type = 3
