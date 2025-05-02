@@ -53,8 +53,9 @@ class SP_Pole_import :
 class SP_Curve_no_edge_import :
     def __init__(self, adaptor_curve, scale = None):
         self.verts = None
-        self.degree = None
+        self.degree = 0
         self.degree_att = []
+        self.type = 0
         self.type_att = []
         self.endpoints_att = []
         self.weight = []
@@ -101,6 +102,7 @@ class SP_Curve_no_edge_import :
         start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
         end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
         gp_pnt_poles = [start_point, end_point]
+        self.type = EDGES_TYPES['line']
         self.type_att = [EDGES_TYPES['line']]*2
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
         self.degree_att = [0,0]
@@ -122,6 +124,7 @@ class SP_Curve_no_edge_import :
         bezier = edge_adaptor.Bezier()
         p_count = bezier.NbPoles()
         gp_pnt_poles = [bezier.Pole(i+1) for i in range(p_count)]
+        self.type = EDGES_TYPES['bezier']
         self.type_att = [EDGES_TYPES['bezier']]*p_count
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
         self.degree_att = [0]*p_count
@@ -136,6 +139,7 @@ class SP_Curve_no_edge_import :
         gp_pnt_poles = [bspline.Pole(i+1) for i in range(p_count)]
         self.degree = bspline.Degree()
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
+        self.type = EDGES_TYPES['nurbs']
         self.type_att = [EDGES_TYPES['nurbs']]*p_count
         self.degree_att = [bspline.Degree()] + [0]*(p_count-2) + [bspline.Degree()]
         if edge_adaptor.BSpline().Multiplicity(1) == 1 : # unclamped periodic
@@ -163,6 +167,7 @@ class SP_Curve_no_edge_import :
         if start_point == end_point or isclose(range_t, math.pi*2):
             center = edge_adaptor.Circle().Location()
             gp_pnt_poles = [start_point, center, mid_point]
+            self.type = EDGES_TYPES['circle']
             self.type_att = [EDGES_TYPES['circle']]*2
 
         # arc
@@ -170,6 +175,7 @@ class SP_Curve_no_edge_import :
             mid_t = (max_t - min_t)/2 + min_t
             mid_point = edge_adaptor.Value(mid_t)
             gp_pnt_poles = [start_point, mid_point, end_point]
+            self.type = EDGES_TYPES['circle_arc']
             self.type_att = [EDGES_TYPES['circle_arc']]*3
 
         self.degree_att = [0]*3
@@ -196,6 +202,7 @@ class SP_Curve_no_edge_import :
         if start_point == end_point or isclose(range_t, math.pi*2):
             
             gp_pnt_poles = [axis_point_1, center, axis_point_2]
+            self.type = EDGES_TYPES['ellipse']
             self.type_att = [EDGES_TYPES['ellipse']]*3
             self.degree_att = [0]*3
             self.endpoints_att = [True, False, True]
@@ -205,6 +212,7 @@ class SP_Curve_no_edge_import :
         # arc
         else:
             gp_pnt_poles = [start_point, axis_point_1, center, axis_point_2, end_point]
+            self.type = EDGES_TYPES['ellipse_arc']
             self.type_att = [EDGES_TYPES['ellipse_arc']]*5
             self.degree_att = [0]*5
             self.endpoints_att = [True] + [False]*3 + [True]
@@ -798,12 +806,13 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001, resolution = 16):
 def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution):
     adapt_surf = BRepAdaptor_Surface(topods_face).Surface()
     adapt_curve = adapt_surf.BasisCurve()
+    geom_surf = adapt_surf.Surface()
 
     curve_no_edge = SP_Curve_no_edge_import(adapt_curve, scale)
     
-    gpdir = adapt_surf.Direction()
+    gpdir = geom_surf.Direction()
     CPvert = curve_no_edge.verts
-    CPvert.insert(CPvert[0] + Vector((gpdir.X(), gpdir.Y(), gpdir.Z())))
+    CPvert.insert(0, CPvert[0] + Vector((gpdir.X(), gpdir.Y(), gpdir.Z()))*scale)
 
     CPedges = [(i,i+1) for i in range(len(CPvert)-1)]
     
@@ -815,11 +824,63 @@ def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resol
                     "Resolution V" : resolution
                     },
                 True)
-
+    
     object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
                                          CPvert, CPedges, [], modifier, ob_name= "STEP Extrusion")
     
+    # Ideally should be an input of generic_import_surface which merges it
+    curve_p_count = len(curve_no_edge.verts)
+    object_data['attrs']['Degree'][1] = curve_no_edge.degree
+    object_data['attrs']['Type'][1] = curve_no_edge.type
+    object_data['attrs']['Knot'][1:1+curve_p_count] = curve_no_edge.knot
+    object_data['attrs']['Multiplicity'][1:1+curve_p_count] = curve_no_edge.mult
+
+    # Cyclic todo (both cyclic CP and cyclic eval)
+
     return object_data
+
+
+
+def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, resolution):
+    adapt_surf = BRepAdaptor_Surface(topods_face).Surface()
+    adapt_curve = adapt_surf.BasisCurve()
+    geom_surf = adapt_surf.Surface()
+
+    curve_no_edge = SP_Curve_no_edge_import(adapt_curve, scale)
+    
+    gpdir = geom_surf.Direction()
+    gploc = geom_surf.Location()
+    CPvert = curve_no_edge.verts
+    p1 = Vector((gploc.X(), gploc.Y(), gploc.Z()))
+    p2 = p1 + Vector((gpdir.X(), gpdir.Y(), gpdir.Z()))
+    CPvert = [p1, p2] + CPvert
+
+    CPedges = [(0,1)]+[(i,i+1) for i in range(2, len(CPvert)-1)]
+    
+    modifier = ("SP - Surface of Revolution Meshing", 
+                    {"Use Trim Contour" : trims_enabled, 
+                    "Flip Normals" : topods_face.Orientation()==TopAbs_REVERSED, 
+                    "Scaling Method" : 1,
+                    "Resolution U" : resolution,
+                    "Resolution V" : resolution
+                    },
+                True)
+
+    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
+                                         CPvert, CPedges, [], modifier, ob_name= "STEP Revolution")
+    
+    # Ideally should be an input of generic_import_surface which merges it
+    curve_p_count = len(curve_no_edge.verts)
+    object_data['attrs']['Degree'][2] = curve_no_edge.degree
+    object_data['attrs']['Type'][2] = curve_no_edge.type
+    object_data['attrs']['Knot'][2:2+curve_p_count] = curve_no_edge.knot
+    object_data['attrs']['Multiplicity'][2:2+curve_p_count] = curve_no_edge.mult
+
+    # Cyclic todo (both cyclic CP and cyclic eval)
+
+    return object_data
+
+
 
 
 
@@ -925,8 +986,8 @@ def import_face_nodegroups(shape_hierarchy):
                 to_import_ng_names.add("SP - Conical Meshing")
             case GeomAbs.GeomAbs_SurfaceOfExtrusion:
                 to_import_ng_names.add("SP - Surface of Extrusion Meshing")
-            # case GeomAbs.GeomAbs_SurfaceOfRevolution:
-            #     to_import_ng_names.add("SP - Surface of Revolution Meshing")
+            case GeomAbs.GeomAbs_SurfaceOfRevolution:
+                to_import_ng_names.add("SP - Surface of Revolution Meshing")
     append_multiple_node_groups(to_import_ng_names)
 
 
@@ -950,7 +1011,8 @@ def process_topods_face(topods_face, doc, collection, trims_enabled, scale, reso
             object_data = build_SP_cone(topods_face, doc, collection, trims_enabled, scale, resolution)
         case GeomAbs.GeomAbs_SurfaceOfExtrusion:
             object_data = build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution)
-        # case GeomAbs.GeomAbs_SurfaceOfRevolution:
+        case GeomAbs.GeomAbs_SurfaceOfRevolution:
+             object_data = build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, resolution)
         case _ :
             print("Unsupported Face Type : " + get_face_type_name(topods_face))
             return {}
