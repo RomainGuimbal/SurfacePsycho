@@ -75,11 +75,11 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     scale: FloatProperty(name="Scale", default=.001, precision=3)
     resolution : IntProperty(name="Resolution", default=16, soft_min = 6, soft_max=256)
 
-    io_pool = ThreadPoolExecutor(max_workers=30)  # I/O workers
-    result_queue = Queue()  # Thread-safe object creation queue
-    stop_event = threading.Event()
+    io_pool = None  # I/O workers
+    result_queue = None  # Thread-safe object creation queue
+    stop_event = None
     faces_processed = 0
-    active_timers = set()
+    active_timers = None
     # executor_curve = None
     # io_futures_curve = []
     # batches_curve = []
@@ -90,6 +90,14 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         self.context = context
+
+        # Initialize member variables
+        self.result_queue = Queue()
+        self.stop_event = threading.Event()
+        self.faces_processed = 0
+        self.active_timers = set()
+        self.io_pool = ThreadPoolExecutor(max_workers=30)
+
         # Initialize your CAD import generator
         shape, self.doc, container_name = prepare_import(self.filepath)
         
