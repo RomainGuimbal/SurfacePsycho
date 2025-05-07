@@ -963,58 +963,60 @@ class ShapeHierarchy:
 
 
 def import_face_nodegroups(shape_hierarchy):
-    to_import_ng_names = set()
+    to_import_ng_names = []
     face_encountered = set()
 
     for face, _ in shape_hierarchy.faces: 
-        ft= get_face_type_id(face)
-        face_encountered.add(ft)
-        match ft:
-            case GeomAbs.GeomAbs_Plane:
-                to_import_ng_names.add("SP - FlatPatch Meshing")
-            case GeomAbs.GeomAbs_Cylinder:
-                to_import_ng_names.add("SP - Cylindrical Meshing")
-            case GeomAbs.GeomAbs_BezierSurface:
-                to_import_ng_names.add("SP - Bezier Patch Meshing")
-            case GeomAbs.GeomAbs_BSplineSurface:
-                to_import_ng_names.add("SP - NURBS Patch Meshing")
-            case GeomAbs.GeomAbs_Torus:
-                to_import_ng_names.add("SP - Toroidal Meshing")
-            case GeomAbs.GeomAbs_Sphere:
-                to_import_ng_names.add("SP - Spherical Meshing")
-            case GeomAbs.GeomAbs_Cone:
-                to_import_ng_names.add("SP - Conical Meshing")
-            case GeomAbs.GeomAbs_SurfaceOfExtrusion:
-                to_import_ng_names.add("SP - Surface of Extrusion Meshing")
-            case GeomAbs.GeomAbs_SurfaceOfRevolution:
-                to_import_ng_names.add("SP - Surface of Revolution Meshing")
+        ft= get_face_sp_type(face)
+        if ft not in face_encountered:
+            face_encountered.add(ft)
+            match ft:
+                case GeomAbs.GeomAbs_Plane:
+                    to_import_ng_names.append("SP - FlatPatch Meshing")
+                case GeomAbs.GeomAbs_Cylinder:
+                    to_import_ng_names.append("SP - Cylindrical Meshing")
+                case GeomAbs.GeomAbs_BezierSurface:
+                    to_import_ng_names.append("SP - Bezier Patch Meshing")
+                case GeomAbs.GeomAbs_BSplineSurface:
+                    to_import_ng_names.append("SP - NURBS Patch Meshing")
+                case GeomAbs.GeomAbs_Torus:
+                    to_import_ng_names.append("SP - Toroidal Meshing")
+                case GeomAbs.GeomAbs_Sphere:
+                    to_import_ng_names.append("SP - Spherical Meshing")
+                case GeomAbs.GeomAbs_Cone:
+                    to_import_ng_names.append("SP - Conical Meshing")
+                case GeomAbs.GeomAbs_SurfaceOfExtrusion:
+                    to_import_ng_names.append("SP - Surface of Extrusion Meshing")
+                case GeomAbs.GeomAbs_SurfaceOfRevolution:
+                    to_import_ng_names.append("SP - Surface of Revolution Meshing")
+
     append_multiple_node_groups(to_import_ng_names)
 
 
 
 def process_topods_face(topods_face, doc, collection, trims_enabled, scale, resolution):
-    ft= get_face_type_id(topods_face)
+    ft= get_face_sp_type(topods_face)
     match ft:
-        case GeomAbs.GeomAbs_Plane:
+        case SP_obj_type.PLANE:
             object_data = build_SP_flat(topods_face, doc, collection, scale, resolution)
-        case GeomAbs.GeomAbs_Cylinder:
+        case SP_obj_type.CYLINDER:
             object_data = build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case GeomAbs.GeomAbs_BezierSurface:
+        case SP_obj_type.BEZIER:
             object_data = build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case GeomAbs.GeomAbs_BSplineSurface:
+        case SP_obj_type.NURBS:
             object_data = build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case GeomAbs.GeomAbs_Torus:
+        case SP_obj_type.TORUS:
             object_data = build_SP_torus(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case GeomAbs.GeomAbs_Sphere:
+        case SP_obj_type.SPHERE:
             object_data = build_SP_sphere(topods_face, doc, collection, trims_enabled, scale, resolution) 
-        case GeomAbs.GeomAbs_Cone:
+        case SP_obj_type.CONE:
             object_data = build_SP_cone(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case GeomAbs.GeomAbs_SurfaceOfExtrusion:
+        case SP_obj_type.EXTRUSION:
             object_data = build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case GeomAbs.GeomAbs_SurfaceOfRevolution:
+        case SP_obj_type.REVOLUTION:
              object_data = build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, resolution)
         case _ :
-            print("Unsupported Face Type : " + get_face_type_name(topods_face))
+            print(f"Unsupported Face Type : {ft}")
             return {}
     return object_data
 

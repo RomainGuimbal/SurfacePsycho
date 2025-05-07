@@ -936,6 +936,18 @@ def blender_object_to_topods_shapes(context, object, sp_type, scale = 1000, sew_
             shape = cone_face_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
+        case "sphere":
+            shape = sphere_face_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+
+        case "cylinder":
+            shape = cylinder_face_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+
+        case "torus":
+            shape = torus_face_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+
         case "bezier_surf":
             shape = bezier_face_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)

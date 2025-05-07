@@ -20,6 +20,7 @@ from .exporter_svg import export_svg
 from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper, orientation_helper, axis_conversion
 
+addon_keymaps = []
 
 @orientation_helper(axis_forward='Y', axis_up='Z')
 class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
@@ -362,6 +363,25 @@ def menu_export_svg(self, context):
     self.layout.operator("sp.svg_export", text="SurfacePsycho SVG (.svg)")
 
 
+
+def hotkeys_add(addon_keymaps):
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
+        kmi = km.keymap_items.new("sp.toggle_endpoints", type='F', value='PRESS', shift=True)
+        addon_keymaps.append((km, kmi))
+
+
+def hotkeys_remove(addon_keymaps):
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
+
+
+
+
+
 classes = [
     SP_PT_MainPanel,
     SP_PT_EditPanel,
@@ -387,21 +407,10 @@ def register():
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.append(menu_export_svg)
 
-    #TODO
-    # # Add hotkey
-    # wm = bpy.context.window_manager
-    # kc = wm.keyconfigs.addon
-    # if kc:
-    #     km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
-    #     kmi = km.keymap_items.new(OBJECT_OT_CustomOp.bl_idname, type='W', value='PRESS', ctrl=True)
-    #     addon_keymaps.append((km, kmi))
+    hotkeys_add(addon_keymaps)
     
 def unregister():  
-    #TODO
-    # # # Remove hotkey
-    # for km, kmi in addon_keymaps:
-    #     km.keymap_items.remove(kmi)
-    # addon_keymaps.clear()
+    hotkeys_remove(addon_keymaps)
 
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_svg)
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_step)

@@ -512,6 +512,32 @@ class SP_OT_remove_from_endpoints(bpy.types.Operator):
             bpy.ops.object.mode_set(mode='EDIT')
         return {'FINISHED'}
     
+class SP_OT_toggle_endpoints(bpy.types.Operator):
+    bl_idname = "sp.toggle_endpoints"
+    bl_label = "Toggle Endpoints"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        objs = context.objects_in_mode
+        for o in objs :
+            bpy.ops.object.mode_set(mode='OBJECT')
+            # Ensure "Endpoints" vertex group exists
+            if "Endpoints" in o.vertex_groups:
+                vg = o.vertex_groups["Endpoints"]
+                
+                # Toggle selected vertices to the vertex group
+                for v in o.data.vertices:
+                    if v.select:
+                        try:
+                            if vg.weight(v.index) > 0.6:
+                                vg.remove([v.index])
+                            else:
+                                vg.add([v.index], 1.0, 'REPLACE')
+                        except RuntimeError:
+                            vg.add([v.index], 1.0, 'REPLACE')
+            bpy.ops.object.mode_set(mode='EDIT')
+        return {'FINISHED'}
+
 
 
 class SP_OT_select_endpoints(bpy.types.Operator):
@@ -947,6 +973,7 @@ classes = [
     SP_OT_set_segment_type,
     SP_OT_assign_as_ellipse,
     SP_OT_assign_as_endpoint,
+    SP_OT_toggle_endpoints,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_from_circles,

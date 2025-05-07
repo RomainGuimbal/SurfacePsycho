@@ -6,6 +6,7 @@ import math
 from math import isclose
 from typing import List, Tuple
 from os.path import dirname, abspath, join
+from enum import Enum
 
 from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
@@ -28,58 +29,66 @@ import OCP.TopAbs as TopAbs
 addonpath = dirname(abspath(__file__)) # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
 
+class SP_obj_type(Enum):
+    PLANE = 0
+    CYLINDER = 1
+    CONE = 2
+    SPHERE = 3
+    TORUS = 4
+    BEZIER_SURFACE = 5
+    BSPLINE_SURFACE = 6
+    SURFACE_OF_REVOLUTION = 7
+    SURFACE_OF_EXTRUSION = 8
+    OFFSET_SURFACE = 9
+    OTHER_SURFACE = 10
+    INSTANCE = 11
+    EMPTY = 12
+    CURVE = 13
+    COMPOUND = 14
 
-TYPES_FROM_CP_ATTR = {        'CP_bezier_surf':'bicubic_surf',
-                           'CP_any_order_surf':'bezier_surf',
-                               'CP_NURBS_surf':'NURBS_surf',
-                                   'CP_planar':'planar',
-                                    'CP_curve':'curve',
-                              'CP_NURBS_curve':'NURBS_curve',
-                                 'CP_cylinder':'cylinder',
-                                    'CP_torus':'torus',
-                                'angle_radius':'cone',
-                                   'CP_sphere':'sphere',
-                               'CP_swept_surf':'swept_surf',
-                          'CP_revolution_surf':'revolution_surf',}
+TYPES_FROM_CP_ATTR = {     'CP_any_order_surf': SP_obj_type.BEZIER_SURFACE,
+                               'CP_NURBS_surf': SP_obj_type.BSPLINE_SURFACE,
+                                   'CP_planar': SP_obj_type.PLANE,
+                                    'CP_curve': SP_obj_type.CURVE,
+                                 'CP_cylinder': SP_obj_type.CYLINDER,
+                                    'CP_torus': SP_obj_type.TORUS,
+                                'angle_radius': SP_obj_type.CONE,
+                                   'CP_sphere': SP_obj_type.SPHERE,
+                               'CP_swept_surf': SP_obj_type.SURFACE_OF_EXTRUSION,
+                          'CP_revolution_surf': SP_obj_type.SURFACE_OF_REVOLUTION,
+                    }
+
+geom_to_sp_type = {
+    GeomAbs_Plane : SP_obj_type.PLANE,
+    GeomAbs_Cylinder : SP_obj_type.CYLINDER,
+    GeomAbs_Cone : SP_obj_type.CONE,
+    GeomAbs_Sphere : SP_obj_type.SPHERE,
+    GeomAbs_Torus : SP_obj_type.TORUS,
+    GeomAbs_BezierSurface : SP_obj_type.BEZIER_SURFACE,
+    GeomAbs_BSplineSurface : SP_obj_type.BSPLINE_SURFACE,
+    GeomAbs_SurfaceOfRevolution : SP_obj_type.SURFACE_OF_REVOLUTION,
+    GeomAbs_SurfaceOfExtrusion : SP_obj_type.SURFACE_OF_EXTRUSION,
+    GeomAbs_OffsetSurface : SP_obj_type.OFFSET_SURFACE,
+    GeomAbs_OtherSurface : SP_obj_type.OTHER_SURFACE,
+}
+
+def get_face_sp_type(TopoDSface : TopoDS_Face):
+    adapt_surf = BRepAdaptor_Surface(TopoDSface)
+    surface_type = adapt_surf.GetType()
+    return geom_to_sp_type.get(surface_type, f"Unknown type: {surface_type}")
 
 
-
-
-def get_face_type_id(TopoDSface : TopoDS_Face):
-    face_surface = BRepAdaptor_Surface(TopoDSface)
-    return face_surface.GetType()
-
-def get_face_type_name(TopoDSface : TopoDS_Face):
-    surface_type = get_face_type_id(TopoDSface)
-    type_names = { # Actual constants from occt
-        GeomAbs_Plane: "Plane", #0
-        GeomAbs_Cylinder: "Cylinder", #1
-        GeomAbs_Cone: "Cone", #2
-        GeomAbs_Sphere: "Sphere", #3
-        GeomAbs_Torus: "Torus", #4
-        GeomAbs_BezierSurface: "Bezier Surface", #5
-        GeomAbs_BSplineSurface: "BSpline Surface", #6
-        GeomAbs_SurfaceOfRevolution: "Surface of Revolution", #7
-        GeomAbs_SurfaceOfExtrusion: "Surface of Extrusion", #8
-        GeomAbs_OffsetSurface: "Offset Surface", #9
-        GeomAbs_OtherSurface: "Other Surface" #10
-    }
-    return type_names.get(surface_type, f"Unknown type: {surface_type}")
-
-
-
-
-def sp_type_of_object(o, context):
+def sp_type_of_object(o: bpy.types.Object, context: bpy.types.Context) -> SP_obj_type:
     if o.type == 'EMPTY' :
         if o.instance_collection != None :
-            return 'instance'
+            return SP_obj_type.INSTANCE
         else :
-            return 'empty'
+            return SP_obj_type.EMPTY
         
     for m in o.modifiers:
         if m.type == 'NODES' and m.node_group:
             if m.node_group.name =="SP - Compound Meshing":
-                return 'compound'
+                return SP_obj_type.COMPOUND
 
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     if hasattr(ob.data, "attributes") :
