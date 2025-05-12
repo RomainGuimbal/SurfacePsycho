@@ -966,8 +966,9 @@ def import_face_nodegroups(shape_hierarchy):
     to_import_ng_names = []
     face_encountered = set()
 
-    for face, _ in shape_hierarchy.faces: 
-        ft= get_face_sp_type(face)
+    for face, _ in shape_hierarchy.faces:
+        adapt_surf = BRepAdaptor_Surface(face)
+        ft = adapt_surf.GetType()
         if ft not in face_encountered:
             face_encountered.add(ft)
             match ft:
@@ -1001,16 +1002,16 @@ def process_topods_face(topods_face, doc, collection, trims_enabled, scale, reso
             object_data = build_SP_flat(topods_face, doc, collection, scale, resolution)
         case SP_obj_type.CYLINDER:
             object_data = build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale, resolution)
+        case SP_obj_type.CONE:
+            object_data = build_SP_cone(topods_face, doc, collection, trims_enabled, scale, resolution)
+        case SP_obj_type.SPHERE:
+            object_data = build_SP_sphere(topods_face, doc, collection, trims_enabled, scale, resolution)
+        case SP_obj_type.TORUS:
+            object_data = build_SP_torus(topods_face, doc, collection, trims_enabled, scale, resolution)
         case SP_obj_type.BEZIER:
             object_data = build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case SP_obj_type.NURBS:
             object_data = build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case SP_obj_type.TORUS:
-            object_data = build_SP_torus(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case SP_obj_type.SPHERE:
-            object_data = build_SP_sphere(topods_face, doc, collection, trims_enabled, scale, resolution) 
-        case SP_obj_type.CONE:
-            object_data = build_SP_cone(topods_face, doc, collection, trims_enabled, scale, resolution)
         case SP_obj_type.EXTRUSION:
             object_data = build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution)
         case SP_obj_type.REVOLUTION:
