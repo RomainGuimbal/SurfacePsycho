@@ -735,22 +735,29 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
     elif len(color)==4 :
         ob.color = color
 
-    # Assign vertex groups
-    add_vertex_group(ob, "Endpoints", endpoints)
-    add_vertex_group(ob, "Degree", degree_att)
-    add_vertex_group(ob, "Type", type_att)
-    add_vertex_group(ob, "Weight", weight_att)
-    add_float_attribute(ob, "Knot", knot_att)
-    add_int_attribute(ob, "Multiplicity", mult_att)
+    modifier = ("SP - Curve Meshing",
+                {"Resolution": resolution}, True)
 
+    attrs = {'Weight' : weight_att,
+            'Knot' : knot_att,
+            'Multiplicity': mult_att,
+            'Endpoints' : endpoints,
+            'Degree': degree_att,
+            'Type': type_att,
+            }
 
-    # add modifier
-    collection.objects.link(ob)
-    add_sp_modifier(ob, "SP - Curve Meshing",
-                    {"Resolution": resolution}, pin=True)
+    object_data = {
+        'mesh_data': (verts, edges, []),
+        'name': name,
+        'collection' : collection,
+        'scale': scale,
+        'color': color,
+        'attrs' : attrs,
+        'modifier': modifier,
+        'transform': Matrix(),
+    }
 
-    return True
-
+    return object_data
 
 
 
@@ -948,7 +955,7 @@ class ShapeHierarchy:
                 hierarchy['Face'] = face
                 self.faces.append((face, parent_col))
 
-            case TopAbs.TopAbs_WIRE:
+            case TopAbs.TopAbs_WIRE: # must be before edge
                 wire = TopoDS.Wire_s(shape)
                 hierarchy['Wire'] = wire
                 self.edges.append((wire, parent_col))
@@ -976,22 +983,24 @@ def import_face_nodegroups(shape_hierarchy):
                     to_import_ng_names.append("SP - FlatPatch Meshing")
                 case GeomAbs.GeomAbs_Cylinder:
                     to_import_ng_names.append("SP - Cylindrical Meshing")
+                case GeomAbs.GeomAbs_Cone:
+                    to_import_ng_names.append("SP - Conical Meshing")
+                case GeomAbs.GeomAbs_Sphere:
+                    to_import_ng_names.append("SP - Spherical Meshing")
+                case GeomAbs.GeomAbs_Torus:
+                    to_import_ng_names.append("SP - Toroidal Meshing")
                 case GeomAbs.GeomAbs_BezierSurface:
                     to_import_ng_names.append("SP - Bezier Patch Meshing")
                 case GeomAbs.GeomAbs_BSplineSurface:
                     to_import_ng_names.append("SP - NURBS Patch Meshing")
-                case GeomAbs.GeomAbs_Torus:
-                    to_import_ng_names.append("SP - Toroidal Meshing")
-                case GeomAbs.GeomAbs_Sphere:
-                    to_import_ng_names.append("SP - Spherical Meshing")
-                case GeomAbs.GeomAbs_Cone:
-                    to_import_ng_names.append("SP - Conical Meshing")
-                case GeomAbs.GeomAbs_SurfaceOfExtrusion:
-                    to_import_ng_names.append("SP - Surface of Extrusion Meshing")
                 case GeomAbs.GeomAbs_SurfaceOfRevolution:
                     to_import_ng_names.append("SP - Surface of Revolution Meshing")
-
+                case GeomAbs.GeomAbs_SurfaceOfExtrusion:
+                    to_import_ng_names.append("SP - Surface of Extrusion Meshing")
+                
     append_multiple_node_groups(to_import_ng_names)
+
+
 
 
 
@@ -1012,10 +1021,10 @@ def process_topods_face(topods_face, doc, collection, trims_enabled, scale, reso
             object_data = build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
         case SP_obj_type.NURBS:
             object_data = build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case SP_obj_type.EXTRUSION:
-            object_data = build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution)
         case SP_obj_type.REVOLUTION:
              object_data = build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, resolution)
+        case SP_obj_type.EXTRUSION:
+            object_data = build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution)
         case _ :
             print(f"Unsupported Face Type : {ft}")
             return {}

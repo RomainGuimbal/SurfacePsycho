@@ -95,21 +95,21 @@ obj_probe = ["SP - Curvatures Probe"]
 filepath_curve_flat = "//..\..\Bezier-Quest\SP - Curve and FlatPatch.blend"
 obj_curve_flat = ["FlatPatch", "PsychoCurve", "Internal Curve For Patch",]
 gr_curve_flat = [
-"SP - Circle",
 "SP - Bezier Circlular Arc",
 "SP - Blend Curve",
 "SP - Compose FlatPatch From Sides",
 "SP - Continuities between Segments",
+"SP - Convert Circles and Ellipses to Splines",
 "SP - Loft from Internal Curves",
-"SP - Convert Flat Patch to Bezier Patch",
+#"SP - Convert Flat Patch to Bezier Patch",
 "SP - Copy Curve or FlatPatch",
 "SP - Copy Flat Patch Side",
 "SP - Copy Mesh Face",
-"SP - Copy Patch Side",
 "SP - Curve on Surface from UV",
-"SP - Curve Through Points",
+"SP - Interpolation Curve",
 "SP - Distance Between Curves",
 "SP - Fillet Curve or FlatPatch",
+"SP - Fit Curve",
 "SP - Inset FlatPatch",
 "SP - Internal Curve to PsychoCurve",
 "SP - Intervale Curve",
@@ -129,6 +129,8 @@ gr_curve_flat = [
 "SP - Split Curve",
 "SP - Switch Curve Direction",
 "SP - Text to Curve or FlatPatch",
+"SP - Radial Repeat FlatPatch",
+"SP - Reproject Ellipse Arcs Ends",
 #"SP - Continuities Curve",
 #"SP - Curve Meshing",
 #"SP - Crop or Extend Curve",
@@ -141,7 +143,6 @@ obj_surf = ["Bezier Patch"]
 gr_surf = [
 "SP - Auto Midpoints Linear",
 "SP - Blend Surfaces",
-"SP - Continuity Analysis Bezier Patch",
 "SP - Connect Bezier Patch",
 "SP - Convert Contour",
 "SP - Crop or Extend Patch",
@@ -153,14 +154,19 @@ gr_surf = [
 "SP - Flatten Patch",
 "SP - Flatten Patch Side",
 "SP - Gradient Map",
+"SP - Interpolation Patch Grid",
 "SP - Loft",
 "SP - Mirror Patch Control Points",
-"SP - Patch Normals",
+"SP - Nearest Curve on Bezier Patch",
+"SP - Patch Exact Normals",
+"SP - Project Curve on Bezier Patch",
 "SP - Raise or Lower Degree Bezier Patch",
 "SP - Reorder Grid Index",
 "SP - Ruled Surface from Mesh Loop",
 "SP - Select Patch Range",
 "SP - Sew and Symmetrize",
+"SP - Copy Segment",
+"SP - Copy Flat Patch as Trim Contour",
 #"SP - Sweep Linear Bicubic",
 #"SP - Sweep Bicubic",
 #"SP - Auto Snap Continuities",
@@ -178,7 +184,10 @@ gr_nurbs=[
 "SP - NURBS Weighting",
 "SP - Set Knot NURBS Patch",
 "SP - NURBS to Bezier Patch [Naive slow]",
-"SP - Crop NURBS Patch"
+"SP - Crop NURBS Patch",
+"SP - Insert Knot NURBS Patch",
+"SP - Curvature Analysis NURBS",
+"SP - Continuity Analysis",
 ]
 
 
@@ -190,6 +199,8 @@ gr_other=[
 "SP - Toroidal Meshing",
 "SP - Spherical Meshing",
 "SP - Conical Meshing",
+"SP - Surface of Extrusion Meshing",
+"SP - Surface of Revolution Meshing",
 ]
 
 # SHAPES

@@ -12,7 +12,7 @@ import functools
 # from .macros import SP_Props_Group
 
 
-from .importer import prepare_import, ShapeHierarchy, import_face_nodegroups, process_topods_face, create_blender_object
+from .importer import prepare_import, ShapeHierarchy, import_face_nodegroups, process_topods_face, create_blender_object, build_SP_curve
 from .utils import append_node_group
 from .exporter_cad import export_step, export_iges
 from .exporter_svg import export_svg
@@ -81,16 +81,13 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     stop_event = None
     faces_processed = 0
     active_timers = None
-    # executor_curve = None
-    # io_futures_curve = []
-    # batches_curve = []
-    # current_batch_curve = 0
-    # curve_processed = 0
-
-    ##### TODO add curves back
+    curve_start_at = 0
 
     def execute(self, context):
         self.context = context
+        
+        # Show wait cursor
+        context.window.cursor_set("WAIT")  
 
         # Initialize member variables
         self.result_queue = Queue()
@@ -103,24 +100,33 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         shape, self.doc, container_name = prepare_import(self.filepath)
         
         # Create hierarchy and collections
+        self.shape_count = 0
         shape_hierarchy = ShapeHierarchy(shape, container_name)
-        self.shape_count = len(shape_hierarchy.faces) #+ len(shape_hierarchy.edges)
+
+        shapes = []
+        if self.faces_on :
+            self.shape_count += len(shape_hierarchy.faces)
+            self.curve_start_at = len(shape_hierarchy.faces)
+            import_face_nodegroups(shape_hierarchy)
+            shapes.extend(shape_hierarchy.faces)
+        if self.curves_on :
+            self.shape_count += len(shape_hierarchy.edges)
+            append_node_group("SP - Curve Meshing")
+            shapes.extend(shape_hierarchy.edges)
 
         # Setup progress bar
+        context.window.cursor_set("DEFAULT")
         wm = context.window_manager
         wm.progress_begin(0, self.shape_count)
-
-        if self.faces_on:
-            import_face_nodegroups(shape_hierarchy)
-            faces = shape_hierarchy.faces
             
-            # Start I/O workers
-            for f, col in faces:
-                self.io_pool.submit(
-                    self.process_face_io,
-                    f, col, self.trims_on, 
-                    self.scale, self.resolution
-                )
+        # Start I/O workers
+        for index, (shape, col) in enumerate(shapes):
+            self.io_pool.submit(
+                self.process_object_io,
+                shape, col, self.trims_on, 
+                self.scale, self.resolution,
+                index
+            )
 
             # Start object creation thread
             threading.Thread(target=self._object_creator).start()    
@@ -150,11 +156,14 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         return {'PASS_THROUGH'}
     
 
-    def process_face_io(self, f, col, trims_on, scale, resolution):
+    def process_object_io(self, shape, col, trims_on, scale, resolution, index):
         """Pure I/O - runs in worker threads"""
+        
         # Data gathering
-        processed_data = process_topods_face(f, self.doc, col, trims_on, scale, resolution)
-
+        if index < self.curve_start_at :
+            processed_data = process_topods_face(shape, self.doc, col, trims_on, scale, resolution)
+        else :
+            processed_data = build_SP_curve(shape, self.doc, col, scale, resolution)
         # Pass to main thread via queue
         self.result_queue.put((processed_data))
 
