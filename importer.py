@@ -3,6 +3,7 @@ import numpy as np
 from mathutils import Vector
 from os.path import abspath, splitext, split, isfile
 from .utils import *
+
 # from .utils import list_of_shapes_to_compound
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
@@ -11,13 +12,37 @@ import typing
 # from OCP.Geom2dAdaptor import Geom2dAdaptor_Curve
 # from OCP.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
 from OCP.BRep import BRep_Builder
-from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface #BRepAdaptor_Curve
+from OCP.BRepAdaptor import (
+    BRepAdaptor_Curve,
+    BRepAdaptor_Curve2d,
+    BRepAdaptor_Surface,
+)  # BRepAdaptor_Curve
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
+
 # from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line, Geom_ToroidalSurface
-from OCP.GeomAbs import GeomAbs_BezierCurve, GeomAbs_BSplineCurve, GeomAbs_Line, GeomAbs_Circle, GeomAbs_Ellipse, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
+from OCP.GeomAbs import (
+    GeomAbs_BezierCurve,
+    GeomAbs_BSplineCurve,
+    GeomAbs_Line,
+    GeomAbs_Circle,
+    GeomAbs_Ellipse,
+    GeomAbs_Plane,
+    GeomAbs_Cylinder,
+    GeomAbs_Cone,
+    GeomAbs_Sphere,
+    GeomAbs_Torus,
+    GeomAbs_BezierSurface,
+    GeomAbs_BSplineSurface,
+    GeomAbs_SurfaceOfRevolution,
+    GeomAbs_SurfaceOfExtrusion,
+    GeomAbs_OffsetSurface,
+    GeomAbs_OtherSurface,
+)
+
 # from OCP.GeomAPI import GeomAPI_ProjectPointOnCurve
 from OCP.gp import gp_Pnt, gp_Pnt2d
 from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
+
 # from OCP.IGESCAFControl import IGESCAFControl_Reader
 from OCP.IGESControl import IGESControl_Controller, IGESControl_Reader
 from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB, Quantity_ColorRGBA
@@ -26,32 +51,53 @@ from OCP.STEPControl import STEPControl_Reader
 from OCP.TCollection import TCollection_ExtendedString, TCollection_AsciiString
 from OCP.TDF import TDF_LabelSequence, TDF_Label
 from OCP.TDocStd import TDocStd_Document
-from OCP.TopAbs import TopAbs_FORWARD, TopAbs_REVERSED #, TopAbs_INTERNAL, TopAbs_EXTERNAL, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
+from OCP.TopAbs import (
+    TopAbs_FORWARD,
+    TopAbs_REVERSED,
+)  # , TopAbs_INTERNAL, TopAbs_EXTERNAL, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
 from OCP.TopLoc import TopLoc_Location
-from OCP.TopoDS import TopoDS, TopoDS_Iterator, TopoDS_Wire, TopoDS_Edge, TopoDS_Face, TopoDS_Shape, TopoDS_Compound
+from OCP.TopoDS import (
+    TopoDS,
+    TopoDS_Iterator,
+    TopoDS_Wire,
+    TopoDS_Edge,
+    TopoDS_Face,
+    TopoDS_Shape,
+    TopoDS_Compound,
+)
+
 # from OCP.TopTools import TopTools_IndexedMapOfShape
 # from OCP.XCAFApp import XCAFApp_Application
-from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorTool, XCAFDoc_ShapeTool, XCAFDoc_ColorCurv, XCAFDoc_ColorSurf, XCAFDoc_ColorGen 
+from OCP.XCAFDoc import (
+    XCAFDoc_DocumentTool,
+    XCAFDoc_ColorTool,
+    XCAFDoc_ShapeTool,
+    XCAFDoc_ColorCurv,
+    XCAFDoc_ColorSurf,
+    XCAFDoc_ColorGen,
+    XCAFDoc_ColorType,
+)
 import OCP.GeomAbs as GeomAbs
 import OCP.TopAbs as TopAbs
-
 
 
 ##############################
 ##    Converter classes     ##
 ##############################
 
-class SP_Pole_import :
+
+class SP_Pole_import:
     def __init__(self, gp_pole):
-        if isinstance(gp_pole, gp_Pnt2d) : 
+        if isinstance(gp_pole, gp_Pnt2d):
             self.vertex = Vector((gp_pole.X(), gp_pole.Y(), 0))
-        else :
+        else:
             self.vertex = Vector((gp_pole.X(), gp_pole.Y(), gp_pole.Z()))
-    
+
         # self.weight ?
 
-class SP_Curve_no_edge_import :
-    def __init__(self, adaptor_curve, scale = None):
+
+class SP_Curve_no_edge_import:
+    def __init__(self, adaptor_curve, scale=None):
         self.verts = None
         self.degree = 0
         self.degree_att = []
@@ -61,55 +107,55 @@ class SP_Curve_no_edge_import :
         self.weight = []
         self.mult = []
         self.knot = []
-        
-        try :
+
+        try:
             curve_type = adaptor_curve.Curve().GetType()
         except AttributeError:
             curve_type = adaptor_curve.GetType()
-        
+
         self.isclosed = adaptor_curve.IsClosed()
 
-        if curve_type == GeomAbs_Line :
+        if curve_type == GeomAbs_Line:
             self.line(adaptor_curve)
-        elif curve_type == GeomAbs_BezierCurve :
+        elif curve_type == GeomAbs_BezierCurve:
             self.bezier(adaptor_curve)
-        elif curve_type == GeomAbs_BSplineCurve :
+        elif curve_type == GeomAbs_BSplineCurve:
             self.bspline(adaptor_curve)
-        elif curve_type == GeomAbs_Circle :
+        elif curve_type == GeomAbs_Circle:
             self.circle(adaptor_curve)
-        elif curve_type == GeomAbs_Ellipse :
+        elif curve_type == GeomAbs_Ellipse:
             self.ellipse(adaptor_curve)
-        else :
+        else:
             print(f"Unsupported curve type: {curve_type}. Expect inaccurate results")
             start_point = adaptor_curve.Value(adaptor_curve.FirstParameter())
             end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
             gp_pnt_poles = [start_point, end_point]
-            self.type_att = [EDGES_TYPES['line']]*2
+            self.type_att = [EDGES_TYPES["line"]] * 2
             self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
-            self.degree_att = [0,0]
-            self.endpoints_att = [True]*2
-            self.weight = [0.0,0.0]
-            self.knot = [0.0,0.0]
-            self.mult = [0,0]
+            self.degree_att = [0, 0]
+            self.endpoints_att = [True] * 2
+            self.weight = [0.0, 0.0]
+            self.knot = [0.0, 0.0]
+            self.mult = [0, 0]
 
-        if scale!=None :
+        if scale != None:
             self.scale(scale)
 
     def scale(self, scale_factor):
-        self.verts = [v*scale_factor for v in self.verts]
+        self.verts = [v * scale_factor for v in self.verts]
 
     def line(self, edge_adaptor):
         start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
         end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
         gp_pnt_poles = [start_point, end_point]
-        self.type = EDGES_TYPES['line']
-        self.type_att = [EDGES_TYPES['line']]*2
+        self.type = EDGES_TYPES["line"]
+        self.type_att = [EDGES_TYPES["line"]] * 2
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
-        self.degree_att = [0,0]
-        self.endpoints_att = [True]*2
-        self.weight = [0.0,0.0]
-        self.knot = [0.0,0.0]
-        self.mult = [0,0]
+        self.degree_att = [0, 0]
+        self.endpoints_att = [True] * 2
+        self.weight = [0.0, 0.0]
+        self.knot = [0.0, 0.0]
+        self.mult = [0, 0]
 
         # if edge!=None :
         #     start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
@@ -119,122 +165,120 @@ class SP_Curve_no_edge_import :
         #     start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
         #     end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
         #     poles = [start_point, end_point]
-        
+
     def bezier(self, edge_adaptor):
         bezier = edge_adaptor.Bezier()
         p_count = bezier.NbPoles()
-        gp_pnt_poles = [bezier.Pole(i+1) for i in range(p_count)]
-        self.type = EDGES_TYPES['bezier']
-        self.type_att = [EDGES_TYPES['bezier']]*p_count
+        gp_pnt_poles = [bezier.Pole(i + 1) for i in range(p_count)]
+        self.type = EDGES_TYPES["bezier"]
+        self.type_att = [EDGES_TYPES["bezier"]] * p_count
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
-        self.degree_att = [0]*p_count
-        self.endpoints_att = [True] + [False]*(p_count-2) + [True]
-        self.weight = [bezier.Weight(i+1) for i in range(p_count)]
-        self.knot = [0.0]*p_count
-        self.mult = [0]*p_count
+        self.degree_att = [0] * p_count
+        self.endpoints_att = [True] + [False] * (p_count - 2) + [True]
+        self.weight = [bezier.Weight(i + 1) for i in range(p_count)]
+        self.knot = [0.0] * p_count
+        self.mult = [0] * p_count
 
     def bspline(self, edge_adaptor):
         bspline = edge_adaptor.BSpline()
         p_count = bspline.NbPoles()
-        gp_pnt_poles = [bspline.Pole(i+1) for i in range(p_count)]
+        gp_pnt_poles = [bspline.Pole(i + 1) for i in range(p_count)]
         self.degree = bspline.Degree()
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
-        self.type = EDGES_TYPES['nurbs']
-        self.type_att = [EDGES_TYPES['nurbs']]*p_count
-        self.degree_att = [bspline.Degree()] + [0]*(p_count-2) + [bspline.Degree()]
-        if edge_adaptor.BSpline().Multiplicity(1) == 1 : # unclamped periodic
-            self.endpoints_att = [False]*p_count
-        else :
-            self.endpoints_att = [True] + [False]*(p_count-2) + [True]
-        self.weight = [bspline.Weight(i+1) for i in range(p_count)]
+        self.type = EDGES_TYPES["nurbs"]
+        self.type_att = [EDGES_TYPES["nurbs"]] * p_count
+        self.degree_att = [bspline.Degree()] + [0] * (p_count - 2) + [bspline.Degree()]
+        if edge_adaptor.BSpline().Multiplicity(1) == 1:  # unclamped periodic
+            self.endpoints_att = [False] * p_count
+        else:
+            self.endpoints_att = [True] + [False] * (p_count - 2) + [True]
+        self.weight = [bspline.Weight(i + 1) for i in range(p_count)]
 
         knot = normalize_array(tcolstd_array1_to_list(bspline.Knots()))
         mult = tcolstd_array1_to_list(bspline.Multiplicities())
-        self.knot = knot + [0.0]*(p_count-len(knot))
-        self.mult = mult + [0]*(p_count-len(mult))
+        self.knot = knot + [0.0] * (p_count - len(knot))
+        self.mult = mult + [0] * (p_count - len(mult))
 
     def circle(self, edge_adaptor):
         # arc from 3 pts
         min_t = edge_adaptor.FirstParameter()
         max_t = edge_adaptor.LastParameter()
-        
+
         start_point = edge_adaptor.Value(min_t)
         end_point = edge_adaptor.Value(max_t)
-        mid_point = edge_adaptor.Value(min_t + math.pi/2)
+        mid_point = edge_adaptor.Value(min_t + math.pi / 2)
         range_t = max_t - min_t
 
         # full circle
-        if start_point == end_point or isclose(range_t, math.pi*2):
+        if start_point == end_point or isclose(range_t, math.pi * 2):
             center = edge_adaptor.Circle().Location()
             gp_pnt_poles = [start_point, center, mid_point]
-            self.type = EDGES_TYPES['circle']
-            self.type_att = [EDGES_TYPES['circle']]*2
+            self.type = EDGES_TYPES["circle"]
+            self.type_att = [EDGES_TYPES["circle"]] * 2
 
         # arc
-        else: 
-            mid_t = (max_t - min_t)/2 + min_t
+        else:
+            mid_t = (max_t - min_t) / 2 + min_t
             mid_point = edge_adaptor.Value(mid_t)
             gp_pnt_poles = [start_point, mid_point, end_point]
-            self.type = EDGES_TYPES['circle_arc']
-            self.type_att = [EDGES_TYPES['circle_arc']]*3
+            self.type = EDGES_TYPES["circle_arc"]
+            self.type_att = [EDGES_TYPES["circle_arc"]] * 3
 
-        self.degree_att = [0]*3
+        self.degree_att = [0] * 3
         self.endpoints_att = [True, False, True]
-        self.weight = [0.0]*3
-        self.knot = [0.0]*3
-        self.mult = [0]*3
+        self.weight = [0.0] * 3
+        self.knot = [0.0] * 3
+        self.mult = [0] * 3
         self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
 
     def ellipse(self, edge_adaptor):
         # arc from 3 pts
         min_t = edge_adaptor.FirstParameter()
         max_t = edge_adaptor.LastParameter()
-        
+
         start_point = edge_adaptor.Value(min_t)
         end_point = edge_adaptor.Value(max_t)
         range_t = max_t - min_t
 
         axis_point_1 = edge_adaptor.Value(0)
-        axis_point_2 = edge_adaptor.Value(math.pi/2)
+        axis_point_2 = edge_adaptor.Value(math.pi / 2)
         center = edge_adaptor.Ellipse().Location()
 
         # full ellipse
-        if start_point == end_point or isclose(range_t, math.pi*2):
-            
+        if start_point == end_point or isclose(range_t, math.pi * 2):
+
             gp_pnt_poles = [axis_point_1, center, axis_point_2]
-            self.type = EDGES_TYPES['ellipse']
-            self.type_att = [EDGES_TYPES['ellipse']]*3
-            self.degree_att = [0]*3
+            self.type = EDGES_TYPES["ellipse"]
+            self.type_att = [EDGES_TYPES["ellipse"]] * 3
+            self.degree_att = [0] * 3
             self.endpoints_att = [True, False, True]
-            self.weight = [0.0,0.0,0.0]
-            self.knot = [0.0,0.0,0.0]
-            self.mult = [0,0,0]
+            self.weight = [0.0, 0.0, 0.0]
+            self.knot = [0.0, 0.0, 0.0]
+            self.mult = [0, 0, 0]
         # arc
         else:
             gp_pnt_poles = [start_point, axis_point_1, center, axis_point_2, end_point]
-            self.type = EDGES_TYPES['ellipse_arc']
-            self.type_att = [EDGES_TYPES['ellipse_arc']]*5
-            self.degree_att = [0]*5
-            self.endpoints_att = [True] + [False]*3 + [True]
-            self.weight = [0.0,0.0,0.0,0.0,0.0]
-            self.knot = [0.0,0.0,0.0,0.0,0.0]
-            self.mult = [0,0,0,0,0]
+            self.type = EDGES_TYPES["ellipse_arc"]
+            self.type_att = [EDGES_TYPES["ellipse_arc"]] * 5
+            self.degree_att = [0] * 5
+            self.endpoints_att = [True] + [False] * 3 + [True]
+            self.weight = [0.0, 0.0, 0.0, 0.0, 0.0]
+            self.knot = [0.0, 0.0, 0.0, 0.0, 0.0]
+            self.mult = [0, 0, 0, 0, 0]
 
-        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]   
-    
-
+        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
 
 
-class SP_Edge_import :
-    def __init__(self, topods_edge : TopoDS_Edge, topods_face = None, scale = None):  
+class SP_Edge_import:
+    def __init__(self, topods_edge: TopoDS_Edge, topods_face=None, scale=None):
         # Edge adaptor
         # 3D
         if topods_face is None:
             edge_adaptor = BRepAdaptor_Curve(topods_edge)
-        #2D
-        else :
+        # 2D
+        else:
             edge_adaptor = BRepAdaptor_Curve2d(topods_edge, topods_face)
-        
+
         sp_curve_no_edge = SP_Curve_no_edge_import(edge_adaptor, scale)
 
         self.verts = sp_curve_no_edge.verts
@@ -247,23 +291,24 @@ class SP_Edge_import :
         self.knot = sp_curve_no_edge.knot
 
         # Reverse
-        if topods_edge.Orientation() != TopAbs_FORWARD and self.type_att[0] != EDGES_TYPES['circle']:
+        if (
+            topods_edge.Orientation() != TopAbs_FORWARD
+            and self.type_att[0] != EDGES_TYPES["circle"]
+        ):
             self.verts.reverse()
             self.weight.reverse()
-            #type, endpoints, degree are symmetric
+            # type, endpoints, degree are symmetric
 
         self.isclosed = sp_curve_no_edge.isclosed
 
 
-
-
-class SP_Wire_import :
-    def __init__(self, topods_wire: TopoDS_Wire, scale=1, topods_face = None):
-        self.CP = [] #Vectors, bmesh format
+class SP_Wire_import:
+    def __init__(self, topods_wire: TopoDS_Wire, scale=1, topods_face=None):
+        self.CP = []  # Vectors, bmesh format
         # Import
-        if topods_wire!=None:
+        if topods_wire != None:
             # vertex aligned attributes
-            self.bmesh_edges = [] #int tuple
+            self.bmesh_edges = []  # int tuple
             self.endpoints_att = []
             self.degree_att = []
             self.weight_att = []
@@ -275,11 +320,11 @@ class SP_Wire_import :
         is_wire_forward = topods_wire.Orientation() == TopAbs_FORWARD
 
         # iterate Edges
-        for e in topods_edges :
+        for e in topods_edges:
             sp_edge = SP_Edge_import(e, topods_face, scale)
             e_vert = sp_edge.verts
 
-            if not is_wire_forward :
+            if not is_wire_forward:
                 e_vert.reverse()
                 # other att are symmetric
 
@@ -290,11 +335,13 @@ class SP_Wire_import :
             self.weight_att.extend(sp_edge.weight[:-1])
             self.knot_att.extend(sp_edge.knot[:-1])
             self.mult_att.extend(sp_edge.mult[:-1])
-            
+
         # Add last point for single edge wire
-        if len(topods_edges)==1 : # Skip circle (unclosed control mesh structure for single segment wire)
-                                  # OR closed single wire
-                                  # OR single segment curve
+        if (
+            len(topods_edges) == 1
+        ):  # Skip circle (unclosed control mesh structure for single segment wire)
+            # OR closed single wire
+            # OR single segment curve
             # if sp_edge.isclosed :
             self.CP.append(e_vert[-1])
             self.endpoints_att.append(sp_edge.endpoints_att[-1])
@@ -305,27 +352,42 @@ class SP_Wire_import :
             self.mult_att.append(sp_edge.mult[-1])
 
         # Open control mesh structure
-        if self.type_att[-1] == EDGES_TYPES['circle'] or self.type_att[-1] == EDGES_TYPES['ellipse'] or not topods_wire.Closed(): 
-            self.bmesh_edges = [(i, i+1) for i in range(len(self.CP)-1)]
+        if (
+            self.type_att[-1] == EDGES_TYPES["circle"]
+            or self.type_att[-1] == EDGES_TYPES["ellipse"]
+            or not topods_wire.Closed()
+        ):
+            self.bmesh_edges = [(i, i + 1) for i in range(len(self.CP) - 1)]
         # Closed control mesh structure
-        else :
-            self.bmesh_edges = [(i, ((i+1)%len(self.CP))) for i in range(len(self.CP))]
+        else:
+            self.bmesh_edges = [
+                (i, ((i + 1) % len(self.CP))) for i in range(len(self.CP))
+            ]
 
 
-
-
-class SP_Contour_import :
-    def __init__(self, topodsface,  scale = None):
+class SP_Contour_import:
+    def __init__(self, topodsface, scale=None):
         self.wires = get_wires_from_face(topodsface)
-        self.verts, self.edges, self.endpoints, self.degrees, self.type_att, self.weight, self.knot, self.mult = [], [], [], [], [], [], [], []
-        
-        for w in self.wires :
-            if scale!=None:
-                sp_wire = SP_Wire_import(w, scale = scale)
-            else :
+        (
+            self.verts,
+            self.edges,
+            self.endpoints,
+            self.degrees,
+            self.type_att,
+            self.weight,
+            self.knot,
+            self.mult,
+        ) = ([], [], [], [], [], [], [], [])
+
+        for w in self.wires:
+            if scale != None:
+                sp_wire = SP_Wire_import(w, scale=scale)
+            else:
                 sp_wire = SP_Wire_import(w, topods_face=topodsface)
-                
-            _, self.edges, _ = join_mesh_entities(self.verts, self.edges, [], sp_wire.CP, sp_wire.bmesh_edges, [])
+
+            _, self.edges, _ = join_mesh_entities(
+                self.verts, self.edges, [], sp_wire.CP, sp_wire.bmesh_edges, []
+            )
             self.verts.extend(sp_wire.CP)
             self.endpoints.extend(sp_wire.endpoints_att)
             self.degrees.extend(sp_wire.degree_att)
@@ -337,113 +399,166 @@ class SP_Contour_import :
     # For square contour following the patch bounds
     def is_trivial(self):
         is_trivial_trim = False
-        if len(self.verts) == 4 :
+        if len(self.verts) == 4:
 
             # print(self.verts)
 
-            t1 = self.verts == [Vector((0.0,0.0,0.0)), Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)),]
-            t2 = self.verts == [Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)), Vector((0.0,0.0,0.0)),]
-            t3 = self.verts == [Vector((1.0,1.0,0.0)), Vector((1.0,0.0,0.0)), Vector((0.0,0.0,0.0)), Vector((0.0,1.0,0.0)),]
-            t4 = self.verts == [Vector((1.0,0.0,0.0)), Vector((0.0,0.0,0.0)), Vector((0.0,1.0,0.0)), Vector((1.0,1.0,0.0)),]
+            t1 = self.verts == [
+                Vector((0.0, 0.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+            ]
+            t2 = self.verts == [
+                Vector((0.0, 1.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+            ]
+            t3 = self.verts == [
+                Vector((1.0, 1.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+            ]
+            t4 = self.verts == [
+                Vector((1.0, 0.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+            ]
 
-            t5 = self.verts == [Vector((1.0,0.0,0.0)), Vector((1.0,1.0,0.0)), Vector((0.0,1.0,0.0)), Vector((0.0,0.0,0.0)),]
-            t6 = self.verts == [Vector((1.0,1.0,0.0)), Vector((0.0,1.0,0.0)), Vector((0.0,0.0,0.0)), Vector((1.0,0.0,0.0)),]
-            t7 = self.verts == [Vector((0.0,1.0,0.0)), Vector((0.0,0.0,0.0)), Vector((1.0,0.0,0.0)), Vector((1.0,1.0,0.0)),]
-            t8 = self.verts == [Vector((0.0,0.0,0.0)), Vector((1.0,0.0,0.0)), Vector((1.0,1.0,0.0)), Vector((0.0,1.0,0.0)),]
-            
-            t9 = set(self.edges) == {(0,1), (1,2), (2,3), (3,0)}
-            
+            t5 = self.verts == [
+                Vector((1.0, 0.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+            ]
+            t6 = self.verts == [
+                Vector((1.0, 1.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+            ]
+            t7 = self.verts == [
+                Vector((0.0, 1.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+            ]
+            t8 = self.verts == [
+                Vector((0.0, 0.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+            ]
+
+            t9 = set(self.edges) == {(0, 1), (1, 2), (2, 3), (3, 0)}
+
             is_trivial_trim = (t1 or t2 or t3 or t4 or t5 or t6 or t7 or t8) and t9
 
         return is_trivial_trim
 
     def rebound(self, uv_bounds):
-        min_u, max_u, min_v, max_v = uv_bounds[0], uv_bounds[1], uv_bounds[2], uv_bounds[3]
+        min_u, max_u, min_v, max_v = (
+            uv_bounds[0],
+            uv_bounds[1],
+            uv_bounds[2],
+            uv_bounds[3],
+        )
         range_u, range_v = max_u - min_u, max_v - min_v
 
-        for i,v in enumerate(self.verts) :
-            if range_u !=0.0 :
-                x=max(0, min(1, (v[0]-min_u)/range_u))
-            else :
+        for i, v in enumerate(self.verts):
+            if range_u != 0.0:
+                x = max(0, min(1, (v[0] - min_u) / range_u))
+            else:
                 x = v[0]
-            if range_v !=0.0 :
-                y=max(0, min(1, (v[1]-min_v)/range_v))
-            else :
+            if range_v != 0.0:
+                y = max(0, min(1, (v[1] - min_v) / range_v))
+            else:
                 y = v[1]
             self.verts[i] = Vector((x, y, 0))
-    
+
     def switch_u_and_v(self):
         self.verts = [Vector((v.y, v.x, v.z)) for v in self.verts]
 
 
-
-def generic_import_surface(face : TopoDS_Face, doc, collection, trims_enabled : bool, 
-                            CPvert, CPedges, CPfaces, modifier, attrs={}, ob_name = "STEP Patch",
-                            scale=0.001, uv_bounds=None, weight=None):
-    if weight == None :
-        weight = [1.]*len(CPvert)
+def generic_import_surface(
+    face: TopoDS_Face,
+    doc,
+    collection,
+    trims_enabled: bool,
+    CPvert,
+    CPedges,
+    CPfaces,
+    modifier,
+    attrs={},
+    ob_name="STEP Patch",
+    scale=0.001,
+    uv_bounds=None,
+    weight=None,
+):
+    if weight == None:
+        weight = [1.0] * len(CPvert)
 
     transform = get_shape_transform(face, scale)
-    
-    if trims_enabled :
+
+    if trims_enabled:
         contour = SP_Contour_import(face)
-        if uv_bounds!=None :
+        if uv_bounds != None:
             contour.rebound(uv_bounds)
 
         contour.switch_u_and_v()
         istrivial = contour.is_trivial()
-        
-        if istrivial : 
+
+        if istrivial:
             del contour
-    
-    if trims_enabled and not istrivial :
-        mesh_data = join_mesh_entities(CPvert, CPedges, CPfaces, contour.verts, contour.edges, [])           
-        attrs = attrs | {'Weight' : weight + contour.weight,
-                'Knot' : [0.0]*len(CPvert) + contour.knot,
-                'Multiplicity': [0]*len(CPvert) + contour.mult,
-                'Trim Contour' : [False]*len(CPvert) + [True]*len(contour.verts),
-                'Endpoints' : [False]*len(CPvert) + contour.endpoints,
-                'Degree': [0]*len(CPvert) + contour.degrees,
-                'Type': [0]*len(CPvert) + contour.type_att,
-                }
-    else :
+
+    if trims_enabled and not istrivial:
+        mesh_data = join_mesh_entities(
+            CPvert, CPedges, CPfaces, contour.verts, contour.edges, []
+        )
+        attrs = attrs | {
+            "Weight": weight + contour.weight,
+            "Knot": [0.0] * len(CPvert) + contour.knot,
+            "Multiplicity": [0] * len(CPvert) + contour.mult,
+            "Trim Contour": [False] * len(CPvert) + [True] * len(contour.verts),
+            "Endpoints": [False] * len(CPvert) + contour.endpoints,
+            "Degree": [0] * len(CPvert) + contour.degrees,
+            "Type": [0] * len(CPvert) + contour.type_att,
+        }
+    else:
         mesh_data = (CPvert, CPedges, CPfaces)
-        attrs = attrs | {'Weight' : weight}
+        attrs = attrs | {"Weight": weight}
 
     name, color = get_shape_name_and_color(face, doc)
     if name == None:
         name = ob_name
 
-    if len(color)==3:
-        color = list(color) + [1.]
-        
+    if len(color) == 3:
+        color = list(color) + [1.0]
+
     object_data = {
-        'mesh_data': mesh_data,
-        'name': name,
-        'collection' : collection,
-        'scale': scale,
-        'color': color,
-        'attrs' : attrs,
-        'modifier': modifier,
-        'transform': transform,
+        "mesh_data": mesh_data,
+        "name": name,
+        "collection": collection,
+        "scale": scale,
+        "color": color,
+        "attrs": attrs,
+        "modifier": modifier,
+        "transform": transform,
     }
 
     return object_data
 
 
-
-
-
-
-
-
-
-
-def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001, resolution = 16) :
+def build_SP_cylinder(
+    topods_face: TopoDS_Face, doc, collection, trims_enabled, scale=0.001, resolution=16
+):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cylinder = face_adpator.Surface().Cylinder()
-    
-    gpaxis= gp_cylinder.Axis()
+
+    gpaxis = gp_cylinder.Axis()
     xaxis = gpaxis.Direction()
     yaxis = gp_cylinder.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
@@ -451,36 +566,48 @@ def build_SP_cylinder(topods_face : TopoDS_Face, doc, collection, trims_enabled,
     zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
 
     location = gp_cylinder.Location()
-    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale))
-    radius = gp_cylinder.Radius()*scale
+    loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
+    radius = gp_cylinder.Radius() * scale
 
-    raduis_vert = Vector((zaxis_vec*radius) + loc_vec)
+    raduis_vert = Vector((zaxis_vec * radius) + loc_vec)
 
-    CPvert = [loc_vec, xaxis_vec*scale + loc_vec, raduis_vert]
-    CP_edges = [(0,1)]
-    
-    modifier = ("SP - Cylindrical Meshing", 
-                    {"Use Trim Contour":trims_enabled, 
-                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED, 
-                    "Scaling Method":1,
-                    "Resolution U" : resolution,
-                    "Resolution V" : resolution*2
-                    },
-                True)
+    CPvert = [loc_vec, xaxis_vec * scale + loc_vec, raduis_vert]
+    CP_edges = [(0, 1)]
 
-    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
-                                         CPvert, CP_edges, [], modifier, ob_name= "STEP Cylinder")
-    
+    modifier = (
+        "SP - Cylindrical Meshing",
+        {
+            "Use Trim Contour": trims_enabled,
+            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Scaling Method": 1,
+            "Resolution U": resolution,
+            "Resolution V": resolution * 2,
+        },
+        True,
+    )
+
+    object_data = generic_import_surface(
+        topods_face,
+        doc,
+        collection,
+        trims_enabled,
+        CPvert,
+        CP_edges,
+        [],
+        modifier,
+        ob_name="STEP Cylinder",
+    )
+
     return object_data
 
 
-
-
-def build_SP_torus(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001, resolution=16) :
+def build_SP_torus(
+    topods_face: TopoDS_Face, doc, collection, trims_enabled, scale=0.001, resolution=16
+):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_torus = face_adpator.Surface().Torus()
-    
-    gpaxis= gp_torus.Axis()
+
+    gpaxis = gp_torus.Axis()
     xaxis = gpaxis.Direction()
     yaxis = gp_torus.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
@@ -488,34 +615,51 @@ def build_SP_torus(topods_face : TopoDS_Face, doc, collection, trims_enabled, sc
     zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
 
     location = gp_torus.Location()
-    origin_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale))
-    major_radius = gp_torus.MajorRadius()*scale
+    origin_vec = Vector(
+        (location.X() * scale, location.Y() * scale, location.Z() * scale)
+    )
+    major_radius = gp_torus.MajorRadius() * scale
 
-    minor_radius =  gp_torus.MinorRadius()*scale
-    raduis_vert = Vector((zaxis_vec*major_radius) + origin_vec)
-    
-    CPvert = [origin_vec, raduis_vert, -xaxis_vec*minor_radius + raduis_vert]
-    CP_edges = [(0,1),(1,2)]
+    minor_radius = gp_torus.MinorRadius() * scale
+    raduis_vert = Vector((zaxis_vec * major_radius) + origin_vec)
 
-    modifier = ("SP - Toroidal Meshing",
-                {"Use Trim Contour":trims_enabled,
-                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                    "Scaling Method" : 1,
-                    "Resolution U" : resolution,
-                    "Resolution V" : resolution*2}, 
-                True)
-    
-    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], modifier, ob_name= "STEP Torus")
+    CPvert = [origin_vec, raduis_vert, -xaxis_vec * minor_radius + raduis_vert]
+    CP_edges = [(0, 1), (1, 2)]
+
+    modifier = (
+        "SP - Toroidal Meshing",
+        {
+            "Use Trim Contour": trims_enabled,
+            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Scaling Method": 1,
+            "Resolution U": resolution,
+            "Resolution V": resolution * 2,
+        },
+        True,
+    )
+
+    object_data = generic_import_surface(
+        topods_face,
+        doc,
+        collection,
+        trims_enabled,
+        CPvert,
+        CP_edges,
+        [],
+        modifier,
+        ob_name="STEP Torus",
+    )
 
     return object_data
 
 
-
-def build_SP_sphere(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001, resolution = 16) :
+def build_SP_sphere(
+    topods_face: TopoDS_Face, doc, collection, trims_enabled, scale=0.001, resolution=16
+):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_sphere = face_adpator.Surface().Sphere()
-    
-    gpaxis= gp_sphere.XAxis()
+
+    gpaxis = gp_sphere.XAxis()
     xaxis = gpaxis.Direction()
     yaxis = gp_sphere.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
@@ -523,29 +667,49 @@ def build_SP_sphere(topods_face : TopoDS_Face, doc, collection, trims_enabled, s
     zaxis_vec = Vector(np.cross(yaxis_vec, xaxis_vec))
 
     location = gp_sphere.Location()
-    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale))
-    radius = gp_sphere.Radius()*scale
+    loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
+    radius = gp_sphere.Radius() * scale
 
-    CPvert = [loc_vec - zaxis_vec*radius, loc_vec + zaxis_vec*radius, yaxis_vec*radius + loc_vec]
-    CP_edges = [(0,1)]
+    CPvert = [
+        loc_vec - zaxis_vec * radius,
+        loc_vec + zaxis_vec * radius,
+        yaxis_vec * radius + loc_vec,
+    ]
+    CP_edges = [(0, 1)]
 
-    modifier = ("SP - Spherical Meshing",
-                    {"Use Trim Contour":trims_enabled,
-                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                    "Scaling Method":1,
-                    "Resolution U" : resolution,
-                    "Resolution V" : resolution*2}, 
-                True)
-    
-    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], modifier, ob_name= "STEP Sphere")
+    modifier = (
+        "SP - Spherical Meshing",
+        {
+            "Use Trim Contour": trims_enabled,
+            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Scaling Method": 1,
+            "Resolution U": resolution,
+            "Resolution V": resolution * 2,
+        },
+        True,
+    )
+
+    object_data = generic_import_surface(
+        topods_face,
+        doc,
+        collection,
+        trims_enabled,
+        CPvert,
+        CP_edges,
+        [],
+        modifier,
+        ob_name="STEP Sphere",
+    )
     return object_data
 
 
-def build_SP_cone(topods_face : TopoDS_Face, doc, collection, trims_enabled, scale = 0.001, resolution=16) :
+def build_SP_cone(
+    topods_face: TopoDS_Face, doc, collection, trims_enabled, scale=0.001, resolution=16
+):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cone = face_adpator.Surface().Cone()
-    
-    gpaxis= gp_cone.Axis()
+
+    gpaxis = gp_cone.Axis()
     axis = gpaxis.Direction()
     yaxis = gp_cone.YAxis().Direction()
     axis_vec = Vector([axis.X(), axis.Y(), axis.Z()])
@@ -553,28 +717,48 @@ def build_SP_cone(topods_face : TopoDS_Face, doc, collection, trims_enabled, sca
     # zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
 
     location = gp_cone.Location()
-    loc_vec = Vector((location.X()*scale, location.Y()*scale, location.Z()*scale))
+    loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
     radius = gp_cone.RefRadius()
-    
-    CPvert = [loc_vec, loc_vec + yaxis_vec*radius*scale, axis_vec*math.cos(gp_cone.SemiAngle())*scale + loc_vec + yaxis_vec*(math.sin(gp_cone.SemiAngle())+radius)*scale,  axis_vec*math.cos(gp_cone.SemiAngle())*scale + loc_vec]
-    CP_edges = [(0,1),(1,2),(2,3)]
 
-    modifier = ("SP - Conical Meshing", 
-                    {"Use Trim Contour":trims_enabled, 
-                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                    "Scaling Method":1,
-                    "Resolution U" : resolution,
-                    "Resolution V" : resolution*2},
-                True)
-    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert, CP_edges, [], modifier, ob_name= "STEP Cone")
-    
+    CPvert = [
+        loc_vec,
+        loc_vec + yaxis_vec * radius * scale,
+        axis_vec * math.cos(gp_cone.SemiAngle()) * scale
+        + loc_vec
+        + yaxis_vec * (math.sin(gp_cone.SemiAngle()) + radius) * scale,
+        axis_vec * math.cos(gp_cone.SemiAngle()) * scale + loc_vec,
+    ]
+    CP_edges = [(0, 1), (1, 2), (2, 3)]
+
+    modifier = (
+        "SP - Conical Meshing",
+        {
+            "Use Trim Contour": trims_enabled,
+            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Scaling Method": 1,
+            "Resolution U": resolution,
+            "Resolution V": resolution * 2,
+        },
+        True,
+    )
+    object_data = generic_import_surface(
+        topods_face,
+        doc,
+        collection,
+        trims_enabled,
+        CPvert,
+        CP_edges,
+        [],
+        modifier,
+        ob_name="STEP Cone",
+    )
+
     return object_data
 
 
-
-
-
-def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0.001, resolution = 16):
+def build_SP_bezier_patch(
+    topods_face, doc, collection, trims_enabled, scale=0.001, resolution=16
+):
     bezier_surface = BRepAdaptor_Surface(topods_face).Surface().Bezier()
 
     u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
@@ -584,30 +768,43 @@ def build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale = 0
     for u in range(1, u_count + 1):
         for v in range(1, v_count + 1):
             pole = bezier_surface.Pole(u, v)
-            vector_pts[u-1, v-1] = Vector((pole.X(), pole.Y(), pole.Z()))*scale
+            vector_pts[u - 1, v - 1] = Vector((pole.X(), pole.Y(), pole.Z())) * scale
 
-            weight[u,v] = bezier_surface.Weight(u, v)
-    
+            weight[u, v] = bezier_surface.Weight(u, v)
+
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
-   
-    modifier = ("SP - Bezier Patch Meshing", 
-                    {"Use Trim Contour":trims_enabled,
-                    "Resolution U": resolution,
-                    "Resolution V": resolution,
-                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                    "Scaling Method":1}, 
-                True)
 
-    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, CPvert.tolist(), 
-                                [], CPfaces, modifier, uv_bounds = uv_bounds,
-                                 weight = weight.flatten().tolist())
+    modifier = (
+        "SP - Bezier Patch Meshing",
+        {
+            "Use Trim Contour": trims_enabled,
+            "Resolution U": resolution,
+            "Resolution V": resolution,
+            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Scaling Method": 1,
+        },
+        True,
+    )
+
+    object_data = generic_import_surface(
+        topods_face,
+        doc,
+        collection,
+        trims_enabled,
+        CPvert.tolist(),
+        [],
+        CPfaces,
+        modifier,
+        uv_bounds=uv_bounds,
+        weight=weight.flatten().tolist(),
+    )
     return object_data
 
 
-
-    
-def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.001, resolution = 16):
+def build_SP_NURBS_patch(
+    topods_face, doc, collection, trims_enabled, scale=0.001, resolution=16
+):
     # Patch attributes
     bspline_surface = BRepAdaptor_Surface(topods_face).Surface().BSpline()
     u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
@@ -622,11 +819,13 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
     v_knots = normalize_array(tcolstd_array1_to_list(bspline_surface.VKnots()))
     u_mult = tcolstd_array1_to_list(bspline_surface.UMultiplicities())
     v_mult = tcolstd_array1_to_list(bspline_surface.VMultiplicities())
-    
+
     # Custom knot
     custom_knot = False
     # not custom if sequence a...a,b...b (bezier)
-    if any(x not in [min(u_knots), max(u_knots)] for x in u_knots) or any(x not in [min(v_knots), max(v_knots)] for x in v_knots):
+    if any(x not in [min(u_knots), max(u_knots)] for x in u_knots) or any(
+        x not in [min(v_knots), max(v_knots)] for x in v_knots
+    ):
         custom_knot = True
     # TODO
     # else :
@@ -640,59 +839,71 @@ def build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale = 0.
     weight = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
     for u in range(u_count):
         for v in range(v_count):
-            pole = bspline_surface.Pole(u+1, v+1)
-            vector_pts[v, u] = Vector((pole.X(), pole.Y(), pole.Z()))*scale
-            
-            w = bspline_surface.Weight(u+1, v+1)
+            pole = bspline_surface.Pole(u + 1, v + 1)
+            vector_pts[v, u] = Vector((pole.X(), pole.Y(), pole.Z())) * scale
+
+            w = bspline_surface.Weight(u + 1, v + 1)
             weight[v, u] = w
 
-    if u_closed :
-        vector_pts[:,u_count] = vector_pts[:,0]
-        weight[:,u_count] = weight[:,0]
-    if v_closed :
-        vector_pts[v_count,:] = vector_pts[0,:]
-        weight[v_count,:] = weight[0,:]
+    if u_closed:
+        vector_pts[:, u_count] = vector_pts[:, 0]
+        weight[:, u_count] = weight[:, 0]
+    if v_closed:
+        vector_pts[v_count, :] = vector_pts[0, :]
+        weight[v_count, :] = weight[0, :]
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
 
     attrs = {}
-    if custom_knot: # must be attr and not vertex groups to avoid collisions at export
-        attrs = {"Knot U" : u_knots,
-                 "Knot V": v_knots,
-                 "Multiplicity U": u_mult,
-                 "Multiplicity V": v_mult
-                }
-    
+    if custom_knot:  # must be attr and not vertex groups to avoid collisions at export
+        attrs = {
+            "Knot U": u_knots,
+            "Knot V": v_knots,
+            "Multiplicity U": u_mult,
+            "Multiplicity V": v_mult,
+        }
+
     # If 1 mult not 1 or no custom knot -> clamp
-    u_clamped = any(m!=1 for m in u_mult) or not custom_knot
-    v_clamped = any(m!=1 for m in v_mult) or not custom_knot
+    u_clamped = any(m != 1 for m in u_mult) or not custom_knot
+    v_clamped = any(m != 1 for m in v_mult) or not custom_knot
 
     # Meshing
-    modifier = ("SP - NURBS Patch Meshing",
-                    {"Degree U": udeg,
-                     "Degree V": vdeg,
-                    "Resolution U": resolution,
-                    "Resolution V": resolution, 
-                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED,
-                    "Use Trim Contour":trims_enabled, "Scaling Method": 1,
-                    "Endpoint U" : u_clamped, "Endpoint V" : v_clamped,
-                    "Cyclic U": u_periodic,  "Cyclic V": v_periodic}, 
-                True)
-    
-    
+    modifier = (
+        "SP - NURBS Patch Meshing",
+        {
+            "Degree U": udeg,
+            "Degree V": vdeg,
+            "Resolution U": resolution,
+            "Resolution V": resolution,
+            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Use Trim Contour": trims_enabled,
+            "Scaling Method": 1,
+            "Endpoint U": u_clamped,
+            "Endpoint V": v_clamped,
+            "Cyclic U": u_periodic,
+            "Cyclic V": v_periodic,
+        },
+        True,
+    )
 
-    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
-                                         CPvert.tolist(), [], CPfaces, modifier, attrs, uv_bounds = uv_bounds, 
-                                         weight = weight.flatten().tolist())
+    object_data = generic_import_surface(
+        topods_face,
+        doc,
+        collection,
+        trims_enabled,
+        CPvert.tolist(),
+        [],
+        CPfaces,
+        modifier,
+        attrs,
+        uv_bounds=uv_bounds,
+        weight=weight.flatten().tolist(),
+    )
     return object_data
 
 
-
-
-
-
-def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
+def build_SP_curve(shape, doc, collection, scale=0.001, resolution=16):
     if shape.ShapeType() == TopAbs.TopAbs_WIRE:
         sp_wire = SP_Wire_import(shape, scale=scale)
         verts = sp_wire.CP
@@ -703,7 +914,7 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
         weight_att = sp_wire.weight_att
         knot_att = sp_wire.knot_att
         mult_att = sp_wire.mult_att
-    else :
+    else:
         sp_edge = SP_Edge_import(shape)
         sp_edge.scale(scale)
         verts = sp_edge.verts
@@ -713,52 +924,48 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
         knot_att = sp_edge.knot
         mult_att = sp_edge.mult
 
-        endpoints = [True] + [False]*(len(verts)-2) + [True]
-        if edge_degree!=None:
-            degree_att=[edge_degree]+[0]*(len(verts)-1)
-        else :
-            degree_att=[0]*(len(verts))
+        endpoints = [True] + [False] * (len(verts) - 2) + [True]
+        if edge_degree != None:
+            degree_att = [edge_degree] + [0] * (len(verts) - 1)
+        else:
+            degree_att = [0] * (len(verts))
 
-        edges = [(i,i+1) for i in range(len(verts)-1)]
+        edges = [(i, i + 1) for i in range(len(verts) - 1)]
 
     # create object
     name, color = get_shape_name_and_color(shape, doc)
     if name == None:
         name = "STEP Curve"
-    
-    if len(color)==3:
-        color = list(color) + [1.]
-    
 
-    modifier = ("SP - Curve Meshing",
-                {"Resolution": resolution}, True)
+    if len(color) == 3:
+        color = list(color) + [1.0]
 
-    attrs = {'Weight' : weight_att,
-            'Knot' : knot_att,
-            'Multiplicity': mult_att,
-            'Endpoints' : endpoints,
-            'Degree': degree_att,
-            'Type': type_att,
-            }
+    modifier = ("SP - Curve Meshing", {"Resolution": resolution}, True)
+
+    attrs = {
+        "Weight": weight_att,
+        "Knot": knot_att,
+        "Multiplicity": mult_att,
+        "Endpoints": endpoints,
+        "Degree": degree_att,
+        "Type": type_att,
+    }
 
     object_data = {
-        'mesh_data': (verts, edges, []),
-        'name': name,
-        'collection' : collection,
-        'scale': scale,
-        'color': color,
-        'attrs' : attrs,
-        'modifier': modifier,
-        'transform': Matrix(),
+        "mesh_data": (verts, edges, []),
+        "name": name,
+        "collection": collection,
+        "scale": scale,
+        "color": color,
+        "attrs": attrs,
+        "modifier": modifier,
+        "transform": Matrix(),
     }
 
     return object_data
 
 
-
-
-
-def build_SP_flat(topods_face, doc, collection, scale = 0.001, resolution = 16):
+def build_SP_flat(topods_face, doc, collection, scale=0.001, resolution=16):
     # Get contour
     contour = SP_Contour_import(topods_face, scale)
     verts = contour.verts
@@ -774,35 +981,40 @@ def build_SP_flat(topods_face, doc, collection, scale = 0.001, resolution = 16):
     if name == None:
         name = "STEP FlatPatch"
 
-    if len(color)==3:
-        color = list(color) + [1.]
+    if len(color) == 3:
+        color = list(color) + [1.0]
 
-    modifier = ("SP - FlatPatch Meshing", 
-                {'Orient': True,
-                "Flip Normal" : topods_face.Orientation()!=TopAbs_REVERSED,
-                "Resolution" : resolution*2}, True)
-    
-    attrs = {'Weight' : weight_att,
-            'Knot' : knot_att,
-            'Multiplicity': mult_att,
-            'Endpoints' : endpoints,
-            'Degree': degree_att,
-            'Type': type_att,
-            }
-    
+    modifier = (
+        "SP - FlatPatch Meshing",
+        {
+            "Orient": True,
+            "Flip Normal": topods_face.Orientation() != TopAbs_REVERSED,
+            "Resolution": resolution * 2,
+        },
+        True,
+    )
+
+    attrs = {
+        "Weight": weight_att,
+        "Knot": knot_att,
+        "Multiplicity": mult_att,
+        "Endpoints": endpoints,
+        "Degree": degree_att,
+        "Type": type_att,
+    }
+
     object_data = {
-        'mesh_data': (verts, edges, []),
-        'name': name,
-        'collection' : collection,
-        'scale': scale,
-        'color': color,
-        'attrs' : attrs,
-        'modifier': modifier,
-        'transform': Matrix(),
+        "mesh_data": (verts, edges, []),
+        "name": name,
+        "collection": collection,
+        "scale": scale,
+        "color": color,
+        "attrs": attrs,
+        "modifier": modifier,
+        "transform": Matrix(),
     }
 
     return object_data
-
 
 
 def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution):
@@ -811,36 +1023,47 @@ def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resol
     geom_surf = adapt_surf.Surface()
 
     curve_no_edge = SP_Curve_no_edge_import(adapt_curve, scale)
-    
+
     gpdir = geom_surf.Direction()
     CPvert = curve_no_edge.verts
-    CPvert.insert(0, CPvert[0] + Vector((gpdir.X(), gpdir.Y(), gpdir.Z()))*scale)
+    CPvert.insert(0, CPvert[0] + Vector((gpdir.X(), gpdir.Y(), gpdir.Z())) * scale)
 
-    CPedges = [(i,i+1) for i in range(len(CPvert)-1)]
-    
-    modifier = ("SP - Surface of Extrusion Meshing", 
-                    {"Use Trim Contour" : trims_enabled, 
-                    "Flip Normals" : topods_face.Orientation()!=TopAbs_REVERSED, 
-                    "Scaling Method" : 1,
-                    "Resolution U" : resolution,
-                    "Resolution V" : resolution
-                    },
-                True)
-    
-    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
-                                         CPvert, CPedges, [], modifier, ob_name= "STEP Extrusion")
-    
+    CPedges = [(i, i + 1) for i in range(len(CPvert) - 1)]
+
+    modifier = (
+        "SP - Surface of Extrusion Meshing",
+        {
+            "Use Trim Contour": trims_enabled,
+            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Scaling Method": 1,
+            "Resolution U": resolution,
+            "Resolution V": resolution,
+        },
+        True,
+    )
+
+    object_data = generic_import_surface(
+        topods_face,
+        doc,
+        collection,
+        trims_enabled,
+        CPvert,
+        CPedges,
+        [],
+        modifier,
+        ob_name="STEP Extrusion",
+    )
+
     # Ideally should be an input of generic_import_surface which merges it
     curve_p_count = len(curve_no_edge.verts)
-    object_data['attrs']['Degree'][1] = curve_no_edge.degree
-    object_data['attrs']['Type'][1] = curve_no_edge.type
-    object_data['attrs']['Knot'][1:1+curve_p_count] = curve_no_edge.knot
-    object_data['attrs']['Multiplicity'][1:1+curve_p_count] = curve_no_edge.mult
+    object_data["attrs"]["Degree"][1] = curve_no_edge.degree
+    object_data["attrs"]["Type"][1] = curve_no_edge.type
+    object_data["attrs"]["Knot"][1 : 1 + curve_p_count] = curve_no_edge.knot
+    object_data["attrs"]["Multiplicity"][1 : 1 + curve_p_count] = curve_no_edge.mult
 
     # Cyclic todo (both cyclic CP and cyclic eval)
 
     return object_data
-
 
 
 def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, resolution):
@@ -849,7 +1072,7 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
     geom_surf = adapt_surf.Surface()
 
     curve_no_edge = SP_Curve_no_edge_import(adapt_curve, scale)
-    
+
     gpdir = geom_surf.Direction()
     gploc = geom_surf.Location()
     CPvert = curve_no_edge.verts
@@ -857,52 +1080,63 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
     p2 = p1 + Vector((gpdir.X(), gpdir.Y(), gpdir.Z()))
     CPvert = [p1, p2] + CPvert
 
-    CPedges = [(0,1)]+[(i,i+1) for i in range(2, len(CPvert)-1)]
-    
-    modifier = ("SP - Surface of Revolution Meshing", 
-                    {"Use Trim Contour" : trims_enabled, 
-                    "Flip Normals" : topods_face.Orientation()==TopAbs_REVERSED, 
-                    "Scaling Method" : 1,
-                    "Resolution U" : resolution,
-                    "Resolution V" : resolution
-                    },
-                True)
+    CPedges = [(0, 1)] + [(i, i + 1) for i in range(2, len(CPvert) - 1)]
 
-    object_data = generic_import_surface(topods_face, doc, collection, trims_enabled, 
-                                         CPvert, CPedges, [], modifier, ob_name= "STEP Revolution")
-    
+    modifier = (
+        "SP - Surface of Revolution Meshing",
+        {
+            "Use Trim Contour": trims_enabled,
+            "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
+            "Scaling Method": 1,
+            "Resolution U": resolution,
+            "Resolution V": resolution,
+        },
+        True,
+    )
+
+    object_data = generic_import_surface(
+        topods_face,
+        doc,
+        collection,
+        trims_enabled,
+        CPvert,
+        CPedges,
+        [],
+        modifier,
+        ob_name="STEP Revolution",
+    )
+
     # Ideally should be an input of generic_import_surface which merges it
     curve_p_count = len(curve_no_edge.verts)
-    object_data['attrs']['Degree'][2] = curve_no_edge.degree
-    object_data['attrs']['Type'][2] = curve_no_edge.type
-    object_data['attrs']['Knot'][2:2+curve_p_count] = curve_no_edge.knot
-    object_data['attrs']['Multiplicity'][2:2+curve_p_count] = curve_no_edge.mult
+    object_data["attrs"]["Degree"][2] = curve_no_edge.degree
+    object_data["attrs"]["Type"][2] = curve_no_edge.type
+    object_data["attrs"]["Knot"][2 : 2 + curve_p_count] = curve_no_edge.knot
+    object_data["attrs"]["Multiplicity"][2 : 2 + curve_p_count] = curve_no_edge.mult
 
     # Cyclic todo (both cyclic CP and cyclic eval)
 
     return object_data
 
 
-
-
-
 class ShapeHierarchy:
     def __init__(self, shape, container_name):
-        self.faces = [] # tuples (face, collection)
-        self.edges = [] # tuples (edges, collection)
+        self.faces = []  # tuples (face, collection)
+        self.edges = []  # tuples (edges, collection)
         self.hierarchy = {}
         container_collection = self.create_collection(container_name)
         self.hierarchy[container_collection] = []
         iterator = TopoDS_Iterator(shape)
         while iterator.More():
-            self.hierarchy[container_collection].append(self.create_shape_hierarchy(iterator.Value(), container_collection))
+            self.hierarchy[container_collection].append(
+                self.create_shape_hierarchy(iterator.Value(), container_collection)
+            )
             iterator.Next()
 
     def create_collection(self, name, parent=None):
         new_collection = bpy.data.collections.new(name)
 
         # If no parent, link to scene collection
-        if parent is None :
+        if parent is None:
             bpy.context.scene.collection.children.link(new_collection)
         else:
             parent.children.link(new_collection)
@@ -911,57 +1145,64 @@ class ShapeHierarchy:
 
     def create_shape_hierarchy(self, shape, parent_col):
         hierarchy = {}
-        
+
         match shape.ShapeType():
-            case TopAbs.TopAbs_COMPOUND :
+            case TopAbs.TopAbs_COMPOUND:
                 hierarchy[parent_col] = []
-                new_collection = self.create_collection('Compound', parent_col)
+                new_collection = self.create_collection("Compound", parent_col)
                 iterator = TopoDS_Iterator(shape)
                 while iterator.More():
-                    hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
+                    hierarchy[parent_col].append(
+                        self.create_shape_hierarchy(iterator.Value(), new_collection)
+                    )
                     iterator.Next()
 
-            case TopAbs.TopAbs_COMPSOLID :
+            case TopAbs.TopAbs_COMPSOLID:
                 hierarchy[parent_col] = []
-                new_collection = self.create_collection('CompSolid', parent_col)
+                new_collection = self.create_collection("CompSolid", parent_col)
                 iterator = TopoDS_Iterator(shape)
                 while iterator.More():
-                    hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
+                    hierarchy[parent_col].append(
+                        self.create_shape_hierarchy(iterator.Value(), new_collection)
+                    )
                     iterator.Next()
-        
+
             case TopAbs.TopAbs_SOLID:
                 hierarchy[parent_col] = []
-                new_collection = self.create_collection('Solid', parent_col)
+                new_collection = self.create_collection("Solid", parent_col)
                 iterator = TopoDS_Iterator(shape)
                 while iterator.More():
-                    hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
+                    hierarchy[parent_col].append(
+                        self.create_shape_hierarchy(iterator.Value(), new_collection)
+                    )
                     iterator.Next()
-        
+
             case TopAbs.TopAbs_SHELL:
                 hierarchy[parent_col] = []
-                new_collection = self.create_collection('Shell', parent_col)
+                new_collection = self.create_collection("Shell", parent_col)
                 iterator = TopoDS_Iterator(shape)
                 while iterator.More():
-                    hierarchy[parent_col].append(self.create_shape_hierarchy(iterator.Value(), new_collection))
+                    hierarchy[parent_col].append(
+                        self.create_shape_hierarchy(iterator.Value(), new_collection)
+                    )
                     iterator.Next()
-        
-            case TopAbs.TopAbs_FACE: # must be before wire and edge
+
+            case TopAbs.TopAbs_FACE:  # must be before wire and edge
                 face = TopoDS.Face_s(shape)
-                hierarchy['Face'] = face
+                hierarchy["Face"] = face
                 self.faces.append((face, parent_col))
 
-            case TopAbs.TopAbs_WIRE: # must be before edge
+            case TopAbs.TopAbs_WIRE:  # must be before edge
                 wire = TopoDS.Wire_s(shape)
-                hierarchy['Wire'] = wire
+                hierarchy["Wire"] = wire
                 self.edges.append((wire, parent_col))
-        
+
             case TopAbs.TopAbs_EDGE:
                 edge = TopoDS.Edge_s(shape)
-                hierarchy['Edge'] = edge
+                hierarchy["Edge"] = edge
                 self.edges.append((edge, parent_col))
-                
-        return hierarchy
 
+        return hierarchy
 
 
 def import_face_nodegroups(shape_hierarchy):
@@ -992,71 +1233,86 @@ def import_face_nodegroups(shape_hierarchy):
                     to_import_ng_names.append("SP - Surface of Revolution Meshing")
                 case GeomAbs.GeomAbs_SurfaceOfExtrusion:
                     to_import_ng_names.append("SP - Surface of Extrusion Meshing")
-                
+
     append_multiple_node_groups(to_import_ng_names)
 
 
-
-
-
-def process_object_data_of_shape(topods_shape, doc, collection, trims_enabled, scale, resolution : int, iscurve : bool):
-    if iscurve :
+def process_object_data_of_shape(
+    topods_shape, doc, collection, trims_enabled, scale, resolution: int, iscurve: bool
+):
+    if iscurve:
         return build_SP_curve(topods_shape, doc, collection, scale, resolution)
-    
-    ft= get_face_sp_type(topods_shape)
+
+    ft = get_face_sp_type(topods_shape)
     match ft:
         case SP_obj_type.PLANE:
-            object_data = build_SP_flat(topods_shape, doc, collection, scale, resolution)
+            object_data = build_SP_flat(
+                topods_shape, doc, collection, scale, resolution
+            )
         case SP_obj_type.CYLINDER:
-            object_data = build_SP_cylinder(topods_shape, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_cylinder(
+                topods_shape, doc, collection, trims_enabled, scale, resolution
+            )
         case SP_obj_type.CONE:
-            object_data = build_SP_cone(topods_shape, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_cone(
+                topods_shape, doc, collection, trims_enabled, scale, resolution
+            )
         case SP_obj_type.SPHERE:
-            object_data = build_SP_sphere(topods_shape, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_sphere(
+                topods_shape, doc, collection, trims_enabled, scale, resolution
+            )
         case SP_obj_type.TORUS:
-            object_data = build_SP_torus(topods_shape, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_torus(
+                topods_shape, doc, collection, trims_enabled, scale, resolution
+            )
         case SP_obj_type.BEZIER_SURFACE:
-            object_data = build_SP_bezier_patch(topods_shape, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_bezier_patch(
+                topods_shape, doc, collection, trims_enabled, scale, resolution
+            )
         case SP_obj_type.BSPLINE_SURFACE:
-            object_data = build_SP_NURBS_patch(topods_shape, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_NURBS_patch(
+                topods_shape, doc, collection, trims_enabled, scale, resolution
+            )
         case SP_obj_type.SURFACE_OF_REVOLUTION:
-             object_data = build_SP_revolution(topods_shape, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_revolution(
+                topods_shape, doc, collection, trims_enabled, scale, resolution
+            )
         case SP_obj_type.SURFACE_OF_EXTRUSION:
-            object_data = build_SP_extrusion(topods_shape, doc, collection, trims_enabled, scale, resolution)
-        case _ :
+            object_data = build_SP_extrusion(
+                topods_shape, doc, collection, trims_enabled, scale, resolution
+            )
+        case _:
             print(f"Unsupported Face Type : {ft}")
             return {}
     return object_data
 
 
-
 def create_blender_object(object_data):
     if object_data == {}:
         return False
-    
-    mesh = bpy.data.meshes.new(object_data['name'])
-    mesh.from_pydata(*object_data['mesh_data'], False)   
-    ob = bpy.data.objects.new(object_data['name'], mesh)
-    ob.matrix_world = object_data['transform']
-    ob.color = object_data['color']
 
-    for name, att in object_data['attrs'].items() :
-        match att[0] :
-            case _ if isinstance(att[0], bool) :
+    mesh = bpy.data.meshes.new(object_data["name"])
+    mesh.from_pydata(*object_data["mesh_data"], False)
+    ob = bpy.data.objects.new(object_data["name"], mesh)
+    ob.matrix_world = object_data["transform"]
+    ob.color = object_data["color"]
+
+    for name, att in object_data["attrs"].items():
+        match att[0]:
+            case _ if isinstance(att[0], bool):
                 add_bool_attribute(ob, name, att)
-            case _ if isinstance(att[0], int) :
+            case _ if isinstance(att[0], int):
                 add_int_attribute(ob, name, att)
-            case _ if isinstance(att[0], float) :
+            case _ if isinstance(att[0], float):
                 add_float_attribute(ob, name, att)
-            case _ :
+            case _:
                 print("Attribute type issue")
 
-    name, param, pin = object_data['modifier']
+    name, param, pin = object_data["modifier"]
     add_sp_modifier(ob, name, param, pin)
 
-    object_data['collection'].objects.link(ob)
+    object_data["collection"].objects.link(ob)
     return True
-
 
 
 def prepare_import(filepath):
@@ -1064,17 +1320,17 @@ def prepare_import(filepath):
     doc = None
 
     # STEP
-    if splitext(split(filepath)[1])[1].lower() in ['.step', '.stp']:
+    if splitext(split(filepath)[1])[1].lower() in [".step", ".stp"]:
         shape = read_step_file(filepath)
-        if shape == None :
+        if shape == None:
             return False
-        # _toplevel_shapes, doc = read_step_file_with_names_colors(filepath)
-        # #(topods_shape, label, color)
-        # shape = list(_toplevel_shapes.items())[0][0]
+        _toplevel_shapes, doc = read_step_file_with_names_colors(filepath)
+        # (topods_shape, label, color)
+        shape = list(_toplevel_shapes.items())[0][0]
         # print(len(list(_toplevel_shapes.items())))
 
     # IGES
-    elif splitext(split(filepath)[1])[1] in ['.igs','.iges','.IGES', '.IGS']:
+    elif splitext(split(filepath)[1])[1] in [".igs", ".iges", ".IGES", ".IGS"]:
         iges_reader = IGESControl_Reader()
         status = iges_reader.ReadFile(filepath)
         if status != IFSelect_RetDone:
@@ -1082,126 +1338,116 @@ def prepare_import(filepath):
         iges_reader.TransferRoots()
         shape = iges_reader.OneShape()
         # shape = read_iges_file(filepath)
-    
+
     container_name = splitext(split(filepath)[1])[0]
 
     return shape, doc, container_name
-
-
-
-
-
-
-
-
 
 
 #######################################
 # Step import adapted from Build 123d #
 #######################################
 
-# def import_step(filepath):
 
-#     def get_name(label: TDF_Label) -> str:
-#         """Extract name and format"""
-#         name = ""
-#         std_name = TDataStd_Name()
-#         if label.FindAttribute(TDataStd_Name.GetID_s(), std_name):
-#             name = TCollection_AsciiString(std_name.Get()).ToCString()
-#         # Remove characters that cause ocp_vscode to fail
-#         clean_name = "".join(ch for ch in name if unicodedata.category(ch)[0] != "C")
-#         return clean_name.translate(str.maketrans(" .()", "____"))
+def import_step(filepath):
 
-#     def get_color(shape: TopoDS_Shape) -> Quantity_ColorRGBA:
-#         """Get the color - take that of the largest Face if multiple"""
+    def get_name(label: TDF_Label) -> str:
+        """Extract name and format"""
+        name = ""
+        std_name = TDataStd_Name()
+        if label.FindAttribute(TDataStd_Name.GetID_s(), std_name):
+            name = TCollection_AsciiString(std_name.Get()).ToCString()
+        # Remove characters that cause ocp_vscode to fail
+        clean_name = "".join(ch for ch in name if unicodedata.category(ch)[0] != "C")
+        return clean_name.translate(str.maketrans(" .()", "____"))
 
-#         def get_col(obj: TopoDS_Shape) -> Quantity_ColorRGBA:
-#             col = Quantity_ColorRGBA()
-#             if (
-#                 color_tool.GetColor(obj, XCAFDoc_ColorCurv, col)
-#                 or color_tool.GetColor(obj, XCAFDoc_ColorGen, col)
-#                 or color_tool.GetColor(obj, XCAFDoc_ColorSurf, col)
-#             ):
-#                 return col
+    def get_color(shape: TopoDS_Shape) -> Quantity_ColorRGBA:
+        """Get the color - take that of the largest Face if multiple"""
 
-#         shape_color = get_col(shape)
+        def get_col(obj: TopoDS_Shape) -> Quantity_ColorRGBA:
+            col = Quantity_ColorRGBA()
+            if (
+                color_tool.GetColor(obj, XCAFDoc_ColorCurv, col)
+                or color_tool.GetColor(obj, XCAFDoc_ColorGen, col)
+                or color_tool.GetColor(obj, XCAFDoc_ColorSurf, col)
+            ):
+                return col
 
-#         colors = {}
-#         face_explorer = TopExp_Explorer(shape, TopAbs_FACE)
-#         while face_explorer.More():
-#             current_face = face_explorer.Current()
-#             properties = GProp_GProps()
-#             BRepGProp.SurfaceProperties_s(current_face, properties)
-#             area = properties.Mass()
-#             color = get_col(current_face)
-#             if color is not None:
-#                 colors[area] = color
-#             face_explorer.Next()
+        shape_color = get_col(shape)
 
-#         # If there are multiple colors, return the one from the largest face
-#         if colors:
-#             shape_color = sorted(colors.items())[-1][1]
+        colors = {}
+        face_explorer = TopExp_Explorer(shape, TopAbs.TopAbs_FACE)
+        while face_explorer.More():
+            current_face = face_explorer.Current()
+            properties = GProp_GProps()
+            BRepGProp.SurfaceProperties_s(current_face, properties)
+            area = properties.Mass()
+            color = get_col(current_face)
+            if color is not None:
+                colors[area] = color
+            face_explorer.Next()
 
-#         return shape_color
+        # If there are multiple colors, return the one from the largest face
+        if colors:
+            shape_color = sorted(colors.items())[-1][1]
 
-#     def build_assembly(parent_tdf_label: TDF_Label | None = None) -> list[TopoDS_Shape]:
-#         """Recursively extract object into an assembly"""
-#         sub_tdf_labels = TDF_LabelSequence()
-#         if parent_tdf_label is None:
-#             shape_tool.GetFreeShapes(sub_tdf_labels)
-#         else:
-#             shape_tool.GetComponents_s(parent_tdf_label, sub_tdf_labels)
+        return shape_color
 
-#         sub_shapes: list[TopoDS_Shape] = []
-#         for i in range(sub_tdf_labels.Length()):
-#             sub_tdf_label = sub_tdf_labels.Value(i + 1)
-#             if shape_tool.IsReference_s(sub_tdf_label):
-#                 ref_tdf_label = TDF_Label()
-#                 shape_tool.GetReferredShape_s(sub_tdf_label, ref_tdf_label)
-#             else:
-#                 ref_tdf_label = sub_tdf_label
+    def build_assembly(parent_tdf_label: TDF_Label | None = None) -> list[TopoDS_Shape]:
+        """Recursively extract object into an assembly"""
+        sub_tdf_labels = TDF_LabelSequence()
+        if parent_tdf_label is None:
+            shape_tool.GetFreeShapes(sub_tdf_labels)
+        else:
+            shape_tool.GetComponents_s(parent_tdf_label, sub_tdf_labels)
 
-#             sub_topo_shape = downcast(shape_tool.GetShape_s(ref_tdf_label))
-#             if shape_tool.IsAssembly_s(ref_tdf_label):
-#                 sub_shape = TopoDS_Compound()
-#                 sub_shape.children = build_assembly(ref_tdf_label)
-#             else:
-#                 sub_shape = topods_lut[type(sub_topo_shape)](sub_topo_shape)
+        sub_shapes: list[TopoDS_Shape] = []
+        for i in range(sub_tdf_labels.Length()):
+            sub_tdf_label = sub_tdf_labels.Value(i + 1)
+            if shape_tool.IsReference_s(sub_tdf_label):
+                ref_tdf_label = TDF_Label()
+                shape_tool.GetReferredShape_s(sub_tdf_label, ref_tdf_label)
+            else:
+                ref_tdf_label = sub_tdf_label
 
-#             sub_shape.color = get_color(sub_topo_shape)
-#             sub_shape.label = get_name(ref_tdf_label)
-#             sub_shape.move(shape_tool.GetLocation_s(sub_tdf_label))
+            sub_topo_shape = downcast(shape_tool.GetShape_s(ref_tdf_label))
+            if shape_tool.IsAssembly_s(ref_tdf_label):
+                sub_shape = TopoDS_Compound()
+                sub_shape.children = build_assembly(ref_tdf_label)
+            else:
+                sub_shape = topods_lut[type(sub_topo_shape)](sub_topo_shape)
 
-#             sub_shapes.append(sub_shape)
-#         return sub_shapes
+            sub_shape.color = get_color(sub_topo_shape)
+            sub_shape.label = get_name(ref_tdf_label)
+            sub_shape.move(shape_tool.GetLocation_s(sub_tdf_label))
 
-#     fmt = TCollection_ExtendedString("XCAF")
-#     doc = TDocStd_Document(fmt)
-#     shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
-#     color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
-#     reader = STEPCAFControl_Reader()
-#     reader.SetNameMode(True)
-#     reader.SetColorMode(True)
-#     reader.SetLayerMode(True)
-#     reader.ReadFile(filepath)
-#     reader.Transfer(doc)
+            sub_shapes.append(sub_shape)
+        return sub_shapes
 
-#     root = TopoDS_Compound()
-#     root.children = build_assembly()
-#     # Remove empty Compound wrapper if single free object
-#     if len(root.children) == 1:
-#         root = root.children[0]
+    fmt = TCollection_ExtendedString("XCAF")
+    doc = TDocStd_Document(fmt)
+    shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
+    color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
+    reader = STEPCAFControl_Reader()
+    reader.SetNameMode(True)
+    reader.SetColorMode(True)
+    reader.SetLayerMode(True)
+    reader.ReadFile(filepath)
+    reader.Transfer(doc)
 
-#     return root, doc
+    root = TopoDS_Compound()
+    root.children = build_assembly()
+    # Remove empty Compound wrapper if single free object
+    if len(root.children) == 1:
+        root = root.children[0]
 
-
-
-
+    return root, doc
 
 
 ########################################
 # Step import adapted from OCC Extends #
 ########################################
+
 
 def read_step_file(filename, as_compound=True, verbosity=True):
     """read the STEP file and returns a compound
@@ -1248,251 +1494,245 @@ def read_step_file(filename, as_compound=True, verbosity=True):
     return None
 
 
+# def read_step_file_with_names_colors(filename):
+#     """Returns list of tuples (topods_shape, label, color)
+#     Use OCAF.
+#     """
+#     if not isfile(filename):
+#         raise FileNotFoundError(f"{filename} not found.")
+#     # the list:
+#     output_shapes = {}
 
+#     # create an handle to a document
+#     doc = TDocStd_Document(TCollection_ExtendedString("pythonocc-doc-step-import"))
 
-def read_step_file_with_names_colors(filename):
-    """Returns list of tuples (topods_shape, label, color)
-    Use OCAF.
-    """
-    if not isfile(filename):
-        raise FileNotFoundError(f"{filename} not found.")
-    # the list:
-    output_shapes = {}
+#     # Get root assembly
+#     shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
+#     color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
+#     # layer_tool = XCAFDoc_DocumentTool_LayerTool(doc.Main())
+#     # mat_tool = XCAFDoc_DocumentTool_MaterialTool(doc.Main())
 
-    # create an handle to a document
-    doc = TDocStd_Document(TCollection_ExtendedString("pythonocc-doc-step-import"))
+#     step_reader = STEPCAFControl_Reader()
+#     step_reader.SetColorMode(True)
+#     step_reader.SetLayerMode(True)
+#     step_reader.SetNameMode(True)
+#     step_reader.SetMatMode(True)
+#     step_reader.SetGDTMode(True)
 
-    # Get root assembly
-    shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
-    color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
-    # layer_tool = XCAFDoc_DocumentTool_LayerTool(doc.Main())
-    # mat_tool = XCAFDoc_DocumentTool_MaterialTool(doc.Main())
+#     status = step_reader.ReadFile(filename)
+#     if status == IFSelect_RetDone:
+#         step_reader.Transfer(doc)
 
-    step_reader = STEPCAFControl_Reader()
-    step_reader.SetColorMode(True)
-    step_reader.SetLayerMode(True)
-    step_reader.SetNameMode(True)
-    step_reader.SetMatMode(True)
-    step_reader.SetGDTMode(True)
+#     locs = []
 
-    status = step_reader.ReadFile(filename)
-    if status == IFSelect_RetDone:
-        step_reader.Transfer(doc)
+#     def get_name(label: TDF_Label) -> str:
+#         """Extract name and format"""
+#         name = ""
+#         std_name = TDataStd_Name()
+#         if label.FindAttribute(TDataStd_Name.GetID_s(), std_name):
+#             name = TCollection_AsciiString(std_name.Get()).ToCString()
+#         # Remove characters that cause ocp_vscode to fail
+#         clean_name = "".join(ch for ch in name if unicodedata.category(ch)[0] != "C")
+#         return clean_name.translate(str.maketrans(" .()", "____"))
 
-    locs = []
+#     def _get_sub_shapes(lab, loc):
+#         # global cnt, lvl
+#         # cnt += 1
+#         # print("\n[%d] level %d, handling LABEL %s\n" % (cnt, lvl, _get_label_name(lab)))
+#         # print()
+#         # print(lab.DumpToString())
+#         # print()
+#         # print("Is Assembly    :", shape_tool.IsAssembly(lab))
+#         # print("Is Free        :", shape_tool.IsFree(lab))
+#         # print("Is Shape       :", shape_tool.IsShape(lab))
+#         # print("Is Compound    :", shape_tool.IsCompound(lab))
+#         # print("Is Component   :", shape_tool.IsComponent(lab))
+#         # print("Is SimpleShape :", shape_tool.IsSimpleShape(lab))
+#         # print("Is Reference   :", shape_tool.IsReference(lab))
 
-    def get_name(label: TDF_Label) -> str:
-        """Extract name and format"""
-        name = ""
-        std_name = TDataStd_Name()
-        if label.FindAttribute(TDataStd_Name.GetID_s(), std_name):
-            name = TCollection_AsciiString(std_name.Get()).ToCString()
-        # Remove characters that cause ocp_vscode to fail
-        clean_name = "".join(ch for ch in name if unicodedata.category(ch)[0] != "C")
-        return clean_name.translate(str.maketrans(" .()", "____"))
+#         # users = TDF_LabelSequence()
+#         # users_cnt = shape_tool.GetUsers(lab, users)
+#         # print("Nr Users       :", users_cnt)
 
-    def _get_sub_shapes(lab, loc):
-        # global cnt, lvl
-        # cnt += 1
-        # print("\n[%d] level %d, handling LABEL %s\n" % (cnt, lvl, _get_label_name(lab)))
-        # print()
-        # print(lab.DumpToString())
-        # print()
-        # print("Is Assembly    :", shape_tool.IsAssembly(lab))
-        # print("Is Free        :", shape_tool.IsFree(lab))
-        # print("Is Shape       :", shape_tool.IsShape(lab))
-        # print("Is Compound    :", shape_tool.IsCompound(lab))
-        # print("Is Component   :", shape_tool.IsComponent(lab))
-        # print("Is SimpleShape :", shape_tool.IsSimpleShape(lab))
-        # print("Is Reference   :", shape_tool.IsReference(lab))
+#         l_subss = TDF_LabelSequence()
+#         shape_tool.GetSubShapes_s(lab, l_subss)
+#         # print("Nb subshapes   :", l_subss.Length())
+#         l_comps = TDF_LabelSequence()
+#         shape_tool.GetComponents_s(lab, l_comps)
+#         # print("Nb components  :", l_comps.Length())
+#         # print()
+#         name = get_name(lab)
+#         print("Name :", name)
 
-        # users = TDF_LabelSequence()
-        # users_cnt = shape_tool.GetUsers(lab, users)
-        # print("Nr Users       :", users_cnt)
+#         if shape_tool.IsAssembly_s(lab):
+#             l_c = TDF_LabelSequence()
+#             shape_tool.GetComponents_s(lab, l_c)
+#             for i in range(l_c.Length()):
+#                 label = l_c.Value(i + 1)
+#                 if shape_tool.IsReference(label):
+#                     # print("\n########  reference label :", label)
+#                     label_reference = TDF_Label()
+#                     shape_tool.GetReferredShape(label, label_reference)
+#                     loc = shape_tool.GetLocation_s(label)
+#                     # print("    loc          :", loc)
+#                     # trans = loc.Transformation()
+#                     # print("    tran form    :", trans.Form())
+#                     # rot = trans.GetRotation()
+#                     # print("    rotation     :", rot)
+#                     # print("    X            :", rot.X())
+#                     # print("    Y            :", rot.Y())
+#                     # print("    Z            :", rot.Z())
+#                     # print("    W            :", rot.W())
+#                     # tran = trans.TranslationPart()
+#                     # print("    translation  :", tran)
+#                     # print("    X            :", tran.X())
+#                     # print("    Y            :", tran.Y())
+#                     # print("    Z            :", tran.Z())
 
-        l_subss = TDF_LabelSequence()
-        shape_tool.GetSubShapes_s(lab, l_subss)
-        # print("Nb subshapes   :", l_subss.Length())
-        l_comps = TDF_LabelSequence()
-        shape_tool.GetComponents_s(lab, l_comps)
-        # print("Nb components  :", l_comps.Length())
-        # print()
-        name = get_name(lab)
-        print("Name :", name)
+#                     locs.append(loc)
+#                     # print(">>>>")
+#                     # lvl += 1
+#                     _get_sub_shapes(label_reference, loc)
+#                     # lvl -= 1
+#                     # print("<<<<")
+#                     locs.pop()
 
-        if shape_tool.IsAssembly_s(lab):
-            l_c = TDF_LabelSequence()
-            shape_tool.GetComponents_s(lab, l_c)
-            for i in range(l_c.Length()):
-                label = l_c.Value(i + 1)
-                if shape_tool.IsReference(label):
-                    # print("\n########  reference label :", label)
-                    label_reference = TDF_Label()
-                    shape_tool.GetReferredShape(label, label_reference)
-                    loc = shape_tool.GetLocation_s(label)
-                    # print("    loc          :", loc)
-                    # trans = loc.Transformation()
-                    # print("    tran form    :", trans.Form())
-                    # rot = trans.GetRotation()
-                    # print("    rotation     :", rot)
-                    # print("    X            :", rot.X())
-                    # print("    Y            :", rot.Y())
-                    # print("    Z            :", rot.Z())
-                    # print("    W            :", rot.W())
-                    # tran = trans.TranslationPart()
-                    # print("    translation  :", tran)
-                    # print("    X            :", tran.X())
-                    # print("    Y            :", tran.Y())
-                    # print("    Z            :", tran.Z())
+#         elif shape_tool.IsSimpleShape_s(lab):
+#             # print("\n########  simpleshape label :", lab)
+#             shape = shape_tool.GetShape_s(lab)
+#             # print("    all ass locs   :", locs)
 
-                    locs.append(loc)
-                    # print(">>>>")
-                    # lvl += 1
-                    _get_sub_shapes(label_reference, loc)
-                    # lvl -= 1
-                    # print("<<<<")
-                    locs.pop()
+#             loc = TopLoc_Location()
+#             for l in locs:
+#                 # print("    take loc       :", l)
+#                 loc = loc.Multiplied(l)
 
-        elif shape_tool.IsSimpleShape_s(lab):
-            # print("\n########  simpleshape label :", lab)
-            shape = shape_tool.GetShape_s(lab)
-            # print("    all ass locs   :", locs)
+#             # trans = loc.Transformation()
+#             # print("    FINAL loc    :")
+#             # print("    tran form    :", trans.Form())
+#             # rot = trans.GetRotation()
+#             # print("    rotation     :", rot)
+#             # print("    X            :", rot.X())
+#             # print("    Y            :", rot.Y())
+#             # print("    Z            :", rot.Z())
+#             # print("    W            :", rot.W())
+#             # tran = trans.TranslationPart()
+#             # print("    translation  :", tran)
+#             # print("    X            :", tran.X())
+#             # print("    Y            :", tran.Y())
+#             # print("    Z            :", tran.Z())
+#             c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
+#             color_set = False
+#             if (
+#                 color_tool.GetInstanceColor(shape, XCAFDoc_ColorGen, c)
+#                 or color_tool.GetInstanceColor(shape, XCAFDoc_ColorSurf, c)
+#                 or color_tool.GetInstanceColor(shape, XCAFDoc_ColorCurv , c)
+#             ):
+#                 color_tool.SetInstanceColor(shape, 0, c)
+#                 color_tool.SetInstanceColor(shape, 1, c)
+#                 color_tool.SetInstanceColor(shape, 2, c)
+#                 color_set = True
+#                 n = c.Name(c.Red(), c.Green(), c.Blue())
+#                 print(
+#                     "    instance color Name & RGB: ",
+#                     c,
+#                     n,
+#                     c.Red(),
+#                     c.Green(),
+#                     c.Blue(),
+#                 )
 
-            loc = TopLoc_Location()
-            for l in locs:
-                # print("    take loc       :", l)
-                loc = loc.Multiplied(l)
+#             if not color_set:
+#                 if (
+#                     color_tool.GetColor(shape, XCAFDoc_ColorGen, c)
+#                     or color_tool.GetColor(shape, XCAFDoc_ColorSurf, c)
+#                     or color_tool.GetColor(shape, XCAFDoc_ColorCurv, c)
+#                 ):
+#                     color_tool.SetInstanceColor(shape, 0, c)
+#                     color_tool.SetInstanceColor(shape, 1, c)
+#                     color_tool.SetInstanceColor(shape, 2, c)
 
-            # trans = loc.Transformation()
-            # print("    FINAL loc    :")
-            # print("    tran form    :", trans.Form())
-            # rot = trans.GetRotation()
-            # print("    rotation     :", rot)
-            # print("    X            :", rot.X())
-            # print("    Y            :", rot.Y())
-            # print("    Z            :", rot.Z())
-            # print("    W            :", rot.W())
-            # tran = trans.TranslationPart()
-            # print("    translation  :", tran)
-            # print("    X            :", tran.X())
-            # print("    Y            :", tran.Y())
-            # print("    Z            :", tran.Z())
-            c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
-            color_set = False
-            if (
-                color_tool.GetInstanceColor(shape, XCAFDoc_ColorGen, c)
-                or color_tool.GetInstanceColor(shape, XCAFDoc_ColorSurf, c)
-                or color_tool.GetInstanceColor(shape, XCAFDoc_ColorCurv , c)
-            ):
-                color_tool.SetInstanceColor(shape, 0, c)
-                color_tool.SetInstanceColor(shape, 1, c)
-                color_tool.SetInstanceColor(shape, 2, c)
-                color_set = True
-                n = c.Name(c.Red(), c.Green(), c.Blue())
-                print(
-                    "    instance color Name & RGB: ",
-                    c,
-                    n,
-                    c.Red(),
-                    c.Green(),
-                    c.Blue(),
-                )
+#                     n = c.Name(c.Red(), c.Green(), c.Blue())
+#                     print(
+#                         "    shape color Name & RGB: ",
+#                         c,
+#                         n,
+#                         c.Red(),
+#                         c.Green(),
+#                         c.Blue(),
+#                     )
 
-            if not color_set:
-                if (
-                    color_tool.GetColor(shape, XCAFDoc_ColorGen, c)
-                    or color_tool.GetColor(shape, XCAFDoc_ColorSurf, c)
-                    or color_tool.GetColor(shape, XCAFDoc_ColorCurv, c)
-                ):
-                    color_tool.SetInstanceColor(shape, 0, c)
-                    color_tool.SetInstanceColor(shape, 1, c)
-                    color_tool.SetInstanceColor(shape, 2, c)
+#             shape_disp = BRepBuilderAPI_Transform(shape, loc.Transformation()).Shape()
+#             if shape_disp not in output_shapes:
+#                 output_shapes[shape_disp] = [get_name(lab), c]
+#             for i in range(l_subss.Length()):
+#                 lab_subs = l_subss.Value(i + 1)
+#                 # print("\n########  simpleshape subshape label :", lab)
+#                 shape_sub = shape_tool.GetShape_s(lab_subs)
 
-                    n = c.Name(c.Red(), c.Green(), c.Blue())
-                    print(
-                        "    shape color Name & RGB: ",
-                        c,
-                        n,
-                        c.Red(),
-                        c.Green(),
-                        c.Blue(),
-                    )
+#                 c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
+#                 color_set = False
+#                 if (
+#                     color_tool.GetInstanceColor(shape_sub, XCAFDoc_ColorGen, c)
+#                     or color_tool.GetInstanceColor(shape_sub, XCAFDoc_ColorSurf, c)
+#                     or color_tool.GetInstanceColor(shape_sub, XCAFDoc_ColorCurv, c)
+#                 ):
+#                     color_tool.SetInstanceColor(shape_sub, 0, c)
+#                     color_tool.SetInstanceColor(shape_sub, 1, c)
+#                     color_tool.SetInstanceColor(shape_sub, 2, c)
+#                     color_set = True
+#                     n = c.Name(c.Red(), c.Green(), c.Blue())
+#                     print(
+#                         "    instance color Name & RGB: ",
+#                         c,
+#                         n,
+#                         c.Red(),
+#                         c.Green(),
+#                         c.Blue(),
+#                     )
 
-            shape_disp = BRepBuilderAPI_Transform(shape, loc.Transformation()).Shape()
-            if shape_disp not in output_shapes:
-                output_shapes[shape_disp] = [get_name(lab), c]
-            for i in range(l_subss.Length()):
-                lab_subs = l_subss.Value(i + 1)
-                # print("\n########  simpleshape subshape label :", lab)
-                shape_sub = shape_tool.GetShape_s(lab_subs)
+#                 # Set color as parent color ?
+#                 if not color_set:
+#                     if (
+#                         XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorType(0), c)
+#                         or XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorType(1), c)
+#                         or XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorType(2), c)
+#                     ):
+#                         color_tool.SetInstanceColor(shape, 0, c)
+#                         color_tool.SetInstanceColor(shape, 1, c)
+#                         color_tool.SetInstanceColor(shape, 2, c)
 
-                c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
-                color_set = False
-                if (
-                    color_tool.GetInstanceColor(shape_sub, 0, c)
-                    or color_tool.GetInstanceColor(shape_sub, 1, c)
-                    or color_tool.GetInstanceColor(shape_sub, 2, c)
-                ):
-                    color_tool.SetInstanceColor(shape_sub, 0, c)
-                    color_tool.SetInstanceColor(shape_sub, 1, c)
-                    color_tool.SetInstanceColor(shape_sub, 2, c)
-                    color_set = True
-                    n = c.Name(c.Red(), c.Green(), c.Blue())
-                    print(
-                        "    instance color Name & RGB: ",
-                        c,
-                        n,
-                        c.Red(),
-                        c.Green(),
-                        c.Blue(),
-                    )
+#                         n = c.Name(c.Red(), c.Green(), c.Blue())
+#                         print(
+#                             "    shape color Name & RGB: ",
+#                             c,
+#                             n,
+#                             c.Red(),
+#                             c.Green(),
+#                             c.Blue(),
+#                         )
+#                 shape_to_disp = BRepBuilderAPI_Transform(
+#                     shape_sub, loc.Transformation()
+#                 ).Shape()
+#                 # position the subshape to display
+#                 if shape_to_disp not in output_shapes:
+#                     output_shapes[shape_to_disp] = [get_name(lab_subs), c]
 
-                if not color_set:
-                    if (
-                        XCAFDoc_ColorTool.GetColor(lab_subs, XCAFDoc_ColorGen, c)
-                        or XCAFDoc_ColorTool.GetColor(lab_subs, XCAFDoc_ColorSurf, c)
-                        or XCAFDoc_ColorTool.GetColor(lab_subs, XCAFDoc_ColorCurv, c)
-                    ):
-                        color_tool.SetInstanceColor(shape, 0, c)
-                        color_tool.SetInstanceColor(shape, 1, c)
-                        color_tool.SetInstanceColor(shape, 2, c)
+#     def _get_shapes():
+#         labels = TDF_LabelSequence()
+#         shape_tool.GetFreeShapes(labels)
+#         # global cnt
+#         # cnt += 1
 
-                        n = c.Name(c.Red(), c.Green(), c.Blue())
-                        print(
-                            "    shape color Name & RGB: ",
-                            c,
-                            n,
-                            c.Red(),
-                            c.Green(),
-                            c.Blue(),
-                        )
-                shape_to_disp = BRepBuilderAPI_Transform(
-                    shape_sub, loc.Transformation()
-                ).Shape()
-                # position the subshape to display
-                if shape_to_disp not in output_shapes:
-                    output_shapes[shape_to_disp] = [get_name(lab_subs), c]
+#         print()
+#         print("Number of shapes at root :", labels.Length())
+#         print()
+#         for i in range(labels.Length()):
+#             root_item = labels.Value(i + 1)
+#             _get_sub_shapes(root_item, None)
 
-    def _get_shapes():
-        labels = TDF_LabelSequence()
-        shape_tool.GetFreeShapes(labels)
-        # global cnt
-        # cnt += 1
-
-        print()
-        print("Number of shapes at root :", labels.Length())
-        print()
-        for i in range(labels.Length()):
-            root_item = labels.Value(i + 1)
-            _get_sub_shapes(root_item, None)
-
-    _get_shapes()
-    return output_shapes, doc
-
-
-
-
-
+#     _get_shapes()
+#     return output_shapes, doc
 
 
 ###########################

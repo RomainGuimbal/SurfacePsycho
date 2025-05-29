@@ -20,11 +20,12 @@ bl_info = {
     "warning": "Alpha",
     "doc_url": "https://github.com/RomainGuimbal/SurfacePsycho/wiki",
     "category": "3D View",
-    "location": "View3D > Add > Surface/Curve  |  Viewport > N Panel > Tool"
+    "location": "View3D > Add > Surface/Curve  |  Viewport > N Panel > Tool",
 }
 
 import bpy
 from . import gui
+
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
@@ -34,13 +35,16 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
         col = layout.column()
         col.operator("sp.add_library", text="Add Assets Path")
 
+
 def register():
     gui.register()
     bpy.utils.register_class(SP_AddonPreferences)
 
+
 def unregister():
     bpy.utils.unregister_class(SP_AddonPreferences)
     gui.unregister()
+
 
 if __name__ == "__main__":
     register()
