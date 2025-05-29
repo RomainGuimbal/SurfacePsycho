@@ -725,15 +725,10 @@ def build_SP_curve(shape, doc, collection, scale = 0.001, resolution = 16) :
     name, color = get_shape_name_and_color(shape, doc)
     if name == None:
         name = "STEP Curve"
-    mesh = bpy.data.meshes.new("Curve CP")
-    mesh.from_pydata(verts, edges, [], False)
-    ob = bpy.data.objects.new(name, mesh)
-    ob.matrix_world = get_shape_transform(shape, scale)
     
     if len(color)==3:
-        ob.color = list(color) + [1.]
-    elif len(color)==4 :
-        ob.color = color
+        color = list(color) + [1.]
+    
 
     modifier = ("SP - Curve Meshing",
                 {"Resolution": resolution}, True)
@@ -1004,27 +999,30 @@ def import_face_nodegroups(shape_hierarchy):
 
 
 
-def process_topods_face(topods_face, doc, collection, trims_enabled, scale, resolution):
-    ft= get_face_sp_type(topods_face)
+def process_object_data_of_shape(topods_shape, doc, collection, trims_enabled, scale, resolution : int, iscurve : bool):
+    if iscurve :
+        return build_SP_curve(topods_shape, doc, collection, scale, resolution)
+    
+    ft= get_face_sp_type(topods_shape)
     match ft:
         case SP_obj_type.PLANE:
-            object_data = build_SP_flat(topods_face, doc, collection, scale, resolution)
+            object_data = build_SP_flat(topods_shape, doc, collection, scale, resolution)
         case SP_obj_type.CYLINDER:
-            object_data = build_SP_cylinder(topods_face, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_cylinder(topods_shape, doc, collection, trims_enabled, scale, resolution)
         case SP_obj_type.CONE:
-            object_data = build_SP_cone(topods_face, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_cone(topods_shape, doc, collection, trims_enabled, scale, resolution)
         case SP_obj_type.SPHERE:
-            object_data = build_SP_sphere(topods_face, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_sphere(topods_shape, doc, collection, trims_enabled, scale, resolution)
         case SP_obj_type.TORUS:
-            object_data = build_SP_torus(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case SP_obj_type.BEZIER:
-            object_data = build_SP_bezier_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case SP_obj_type.NURBS:
-            object_data = build_SP_NURBS_patch(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case SP_obj_type.REVOLUTION:
-             object_data = build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, resolution)
-        case SP_obj_type.EXTRUSION:
-            object_data = build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution)
+            object_data = build_SP_torus(topods_shape, doc, collection, trims_enabled, scale, resolution)
+        case SP_obj_type.BEZIER_SURFACE:
+            object_data = build_SP_bezier_patch(topods_shape, doc, collection, trims_enabled, scale, resolution)
+        case SP_obj_type.BSPLINE_SURFACE:
+            object_data = build_SP_NURBS_patch(topods_shape, doc, collection, trims_enabled, scale, resolution)
+        case SP_obj_type.SURFACE_OF_REVOLUTION:
+             object_data = build_SP_revolution(topods_shape, doc, collection, trims_enabled, scale, resolution)
+        case SP_obj_type.SURFACE_OF_EXTRUSION:
+            object_data = build_SP_extrusion(topods_shape, doc, collection, trims_enabled, scale, resolution)
         case _ :
             print(f"Unsupported Face Type : {ft}")
             return {}

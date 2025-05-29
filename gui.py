@@ -12,7 +12,7 @@ import functools
 # from .macros import SP_Props_Group
 
 
-from .importer import prepare_import, ShapeHierarchy, import_face_nodegroups, process_topods_face, create_blender_object, build_SP_curve
+from .importer import prepare_import, ShapeHierarchy, import_face_nodegroups, process_object_data_of_shape, create_blender_object, build_SP_curve
 from .utils import append_node_group
 from .exporter_cad import export_step, export_iges
 from .exporter_svg import export_svg
@@ -82,6 +82,8 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     faces_processed = 0
     active_timers = None
     curve_start_at = 0
+    shape_count = 0
+    _timer = None
 
     def execute(self, context):
         self.context = context
@@ -100,9 +102,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         shape, self.doc, container_name = prepare_import(self.filepath)
         
         # Create hierarchy and collections
-        self.shape_count = 0
         shape_hierarchy = ShapeHierarchy(shape, container_name)
-
         shapes = []
         if self.faces_on :
             self.shape_count += len(shape_hierarchy.faces)
@@ -114,24 +114,30 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             append_node_group("SP - Curve Meshing")
             shapes.extend(shape_hierarchy.edges)
 
+        print(self.shape_count)
+
         # Setup progress bar
         context.window.cursor_set("DEFAULT")
+        self.report({'INFO'}, f"Loading {self.shape_count} Objects")
+        for area in context.screen.areas:
+            area.tag_redraw()
         wm = context.window_manager
         wm.progress_begin(0, self.shape_count)
-            
+        
         # Start I/O workers
         for index, (shape, col) in enumerate(shapes):
+            iscurve = index >= self.curve_start_at
             self.io_pool.submit(
                 self.process_object_io,
                 shape, col, self.trims_on, 
                 self.scale, self.resolution,
-                index
+                iscurve
             )
 
             # Start object creation thread
             threading.Thread(target=self._object_creator).start()    
 
-        # Use modal timer instead of modal() for better control
+        # Modal executed every 0.1 sec
         self._timer = context.window_manager.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -139,31 +145,29 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     def modal(self, context, event):
         if self.faces_processed >= self.shape_count :
             self.stop_event.set()
-            context.window_manager.progress_end()
 
         if event.type == 'TIMER' and self._timer:
             # Check for completion
             if self.stop_event.is_set() and self.result_queue.empty():
                 self._cleanup(context)
+                context.window_manager.progress_end()
+                print("SUCCESS !")
                 return {'FINISHED'}
             
         if event.type == 'ESC':
             self.stop_event.set()
-            self.io_pool.shutdown(wait=False)
+            self._cleanup(context)
             context.window_manager.progress_end()
             return {'CANCELLED'}
                 
         return {'PASS_THROUGH'}
     
 
-    def process_object_io(self, shape, col, trims_on, scale, resolution, index):
+    def process_object_io(self, shape, col, trims_on, scale, resolution, iscurve):
         """Pure I/O - runs in worker threads"""
-        
         # Data gathering
-        if index < self.curve_start_at :
-            processed_data = process_topods_face(shape, self.doc, col, trims_on, scale, resolution)
-        else :
-            processed_data = build_SP_curve(shape, self.doc, col, scale, resolution)
+        processed_data = process_object_data_of_shape(shape, self.doc, col, trims_on, scale, resolution, iscurve)
+        
         # Pass to main thread via queue
         self.result_queue.put((processed_data))
 
@@ -171,6 +175,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         """Dedicated thread for Blender object creation"""
         while not self.stop_event.is_set():
             try:
+                # Check queue
                 data = self.result_queue.get(timeout=0.1)
                 
                 # Create timer with unique ID
@@ -208,15 +213,15 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         return None  # Single-shot timer
 
     def _cleanup(self, context):
-            """Proper resource cleanup"""
-            if self._timer:
-                context.window_manager.event_timer_remove(self._timer)
-            self.io_pool.shutdown(wait=False)
-            
-            # Clear any remaining timers
-            for timer_id in list(self.active_timers):
-                # Timers will self-clean when they run
-                pass
+        """Resource cleanup"""
+        if self._timer:
+            context.window_manager.event_timer_remove(self._timer)
+        self.io_pool.shutdown(wait=False)
+        
+        # Clear any remaining timers
+        for timer_id in list(self.active_timers):
+            # Timers will self-clean when they run
+            pass
 
 
 

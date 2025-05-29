@@ -529,7 +529,7 @@ def blender_to_gp_quaternion(rot : Quaternion):
 def get_shape_name_and_color(shape, doc):
     name = None
     color = (0.8, 0.8, 0.8)
-    if doc !=None :
+    if doc != None :
         # Get shape label
         label = TDF_Label()
         if XCAFDoc_DocumentTool.ShapeTool_GetID(doc).FindShape(shape, label):
