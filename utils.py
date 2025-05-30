@@ -8,6 +8,8 @@ from math import isclose
 from typing import List, Tuple
 from os.path import dirname, abspath, join
 from enum import Enum
+from dataclasses import dataclass
+import dataclasses
 
 from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
@@ -25,6 +27,7 @@ from OCP.GeomAbs import (
     GeomAbs_OffsetSurface,
     GeomAbs_OtherSurface,
 )
+from OCP.GeomAdaptor import GeomAdaptor_Curve
 from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
 from OCP.TopoDS import (
@@ -749,3 +752,11 @@ def shells_to_solids(topods_shape: TopoDS_Shape):
         print(f"Unexpected shape of type {topods_shape.ShapeType()}")
 
     return separated_shapes_list
+
+
+def get_geom_adapt_curve_type(adaptor_curve: GeomAdaptor_Curve):
+    try:
+        curve_type = adaptor_curve.Curve().GetType()
+    except AttributeError:
+        curve_type = adaptor_curve.GetType()
+    return curve_type

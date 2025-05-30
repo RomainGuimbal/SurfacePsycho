@@ -177,27 +177,38 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
         # Setup progress bar
         context.window.cursor_set("DEFAULT")
-        self.report({"INFO"}, f"Loading {self.shape_count} Objects")
-        for area in context.screen.areas:
-            area.tag_redraw()
+        
+        ## Broken
+        # self.report({"INFO"}, f"Loading {self.shape_count} Objects")
+        # for area in context.screen.areas:
+        #     area.tag_redraw()
+
         wm = context.window_manager
         wm.progress_begin(0, self.shape_count)
 
-        # Start I/O workers
-        for index, (shape, col) in enumerate(shapes):
-            iscurve = index >= self.curve_start_at
-            self.io_pool.submit(
-                self.process_object_io,
-                shape,
-                col,
-                self.trims_on,
-                self.scale,
-                self.resolution,
-                iscurve,
-            )
+        multithread_IO = True
+        if multithread_IO :
+            # Start I/O workers
+            for index, (shape, col) in enumerate(shapes):
+                iscurve = index >= self.curve_start_at
+                self.io_pool.submit(
+                    self.process_object_io,
+                    shape,
+                    col,
+                    self.trims_on,
+                    self.scale,
+                    self.resolution,
+                    iscurve,
+                )
 
-            # Start object creation thread
-            threading.Thread(target=self._object_creator).start()
+                # Start object creation thread
+                threading.Thread(target=self._object_creator).start()
+        else :
+            for index, (shape, col) in enumerate(shapes):
+                iscurve = index >= self.curve_start_at                
+                self.process_object_io(
+                    shape, col, self.trims_on, self.scale, self.resolution, iscurve
+                )
 
         # Modal executed every 0.1 sec
         self._timer = context.window_manager.event_timer_add(0.1, window=context.window)
@@ -205,6 +216,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
+
         if self.faces_processed >= self.shape_count:
             self.stop_event.set()
 
@@ -213,6 +225,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             if self.stop_event.is_set() and self.result_queue.empty():
                 self._cleanup(context)
                 context.window_manager.progress_end()
+                self.report({"INFO"}, f"{self.shape_count} Objects Imported")
                 print("SUCCESS !")
                 return {"FINISHED"}
 
@@ -220,6 +233,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             self.stop_event.set()
             self._cleanup(context)
             context.window_manager.progress_end()
+            self.report({"INFO"}, "Import Cancelled")
             return {"CANCELLED"}
 
         return {"PASS_THROUGH"}
@@ -266,7 +280,6 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             # Force UI update
             for window in bpy.context.window_manager.windows:
                 window.screen.areas[0].tag_redraw()
-
         finally:
             self.active_timers.discard(timer_id)
         return None  # Single-shot timer
