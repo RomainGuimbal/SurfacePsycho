@@ -6,26 +6,10 @@ import platform
 
 os = platform.system()
 from . import macros
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from queue import Queue, Empty
-import threading
-import functools
-
 # from .macros import SP_Props_Group
-
-
-from .importer import (
-    prepare_import,
-    ShapeHierarchy,
-    import_face_nodegroups,
-    process_object_data_of_shape,
-    create_blender_object,
-    build_SP_curve,
-)
-from .utils import append_node_group
 from .exporter_cad import export_step, export_iges
 from .exporter_svg import export_svg
-
+from .importer_MultiStagePipeline import *
 from bpy.props import (
     StringProperty,
     BoolProperty,
@@ -135,165 +119,137 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     scale: FloatProperty(name="Scale", default=0.001, precision=3)
     resolution: IntProperty(name="Resolution", default=16, soft_min=6, soft_max=256)
 
-    io_pool = None  # I/O workers
-    result_queue = None  # Thread-safe object creation queue
-    stop_event = None
-    faces_processed = 0
-    active_timers = None
-    curve_start_at = 0
-    shape_count = 0
+    pipeline = None
     _timer = None
 
     def execute(self, context):
         self.context = context
-
+        
         # Show wait cursor
         context.window.cursor_set("WAIT")
 
-        # Initialize member variables
-        self.result_queue = Queue()
-        self.stop_event = threading.Event()
-        self.faces_processed = 0
-        self.active_timers = set()
-        self.io_pool = ThreadPoolExecutor(max_workers=30)
-
-        # Initialize your CAD import generator
-        shape, self.doc, container_name = prepare_import(self.filepath)
-
-        # Create hierarchy and collections
+        # Initialize your CAD import data
+        shape, self.doc, container_name = read(self.filepath)
         shape_hierarchy = ShapeHierarchy(shape, container_name)
+        
+        # Collect shapes to process
         shapes = []
+        
         if self.faces_on:
-            self.shape_count += len(shape_hierarchy.faces)
-            self.curve_start_at = len(shape_hierarchy.faces)
             import_face_nodegroups(shape_hierarchy)
-            shapes.extend(shape_hierarchy.faces)
+            shapes.extend([(shape, col, False) for shape, col in shape_hierarchy.faces])
+            
         if self.curves_on:
-            self.shape_count += len(shape_hierarchy.edges)
             append_node_group("SP - Curve Meshing")
-            shapes.extend(shape_hierarchy.edges)
+            shapes.extend([(shape, col, True) for shape, col in shape_hierarchy.edges])
 
-        print(self.shape_count)
+        if not shapes:
+            self.report({"WARNING"}, "No shapes to import")
+            return {"CANCELLED"}
 
+        # Setup pipeline
+        config = PipelineConfig(
+            io_workers=min(len(shapes), (os.cpu_count()) * 5),
+            compute_workers=os.cpu_count(),
+            batch_size= 100
+        )
+        
+        self.pipeline = MultiStagePipeline(config)
+        
+        # Set processors
+        self.pipeline.set_processors(
+            io_processor=self._process_cad_io,
+            compute_processor=self._process_cad_compute,
+            result_handler=self._create_blender_object
+        )
+        
+        # Set callbacks
+        self.pipeline.set_callbacks(
+            progress_callback=self._on_progress,
+            completion_callback=self._on_completion
+        )
+        
         # Setup progress bar
         context.window.cursor_set("DEFAULT")
-        
-        ## Broken
-        # self.report({"INFO"}, f"Loading {self.shape_count} Objects")
-        # for area in context.screen.areas:
-        #     area.tag_redraw()
-
         wm = context.window_manager
-        wm.progress_begin(0, self.shape_count)
+        wm.progress_begin(0, len(shapes))
 
-        multithread_IO = True
-        if multithread_IO :
-            # Start I/O workers
-            for index, (shape, col) in enumerate(shapes):
-                iscurve = index >= self.curve_start_at
-                self.io_pool.submit(
-                    self.process_object_io,
-                    shape,
-                    col,
-                    self.trims_on,
-                    self.scale,
-                    self.resolution,
-                    iscurve,
-                )
+        # Start processing
+        if not self.pipeline.start(shapes):
+            self.report({"ERROR"}, "Failed to start pipeline")
+            return {"CANCELLED"}
 
-                # Start object creation thread
-                threading.Thread(target=self._object_creator).start()
-        else :
-            for index, (shape, col) in enumerate(shapes):
-                iscurve = index >= self.curve_start_at                
-                self.process_object_io(
-                    shape, col, self.trims_on, self.scale, self.resolution, iscurve
-                )
-
-        # Modal executed every 0.1 sec
-        self._timer = context.window_manager.event_timer_add(0.1, window=context.window)
+        # Start modal timer
+        self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
-
-        if self.faces_processed >= self.shape_count:
-            self.stop_event.set()
-
-        if event.type == "TIMER" and self._timer:
-            # Check for completion
-            if self.stop_event.is_set() and self.result_queue.empty():
-                self._cleanup(context)
-                context.window_manager.progress_end()
-                self.report({"INFO"}, f"{self.shape_count} Objects Imported")
-                print("SUCCESS !")
-                return {"FINISHED"}
-
-        if event.type == "ESC":
-            self.stop_event.set()
-            self._cleanup(context)
-            context.window_manager.progress_end()
-            self.report({"INFO"}, "Import Cancelled")
-            return {"CANCELLED"}
+        if event.type == "TIMER" and self._timer and self.pipeline:
+            status = self.pipeline.poll()
+            
+            if status != PipelineStatus.RUNNING:
+                return self._finish_modal(context, status)
+                
+        elif event.type == "ESC":
+            if self.pipeline:
+                self.pipeline.cancel()
+            return self._finish_modal(context, PipelineStatus.CANCELLED)
 
         return {"PASS_THROUGH"}
-
-    def process_object_io(self, shape, col, trims_on, scale, resolution, iscurve):
-        """Pure I/O - runs in worker threads"""
-        # Data gathering
-        processed_data = process_object_data_of_shape(
-            shape, self.doc, col, trims_on, scale, resolution, iscurve
+    
+    def _process_cad_io(self, shape_data):
+        """I/O stage: Parse CAD data"""
+        shape, col, iscurve = shape_data
+        
+        return process_object_data_of_shape(
+            shape, self.doc, col, self.trims_on, 
+            self.scale, self.resolution, iscurve
         )
-
-        # Pass to main thread via queue
-        self.result_queue.put((processed_data))
-
-    def _object_creator(self):
-        """Dedicated thread for Blender object creation"""
-        while not self.stop_event.is_set():
-            try:
-                # Check queue
-                data = self.result_queue.get(timeout=0.1)
-
-                # Create timer with unique ID
-                timer_id = str(hash(str(data)))
-                callback = functools.partial(
-                    self._safe_create_object, object_data=data, timer_id=timer_id
-                )
-
-                bpy.app.timers.register(
-                    callback, first_interval=0.0001, persistent=True
-                )
-                self.active_timers.add(timer_id)
-
-            except Empty:
-                continue
-
-    def _safe_create_object(self, object_data, timer_id):
-        """Main-thread object creation"""
-        try:
-            create_blender_object(object_data)
-            self.faces_processed += 1
-            # Update progress
-            self.context.window_manager.progress_update(self.faces_processed)
-
-            # Force UI update
-            for window in bpy.context.window_manager.windows:
-                window.screen.areas[0].tag_redraw()
-        finally:
-            self.active_timers.discard(timer_id)
-        return None  # Single-shot timer
-
-    def _cleanup(self, context):
-        """Resource cleanup"""
+    
+    def _process_cad_compute(self, io_data):
+        """Compute stage: Heavy mesh processing"""
+        # Add any CPU-intensive mesh operations here
+        return io_data
+    
+    def _create_blender_object(self, object_data):
+        """Result handler: Create Blender objects (main thread)"""
+        create_blender_object(object_data)
+        
+        # Force UI update
+        for area in self.context.screen.areas:
+            if area.type in {'VIEW_3D', 'OUTLINER'}:
+                area.tag_redraw()
+    
+    def _on_progress(self, processed, total):
+        """Progress callback"""
+        if self.context:
+            self.context.window_manager.progress_update(processed)
+    
+    def _on_completion(self, status, processed, error_msg):
+        """Completion callback"""
+        if status == PipelineStatus.COMPLETED:
+            self.report({"INFO"}, f"{processed} Objects Imported")
+        elif status == PipelineStatus.CANCELLED:
+            self.report({"INFO"}, "Import Cancelled")
+        elif status == PipelineStatus.ERROR:
+            self.report({"ERROR"}, f"Import Error: {error_msg}")
+    
+    def _finish_modal(self, context, status):
+        """Clean up and finish modal operation"""
+        # Cleanup
         if self._timer:
             context.window_manager.event_timer_remove(self._timer)
-        self.io_pool.shutdown(wait=False)
+            self._timer = None
+            
+        context.window_manager.progress_end()
+        
+        if status == PipelineStatus.COMPLETED:
+            return {"FINISHED"}
+        else:
+            return {"CANCELLED"}
 
-        # Clear any remaining timers
-        for timer_id in list(self.active_timers):
-            # Timers will self-clean when they run
-            pass
+
 
 
 class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):

@@ -123,7 +123,9 @@ class SP_Curve_no_edge_import:
             case GeomAbs.GeomAbs_Ellipse:
                 self.ellipse(adaptor_curve)
             case _:
-                print(f"Unsupported curve type: {curve_type}. Expect inaccurate results")
+                print(
+                    f"Unsupported curve type: {curve_type}. Expect inaccurate results"
+                )
                 start_point = adaptor_curve.Value(adaptor_curve.FirstParameter())
                 end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
                 gp_pnt_poles = [start_point, end_point]
@@ -454,25 +456,29 @@ class SP_Contour_import:
 
         return is_trivial_trim
 
-    def rebound(self, uv_bounds):
-        min_u, max_u, min_v, max_v = (
-            uv_bounds[0] if uv_bounds[0] != None else 0,
-            uv_bounds[1] if uv_bounds[1] != None else 0,
-            uv_bounds[2] if uv_bounds[2] != None else 0,
-            uv_bounds[3] if uv_bounds[3] != None else 0,
+    def rebound(self, curr_bounds, new_bounds):
+        curr_min_u, curr_max_u, curr_min_v, curr_max_v = (
+            curr_bounds[0] if curr_bounds[0] != None else 0.0,
+            curr_bounds[1] if curr_bounds[1] != None else 0.0,
+            curr_bounds[2] if curr_bounds[2] != None else 0.0,
+            curr_bounds[3] if curr_bounds[3] != None else 0.0,
         )
-        range_u, range_v = max_u - min_u, max_v - min_v
+
+        new_min_u, new_max_u, new_min_v, new_max_v = (
+            new_bounds[0] if new_bounds[0] != None else 0.0,
+            new_bounds[1] if new_bounds[1] != None else 0.0,
+            new_bounds[2] if new_bounds[2] != None else 0.0,
+            new_bounds[3] if new_bounds[3] != None else 0.0,
+        )
+        
+        curr_range_u, curr_range_v = curr_max_u - curr_min_u, curr_max_v - curr_min_v
+        new_range_u, new_range_v = new_max_u - new_min_u, new_max_v - new_min_v
 
         for i, v in enumerate(self.verts):
-            if range_u != 0.0:
-                x = max(0, min(1, (v[0] - min_u) / range_u))
-            else:
-                x = v[0]
-            if range_v != 0.0:
-                y = max(0, min(1, (v[1] - min_v) / range_v))
-            else:
-                y = v[1]
-            self.verts[i] = Vector((x, y, 0))
+            if curr_range_u != 0.0:
+                v.x = ((v.x - curr_min_u) / curr_range_u) * new_range_u + new_min_u
+            if curr_range_v != 0.0:
+                v.y = ((v.y - curr_min_v) / curr_range_v) * new_range_v + new_min_v
 
     def switch_u_and_v(self):
         self.verts = [Vector((v.y, v.x, v.z)) for v in self.verts]
@@ -490,7 +496,8 @@ def generic_import_surface(
     attrs={},
     ob_name="STEP Patch",
     scale=0.001,
-    uv_bounds = None,
+    curr_uv_bounds=None,
+    new_uv_bounds=(0.0, 1.0, 0.0, 1.0),
     weight=None,
 ):
     if weight == None:
@@ -500,8 +507,8 @@ def generic_import_surface(
 
     if trims_enabled:
         contour = SP_Contour_import(face)
-        if uv_bounds != None:
-            contour.rebound(uv_bounds)
+        if curr_uv_bounds != None:
+            contour.rebound(curr_uv_bounds, new_uv_bounds)
 
         contour.switch_u_and_v()
         istrivial = contour.is_trivial()
@@ -791,7 +798,7 @@ def build_SP_bezier_patch(
         [],
         CPfaces,
         modifier,
-        uv_bounds=uv_bounds,
+        curr_uv_bounds=uv_bounds,
         weight=weight.flatten().tolist(),
     )
     return object_data
@@ -892,7 +899,7 @@ def build_SP_NURBS_patch(
         CPfaces,
         modifier,
         attrs,
-        uv_bounds=uv_bounds,
+        curr_uv_bounds=uv_bounds,
         weight=weight.flatten().tolist(),
     )
     return object_data
@@ -1065,14 +1072,16 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
     adapt_surf = BRepAdaptor_Surface(topods_face).Surface()
     adapt_curve = adapt_surf.BasisCurve()
     geom_surf = adapt_surf.Surface()
-    
+
     curve_no_edge = SP_Curve_no_edge_import(adapt_curve, scale)
 
     gpdir = geom_surf.Direction()
     gploc = geom_surf.Location()
     CPvert = curve_no_edge.verts
     p1 = Vector((gploc.X(), gploc.Y(), gploc.Z())) * scale
-    p2 = p1 + Vector((gpdir.X(), gpdir.Y(), gpdir.Z())) * scale #ideally max of CPvert projected instead
+    p2 = (
+        p1 + Vector((gpdir.X(), gpdir.Y(), gpdir.Z())) * scale
+    )  # ideally max of CPvert projected instead
     CPvert = [p1, p2] + CPvert
 
     CPedges = [(0, 1)] + [(i, i + 1) for i in range(2, len(CPvert) - 1)]
@@ -1100,7 +1109,7 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
         case GeomAbs.GeomAbs_Circle:
             min_u, max_u = -math.pi(), math.pi()
         case GeomAbs.GeomAbs_Ellipse:
-            min_u, max_u = -math.pi(), math.pi()    
+            min_u, max_u = -math.pi(), math.pi()
 
     object_data = generic_import_surface(
         topods_face,
@@ -1112,7 +1121,13 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
         [],
         modifier,
         ob_name="STEP Revolution",
-        uv_bounds = (None, None, min_u, max_u),
+        curr_uv_bounds=(
+            None,
+            None,
+            adapt_curve.FirstParameter(),
+            adapt_curve.LastParameter(),
+        ),
+        new_uv_bounds=(None, None, min_u, max_u),
     )
 
     # Ideally should be an input of generic_import_surface which merges it
@@ -1324,7 +1339,7 @@ def create_blender_object(object_data):
     return True
 
 
-def prepare_import(filepath):
+def read(filepath):
     # Create document
     doc = None
 
