@@ -149,50 +149,42 @@ def sp_type_of_object(o: bpy.types.Object, context: bpy.types.Context) -> SP_obj
     return None
 
 
-def get_attribute_by_name(ob_deps_graph, name, type="vec3", len_attr=None):
-    ge = ob_deps_graph.data
+def read_attribute_by_name(object, name, len_attr=None):
+    att = object.data.attributes[name]
+    type = att.data_type
     match type:
-        case "first_bool":
-            attribute = bool(ge.attributes[name].data[0].value)
-
-        case "first_int":
-            attribute = int(ge.attributes[name].data[0].value)
-
-        case "second_int":
-            attribute = int(ge.attributes[name].data[1].value)
-
-        case "bool":
-            len_raw = len(ge.attributes[name].data)
+        case "BOOLEAN":
+            len_raw = len(att.data)
             if len_attr == None:
                 len_attr = len_raw
             attribute = np.zeros(len_raw)
-            ge.attributes[name].data.foreach_get("value", attribute)
+            att.data.foreach_get("value", attribute)
             attribute = attribute[0:len_attr]
             attribute = [bool(a) for a in attribute]
 
-        case "int":
-            len_raw = len(ge.attributes[name].data)
+        case "INT":
+            len_raw = len(att.data)
             if len_attr == None:
                 len_attr = len_raw
             attribute = np.zeros(len_raw)
-            ge.attributes[name].data.foreach_get("value", attribute)
+            att.data.foreach_get("value", attribute)
             attribute = attribute[0:len_attr]
             attribute = [int(a) for a in attribute]
 
-        case "float":
-            len_raw = len(ge.attributes[name].data)
+        case "FLOAT":
+            len_raw = len(att.data)
             if len_attr == None:
                 len_attr = len_raw
             attribute = np.zeros(len_raw)
-            ge.attributes[name].data.foreach_get("value", attribute)
+            att.data.foreach_get("value", attribute)
             attribute = attribute[0:len_attr]
 
-        case "vec3":
-            len_raw = len(ge.attributes[name].data)
+        case "FLOAT_VECTOR":
+            len_raw = len(att.data)
             if len_attr == None:
                 len_attr = len_raw
             attribute = np.empty(3 * len_raw)
-            ge.attributes[name].data.foreach_get("vector", attribute)
+            att.data.foreach_get("vector", attribute)
             attribute = attribute.reshape((-1, 3))[0:len_attr]
 
     return attribute
@@ -358,32 +350,90 @@ def add_bool_attribute(object: bpy.types.Object, name, values, fallback_value=Fa
     return True
 
 
-def set_segment_type(context, type):
+def set_attribute(context, att_name, value, fallback_type):
     objs = context.objects_in_mode
     for o in objs:
         # Switch to object mode
         bpy.ops.object.mode_set(mode="OBJECT")
 
-        if "Type" not in o.data.attributes:
-            o.data.attributes.new(name="Type", type="INT", domain="POINT")
+        if att_name not in o.data.attributes:
+            o.data.attributes.new(name=att_name, type=fallback_type, domain="POINT")
             o.data.update()
 
-        # Get existing values
-        att = o.data.attributes["Type"]
-        values = [0] * len(o.data.vertices)
+        # Get attribute
+        att = o.data.attributes[att_name]
+
+        # Init values (To complete for vectors if needed)
+        if att.data_type == "BOOLEAN":
+            values = [False] * len(o.data.vertices)
+        elif att.data_type == "FLOAT":
+            values = [0.0] * len(o.data.vertices)
+        elif att.data_type == "INT":
+            values = [0] * len(o.data.vertices)
+
+        # Fill with existing values
         att.data.foreach_get("value", values)
 
         # Update values
         for i, v in enumerate(o.data.vertices):
             if v.select:
-                values[i] = type
+                values[i] = value
                 # To improve one day to change all verts between endpoints
 
         # Set new
         att.data.foreach_set("value", values)
 
         bpy.ops.object.mode_set(mode="EDIT")
+    return True
 
+
+def set_segment_type(context, type):
+    return set_attribute(context, "Type", type, "INT")
+
+
+def toggle_attribute(context, att_name):
+    objs = context.objects_in_mode
+    for o in objs:
+        # Switch to object mode
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        if att_name not in o.data.attributes:
+            o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
+            o.data.update()
+
+        # Get attribute
+        att = o.data.attributes[att_name]
+
+        # Init values (To complete for vectors if needed)
+        data_type = att.data_type
+        if data_type == "BOOLEAN":
+            values = [False] * len(o.data.vertices)
+        elif data_type == "FLOAT":
+            values = [0.0] * len(o.data.vertices)
+        elif data_type == "INT":
+            values = [0] * len(o.data.vertices)
+
+        # Fill with existing values
+        att.data.foreach_get("value", values)
+
+        # Update values
+        value = None
+        for i, v in enumerate(o.data.vertices):
+            if v.select:
+                if value == None:
+                    if data_type == "BOOLEAN":
+                        value = not values[i]
+                    elif data_type == "FLOAT":
+                        value = 1.0 if values[i] <= 0.6 else 0.0
+                    elif data_type == "INT":
+                        value = 1 if values[i] <= 0.6 else 0
+                
+                values[i] = value
+
+        # Set new
+        att.data.foreach_set("value", values)
+
+        bpy.ops.object.mode_set(mode="EDIT")
     return True
 
 

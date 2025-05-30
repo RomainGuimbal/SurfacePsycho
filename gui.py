@@ -399,9 +399,7 @@ class SP_PT_EditPanel(bpy.types.Panel):
             row = self.layout.row()
             row.label(text="Endpoints")
             sub = row.row(align=True)
-            sub.operator("sp.assign_as_endpoint", text="Assign")
-            sub.operator("sp.remove_from_endpoints", text="Remove")
-            sub = row.row()
+            sub.operator("sp.toggle_endpoints", text="Toggle")
             sub.operator("sp.select_endpoints", text="Select")
 
             # Type

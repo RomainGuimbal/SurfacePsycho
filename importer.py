@@ -1028,8 +1028,7 @@ def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resol
 
     gpdir = geom_surf.Direction()
     CPvert = curve_no_edge.verts
-    CPvert.insert(0, CPvert[0] + Vector((gpdir.X(), gpdir.Y(), gpdir.Z())) * scale)
-
+    CPvert.insert(0, CPvert[0] + (Vector((gpdir.X(), gpdir.Y(), gpdir.Z())) * scale))
     CPedges = [(i, i + 1) for i in range(len(CPvert) - 1)]
 
     modifier = (
@@ -1083,7 +1082,6 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
         p1 + Vector((gpdir.X(), gpdir.Y(), gpdir.Z())) * scale
     )  # ideally max of CPvert projected instead
     CPvert = [p1, p2] + CPvert
-
     CPedges = [(0, 1)] + [(i, i + 1) for i in range(2, len(CPvert) - 1)]
 
     modifier = (
@@ -1098,6 +1096,7 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
         True,
     )
 
+    # needed rebound
     curve_type = get_geom_adapt_curve_type(adapt_curve)
     match curve_type:
         case GeomAbs.GeomAbs_Line:

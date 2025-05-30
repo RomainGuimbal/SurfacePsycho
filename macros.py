@@ -413,7 +413,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
             ob = o.evaluated_get(context.evaluated_depsgraph_get())
             match type:
                 case "bicubic_surf":
-                    cp = get_attribute_by_name(ob, "CP_bezier_surf", "vec3", 16)
+                    cp = read_attribute_by_name(ob, "CP_bezier_surf", 16)
                     bpy.ops.surface.primitive_nurbs_surface_surface_add(
                         enter_editmode=True,
                         align="WORLD",
@@ -432,10 +432,10 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                         p.co = (cp[j][0], cp[j][1], cp[j][2], 1)
 
                 case "bezier_surf":
-                    u_count = get_attribute_by_name(ob, "CP_count", "first_int")
-                    v_count = get_attribute_by_name(ob, "CP_count", "second_int")
-                    cp = get_attribute_by_name(
-                        ob, "CP_any_order_surf", "vec3", u_count * v_count
+                    u_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
+                    v_count = int(ob.data.ge.attributes["CP_count"].data[1].value)
+                    cp = read_attribute_by_name(
+                        ob, "CP_any_order_surf", u_count * v_count
                     )
                     if i == -1:
                         bpy.ops.surface.primitive_nurbs_surface_surface_add(
@@ -472,9 +472,9 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                     splines[i].degree_v = min(u_count, 6)
 
                 case "curve_any":
-                    cp_count = get_attribute_by_name(ob, "CP_count", "first_int")
-                    cp = get_attribute_by_name(
-                        ob, "CP_any_order_curve", "vec3", cp_count
+                    cp_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
+                    cp = read_attribute_by_name(
+                        ob, "CP_any_order_curve", cp_count
                     )
                     if i == -1:
                         bpy.ops.surface.primitive_nurbs_surface_surface_add(
@@ -548,52 +548,6 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_assign_as_endpoint(bpy.types.Operator):
-    bl_idname = "sp.assign_as_endpoint"
-    bl_label = "Assign as Endpoint"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        objs = context.objects_in_mode
-
-        for o in objs:
-            # Switch to object mode to modify vertex groups
-            bpy.ops.object.mode_set(mode="OBJECT")
-            # Ensure "Endpoints" vertex group exists
-            if "Endpoints" not in o.vertex_groups:
-                o.vertex_groups.new(name="Endpoints")
-
-            vg = o.vertex_groups["Endpoints"]
-
-            # Add selected vertices to the vertex group
-            for v in o.data.vertices:
-                if v.select:
-                    vg.add([v.index], 1.0, "ADD")
-            bpy.ops.object.mode_set(mode="EDIT")
-        return {"FINISHED"}
-
-
-class SP_OT_remove_from_endpoints(bpy.types.Operator):
-    bl_idname = "sp.remove_from_endpoints"
-    bl_label = "Remove from Endpoints"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        objs = context.objects_in_mode
-        for o in objs:
-            bpy.ops.object.mode_set(mode="OBJECT")
-            # Ensure "Endpoints" vertex group exists
-            if "Endpoints" in o.vertex_groups:
-                vg = o.vertex_groups["Endpoints"]
-
-                # Remove selected vertices to the vertex group
-                for v in o.data.vertices:
-                    if v.select:
-                        vg.remove([v.index])
-            bpy.ops.object.mode_set(mode="EDIT")
-        return {"FINISHED"}
-
-
 class SP_OT_toggle_endpoints(bpy.types.Operator):
     bl_idname = "sp.toggle_endpoints"
     bl_label = "Toggle Endpoints"
@@ -602,21 +556,27 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
     def execute(self, context):
         objs = context.objects_in_mode
         for o in objs:
-            bpy.ops.object.mode_set(mode="OBJECT")
-            # Ensure "Endpoints" vertex group exists
-            if "Endpoints" in o.vertex_groups:
+            # Attribute
+            if "Endpoints" in o.data.attributes:
+                toggle_attribute(context, "Endpoints")
+
+            # Vertex group
+            elif "Endpoints" in o.vertex_groups:
+                bpy.ops.object.mode_set(mode="OBJECT")
                 vg = o.vertex_groups["Endpoints"]
 
                 # Toggle selected vertices to the vertex group
                 for v in o.data.vertices:
                     if v.select:
                         try:
+                            # keep old behaviour because timesaver
                             if vg.weight(v.index) > 0.6:
                                 vg.remove([v.index])
                             else:
                                 vg.add([v.index], 1.0, "REPLACE")
                         except RuntimeError:
                             vg.add([v.index], 1.0, "REPLACE")
+
             bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 
@@ -627,40 +587,36 @@ class SP_OT_select_endpoints(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = context.active_object
+        objs = context.objects_in_mode
+        for o in objs:
+            bpy.ops.object.mode_set(mode="OBJECT")
 
-        if obj.type != "MESH":
-            self.report({"ERROR"}, "Active object must be a mesh")
-            return {"CANCELLED"}
+            # Attribute
+            if "Endpoints" in o.data.attributes:
+                att_type = o.data.attributes["Endpoints"].data_type
+                if att_type == "FLOAT":
+                    weights = read_attribute_by_name(o, "Endpoints")
+                    for v in o.data.vertices:
+                        weight = weights[v.index]
+                        v.select = weight > 0.6
+                elif att_type == "BOOLEAN":
+                    weights = read_attribute_by_name(o, "Endpoints")
+                    for v in o.data.vertices:
+                        v.select = weights[v.index]
 
-        # Ensure we're in edit mode, Switch to object mode to access mesh data
-        bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.object.mode_set(mode="OBJECT")
+            # Vertex group
+            elif "Endpoints" in o.vertex_groups:
+                vertex_group = o.vertex_groups["Endpoints"]
+                for v in o.data.vertices:
+                    try:
+                        weight = vertex_group.weight(v.index)
+                        v.select = weight > 0.6
+                    except RuntimeError:
+                        # Vertex is not in the group, skip it
+                        pass
 
-        vertex_group = obj.vertex_groups.get("Endpoints")
-        if vertex_group != None:
-            for v in obj.data.vertices:
-                try:
-                    weight = vertex_group.weight(v.index)
-                    if weight > 0.6:
-                        v.select = True
-                except RuntimeError:
-                    # Vertex is not in the group, skip it
-                    pass
-        else:
-            try:
-                weights = get_attribute_by_name(obj, "Endpoints", "float")
-                for v in obj.data.vertices:
-                    weight = weights[v.index]
-                    if weight > 0.6:
-                        v.select = True
-            except KeyError:
-                self.report({"INFO"}, "No Endpoints")
-                bpy.ops.object.mode_set(mode="EDIT")
-                return {"CANCELLED"}
-
-        # Switch back to edit mode to show the selection
-        bpy.ops.object.mode_set(mode="EDIT")
+            # Switch back to edit mode to show the selection
+            bpy.ops.object.mode_set(mode="EDIT")
 
         return {"FINISHED"}
 
@@ -1048,13 +1004,11 @@ classes = [
     SP_OT_add_trim_contour,
     SP_OT_set_segment_type,
     SP_OT_assign_as_ellipse,
-    SP_OT_assign_as_endpoint,
     SP_OT_toggle_endpoints,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_from_circles,
     SP_OT_remove_from_ellipses,
-    SP_OT_remove_from_endpoints,
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,
     SP_OT_toggle_control_geom,

@@ -245,7 +245,7 @@ class SP_Edge_export:
         #         knot_length = self.p_count + degree
 
         #     # knot
-        #     knot = float_list_to_tcolstd(get_attribute_by_name(ob, 'Knot', 'float', knot_length))
+        #     knot = float_list_to_tcolstd(read_attribute_by_name(ob, 'Knot', knot_length))
 
         #     # Multiplicities
         #     mult = TColStd_Array1OfInteger(1, knot_length)
@@ -318,20 +318,20 @@ def get_patch_knot_and_mult(
 ):
     try:
         try:
-            umult_att = get_attribute_by_name(ob, "Multiplicity U", "int")
+            umult_att = read_attribute_by_name(ob, "Multiplicity U")
             u_length = sum(np.asarray(umult_att) > 0)
         except KeyError:
-            umult_att = get_attribute_by_name(ob, "Multiplicity U", "float")
+            umult_att = read_attribute_by_name(ob, "Multiplicity U")
             u_length = int(sum(np.asarray(umult_att) > 0))
-        uknots_att = get_attribute_by_name(ob, "Knot U", "float", u_length)
+        uknots_att = read_attribute_by_name(ob, "Knot U", u_length)
 
         try:
-            vmult_att = get_attribute_by_name(ob, "Multiplicity V", "int")
+            vmult_att = read_attribute_by_name(ob, "Multiplicity V")
             v_length = sum(np.asarray(vmult_att) > 0)
         except Exception:
-            vmult_att = get_attribute_by_name(ob, "Multiplicity V", "float")
+            vmult_att = read_attribute_by_name(ob, "Multiplicity V")
             v_length = int(sum(np.asarray(vmult_att) > 0))
-        vknots_att = get_attribute_by_name(ob, "Knot V", "float", v_length)
+        vknots_att = read_attribute_by_name(ob, "Knot V", v_length)
 
     except KeyError:  # No custom knot
         uknot, umult = auto_knot_and_mult(u_count, degree_u, isclamped_u, isperiodic_u)
@@ -511,11 +511,9 @@ class SP_Contour_export:
     ):
         # Check if trimmed
         try:
-            self.segs_p_counts = get_attribute_by_name(ob, p_count_attr_name, "int")
-            self.wire_index = get_attribute_by_name(ob, "Wire", "int")
-            self.seg_count_per_wire = get_attribute_by_name(
-                ob, "seg_count_per_wire", "int"
-            )
+            self.segs_p_counts = read_attribute_by_name(ob, p_count_attr_name)
+            self.wire_index = read_attribute_by_name(ob, "Wire")
+            self.seg_count_per_wire = read_attribute_by_name(ob, "seg_count_per_wire")
             self.has_wire = True
         except Exception:  # No trim
             self.has_wire = False
@@ -553,7 +551,7 @@ class SP_Contour_export:
 
             # Get CP aligned attrs
             ## CP
-            points = get_attribute_by_name(ob, cp_attr_name, "vec3", self.total_p_count)
+            points = read_attribute_by_name(ob, cp_attr_name, self.total_p_count)
             points *= scale
             if is2D:
                 points = [Vector((p[1], p[0], 0.0)) for p in points]
@@ -561,9 +559,7 @@ class SP_Contour_export:
 
             ## Weight
             try:
-                weight_attr = get_attribute_by_name(
-                    ob, "Weight", "float", self.total_p_count
-                )
+                weight_attr = read_attribute_by_name(ob, "Weight", self.total_p_count)
             except KeyError:
                 weight_attr = [1.0] * self.total_p_count
             weight_per_wire = self.split_cp_attr_per_wire(
@@ -573,9 +569,7 @@ class SP_Contour_export:
             # Get seg aligned attrs
             ## Circle
             try:
-                circle_att = get_attribute_by_name(
-                    ob, "Circle", "float", self.segment_count
-                )
+                circle_att = read_attribute_by_name(ob, "Circle", self.segment_count)
             except KeyError:
                 circle_att = [0.0] * self.segment_count
             circle_att_per_wire = self.split_seg_attr_per_wire(circle_att)
@@ -584,16 +578,16 @@ class SP_Contour_export:
             try:
                 try:
                     try:
-                        segs_degrees = get_attribute_by_name(
-                            ob, "Contour Degree", "int", self.segment_count
+                        segs_degrees = read_attribute_by_name(
+                            ob, "Contour Degree", self.segment_count
                         )
                     except KeyError:
-                        segs_degrees = get_attribute_by_name(
-                            ob, "Degree", "int", self.segment_count
+                        segs_degrees = read_attribute_by_name(
+                            ob, "Degree", self.segment_count
                         )
                 except KeyError:
-                    segs_degrees = get_attribute_by_name(
-                        ob, "Contour Order", "int", self.segment_count
+                    segs_degrees = read_attribute_by_name(
+                        ob, "Contour Order", self.segment_count
                     )
             except KeyError:
                 segs_degrees = [c - 1 for c in self.segs_p_counts]
@@ -601,8 +595,8 @@ class SP_Contour_export:
 
             ## IsClamped
             try:
-                isclamped = get_attribute_by_name(
-                    ob, isclamped_attr_name, "bool", self.segment_count
+                isclamped = read_attribute_by_name(
+                    ob, isclamped_attr_name, self.segment_count
                 )
             except KeyError:
                 isclamped = [True] * self.segment_count
@@ -610,8 +604,8 @@ class SP_Contour_export:
 
             ## IsPeriodic
             try:
-                isperiodic = get_attribute_by_name(
-                    ob, isperiodic_attr_name, "bool", self.segment_count
+                isperiodic = read_attribute_by_name(
+                    ob, isperiodic_attr_name, self.segment_count
                 )
             except KeyError:
                 isperiodic = [False] * self.segment_count
@@ -705,9 +699,9 @@ def geom_to_topods_face(geom_surf=None, outer_wire=None, inner_wires=[]):
 
 def bezier_face_to_topods(o, context, scale=1000):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    u_count = get_attribute_by_name(ob, "CP_count", "first_int")
-    v_count = get_attribute_by_name(ob, "CP_count", "second_int")
-    points = get_attribute_by_name(ob, "CP_any_order_surf", "vec3", u_count * v_count)
+    u_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
+    v_count = int(ob.data.ge.attributes["CP_count"].data[1].value)
+    points = read_attribute_by_name(ob, "CP_any_order_surf", u_count * v_count)
     points *= scale
 
     controlPoints = TColgp_Array2OfPnt(1, u_count, 1, v_count)
@@ -750,14 +744,14 @@ def bezier_face_to_topods(o, context, scale=1000):
 def NURBS_face_to_topods(o, context, scale=1000):
     # Get attributes
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    u_count = get_attribute_by_name(ob, "CP_count", "first_int")
-    v_count = get_attribute_by_name(ob, "CP_count", "second_int")
-    points = get_attribute_by_name(ob, "CP_NURBS_surf", "vec3", u_count * v_count)
+    u_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
+    v_count = int(ob.data.ge.attributes["CP_count"].data[1].value)
+    points = read_attribute_by_name(ob, "CP_NURBS_surf", u_count * v_count)
     points *= scale
-    degree_u, degree_v = get_attribute_by_name(ob, "Degrees", "int", 2)
+    degree_u, degree_v = read_attribute_by_name(ob, "Degrees", "int", 2)
     try:
-        isclamped_u, isclamped_v = get_attribute_by_name(ob, "IsClamped", "bool", 2)
-        isperiodic_u, isperiodic_v = get_attribute_by_name(ob, "IsPeriodic", "bool", 2)
+        isclamped_u, isclamped_v = read_attribute_by_name(ob, "IsClamped", 2)
+        isperiodic_u, isperiodic_v = read_attribute_by_name(ob, "IsPeriodic", 2)
     except KeyError:
         isclamped_u, isclamped_v, isperiodic_u, isperiodic_v = True, True, False, False
 
@@ -825,8 +819,8 @@ def NURBS_face_to_topods(o, context, scale=1000):
 def cone_face_to_topods(o, context, scale=1000):
     # Get attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    origin, dir1, dir2 = get_attribute_by_name(ob, "axis3", "vec3", 3)
-    semi_angle, radius = get_attribute_by_name(ob, "angle_radius", "float", 2)
+    origin, dir1, dir2 = read_attribute_by_name(ob, "axis3", 3)
+    semi_angle, radius = read_attribute_by_name(ob, "angle_radius", 2)
     # radius *= scale
 
     # Create geom
@@ -868,7 +862,7 @@ def cone_face_to_topods(o, context, scale=1000):
 def curve_to_topods(o, context, scale=1000):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    segs_p_counts = get_attribute_by_name(ob, "CP_count", "int")
+    segs_p_counts = read_attribute_by_name(ob, "CP_count")
 
     # get total_p_count and segment_count
     total_p_count, segment_count = 1, 0
@@ -882,26 +876,26 @@ def curve_to_topods(o, context, scale=1000):
     segs_p_counts = segs_p_counts[:segment_count]
 
     # 1 point less if closed
-    is_closed = get_attribute_by_name(ob, "IsPeriodic", "first_bool")
+    is_closed = bool(ob.data.ge.attributes["IsPeriodic"].data[0].value)
     total_p_count -= is_closed and segment_count > 1
 
     # is clamped
-    is_clamped = get_attribute_by_name(ob, "IsClamped", "first_bool")
+    is_clamped = bool(ob.data.ge.attributes["IsClamped"].data[0].value)
 
     # Degree
     try:
-        segs_degrees = get_attribute_by_name(ob, "Degree", "int", segment_count)
+        segs_degrees = read_attribute_by_name(ob, "Degree", segment_count)
     except Exception:
         segs_degrees = None
 
     # Circles
     try:
-        circle_att = get_attribute_by_name(ob, "Circle", "float", segment_count)
+        circle_att = read_attribute_by_name(ob, "Circle", segment_count)
     except KeyError:
         circle_att = [0.0] * segment_count
 
     # Get CP position attr
-    points = get_attribute_by_name(ob, "CP_curve", "vec3", total_p_count)
+    points = read_attribute_by_name(ob, "CP_curve", total_p_count)
     points *= scale
 
     wire = SP_Wire_export(
@@ -927,8 +921,8 @@ def flat_patch_to_topods(o, context, scale=1000):
     # Orient and offset
     loc, rot, _ = o.matrix_world.decompose()
     try:
-        offset = get_attribute_by_name(ob, "planar_offset", "vec3", 1)[0]
-        orient = get_attribute_by_name(ob, "planar_orient", "vec3", 1)[0]
+        offset = read_attribute_by_name(ob, "planar_offset", 1)[0]
+        orient = read_attribute_by_name(ob, "planar_orient", 1)[0]
     except KeyError:
         offset = [0, 0, 0]
         orient = [0, 0, 1]
