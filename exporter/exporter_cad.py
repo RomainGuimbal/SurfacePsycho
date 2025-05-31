@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from mathutils import Vector
 from os.path import dirname, abspath, isfile
-from .utils import *
+from ..utils import *
 import copy
 from collections import Counter
 

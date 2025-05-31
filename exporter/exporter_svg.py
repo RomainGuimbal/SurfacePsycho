@@ -1,7 +1,7 @@
 import bpy
 import numpy as np
 from mathutils import Vector
-from .utils import *
+from ..utils import *
 import copy
 from typing import List, Dict
 from .exporter_cad import SP_Contour_export

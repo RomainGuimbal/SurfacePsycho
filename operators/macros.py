@@ -1,17 +1,17 @@
 import bpy
 import bmesh
-from .utils import *
+from ..utils import *
 from mathutils import Vector
 from datetime import datetime
 from os.path import dirname, abspath, join
 import platform
-from .exporter_svg import *
+from ..exporter.exporter_svg import *
 
 os = platform.system()
 
 
-from .importer import *
-from .exporter_cad import *
+from ..importer.shape_to_blender_object import *
+from ..exporter.exporter_cad import *
 
 
 class SP_OT_quick_export(bpy.types.Operator):
@@ -473,9 +473,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
 
                 case "curve_any":
                     cp_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
-                    cp = read_attribute_by_name(
-                        ob, "CP_any_order_curve", cp_count
-                    )
+                    cp = read_attribute_by_name(ob, "CP_any_order_curve", cp_count)
                     if i == -1:
                         bpy.ops.surface.primitive_nurbs_surface_surface_add(
                             enter_editmode=True,
@@ -549,6 +547,8 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
 
 
 class SP_OT_toggle_endpoints(bpy.types.Operator):
+    """Mark or unmark selected vertices as endpoint depending on the active vertex"""
+
     bl_idname = "sp.toggle_endpoints"
     bl_label = "Toggle Endpoints"
     bl_options = {"REGISTER", "UNDO"}
@@ -582,6 +582,8 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
 
 
 class SP_OT_select_endpoints(bpy.types.Operator):
+    """Select vertices marked as segment ends"""
+
     bl_idname = "sp.select_endpoints"
     bl_label = "Select Endpoints"
     bl_options = {"REGISTER", "UNDO"}
@@ -622,6 +624,8 @@ class SP_OT_select_endpoints(bpy.types.Operator):
 
 
 class SP_OT_set_segment_type(bpy.types.Operator):
+    """Mark segment type for selection"""
+
     bl_idname = "sp.set_segment_type"
     bl_label = "Set Segment Type"
     bl_options = {"REGISTER", "UNDO"}
@@ -630,27 +634,6 @@ class SP_OT_set_segment_type(bpy.types.Operator):
 
     def execute(self, context):
         set_segment_type(context, self.type)
-        return {"FINISHED"}
-
-
-class SP_OT_remove_from_circles(bpy.types.Operator):
-    bl_idname = "sp.remove_from_circles"
-    bl_label = "Remove from Circles"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        objs = context.objects_in_mode
-        for o in objs:
-            bpy.ops.object.mode_set(mode="OBJECT")
-            # Ensure "Endpoints" vertex group exists
-            if "Circle" in o.vertex_groups:
-                vg = o.vertex_groups["Circle"]
-
-                # Remove selected vertices to the vertex group
-                for v in o.data.vertices:
-                    if v.select:
-                        vg.remove([v.index])
-            bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 
 
@@ -1007,7 +990,6 @@ classes = [
     SP_OT_toggle_endpoints,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_psychopatch_to_bl_nurbs,
-    SP_OT_remove_from_circles,
     SP_OT_remove_from_ellipses,
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,

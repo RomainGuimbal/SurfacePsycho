@@ -5,11 +5,14 @@ import bpy
 import platform
 
 os = platform.system()
-from . import macros
+from .operators import macros
+
 # from .macros import SP_Props_Group
-from .exporter_cad import export_step, export_iges
-from .exporter_svg import export_svg
-from .importer_MultiStagePipeline import *
+from .exporter.exporter_cad import export_step, export_iges
+from .exporter.exporter_svg import export_svg
+from .importer.multiStagePipeline import *
+from .importer.shape_to_blender_object import *
+from .importer.reader import read_cad
 from bpy.props import (
     StringProperty,
     BoolProperty,
@@ -124,21 +127,21 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         self.context = context
-        
+
         # Show wait cursor
         context.window.cursor_set("WAIT")
 
         # Initialize your CAD import data
-        shape, self.doc, container_name = read(self.filepath)
+        shape, self.doc, container_name = read_cad(self.filepath)
         shape_hierarchy = ShapeHierarchy(shape, container_name)
-        
+
         # Collect shapes to process
         shapes = []
-        
+
         if self.faces_on:
             import_face_nodegroups(shape_hierarchy)
             shapes.extend([(shape, col, False) for shape, col in shape_hierarchy.faces])
-            
+
         if self.curves_on:
             append_node_group("SP - Curve Meshing")
             shapes.extend([(shape, col, True) for shape, col in shape_hierarchy.edges])
@@ -151,24 +154,23 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         config = PipelineConfig(
             io_workers=min(len(shapes), (os.cpu_count()) * 5),
             compute_workers=os.cpu_count(),
-            batch_size= 100
+            batch_size=100,
         )
-        
+
         self.pipeline = MultiStagePipeline(config)
-        
+
         # Set processors
         self.pipeline.set_processors(
             io_processor=self._process_cad_io,
             compute_processor=self._process_cad_compute,
-            result_handler=self._create_blender_object
+            result_handler=self._create_blender_object,
         )
-        
+
         # Set callbacks
         self.pipeline.set_callbacks(
-            progress_callback=self._on_progress,
-            completion_callback=self._on_completion
+            progress_callback=self._on_progress, completion_callback=self._on_completion
         )
-        
+
         # Setup progress bar
         context.window.cursor_set("DEFAULT")
         wm = context.window_manager
@@ -187,45 +189,44 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     def modal(self, context, event):
         if event.type == "TIMER" and self._timer and self.pipeline:
             status = self.pipeline.poll()
-            
+
             if status != PipelineStatus.RUNNING:
                 return self._finish_modal(context, status)
-                
+
         elif event.type == "ESC":
             if self.pipeline:
                 self.pipeline.cancel()
             return self._finish_modal(context, PipelineStatus.CANCELLED)
 
         return {"PASS_THROUGH"}
-    
+
     def _process_cad_io(self, shape_data):
         """I/O stage: Parse CAD data"""
         shape, col, iscurve = shape_data
-        
+
         return process_object_data_of_shape(
-            shape, self.doc, col, self.trims_on, 
-            self.scale, self.resolution, iscurve
+            shape, self.doc, col, self.trims_on, self.scale, self.resolution, iscurve
         )
-    
+
     def _process_cad_compute(self, io_data):
         """Compute stage: Heavy mesh processing"""
         # Add any CPU-intensive mesh operations here
         return io_data
-    
+
     def _create_blender_object(self, object_data):
         """Result handler: Create Blender objects (main thread)"""
         create_blender_object(object_data)
-        
+
         # Force UI update
         for area in self.context.screen.areas:
-            if area.type in {'VIEW_3D', 'OUTLINER'}:
+            if area.type in {"VIEW_3D", "OUTLINER"}:
                 area.tag_redraw()
-    
+
     def _on_progress(self, processed, total):
         """Progress callback"""
         if self.context:
             self.context.window_manager.progress_update(processed)
-    
+
     def _on_completion(self, status, processed, error_msg):
         """Completion callback"""
         if status == PipelineStatus.COMPLETED:
@@ -234,22 +235,20 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             self.report({"INFO"}, "Import Cancelled")
         elif status == PipelineStatus.ERROR:
             self.report({"ERROR"}, f"Import Error: {error_msg}")
-    
+
     def _finish_modal(self, context, status):
         """Clean up and finish modal operation"""
         # Cleanup
         if self._timer:
             context.window_manager.event_timer_remove(self._timer)
             self._timer = None
-            
+
         context.window_manager.progress_end()
-        
+
         if status == PipelineStatus.COMPLETED:
             return {"FINISHED"}
         else:
             return {"CANCELLED"}
-
-
 
 
 class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
