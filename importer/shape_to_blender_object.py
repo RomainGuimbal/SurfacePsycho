@@ -1329,7 +1329,7 @@ def create_blender_object(object_data):
             case _ if isinstance(att[0], float):
                 add_float_attribute(ob, name, att)
             case _:
-                print("Attribute type issue")
+                raise Exception("Attribute type issue")
 
     name, param, pin = object_data["modifier"]
     add_sp_modifier(ob, name, param, pin)

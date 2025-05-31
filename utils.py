@@ -121,6 +121,15 @@ geom_to_sp_type = {
     GeomAbs_OtherSurface: SP_obj_type.OTHER_SURFACE,
 }
 
+# to replace with official index
+class SP_segment_type(Enum):
+    BEZIER = 0
+    NURBS = 1
+    CIRCLE_ARC = 2
+    CIRCLE = 3
+    ELLIPSE_ARC = 4
+    ELLIPSE = 5
+
 
 def get_face_sp_type(TopoDSface: TopoDS_Face):
     adapt_surf = BRepAdaptor_Surface(TopoDSface)
@@ -267,7 +276,7 @@ def change_GN_modifier_settings(modifier, settings_dict):
             id = modifier.node_group.interface.items_tree[key].identifier
             modifier[id] = value
         except Exception:
-            print("Modifier settings failed to apply")
+            raise Exception("Modifier settings failed to apply")
 
 
 def add_vertex_group(object: bpy.types.Object, name, values):

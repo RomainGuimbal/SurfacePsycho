@@ -6,6 +6,7 @@ from os.path import dirname, abspath, isfile
 from ..utils import *
 import copy
 from collections import Counter
+from .ellipse import *
 
 file_dirname = dirname(__file__)
 if file_dirname not in sys.path:
@@ -23,8 +24,8 @@ from OCP.BRepBuilderAPI import (
     BRepBuilderAPI_MakeSolid,
 )
 from OCP.BRepCheck import BRepCheck_Analyzer
-from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment, GC_MakeCircle
-from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle, GCE2d_MakeCircle
+from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment, GC_MakeCircle, GC_MakeArcOfEllipse, GC_MakeEllipse
+from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle, GCE2d_MakeCircle, GCE2d_MakeArcOfEllipse, GCE2d_MakeEllipse
 from OCP.Geom import (
     Geom_BezierSurface,
     Geom_BSplineSurface,
@@ -106,29 +107,42 @@ class SP_Edge_export:
         self.single_seg = single_seg
 
         # Create GP points
-        for v in self.vec_cp:
-            if is2D:
-                self.gp_cp.append(gp_Pnt2d(v[0], v[1]))
+        if is2D:
+            self.gp_cp = [gp_Pnt2d(v[0], v[1]) for v in self.vec_cp]
+        else:
+            if self.geom_plane != None:
+                self.gp_cp = [
+                    GeomAPI_ProjectPointOnSurf(
+                        gp_Pnt(v.x, v.y, v.z), self.geom_plane
+                    ).Point(1)
+                    for v in self.vec_cp
+                ]
             else:
-                pnt = gp_Pnt(v[0], v[1], v[2])
-                if self.geom_plane != None:
-                    pnt = GeomAPI_ProjectPointOnSurf(pnt, self.geom_plane).Point(1)
-                self.gp_cp.append(pnt)
+                self.gp_cp = [gp_Pnt(v.x, v.y, v.z) for v in self.vec_cp]
 
+        # Generate shapes
         type = self.get_type()
         match type:
-            case 0:
-                self.line()
-            case 1:
-                self.bezier()
-            case 2:
-                self.bspline()
-            case 3:
+            case SP_segment_type.BEZIER:
+                if self.p_count == 2:
+                    self.line()
+                else:
+                    self.bezier()
+            case SP_segment_type.NURBS:
+                if self.p_count == 2:
+                    self.line()
+                else:
+                    self.bspline()
+            case SP_segment_type.CIRCLE_ARC:
                 self.circle_arc()
-            case 4:
+            case SP_segment_type.CIRCLE:
                 self.circle()
-            case None:
-                return None
+            case SP_segment_type.ELLIPSE_ARC:
+                self.ellipse_arc()
+            case SP_segment_type.ELLIPSE:
+                self.ellipse()
+            case _:
+                raise Exception("Invalid segment type")
 
         # make segment
         if geom_surf == None:
@@ -140,23 +154,28 @@ class SP_Edge_export:
             ).Edge()
 
     def get_type(self):
-        circle_exists = "circle" in self.seg_attrs.keys()
-        if self.p_count < 2:
-            print("Error : Invalid segment")
-        elif self.p_count == 2:
-            if circle_exists and self.seg_attrs["circle"] > 0.1 and self.single_seg:
-                return 4  # circle
-            else:
-                return 0  # line
-        elif circle_exists and self.p_count == 3 and self.seg_attrs["circle"] > 0.1:
-            return 3  # circle arc
-        elif (
-            self.seg_attrs["degree"] == None
-            or self.p_count == self.seg_attrs["degree"] + 1
-        ) and not (self.seg_attrs["isperiodic"] or not self.seg_attrs["isclamped"]):
-            return 1  # bezier
+        if "type" in self.seg_attrs.keys():
+            return SP_segment_type(self.seg_attrs["type"])
+
+        # Legacy system
         else:
-            return 2  # bspline
+            circle_exists = "circle" in self.seg_attrs.keys()
+            if self.p_count < 2:
+                raise Exception("Invalid segment")
+            elif self.p_count == 2:
+                if circle_exists and self.seg_attrs["circle"] > 0.1 and self.single_seg:
+                    return SP_segment_type.CIRCLE
+                else:
+                    return SP_segment_type.BEZIER #line
+            elif circle_exists and self.p_count == 3 and self.seg_attrs["circle"] > 0.1:
+                return SP_segment_type.CIRCLE_ARC
+            elif (
+                self.seg_attrs["degree"] == None
+                or self.p_count == self.seg_attrs["degree"] + 1
+            ) and not (self.seg_attrs["isperiodic"] or not self.seg_attrs["isclamped"]):
+                return SP_segment_type.BEZIER
+            else:
+                return SP_segment_type.NURBS
 
     def line(self):
         if self.is2D:
@@ -164,51 +183,6 @@ class SP_Edge_export:
         else:
             makesegment = GC_MakeSegment(self.gp_cp[0], self.gp_cp[1])
         self.geom = makesegment.Value()
-
-    def circle_arc(self):
-        if self.is2D:
-            makesegment = GCE2d_MakeArcOfCircle(
-                self.gp_cp[0], self.gp_cp[1], self.gp_cp[2]
-            )
-        else:
-            makesegment = GC_MakeArcOfCircle(
-                self.gp_cp[0], self.gp_cp[1], self.gp_cp[2]
-            )
-        self.geom = makesegment.Value()
-
-    def circle(self):
-        radius = (self.vec_cp[0] - self.vec_cp[1]).length
-        if self.is2D:
-            p_center = gp_Pnt2d(self.vec_cp[0][0], self.vec_cp[0][1])
-            p_other = gp_Pnt2d(self.vec_cp[1][0], self.vec_cp[1][1])
-
-            makesegment = GCE2d_MakeCircle(p_center, p_other)
-            self.geom = makesegment.Value()
-
-        else:
-            if self.geom_plane != None:
-                p_center = GeomAPI_ProjectPointOnSurf(
-                    gp_Pnt(self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2]),
-                    self.geom_plane,
-                ).Point(1)
-                normal_dir = self.geom_plane.Pln().Axis().Direction()
-            else:
-                p_center = gp_Pnt(
-                    self.vec_cp[0][0], self.vec_cp[0][1], self.vec_cp[0][2]
-                )
-                normal_dir = gp_Dir(
-                    np.cross(
-                        (
-                            self.vec_cp[1][0] - self.vec_cp[0][0],
-                            self.vec_cp[1][1] - self.vec_cp[0][1],
-                            self.vec_cp[1][2] - self.vec_cp[0][2],
-                        ),
-                        [1.0, 0.0, 0.0],
-                    )
-                )
-
-            makesegment = GC_MakeCircle(gp_Ax1(p_center, normal_dir), radius)
-            self.geom = makesegment.Value()
 
     def bezier(self):
         if self.is2D:
@@ -278,6 +252,76 @@ class SP_Edge_export:
                 degree,
                 is_unclamped_periodic,
             )
+
+    def circle_arc(self):
+        if self.is2D:
+            makesegment = GCE2d_MakeArcOfCircle(
+                self.gp_cp[0], self.gp_cp[1], self.gp_cp[2]
+            )
+        else:
+            makesegment = GC_MakeArcOfCircle(
+                self.gp_cp[0], self.gp_cp[1], self.gp_cp[2]
+            )
+        self.geom = makesegment.Value()
+
+    def circle(self):
+
+        # Circle 2D
+        if self.is2D:
+            center = self.gp_cp[1]
+            other = self.gp_cp[0]
+
+            makesegment = GCE2d_MakeCircle(center, other)
+            self.geom = makesegment.Value()
+        
+        # Circle 3D
+        else:
+            # Virtual 3rd point if 2
+            if self.p_count == 2:
+                p3_vec = gp_Vec(1.0, 0.0, 0.0)
+            else :
+                p3_vec = gp_Vec(self.gp_cp[2].X(), self.gp_cp[2].Y(), self.gp_cp[2].Z())
+
+            center = self.gp_cp[1]
+            center_vec = gp_Vec(center.X(), center.Y(), center.Z())
+            p1_vec = gp_Vec(self.gp_cp[0].X(), self.gp_cp[0].Y(), self.gp_cp[0].Z())
+            radius_vec = p1_vec - center_vec
+            other_dir_vec = p3_vec - center_vec
+
+            # Circle on plane
+            if self.geom_plane != None: 
+                normal_dir = self.geom_plane.Pln().Axis().Direction()
+            else :
+                normal_dir = gp_Dir(radius_vec.Crossed(other_dir_vec))
+
+            radius = radius_vec.Magnitude()
+            makesegment = GC_MakeCircle(gp_Ax1(center, normal_dir), radius)
+            self.geom = makesegment.Value()
+
+    def ellipse_arc(self):
+        if self.is2D:
+            p_center = self.gp_cp[2]
+            gp_ellipse = gp_Elips2d_from_3_points(p_center, self.gp_cp[1], self.gp_cp[3])
+
+            makesegment = GCE2d_MakeArcOfEllipse(gp_ellipse, self.gp_cp[0], self.gp_cp[4])
+            self.geom = makesegment.Value()
+        else :
+            p_center = self.gp_cp[2]
+            gp_ellipse = gp_Elips_from_3_points(p_center, self.gp_cp[1], self.gp_cp[3])
+
+            makesegment = GC_MakeArcOfEllipse(gp_ellipse, self.gp_cp[0], self.gp_cp[4])
+            self.geom = makesegment.Value()
+
+    def ellipse(self):
+        if self.is2D:
+            gp_elips = gp_Elips2d_from_3_points(self.gp_cp[1], self.gp_cp[0], self.gp_cp[2])
+            makesegment = GCE2d_MakeEllipse(gp_elips)
+            self.geom = makesegment.Value()
+        else :
+            gp_elips = gp_Elips_from_3_points(self.gp_cp[1], self.gp_cp[0], self.gp_cp[2])
+            makesegment = GC_MakeEllipse(gp_elips)
+            self.geom = makesegment.Value()
+
 
 
 def auto_knot_and_mult(p_count, degree, isclamped=True, is_unclamped_periodic=False):
@@ -379,6 +423,7 @@ class SP_Wire_export:
         ## Segment aligned
         self.segs_p_counts = seg_aligned_attrs["p_count"]
         self.seg_count = len(self.segs_p_counts)
+        self.segs_type_seg_aligned = seg_aligned_attrs["type"]
         self.segs_degrees = seg_aligned_attrs["degree"]
         self.isclamped_per_seg = seg_aligned_attrs["isclamped"]
         self.isperiodic_per_seg = seg_aligned_attrs["isperiodic"]
@@ -410,7 +455,7 @@ class SP_Wire_export:
         ]
         # self.p_count_accumulate = p_count_accumulate[:len(self.segs_p_counts)]
 
-    def get_attr_per_seg(self, attr) -> list[list]:
+    def split_cp_aligned_attr_per_seg(self, attr) -> list[list]:
         split_attr = []
         inf = 0
         sup = self.segs_p_counts[0]
@@ -434,8 +479,8 @@ class SP_Wire_export:
         self,
     ):  # split because not needed with svg. Can be judged unnecessary
         # Split attrs per segment
-        vec_cp_per_seg = self.get_attr_per_seg(self.CP)
-        weight = self.get_attr_per_seg(self.weight_attr)
+        vec_cp_per_seg = self.split_cp_aligned_attr_per_seg(self.CP)
+        weight = self.split_cp_aligned_attr_per_seg(self.weight_attr)
         edges_degrees = self.segs_degrees
 
         # Make Edges
@@ -447,6 +492,7 @@ class SP_Wire_export:
                     "circle": self.circle_att_seg_aligned[i],
                     "isclamped": self.isclamped_per_seg,
                     "isperiodic": self.isperiodic_per_seg,
+                    "type": self.segs_type_seg_aligned[i],
                 },
                 geom_plane=self.geom_plane,
                 geom_surf=self.geom_surf,
@@ -567,7 +613,14 @@ class SP_Contour_export:
             )
 
             # Get seg aligned attrs
-            ## Circle
+            ## Type
+            try:
+                type_att = read_attribute_by_name(ob, "Type", self.segment_count)
+            except KeyError:
+                type_att = [0] * self.segment_count
+            type_att_per_wire = self.split_seg_attr_per_wire(type_att)
+
+            ## Circle LEGACY
             try:
                 circle_att = read_attribute_by_name(ob, "Circle", self.segment_count)
             except KeyError:
@@ -622,6 +675,7 @@ class SP_Contour_export:
                         "isclamped": isclamped_per_wire[w],
                         "isperiodic": isperiodic_per_wire[w],
                         "circle": circle_att_per_wire[w],
+                        "type": type_att_per_wire[w],
                     },
                     geom_surf=geom_surf,
                     geom_plane=geom_plane,
@@ -882,13 +936,19 @@ def curve_to_topods(o, context, scale=1000):
     # is clamped
     is_clamped = bool(ob.data.ge.attributes["IsClamped"].data[0].value)
 
+    # Type
+    try:
+        type_att = read_attribute_by_name(ob, "Type", segment_count)
+    except Exception:
+        type_att = [0] * segment_count
+
     # Degree
     try:
         segs_degrees = read_attribute_by_name(ob, "Degree", segment_count)
     except Exception:
-        segs_degrees = None
+        segs_degrees = [0] * segment_count
 
-    # Circles
+    # Circles LEGACY
     try:
         circle_att = read_attribute_by_name(ob, "Circle", segment_count)
     except KeyError:
@@ -906,6 +966,7 @@ def curve_to_topods(o, context, scale=1000):
             "isperiodic": [is_closed] * segment_count,
             "isclamped": [is_clamped] * segment_count,
             "circle": circle_att,
+            "type": type_att,
         },
         is2D=False,
     )
@@ -1098,30 +1159,34 @@ class ShapeHierarchy_export:
                 not o.hide_viewport
             ):
                 sp_type = sp_type_of_object(o, self.context)
-                if sp_type == None:
-                    pass
-                elif sp_type == "instance":
-                    instances.append(o)
-                elif sp_type == "empty":
-                    empties.append(o)
+                match sp_type:
+                    case None:
+                        pass
+                    case SP_obj_type.INSTANCE:
+                        instances.append(o)
+                    case SP_obj_type.EMPTY:
+                        empties.append(o)
                     # treat empties later as they should not be sew (and are instances of the same compound)
                     # empty_to_topods(object, context, scale)
-                elif sp_type == "compound":
-                    dg = self.context.evaluated_depsgraph_get()
-                    ob = o.evaluated_get(dg)
-                    for inst in dg.object_instances:
-                        if inst.is_instance and inst.parent == ob:
-                            #         blender_object_to_topods_shapes(self.context, o, sp_type, self.scale, self.sew_tolerance)
-                            # sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
-                            # separated_shapes_list.extend(shells_to_solids(sewed))
-                            # compounds.append(o)
-                            pass
-                else:
-                    s = blender_object_to_topods_shapes(
-                        self.context, o, sp_type, self.scale, self.sew_tolerance
-                    )
-                    objs.append(o)
-                    shapes.append(s)
+                    case SP_obj_type.COMPOUND:
+                        dg = self.context.evaluated_depsgraph_get()
+                        ob = o.evaluated_get(dg)
+                        for inst in dg.object_instances:
+                            if inst.is_instance and inst.parent == ob:
+                                # TODO
+                                #         blender_object_to_topods_shapes(self.context, o, sp_type, self.scale, self.sew_tolerance)
+                                # sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
+                                # separated_shapes_list.extend(shells_to_solids(sewed))
+                                # compounds.append(o)
+                                pass
+
+                    # Standard shape
+                    case _:
+                        s = blender_object_to_topods_shapes(
+                            self.context, o, sp_type, self.scale, self.sew_tolerance
+                        )
+                        objs.append(o)
+                        shapes.append(s)
 
         return objs, shapes, empties, instances, compounds
 
@@ -1130,35 +1195,35 @@ def blender_object_to_topods_shapes(
     context, object, sp_type, scale=1000, sew_tolerance=1e-1
 ):
     match sp_type:
-        case "cone":
+        case SP_obj_type.CONE:
             shape = cone_face_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
-        case "sphere":
+        case SP_obj_type.SPHERE:
             shape = sphere_face_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
-        case "cylinder":
+        case SP_obj_type.CYLINDER:
             shape = cylinder_face_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
-        case "torus":
+        case SP_obj_type.TORUS:
             shape = torus_face_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
-        case "bezier_surf":
+        case SP_obj_type.BEZIER_SURFACE:
             shape = bezier_face_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
-        case "NURBS_surf":
+        case SP_obj_type.BSPLINE_SURFACE:
             shape = NURBS_face_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
-        case "planar":
+        case SP_obj_type.PLANE:
             shape = flat_patch_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
-        case "curve":
+        case SP_obj_type.CURVE:
             shape = curve_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
