@@ -753,8 +753,8 @@ def geom_to_topods_face(geom_surf=None, outer_wire=None, inner_wires=[]):
 
 def bezier_face_to_topods(o, context, scale=1000):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    u_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
-    v_count = int(ob.data.ge.attributes["CP_count"].data[1].value)
+    u_count = int(ob.data.attributes["CP_count"].data[0].value)
+    v_count = int(ob.data.attributes["CP_count"].data[1].value)
     points = read_attribute_by_name(ob, "CP_any_order_surf", u_count * v_count)
     points *= scale
 
@@ -798,11 +798,11 @@ def bezier_face_to_topods(o, context, scale=1000):
 def NURBS_face_to_topods(o, context, scale=1000):
     # Get attributes
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    u_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
-    v_count = int(ob.data.ge.attributes["CP_count"].data[1].value)
+    u_count = int(ob.data.attributes["CP_count"].data[0].value)
+    v_count = int(ob.data.attributes["CP_count"].data[1].value)
     points = read_attribute_by_name(ob, "CP_NURBS_surf", u_count * v_count)
     points *= scale
-    degree_u, degree_v = read_attribute_by_name(ob, "Degrees", "int", 2)
+    degree_u, degree_v = read_attribute_by_name(ob, "Degrees", 2)
     try:
         isclamped_u, isclamped_v = read_attribute_by_name(ob, "IsClamped", 2)
         isperiodic_u, isperiodic_v = read_attribute_by_name(ob, "IsPeriodic", 2)
@@ -930,11 +930,11 @@ def curve_to_topods(o, context, scale=1000):
     segs_p_counts = segs_p_counts[:segment_count]
 
     # 1 point less if closed
-    is_closed = bool(ob.data.ge.attributes["IsPeriodic"].data[0].value)
+    is_closed = bool(ob.data.attributes["IsPeriodic"].data[0].value)
     total_p_count -= is_closed and segment_count > 1
 
     # is clamped
-    is_clamped = bool(ob.data.ge.attributes["IsClamped"].data[0].value)
+    is_clamped = bool(ob.data.attributes["IsClamped"].data[0].value)
 
     # Type
     try:
