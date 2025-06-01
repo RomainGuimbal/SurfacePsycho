@@ -210,7 +210,11 @@ class SP_Curve_no_edge_import:
         if start_point == end_point or isclose(range_t, math.pi * 2):
             end_point = edge_adaptor.Value(min_t + math.pi / 2)
             center = edge_adaptor.Circle().Location()
-            gp_pnt_poles = [start_point, center, end_point]
+            gp_pnt_poles = [
+                end_point,
+                center,
+                start_point,
+            ]  # Invert because of parametrisation
             self.type = EDGES_TYPES["circle"]
             self.type_att = [EDGES_TYPES["circle"]] * 2
 
@@ -470,7 +474,7 @@ class SP_Contour_import:
             new_bounds[2] if new_bounds[2] != None else 0.0,
             new_bounds[3] if new_bounds[3] != None else 0.0,
         )
-        
+
         curr_range_u, curr_range_v = curr_max_u - curr_min_u, curr_max_v - curr_min_v
         new_range_u, new_range_v = new_max_u - new_min_u, new_max_v - new_min_v
 
@@ -1043,6 +1047,10 @@ def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resol
         True,
     )
 
+    # needed rebound
+    curve_type = get_geom_adapt_curve_type(adapt_curve)
+    min_u, max_u = curve_range_from_type(curve_type)
+
     object_data = generic_import_surface(
         topods_face,
         doc,
@@ -1053,6 +1061,13 @@ def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resol
         [],
         modifier,
         ob_name="STEP Extrusion",
+        curr_uv_bounds=(
+            adapt_curve.FirstParameter(),
+            adapt_curve.LastParameter(),
+            None,
+            None,
+        ),
+        new_uv_bounds=(min_u, max_u, None, None),
     )
 
     # Ideally should be an input of generic_import_surface which merges it
@@ -1098,17 +1113,7 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
 
     # needed rebound
     curve_type = get_geom_adapt_curve_type(adapt_curve)
-    match curve_type:
-        case GeomAbs.GeomAbs_Line:
-            min_u, max_u = 0, 1
-        case GeomAbs.GeomAbs_BezierCurve:
-            min_u, max_u = 0, 1
-        case GeomAbs.GeomAbs_BSplineCurve:
-            min_u, max_u = 0, 1
-        case GeomAbs.GeomAbs_Circle:
-            min_u, max_u = -math.pi(), math.pi()
-        case GeomAbs.GeomAbs_Ellipse:
-            min_u, max_u = -math.pi(), math.pi()
+    min_u, max_u = curve_range_from_type(curve_type)
 
     object_data = generic_import_surface(
         topods_face,
@@ -1336,6 +1341,3 @@ def create_blender_object(object_data):
 
     object_data["collection"].objects.link(ob)
     return True
-
-
-

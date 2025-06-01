@@ -71,6 +71,7 @@ from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorGen
 from OCP.Quantity import Quantity_Color
 from OCP.BRepCheck import BRepCheck_Analyzer
 import OCP.TopAbs as TopAbs
+import OCP.GeomAbs as GeomAbs
 
 addonpath = dirname(abspath(__file__))  # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
@@ -819,3 +820,18 @@ def get_geom_adapt_curve_type(adaptor_curve: GeomAdaptor_Curve):
     except AttributeError:
         curve_type = adaptor_curve.GetType()
     return curve_type
+
+def curve_range_from_type(curve_type):
+    match curve_type:
+            case GeomAbs.GeomAbs_Line:
+                min_u, max_u = 0, 1
+            case GeomAbs.GeomAbs_BezierCurve:
+                min_u, max_u = 0, 1
+            case GeomAbs.GeomAbs_BSplineCurve:
+                min_u, max_u = 0, 1
+            case GeomAbs.GeomAbs_Circle:
+                min_u, max_u = -math.pi(), math.pi()
+            case GeomAbs.GeomAbs_Ellipse:
+                min_u, max_u = -math.pi(), math.pi()
+
+    return min_u, max_u
