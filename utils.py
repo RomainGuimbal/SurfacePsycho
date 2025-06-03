@@ -100,10 +100,10 @@ TYPES_FROM_CP_ATTR = {
     "CP_NURBS_surf": SP_obj_type.BSPLINE_SURFACE,
     "CP_planar": SP_obj_type.PLANE,
     "CP_curve": SP_obj_type.CURVE,
-    "CP_cylinder": SP_obj_type.CYLINDER,
-    "CP_torus": SP_obj_type.TORUS,
-    "angle_radius": SP_obj_type.CONE,
-    "CP_sphere": SP_obj_type.SPHERE,
+    "axis3_cylinder": SP_obj_type.CYLINDER,
+    "axis3_torus": SP_obj_type.TORUS,
+    "axis3_cone": SP_obj_type.CONE,
+    "axis3_sphere": SP_obj_type.SPHERE,
     "CP_swept_surf": SP_obj_type.SURFACE_OF_EXTRUSION,
     "CP_revolution_surf": SP_obj_type.SURFACE_OF_REVOLUTION,
 }
@@ -197,6 +197,17 @@ def read_attribute_by_name(object, name, len_attr=None):
             att.data.foreach_get("vector", attribute)
             attribute = attribute.reshape((-1, 3))[0:len_attr]
 
+        case "FLOAT2":
+            len_raw = len(att.data)
+            if len_attr == None:
+                len_attr = len_raw
+            attribute = np.empty(2 * len_raw)
+            att.data.foreach_get("vector", attribute)
+            attribute = attribute.reshape((-1, 2))[0:len_attr]
+
+        case _ :
+            raise Exception(f"Unknown attribute type: {type}")
+        
     return attribute
 
 

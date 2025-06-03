@@ -216,7 +216,7 @@ class SP_Curve_no_edge_import:
                 start_point,
             ]  # Invert because of parametrisation
             self.type = EDGES_TYPES["circle"]
-            self.type_att = [EDGES_TYPES["circle"]] * 2
+            self.type_att = [EDGES_TYPES["circle"]] * 3
 
         # arc
         else:

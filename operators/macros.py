@@ -577,6 +577,10 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
                         except RuntimeError:
                             vg.add([v.index], 1.0, "REPLACE")
 
+            else :
+                o.data.attributes.new(name="Endpoints", type="BOOLEAN", domain="POINT")
+                o.data.update()
+
             bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 

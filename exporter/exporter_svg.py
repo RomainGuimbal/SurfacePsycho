@@ -106,7 +106,7 @@ def svg_path_string_from_wires(wires, plane):
         seg_count = len(w.segs_degrees)
         for j, degree in enumerate(w.segs_degrees):
             islast = j == seg_count - 1
-            if degree == 1:
+            if degree == 1 or degree == 0:
                 if not islast:
                     d += "L "
                     d += svg_xy_string_from_CP(w.CP[i], plane)
@@ -141,7 +141,10 @@ def new_svg_fill(
     if color_mode == "object":
         col_rgba = o.color
     elif color_mode == "material":
-        col_rgba = o.material_slots[0].material.diffuse_color
+        if len(o.material_slots) > 0 :
+            col_rgba = o.material_slots[0].material.diffuse_color
+        else :
+            col_rgba = o.color
     hex_col = to_hex(col_rgba)
     color = f"#{hex_col}"
     z = svg_z_from_obj(o, plane="XY")
@@ -235,10 +238,10 @@ def prepare_svg(
         obj_newly_real = []
 
         for o in obj_list:
-            gto = geom_type_of_object(o, context)
+            type = sp_type_of_object(o, context)
 
-            match gto:
-                case "planar":
+            match type:
+                case SP_obj_type.PLANE:
                     SPobj_count += 1
                     shapes.extend(
                         new_svg_fill(

@@ -24,8 +24,20 @@ from OCP.BRepBuilderAPI import (
     BRepBuilderAPI_MakeSolid,
 )
 from OCP.BRepCheck import BRepCheck_Analyzer
-from OCP.GC import GC_MakeArcOfCircle, GC_MakeSegment, GC_MakeCircle, GC_MakeArcOfEllipse, GC_MakeEllipse
-from OCP.GCE2d import GCE2d_MakeSegment, GCE2d_MakeArcOfCircle, GCE2d_MakeCircle, GCE2d_MakeArcOfEllipse, GCE2d_MakeEllipse
+from OCP.GC import (
+    GC_MakeArcOfCircle,
+    GC_MakeSegment,
+    GC_MakeCircle,
+    GC_MakeArcOfEllipse,
+    GC_MakeEllipse,
+)
+from OCP.GCE2d import (
+    GCE2d_MakeSegment,
+    GCE2d_MakeArcOfCircle,
+    GCE2d_MakeCircle,
+    GCE2d_MakeArcOfEllipse,
+    GCE2d_MakeEllipse,
+)
 from OCP.Geom import (
     Geom_BezierSurface,
     Geom_BSplineSurface,
@@ -35,6 +47,9 @@ from OCP.Geom import (
     Geom_ToroidalSurface,
     Geom_ConicalSurface,
     Geom_CylindricalSurface,
+    Geom_SphericalSurface,
+    Geom_SurfaceOfLinearExtrusion,
+    Geom_SurfaceOfRevolution,
 )
 from OCP.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
 from OCP.GeomAdaptor import GeomAdaptor_Surface
@@ -166,7 +181,7 @@ class SP_Edge_export:
                 if circle_exists and self.seg_attrs["circle"] > 0.1 and self.single_seg:
                     return SP_segment_type.CIRCLE
                 else:
-                    return SP_segment_type.BEZIER #line
+                    return SP_segment_type.BEZIER  # line
             elif circle_exists and self.p_count == 3 and self.seg_attrs["circle"] > 0.1:
                 return SP_segment_type.CIRCLE_ARC
             elif (
@@ -273,13 +288,13 @@ class SP_Edge_export:
 
             makesegment = GCE2d_MakeCircle(center, other)
             self.geom = makesegment.Value()
-        
+
         # Circle 3D
         else:
             # Virtual 3rd point if 2
             if self.p_count == 2:
                 p3_vec = gp_Vec(1.0, 0.0, 0.0)
-            else :
+            else:
                 p3_vec = gp_Vec(self.gp_cp[2].X(), self.gp_cp[2].Y(), self.gp_cp[2].Z())
 
             center = self.gp_cp[1]
@@ -289,9 +304,9 @@ class SP_Edge_export:
             other_dir_vec = p3_vec - center_vec
 
             # Circle on plane
-            if self.geom_plane != None: 
+            if self.geom_plane != None:
                 normal_dir = self.geom_plane.Pln().Axis().Direction()
-            else :
+            else:
                 normal_dir = gp_Dir(radius_vec.Crossed(other_dir_vec))
 
             radius = radius_vec.Magnitude()
@@ -301,11 +316,15 @@ class SP_Edge_export:
     def ellipse_arc(self):
         if self.is2D:
             p_center = self.gp_cp[2]
-            gp_ellipse = gp_Elips2d_from_3_points(p_center, self.gp_cp[1], self.gp_cp[3])
+            gp_ellipse = gp_Elips2d_from_3_points(
+                p_center, self.gp_cp[1], self.gp_cp[3]
+            )
 
-            makesegment = GCE2d_MakeArcOfEllipse(gp_ellipse, self.gp_cp[0], self.gp_cp[4])
+            makesegment = GCE2d_MakeArcOfEllipse(
+                gp_ellipse, self.gp_cp[0], self.gp_cp[4]
+            )
             self.geom = makesegment.Value()
-        else :
+        else:
             p_center = self.gp_cp[2]
             gp_ellipse = gp_Elips_from_3_points(p_center, self.gp_cp[1], self.gp_cp[3])
 
@@ -314,14 +333,17 @@ class SP_Edge_export:
 
     def ellipse(self):
         if self.is2D:
-            gp_elips = gp_Elips2d_from_3_points(self.gp_cp[1], self.gp_cp[0], self.gp_cp[2])
+            gp_elips = gp_Elips2d_from_3_points(
+                self.gp_cp[1], self.gp_cp[0], self.gp_cp[2]
+            )
             makesegment = GCE2d_MakeEllipse(gp_elips)
             self.geom = makesegment.Value()
-        else :
-            gp_elips = gp_Elips_from_3_points(self.gp_cp[1], self.gp_cp[0], self.gp_cp[2])
+        else:
+            gp_elips = gp_Elips_from_3_points(
+                self.gp_cp[1], self.gp_cp[0], self.gp_cp[2]
+            )
             makesegment = GC_MakeEllipse(gp_elips)
             self.geom = makesegment.Value()
-
 
 
 def auto_knot_and_mult(p_count, degree, isclamped=True, is_unclamped_periodic=False):
@@ -598,7 +620,12 @@ class SP_Contour_export:
             # Get CP aligned attrs
             ## CP
             points = read_attribute_by_name(ob, cp_attr_name, self.total_p_count)
-            points *= scale
+            if type(scale) == tuple:
+                points[:, 0] *= scale[0]
+                points[:, 1] *= scale[1]
+            else:
+                points *= scale
+
             if is2D:
                 points = [Vector((p[1], p[0], 0.0)) for p in points]
             points_per_wire = self.split_cp_attr_per_wire(points[: self.total_p_count])
@@ -873,13 +900,13 @@ def NURBS_face_to_topods(o, context, scale=1000):
 def cone_face_to_topods(o, context, scale=1000):
     # Get attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    origin, dir1, dir2 = read_attribute_by_name(ob, "axis3", 3)
+    origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_cone", 3)
     semi_angle, radius = read_attribute_by_name(ob, "angle_radius", 2)
     # radius *= scale
 
     # Create geom
     axis3 = gp_Ax3(
-        gp_Pnt(origin[0], origin[1], origin[2]),
+        gp_Pnt(origin[0] * scale, origin[1] * scale, origin[2] * scale),
         gp_Dir(dir1[0], dir1[1], dir1[2]),
         gp_Dir(dir2[0], dir2[1], dir2[2]),
     )
@@ -894,6 +921,133 @@ def cone_face_to_topods(o, context, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
+    )
+
+    # Create topods face
+    if not contour.has_wire:
+        return geom_to_topods_face(geom_surf)
+    else:
+        wires = contour.wires_dict
+
+    # Get topods wires
+    outer_wire = wires[-1].get_topods_wire()
+    inner_wires = []
+    for k in wires.keys():
+        if k != -1:
+            inner_wires.append(wires[k].get_topods_wire())
+
+    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+    return face
+
+
+def sphere_face_to_topods(o, context, scale=1000):
+    # Get attr
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_sphere", 3)
+    radius = float(ob.data.attributes["radius"].data[0].value)
+
+    # Create geom
+    axis3 = gp_Ax3(
+        gp_Pnt(origin[0] * scale, origin[1] * scale, origin[2] * scale),
+        gp_Dir(dir1[0], dir1[1], dir1[2]),
+        gp_Dir(dir2[0], dir2[1], dir2[2]),
+    )
+    geom_surf = Geom_SphericalSurface(axis3, radius * scale)
+
+    # Build trim contour
+    contour = SP_Contour_export(
+        ob,
+        "CP_trim_contour_UV",
+        "CP_count_trim_contour_UV",
+        "IsClamped_trim_contour",
+        "IsPeriodic_trim_contour",
+        is2D=True,
+        geom_surf=geom_surf,
+    )
+
+    # Create topods face
+    if not contour.has_wire:
+        return geom_to_topods_face(geom_surf)
+    else:
+        wires = contour.wires_dict
+
+    # Get topods wires
+    outer_wire = wires[-1].get_topods_wire()
+    inner_wires = []
+    for k in wires.keys():
+        if k != -1:
+            inner_wires.append(wires[k].get_topods_wire())
+
+    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+    return face
+
+
+def torus_face_to_topods(o, context, scale=1000):
+    # Get attr
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_torus", 3)
+    radius_major, radius_minor = read_attribute_by_name(ob, "radius", 2)
+
+    # Create geom
+    axis3 = gp_Ax3(
+        gp_Pnt(origin[0] * scale, origin[1] * scale, origin[2] * scale),
+        gp_Dir(dir1[0], dir1[1], dir1[2]),
+        gp_Dir(dir2[0], dir2[1], dir2[2]),
+    )
+    geom_surf = Geom_ToroidalSurface(axis3, radius_major * scale, radius_minor * scale)
+
+    # Build trim contour
+    contour = SP_Contour_export(
+        ob,
+        "CP_trim_contour_UV",
+        "CP_count_trim_contour_UV",
+        "IsClamped_trim_contour",
+        "IsPeriodic_trim_contour",
+        is2D=True,
+        geom_surf=geom_surf,
+    )
+
+    # Create topods face
+    if not contour.has_wire:
+        return geom_to_topods_face(geom_surf)
+    else:
+        wires = contour.wires_dict
+
+    # Get topods wires
+    outer_wire = wires[-1].get_topods_wire()
+    inner_wires = []
+    for k in wires.keys():
+        if k != -1:
+            inner_wires.append(wires[k].get_topods_wire())
+
+    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+    return face
+
+
+def cylinder_face_to_topods(o, context, scale=1000):
+    # Get attr
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_cylinder", 3)
+    radius, length = read_attribute_by_name(ob, "radius_length", 2)
+
+    # Create geom
+    axis3 = gp_Ax3(
+        gp_Pnt(origin[0] * scale, origin[1] * scale, origin[2] * scale),
+        gp_Dir(dir1[0], dir1[1], dir1[2]),
+        gp_Dir(dir2[0], dir2[1], dir2[2]),
+    )
+    geom_surf = Geom_CylindricalSurface(axis3, radius * scale)
+
+    # Build trim contour
+    contour = SP_Contour_export(
+        ob,
+        "CP_trim_contour_UV",
+        "CP_count_trim_contour_UV",
+        "IsClamped_trim_contour",
+        "IsPeriodic_trim_contour",
+        is2D=True,
+        geom_surf=geom_surf,
+        scale=(length * scale, 1),
     )
 
     # Create topods face
