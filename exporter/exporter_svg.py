@@ -103,8 +103,9 @@ def svg_path_string_from_wires(wires, plane):
         d += "M "
         d += svg_xy_string_from_CP(w.CP[0], plane)
         i = 1
-        seg_count = len(w.segs_degrees)
-        for j, degree in enumerate(w.segs_degrees):
+        seg_count = len(w.segs_p_counts)
+        for j, p_count in enumerate(w.segs_p_counts):
+            degree = p_count -1
             islast = j == seg_count - 1
             if degree == 1 or degree == 0:
                 if not islast:
