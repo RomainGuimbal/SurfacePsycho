@@ -5,6 +5,7 @@ from mathutils import Vector
 from os.path import dirname, abspath, isfile
 from ..utils import *
 import copy
+import warnings
 from collections import Counter
 from .ellipse import *
 
@@ -92,9 +93,6 @@ from OCP.TopoDS import (
     TopoDS_Shell,
     TopoDS_Solid,
 )
-
-# from OCP.TopTools import TopTools_Array1OfShape
-import OCP.TopAbs as TopAbs
 
 
 ##############################
@@ -902,13 +900,14 @@ def cone_face_to_topods(o, context, scale=1000):
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_cone", 3)
     semi_angle, radius = read_attribute_by_name(ob, "angle_radius", 2)
-    # radius *= scale
+    radius *= scale
+    origin *= scale
 
     # Create geom
     axis3 = gp_Ax3(
-        gp_Pnt(origin[0] * scale, origin[1] * scale, origin[2] * scale),
-        gp_Dir(dir1[0], dir1[1], dir1[2]),
-        gp_Dir(dir2[0], dir2[1], dir2[2]),
+        gp_Pnt(*origin),
+        gp_Dir(*dir1),
+        gp_Dir(*dir2),
     )
     geom_surf = Geom_ConicalSurface(axis3, semi_angle, 0.0)
 
@@ -921,6 +920,7 @@ def cone_face_to_topods(o, context, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
+        scale=(radius / math.sin(semi_angle), 1),
     )
 
     # Create topods face
@@ -1112,8 +1112,14 @@ def curve_to_topods(o, context, scale=1000):
     points = read_attribute_by_name(ob, "CP_curve", total_p_count)
     points *= scale
 
+    ## Weight
+    try:
+        weight_attr = read_attribute_by_name(ob, "Weight", total_p_count)
+    except KeyError:
+        weight_attr = [1.0] * total_p_count
+
     wire = SP_Wire_export(
-        {"CP": points},
+        {"CP": points, "weight": weight_attr},
         {
             "p_count": segs_p_counts,
             "degree": segs_degrees,
@@ -1382,7 +1388,7 @@ def blender_object_to_topods_shapes(
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
         case _:
-            raise Exception("Invalid type")
+            raise Exception(f"Invalid type {sp_type}")
 
     return shape_mirrored
 
@@ -1393,48 +1399,77 @@ def blender_instances_to_topods_instances(
     sewed_shapes_list = []
 
     for ins in hierarchy.instances:
-        if ins.scale != Vector((1.0, 1.0, 1.0)):
-            print(f"Scale not 1, instance is realized (Scale = {ins.scale})")
+        swd = blender_instance_to_topods_instance(
+            ins, context, hierarchy, scale, sew_tolerance
+        )
 
-        to_sew_shape_list = []
-        ins_obj = list(ins.instance_collection.objects)
-
-        # add obj of child collections (doesn't support nested instances)
-        for col in ins.instance_collection.children_recursive:
-            for o in col.objects:
-                ins_obj.append(o)
-
-        for o in ins_obj:
-            sp_type = sp_type_of_object(o, context)
-            if sp_type not in (None, "instance", "empty"):
-                if o in hierarchy.obj_shapes.keys():
-                    shape = hierarchy.obj_shapes[o]
-                elif not o.hide_viewport:
-                    shape = blender_object_to_topods_shapes(
-                        context, o, sp_type, scale, sew_tolerance
-                    )
-
-                if ins.scale == Vector((1.0, 1.0, 1.0)):
-                    trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
-                    trsf.SetScaleFactor(1)
-                    location = TopLoc_Location(trsf)
-                    instance = shape.Located(location)
-                    to_sew_shape_list.append(instance)
-                else:
-                    trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
-                    trsf.SetScaleFactor(1)
-                    scalingMatrix = gp_Mat()
-                    scalingMatrix.SetDiagonal(ins.scale.x, ins.scale.y, ins.scale.z)
-                    gtrsf = gp_GTrsf()
-                    gtrsf.SetVectorialPart(scalingMatrix)
-                    shape = BRepBuilderAPI_GTransform(shape, gtrsf, True).Shape()
-                    shape = BRepBuilderAPI_Transform(shape, trsf, False).Shape()
-                    to_sew_shape_list.append(shape)
-
-        # each collection instance is sewed separately
-        sewed_shapes_list.append(sew_shapes(to_sew_shape_list, sew_tolerance))
-
+    sewed_shapes_list.append(swd)
     return sewed_shapes_list
+
+
+def blender_instance_to_topods_instance(
+    ins, context, hierarchy, scale=1000, sew_tolerance=1e-1
+):
+    if ins.scale != Vector((1.0, 1.0, 1.0)):
+        print(f"Scale not 1, instance is realized (Scale = {ins.scale})")
+
+    to_sew_shape_list = []
+    ins_obj = list(ins.instance_collection.objects)
+
+    # # create compound
+    # builder = BRep_Builder()
+    # comp = TopoDS_Compound()
+    # builder.MakeCompound(comp)
+    # is_nested = False
+
+    # add obj of child collections (doesn't support nested instances)
+    for col in ins.instance_collection.children_recursive:
+        for o in col.objects:
+            ins_obj.append(o)
+
+    for o in ins_obj:
+        sp_type = sp_type_of_object(o, context)
+        if sp_type not in (None, SP_obj_type.EMPTY, SP_obj_type.INSTANCE):
+            if o in hierarchy.obj_shapes.keys():
+                shape = hierarchy.obj_shapes[o]
+            elif not o.hide_viewport:
+                shape = blender_object_to_topods_shapes(
+                    context, o, sp_type, scale, sew_tolerance
+                )
+
+            if ins.scale == Vector((1.0, 1.0, 1.0)):
+                trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
+                trsf.SetScaleFactor(1)
+                location = TopLoc_Location(trsf)
+                instance = shape.Located(location)
+                to_sew_shape_list.append(instance)
+            else:
+                trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
+                trsf.SetScaleFactor(1)
+                scalingMatrix = gp_Mat()
+                scalingMatrix.SetDiagonal(ins.scale.x, ins.scale.y, ins.scale.z)
+                gtrsf = gp_GTrsf()
+                gtrsf.SetVectorialPart(scalingMatrix)
+                shape = BRepBuilderAPI_GTransform(shape, gtrsf, True).Shape()
+                shape = BRepBuilderAPI_Transform(shape, trsf, False).Shape()
+                to_sew_shape_list.append(shape)
+
+        # elif sp_type == SP_obj_type.INSTANCE:
+        #     warnings.warn("Nested instances not supported yet")
+        # #     # nested instance HARD, need to call an instance already built somewhere
+        # #     #
+        # #     # swd_nested = blender_instance_to_topods_instance(ins, context, hierarchy, scale, sew_tolerance)
+        # #     builder.Add(comp, swd_nested)
+        # #     is_nested=True
+
+    # each collection instance is sewed separately
+    swd = sew_shapes(to_sew_shape_list, sew_tolerance)
+
+    # if is_nested:
+    #     builder.Add(comp, swd)
+    #     return comp
+    # else :
+    return swd
 
 
 def sew_shapes(shape_list, tolerance=1e-1):
@@ -1449,11 +1484,7 @@ def sew_shapes(shape_list, tolerance=1e-1):
     return aSew.SewedShape()
 
 
-def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
-    # import cProfile
-    # profiler = cProfile.Profile()
-    # profiler.enable()
-
+def prepare_export(context, use_selection :bool, scale=1000, sew_tolerance=1e-1)-> TopoDS_Compound:
     separated_shapes_list = []
     hierarchy = ShapeHierarchy_export(context, use_selection, scale)
 
@@ -1462,10 +1493,10 @@ def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
         sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
         separated_shapes_list.extend(shells_to_solids(sewed))
 
-    # prepare compound objects
+    # prepare sp compound objects
     if len(hierarchy.compounds) > 0:
         pass
-        #
+        # TODO
         # sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
         # separated_shapes_list.extend(shells_to_solids(sewed))
 
@@ -1482,8 +1513,6 @@ def prepare_export(context, use_selection, scale=1000, sew_tolerance=1e-1):
     else:
         return None
 
-    # profiler.disable()
-    # profiler.print_stats()
     return root_compound
 
 
@@ -1493,8 +1522,6 @@ def export_step(
     use_selection,
     scale,
     sew_tolerance,
-    axis_up="Z",
-    axis_forward="Y",
 ):
     brep_shapes = prepare_export(context, use_selection, scale, sew_tolerance)
     if brep_shapes is not None:
@@ -1510,8 +1537,6 @@ def export_iges(
     use_selection,
     scale,
     sew_tolerance,
-    axis_up="Z",
-    axis_forward="Y",
 ):
     brep_shapes = prepare_export(context, use_selection, scale, sew_tolerance)
     if brep_shapes is not None:

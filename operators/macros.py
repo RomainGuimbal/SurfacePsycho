@@ -406,38 +406,23 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
     bl_label = "Convert Psychopatches to internal NURBS"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.type == "MESH"
+
     def execute(self, context):
-        i = -1
+        spline_index = -1
         for o in context.selected_objects:
-            type = geom_type_of_object(o, context)
+            sp_type = sp_type_of_object(o, context)
             ob = o.evaluated_get(context.evaluated_depsgraph_get())
-            match type:
-                case "bicubic_surf":
-                    cp = read_attribute_by_name(ob, "CP_bezier_surf", 16)
-                    bpy.ops.surface.primitive_nurbs_surface_surface_add(
-                        enter_editmode=True,
-                        align="WORLD",
-                        location=(0, 0, 0),
-                        scale=(1, 1, 1),
-                    )
-                    i += 1
-                    spline = context.active_object.data.splines[i]
-                    spline.use_endpoint_u = True
-                    spline.use_endpoint_v = True
-                    spline.degree_u = 4
-                    spline.degree_v = 4
-
-                    # set CP of spline
-                    for j, p in enumerate(spline.points):
-                        p.co = (cp[j][0], cp[j][1], cp[j][2], 1)
-
-                case "bezier_surf":
+            match sp_type:
+                case SP_obj_type.BEZIER_SURFACE:
                     u_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
                     v_count = int(ob.data.ge.attributes["CP_count"].data[1].value)
                     cp = read_attribute_by_name(
                         ob, "CP_any_order_surf", u_count * v_count
                     )
-                    if i == -1:
+                    if spline_index == -1:
                         bpy.ops.surface.primitive_nurbs_surface_surface_add(
                             enter_editmode=True,
                             align="WORLD",
@@ -445,7 +430,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                             scale=(1, 1, 1),
                         )
                         bpy.ops.curve.delete(type="VERT")
-                    i += 1
+                    spline_index += 1
                     splines = context.active_object.data.splines
                     for v in range(v_count):
                         spline = splines.new("NURBS")
@@ -463,18 +448,19 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                                 1,
                             )
 
-                    for s in splines[i : i + v_count]:
+                    for s in splines[spline_index : spline_index + v_count]:
                         for p in s.points:
                             p.select = True
                     bpy.ops.object.mode_set(mode="EDIT")
                     bpy.ops.curve.make_segment()
-                    splines[i].degree_u = min(v_count, 6)
-                    splines[i].degree_v = min(u_count, 6)
+                    splines[spline_index].order_u = min(v_count, 6)
+                    splines[spline_index].order_v = min(u_count, 6)
 
-                case "curve_any":
-                    cp_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
-                    cp = read_attribute_by_name(ob, "CP_any_order_curve", cp_count)
-                    if i == -1:
+                case SP_obj_type.BSPLINE_SURFACE:
+                    u_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
+                    v_count = int(ob.data.ge.attributes["CP_count"].data[1].value)
+                    cp = read_attribute_by_name(ob, "CP_nurbs_surf", u_count * v_count)
+                    if spline_index == -1:
                         bpy.ops.surface.primitive_nurbs_surface_surface_add(
                             enter_editmode=True,
                             align="WORLD",
@@ -482,19 +468,60 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
                             scale=(1, 1, 1),
                         )
                         bpy.ops.curve.delete(type="VERT")
-                    i += 1
+                    spline_index += 1
+                    splines = context.active_object.data.splines
+                    for v in range(v_count):
+                        spline = splines.new("NURBS")
+                        spline.points.add(u_count - 1)
+                        spline.use_endpoint_u = True
+                        spline.use_endpoint_v = True
+                        spline.use_bezier_u = False
+                        spline.use_bezier_v = False
+                        # set CP of spline
+                        for j, p in enumerate(spline.points):
+                            p.co = (
+                                cp[j + v * u_count][0],
+                                cp[j + v * u_count][1],
+                                cp[j + v * u_count][2],
+                                1,
+                            )
+
+                    for s in splines[spline_index : spline_index + v_count]:
+                        for p in s.points:
+                            p.select = True
+                    bpy.ops.object.mode_set(mode="EDIT")
+                    bpy.ops.curve.make_segment()
+                    splines[spline_index].order_u = min(v_count, 6)
+                    splines[spline_index].order_v = min(u_count, 6)
+
+                case SP_obj_type.CURVE:
+                    cp_count = int(ob.data.ge.attributes["CP_count"].data[0].value)
+                    cp = read_attribute_by_name(ob, "CP_any_order_curve", cp_count)
+                    if spline_index == -1:
+                        bpy.ops.surface.primitive_nurbs_surface_surface_add(
+                            enter_editmode=True,
+                            align="WORLD",
+                            location=(0, 0, 0),
+                            scale=(1, 1, 1),
+                        )
+                        bpy.ops.curve.delete(type="VERT")
+                    spline_index += 1
                     spline = context.active_object.data.splines.new("NURBS")
                     spline.points.add(cp_count - 1)
                     spline.use_endpoint_u = True
                     spline.use_endpoint_v = True
                     spline.use_bezier_u = True
                     spline.use_bezier_v = True
-                    spline.degree_u = min(cp_count, 6)
-                    spline.degree_v = min(cp_count, 6)
+                    spline.order_u = min(cp_count, 6)
+                    spline.order_v = min(cp_count, 6)
 
                     # set CP of spline
                     for j, p in enumerate(spline.points):
                         p.co = (cp[j][0], cp[j][1], cp[j][2], 1)
+
+                case _:
+                    self.report({"WARNING"}, "Conversion unsupported")
+
         bpy.ops.object.editmode_toggle()
         return {"FINISHED"}
 
@@ -504,30 +531,50 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
     bl_label = "Convert internal NURBS to Psychopatches"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.type == "SURFACE"
+
     def execute(self, context):
         obj_to_convert = context.selected_objects
-        first_patch_flag = True
+        first_bezier_patch_flag = True
+        first_bspline_patch_flag = True
 
         for o in obj_to_convert:
             if o.type == "SURFACE":
                 for s in o.data.splines:
-                    if first_patch_flag:
-                        append_object_by_name("PsychoPatch Any Order", context)
-                        first_sp_patch = context.selected_objects[0]
-                        first_sp_patch.location = o.location
-                        sp_patch = first_sp_patch
-                        first_patch_flag = False
+                    if s.use_bezier_u and s.use_bezier_v:
+                        if first_bezier_patch_flag:
+                            append_object_by_name("Bezier Patch", context)
+                            first_bezier_patch_flag = False
+                            first_sp_bezier_patch = context.selected_objects[0]
+                            first_sp_bezier_patch.location = o.location
+                            sp_patch = first_sp_bezier_patch
+                        else:
+                            sp_patch = first_sp_bezier_patch.copy()
+                            sp_patch.animation_data_clear()
+                            sp_patch.matrix_world = o.matrix_world
+                            bpy.context.collection.objects.link(sp_patch)
                     else:
-                        sp_patch = first_sp_patch.copy()
-                        sp_patch.animation_data_clear()
-                        sp_patch.matrix_world = o.matrix_world
-                        bpy.context.collection.objects.link(sp_patch)
+                        if first_bspline_patch_flag:
+                            append_object_by_name("NURBS Patch", context)
+                            first_bspline_patch_flag = False
+                            first_sp_bspline_patch = context.selected_objects[0]
+                            first_sp_bspline_patch.location = o.location
+                            sp_patch = first_sp_bspline_patch
+                        else:
+                            sp_patch = first_sp_bspline_patch.copy()
+                            sp_patch.animation_data_clear()
+                            sp_patch.matrix_world = o.matrix_world
+                            bpy.context.collection.objects.link(sp_patch)
 
                     spline_cp = [Vector(p.co[0:3]) for p in s.points]
 
                     # create mesh grid
-                    u_count = s.degree_u
-                    v_count = s.degree_v
+                    u_count = s.order_u
+                    v_count = s.order_v
+
+                    # TODO change modifier options for clamped U and V
 
                     faces = [
                         (
@@ -577,7 +624,7 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
                         except RuntimeError:
                             vg.add([v.index], 1.0, "REPLACE")
 
-            else :
+            else:
                 o.data.attributes.new(name="Endpoints", type="BOOLEAN", domain="POINT")
                 o.data.update()
 
@@ -634,10 +681,33 @@ class SP_OT_set_segment_type(bpy.types.Operator):
     bl_label = "Set Segment Type"
     bl_options = {"REGISTER", "UNDO"}
 
-    type: bpy.props.IntProperty(name="Type", description="", default=0, min=0, max=5)
+    type: bpy.props.EnumProperty(
+        name="Type",
+        default=0,
+        items=[
+            ("spline", "Spline", ""),
+            ("circle_arc", "Circle Arc", ""),
+            ("circle", "Circle", ""),
+            ("ellipse_arc", "Ellipse Arc", ""),
+            ("ellipse", "Ellipse", ""),
+        ],
+    )
 
     def execute(self, context):
-        set_segment_type(context, self.type)
+        type_index = 0
+        match self.type:
+            case "spline":
+                type_index = 0
+            case "circle_arc":
+                type_index = 2
+            case "circle":
+                type_index = 3
+            case "ellispe_arc":
+                type_index = 4
+            case "ellipse":
+                type_index = 5
+
+        set_segment_type(context, type_index)
         return {"FINISHED"}
 
 
@@ -808,7 +878,11 @@ def scale_combs(self, context):
                     m.node_group.interface_update(context)
 
 
-def set_seg_degree(self, context):
+def set_seg_degree_from_active(self, context):
+    set_seg_degree(min(self.active_segment_degree, 20), context)
+
+
+def set_seg_degree(degree : int, context):
     objs = context.objects_in_mode
     for o in objs:
         # Switch to object mode to modify vertex groups
@@ -827,7 +901,7 @@ def set_seg_degree(self, context):
         # Update values
         for i, v in enumerate(o.data.vertices):
             if v.select:
-                values[i] = max(min(self.active_segment_degree, 20), 0)
+                values[i] = max(degree, 0)
                 # To improve one day to change all verts between endpoints
 
         # Set new
@@ -879,7 +953,7 @@ class SP_Props_Group(bpy.types.PropertyGroup):
         default=3,
         min=0,
         max=10,
-        update=set_seg_degree,
+        update=set_seg_degree_from_active,
     )
 
     active_vert_weight: bpy.props.FloatProperty(
@@ -889,6 +963,53 @@ class SP_Props_Group(bpy.types.PropertyGroup):
         min=0,
         update=set_vert_weight,
     )
+
+
+class SP_OT_set_segment_degree(bpy.types.Operator):
+    bl_idname = "sp.set_segment_degree"
+    bl_label = "Set Segment Degree"
+    bl_options = {"REGISTER", "UNDO"}
+
+    # Properties to store the current value
+    degree: bpy.props.IntProperty(
+        name="Degree", default=2, description="Degree attribute assigned to selection")
+
+    degree = 0
+
+    def modal(self, context, event):
+        # Handle scroll wheel events
+        if event.type == "WHEELUPMOUSE":
+            self.degree += 1
+            set_seg_degree(self.degree, context)
+            context.area.header_text_set(f"Degree: {self.degree}")
+            context.view_layer.update()
+            return {"RUNNING_MODAL"}
+
+        elif event.type == "WHEELDOWNMOUSE":
+            if self.degree > 0:
+                self.degree -= 1
+                set_seg_degree(self.degree, context)
+                context.area.header_text_set(f"Degree: {self.degree}")
+                context.view_layer.update()
+                return {"RUNNING_MODAL"}
+
+        # Exit conditions
+        elif event.type in {"RIGHTMOUSE", "ESC"}:
+            return {"CANCELLED"}
+
+        elif event.type == "LEFTMOUSE":
+            return {"FINISHED"}
+
+        # Pass through other events
+        return {"PASS_THROUGH"}
+
+    def invoke(self, context, event):
+        if context.object is None or context.object.type != "MESH":
+            return {"CANCELLED"}
+
+        # Add modal handler
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
 
 
 class SP_OT_show_only_curves(bpy.types.Operator):
@@ -1005,6 +1126,7 @@ classes = [
     SP_OT_Invoke_replace_node_panel,
     SP_Props_Group,
     SP_OT_quick_export,
+    SP_OT_set_segment_degree,
 ]
 
 
