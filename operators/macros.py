@@ -878,11 +878,11 @@ def scale_combs(self, context):
                     m.node_group.interface_update(context)
 
 
-def set_seg_degree_from_active(self, context):
+def set_seg_degree_from_active_prop(self, context):
     set_seg_degree(min(self.active_segment_degree, 20), context)
 
 
-def set_seg_degree(degree : int, context):
+def set_seg_degree(degree: int, context):
     objs = context.objects_in_mode
     for o in objs:
         # Switch to object mode to modify vertex groups
@@ -891,7 +891,6 @@ def set_seg_degree(degree : int, context):
         # Ensure "Degree" exists
         if "Degree" not in o.data.attributes:
             o.data.attributes.new(name="Degree", type="INT", domain="POINT")
-            # o.data.update()
 
         # Get existing values
         att = o.data.attributes["Degree"]
@@ -909,7 +908,11 @@ def set_seg_degree(degree : int, context):
         bpy.ops.object.mode_set(mode="EDIT")
 
 
-def set_vert_weight(self, context):
+def set_vert_weight_from_active_prop(self, context):
+    set_vert_weight(self.active_vert_weight, context)
+
+
+def set_vert_weight(weight: float, context):
     objs = context.objects_in_mode
     for o in objs:
         bpy.ops.object.mode_set(mode="OBJECT")
@@ -923,7 +926,7 @@ def set_vert_weight(self, context):
 
         for i, v in enumerate(o.data.vertices):
             if v.select:
-                val[i] = self.active_vert_weight
+                val[i] = weight
 
         o.data.attributes["Weight"].data.foreach_set("value", val)
         bpy.ops.object.mode_set(mode="EDIT")
@@ -953,7 +956,7 @@ class SP_Props_Group(bpy.types.PropertyGroup):
         default=3,
         min=0,
         max=10,
-        update=set_seg_degree_from_active,
+        update=set_seg_degree_from_active_prop,
     )
 
     active_vert_weight: bpy.props.FloatProperty(
@@ -961,7 +964,7 @@ class SP_Props_Group(bpy.types.PropertyGroup):
         description="Control point weight of rational spline",
         default=1.0,
         min=0,
-        update=set_vert_weight,
+        update=set_vert_weight_from_active_prop,
     )
 
 
@@ -972,9 +975,8 @@ class SP_OT_set_segment_degree(bpy.types.Operator):
 
     # Properties to store the current value
     degree: bpy.props.IntProperty(
-        name="Degree", default=2, description="Degree attribute assigned to selection")
-
-    degree = 0
+        name="Degree", default=2, description="Degree attribute assigned to selection"
+    )
 
     def modal(self, context, event):
         # Handle scroll wheel events
@@ -1012,26 +1014,59 @@ class SP_OT_set_segment_degree(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
-class SP_OT_show_only_curves(bpy.types.Operator):
-    # TODO
-    # Store the state before ?
-    pass
+class SP_OT_set_spline(bpy.types.Operator):
+    bl_idname = "sp.set_spline"
+    bl_label = "Set Spline"
+    bl_options = {"REGISTER", "UNDO"}
 
+    degree: bpy.props.IntProperty(
+        name="Degree", default=2, description="Degree attribute assigned to selection"
+    )
+    weight: bpy.props.FloatProperty(
+        name="Weight", default=1.0, description="Weight attribute assigned to selection"
+    )
 
-class SP_OT_bevel_macro(bpy.types.Operator):
-    # TODO
-    # Select two CONNECTED patches
-    # Trim them
-    # Add a blend surface between (origin at mean of patches origins)
-    pass
+    def modal(self, context, event):
+        # Handle scroll wheel events
+        if event.type == "WHEELUPMOUSE":
+            self.degree += 1
+            set_seg_degree(self.degree, context)
+            context.area.header_text_set(f"Degree: {self.degree}")
+            context.view_layer.update()
+            return {"RUNNING_MODAL"}
+        elif event.type == "WHEELDOWNMOUSE":
+            self.degree -= 1
+            set_seg_degree(self.degree, context)
+            context.area.header_text_set(f"Degree: {self.degree}")
+            context.view_layer.update()
+            return {"RUNNING_MODAL"}
 
+        # Exit conditions
+        elif event.type in {"RIGHTMOUSE", "ESC"}:
+            return {"CANCELLED"}
 
-class SP_OT_solidify(bpy.types.Operator):
-    # TODO
-    # Thickness Driver ?
-    # Linked data
-    pass
+        elif event.type == "LEFTMOUSE":
+            return {"FINISHED"}
 
+        # Pass through other events
+        return {"PASS_THROUGH"}
+
+    def invoke(self, context, event):
+        if context.object is None or context.object.type != "MESH":
+            return {"CANCELLED"}
+
+        set_segment_type(context, 0)
+        self.initial_mouse_x = event.mouse_x
+        self.initial_mouse_y = event.mouse_y
+
+        # Add modal handler
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        set_seg_degree(self.degree, context)
+        set_vert_weight(self.weight, context)
+        return {"FINISHED"}
 
 # TODO
 # Bridge patches
@@ -1127,6 +1162,7 @@ classes = [
     SP_Props_Group,
     SP_OT_quick_export,
     SP_OT_set_segment_degree,
+    SP_OT_set_spline,
 ]
 
 

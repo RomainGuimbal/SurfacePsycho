@@ -429,59 +429,6 @@ class SP_PT_EditPanel(bpy.types.Panel):
             col.prop(context.scene.sp_properties, "active_vert_weight", text="Weight")
 
 
-# class SP_MT_SegmentEdit(bpy.types.Menu):
-#     bl_idname = "SP_MT_SegmentEdit"
-#     bl_label = "SP Segment"
-
-#     def draw(self, context):
-#         layout = self.layout
-#         # layout.operator_context = "INVOKE_REGION_WIN"
-#         layout.ui_units_x = 10
-
-#         # Endpoints
-#         layout.label(text="Endpoints")
-#         layout.operator("sp.toggle_endpoints", text="Toggle")
-#         layout.operator("sp.select_endpoints", text="Select")
-
-#         layout.separator()
-
-#         # Type
-#         layout.label(text="Set Type")
-#         layout.operator("sp.set_segment_type", text="Spline", icon="RNDCURVE").type = 0
-#         layout.operator(
-#             "sp.set_segment_type", text="Circle", icon="MESH_CIRCLE"
-#         ).type = 3
-#         layout.operator(
-#             "sp.set_segment_type", text="Circle Arc", icon="SPHERECURVE"
-#         ).type = 2
-#         layout.operator(
-#             "sp.set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
-#         ).type = 5
-#         layout.operator(
-#             "sp.set_segment_type", text="Ellipse Arc", icon="INVERSESQUARECURVE"
-#         ).type = 4
-
-#         layout.separator()
-
-#         # Segment Degree
-#         layout.use_property_split = True
-#         layout.use_property_decorate = False
-#         col = layout.column()
-#         col.prop(
-#             context.scene.sp_properties,
-#             "active_segment_degree",
-#             text="NURBS Degree",
-#         )
-
-#         layout.separator()
-
-#         # Weight
-#         layout.use_property_split = True
-#         layout.use_property_decorate = False
-#         col = layout.column()
-#         col.prop(context.scene.sp_properties, "active_vert_weight", text="Weight")
-
-
 class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
     bl_label = "SP Segment Type"
 
@@ -490,20 +437,19 @@ class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
             layout = self.layout
             pie = layout.menu_pie()
             # Pie order: west, east, south, north, north-west, north-east, south-west, south-east
-            pie.operator("sp.set_segment_type", text="Spline", icon="RNDCURVE").type = "spline" #West
+            pie.operator("sp.toggle_endpoints", text="Toggle Endpoints") #West
             pie.operator("sp.set_segment_type", text="Circle", icon="MESH_CIRCLE").type = "circle" #East
-            pie.operator("sp.set_segment_degree", text="Set Degree") #South
+            pie.separator() #pie.operator("sp.set_segment_degree", text="Set Degree") #South
             pie.operator(
                 "sp.set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
             ).type = "ellipse" #North
-            pie.separator() #North-west #WEIGHTS
+            pie.operator("sp.set_spline", text="Spline", icon="RNDCURVE") #North-west
             pie.operator(
                 "sp.set_segment_type", text="Ellipse Arc", icon="INVERSESQUARECURVE"
             ).type = "ellipse_arc"  #North-east
-            pie.operator("sp.toggle_endpoints", text="Toggle Endpoints") #South-west
+            pie.separator() #South-west
             pie.operator("sp.set_segment_type", text="Circle Arc", icon="SPHERECURVE"
             ).type = "circle_arc" #South-east
-
 
 
 def menu_surface(self, context):
