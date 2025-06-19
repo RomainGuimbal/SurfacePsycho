@@ -437,9 +437,9 @@ class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
             layout = self.layout
             pie = layout.menu_pie()
             # Pie order: west, east, south, north, north-west, north-east, south-west, south-east
-            pie.operator("sp.toggle_endpoints", text="Toggle Endpoints") #West
+            pie.separator()#West
             pie.operator("sp.set_segment_type", text="Circle", icon="MESH_CIRCLE").type = "circle" #East
-            pie.separator() #pie.operator("sp.set_segment_degree", text="Set Degree") #South
+            pie.separator()#South
             pie.operator(
                 "sp.set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
             ).type = "ellipse" #North
@@ -447,7 +447,7 @@ class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
             pie.operator(
                 "sp.set_segment_type", text="Ellipse Arc", icon="INVERSESQUARECURVE"
             ).type = "ellipse_arc"  #North-east
-            pie.separator() #South-west
+            pie.operator("sp.toggle_endpoints", text="Toggle Endpoints") #South-west
             pie.operator("sp.set_segment_type", text="Circle Arc", icon="SPHERECURVE"
             ).type = "circle_arc" #South-east
 

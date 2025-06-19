@@ -702,7 +702,7 @@ class SP_OT_set_segment_type(bpy.types.Operator):
                 type_index = 2
             case "circle":
                 type_index = 3
-            case "ellispe_arc":
+            case "ellipse_arc":
                 type_index = 4
             case "ellipse":
                 type_index = 5
@@ -1020,10 +1020,10 @@ class SP_OT_set_spline(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     degree: bpy.props.IntProperty(
-        name="Degree", default=2, description="Degree attribute assigned to selection"
+        name="Degree", default=2, min=0, description="Degree attribute assigned to selection"
     )
     weight: bpy.props.FloatProperty(
-        name="Weight", default=1.0, description="Weight attribute assigned to selection"
+        name="Weight", default=1.0, min = 0.0, description="Weight attribute assigned to selection"
     )
 
     def modal(self, context, event):
@@ -1035,11 +1035,12 @@ class SP_OT_set_spline(bpy.types.Operator):
             context.view_layer.update()
             return {"RUNNING_MODAL"}
         elif event.type == "WHEELDOWNMOUSE":
-            self.degree -= 1
-            set_seg_degree(self.degree, context)
-            context.area.header_text_set(f"Degree: {self.degree}")
-            context.view_layer.update()
-            return {"RUNNING_MODAL"}
+            if self.degree > 0:
+                self.degree -= 1
+                set_seg_degree(self.degree, context)
+                context.area.header_text_set(f"Degree: {self.degree}")
+                context.view_layer.update()
+                return {"RUNNING_MODAL"}
 
         # Exit conditions
         elif event.type in {"RIGHTMOUSE", "ESC"}:
