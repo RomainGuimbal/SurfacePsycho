@@ -4,78 +4,25 @@ from mathutils import Vector
 from os.path import abspath, splitext, split, isfile
 from ..utils import *
 
-# from .utils import list_of_shapes_to_compound
-import unicodedata
-
-# from OCP.Geom2dAdaptor import Geom2dAdaptor_Curve
-# from OCP.GeomAbs import GeomAbs_Line, GeomAbs_BSplineCurve, GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone, GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_SurfaceOfRevolution, GeomAbs_SurfaceOfExtrusion, GeomAbs_OffsetSurface, GeomAbs_OtherSurface
-from OCP.BRep import BRep_Builder
-from OCP.GProp import GProp_GProps
-from OCP.BRepGProp import BRepGProp
 from OCP.BRepAdaptor import (
     BRepAdaptor_Curve,
     BRepAdaptor_Curve2d,
     BRepAdaptor_Surface,
-)  # BRepAdaptor_Curve
-from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
-
-# from OCP.Geom import Geom_BezierSurface, Geom_BSplineSurface, Geom_BezierCurve, Geom_BSplineCurve, Geom_CylindricalSurface, Geom_Line, Geom_ToroidalSurface
-from OCP.GeomAbs import (
-    GeomAbs_BezierCurve,
-    GeomAbs_BSplineCurve,
-    GeomAbs_Line,
-    GeomAbs_Circle,
-    GeomAbs_Ellipse,
-    # GeomAbs_Plane,
-    # GeomAbs_Cylinder,
-    # GeomAbs_Cone,
-    # GeomAbs_Sphere,
-    # GeomAbs_Torus,
-    # GeomAbs_BezierSurface,
-    # GeomAbs_BSplineSurface,
-    # GeomAbs_SurfaceOfRevolution,
-    # GeomAbs_SurfaceOfExtrusion,
-    # GeomAbs_OffsetSurface,
-    # GeomAbs_OtherSurface,
 )
-
-# from OCP.GeomAPI import GeomAPI_ProjectPointOnCurve
+# from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.gp import gp_Pnt, gp_Pnt2d
-from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
-
-# from OCP.IGESCAFControl import IGESCAFControl_Reader
-from OCP.IGESControl import IGESControl_Controller, IGESControl_Reader
-from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB, Quantity_ColorRGBA
-from OCP.STEPCAFControl import STEPCAFControl_Reader
-from OCP.STEPControl import STEPControl_Reader
-from OCP.TCollection import TCollection_ExtendedString, TCollection_AsciiString
-from OCP.TDF import TDF_LabelSequence, TDF_Label
-from OCP.TDocStd import TDocStd_Document
 from OCP.TopAbs import (
     TopAbs_FORWARD,
     TopAbs_REVERSED,
-)  # , TopAbs_INTERNAL, TopAbs_EXTERNAL, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_COMPOUND, TopAbs_COMPSOLID, TopAbs_SOLID, TopAbs_SHELL, TopAbs_WIRE
-from OCP.TopLoc import TopLoc_Location
+)
 from OCP.TopoDS import (
     TopoDS,
     TopoDS_Iterator,
     TopoDS_Wire,
     TopoDS_Edge,
     TopoDS_Face,
-    TopoDS_Shape,
-    TopoDS_Compound,
-)
-
-# from OCP.TopTools import TopTools_IndexedMapOfShape
-# from OCP.XCAFApp import XCAFApp_Application
-from OCP.XCAFDoc import (
-    XCAFDoc_DocumentTool,
-    XCAFDoc_ColorTool,
-    XCAFDoc_ShapeTool,
-    XCAFDoc_ColorCurv,
-    XCAFDoc_ColorSurf,
-    XCAFDoc_ColorGen,
-    XCAFDoc_ColorType,
+    # TopoDS_Shape,
+    # TopoDS_Compound,
 )
 import OCP.GeomAbs as GeomAbs
 import OCP.TopAbs as TopAbs
@@ -84,17 +31,6 @@ import OCP.TopAbs as TopAbs
 ##############################
 ##    Converter classes     ##
 ##############################
-
-
-class SP_Pole_import:
-    def __init__(self, gp_pole):
-        if isinstance(gp_pole, gp_Pnt2d):
-            self.vertex = Vector((gp_pole.X(), gp_pole.Y(), 0))
-        else:
-            self.vertex = Vector((gp_pole.X(), gp_pole.Y(), gp_pole.Z()))
-
-        # self.weight ?
-
 
 class SP_Curve_no_edge_import:
     def __init__(self, adaptor_curve, scale=None):
@@ -130,7 +66,7 @@ class SP_Curve_no_edge_import:
                 end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
                 gp_pnt_poles = [start_point, end_point]
                 self.type_att = [EDGES_TYPES["line"]] * 2
-                self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
+                self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
                 self.degree_att = [0, 0]
                 self.endpoints_att = [True] * 2
                 self.weight = [0.0, 0.0]
@@ -149,7 +85,7 @@ class SP_Curve_no_edge_import:
         gp_pnt_poles = [start_point, end_point]
         self.type = EDGES_TYPES["line"]
         self.type_att = [EDGES_TYPES["line"]] * 2
-        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
+        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.degree_att = [0, 0]
         self.endpoints_att = [True] * 2
         self.weight = [0.0, 0.0]
@@ -171,7 +107,7 @@ class SP_Curve_no_edge_import:
         gp_pnt_poles = [bezier.Pole(i + 1) for i in range(p_count)]
         self.type = EDGES_TYPES["bezier"]
         self.type_att = [EDGES_TYPES["bezier"]] * p_count
-        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
+        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.degree_att = [0] * p_count
         self.endpoints_att = [True] + [False] * (p_count - 2) + [True]
         self.weight = [bezier.Weight(i + 1) for i in range(p_count)]
@@ -183,7 +119,7 @@ class SP_Curve_no_edge_import:
         p_count = bspline.NbPoles()
         gp_pnt_poles = [bspline.Pole(i + 1) for i in range(p_count)]
         self.degree = bspline.Degree()
-        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
+        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.type = EDGES_TYPES["nurbs"]
         self.type_att = [EDGES_TYPES["nurbs"]] * p_count
         self.degree_att = [bspline.Degree()] + [0] * (p_count - 2) + [bspline.Degree()]
@@ -231,7 +167,7 @@ class SP_Curve_no_edge_import:
         self.weight = [0.0] * 3
         self.knot = [0.0] * 3
         self.mult = [0] * 3
-        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
+        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
 
     def ellipse(self, edge_adaptor):
         # arc from 3 pts
@@ -267,8 +203,7 @@ class SP_Curve_no_edge_import:
             self.knot = [0.0, 0.0, 0.0, 0.0, 0.0]
             self.mult = [0, 0, 0, 0, 0]
 
-        self.verts = [SP_Pole_import(g).vertex for g in gp_pnt_poles]
-
+        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
 
 class SP_Edge_import:
     def __init__(self, topods_edge: TopoDS_Edge, topods_face=None, scale=None):
@@ -921,8 +856,7 @@ def build_SP_curve(shape, doc, collection, scale=0.001, resolution=16):
         knot_att = sp_wire.knot_att
         mult_att = sp_wire.mult_att
     else:
-        sp_edge = SP_Edge_import(shape)
-        sp_edge.scale(scale)
+        sp_edge = SP_Edge_import(shape, scale=scale)
         verts = sp_edge.verts
         edge_degree = sp_edge.degree
         weight_att = sp_edge.weight

@@ -231,13 +231,13 @@ class SP_OT_select_visible_curves(bpy.types.Operator):
                     in [
                         "SP - Mesh Bezier Chain",
                         "SP - Bezier Curve Any Order",
-                        "SP -  Mesh Bezier Chain",
-                        "SP -  Bezier Curve Any Order",
+                        "SP - Mesh Bezier Chain",
+                        "SP - Bezier Curve Any Order",
                         "SP - Curve Meshing",
                         "SP - Mesh Bezier C",
                         "SP - Bezier Curve Any O",
-                        "SP -  Mesh Bezier C",
-                        "SP -  Bezier Curve Any O",
+                        "SP - Mesh Bezier C",
+                        "SP - Bezier Curve Any O",
                         "SP - Curve Mes",
                     ]
                 ):

@@ -437,19 +437,19 @@ class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
             layout = self.layout
             pie = layout.menu_pie()
             # Pie order: west, east, south, north, north-west, north-east, south-west, south-east
-            pie.separator()#West
-            pie.operator("sp.set_segment_type", text="Circle", icon="MESH_CIRCLE").type = "circle" #East
-            pie.separator()#South
+            pie.operator("sp.set_segment_type", text="Circle", icon="MESH_CIRCLE").type = "circle"#West
             pie.operator(
                 "sp.set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
-            ).type = "ellipse" #North
-            pie.operator("sp.set_spline", text="Spline", icon="RNDCURVE") #North-west
+            ).type = "ellipse" #East
+            pie.operator("sp.toggle_endpoints", text="Toggle Endpoints") #South
+            pie.operator("sp.set_spline", text="Spline", icon="RNDCURVE") #North
+            pie.operator("sp.set_segment_type", text="Circle Arc", icon="SPHERECURVE"
+            ).type = "circle_arc" #North-west
             pie.operator(
                 "sp.set_segment_type", text="Ellipse Arc", icon="INVERSESQUARECURVE"
-            ).type = "ellipse_arc"  #North-east
-            pie.operator("sp.toggle_endpoints", text="Toggle Endpoints") #South-west
-            pie.operator("sp.set_segment_type", text="Circle Arc", icon="SPHERECURVE"
-            ).type = "circle_arc" #South-east
+            ).type = "ellipse_arc" #North-east
+            # pie.separator() #South-west
+            # pie.separator() #South-east
 
 
 def menu_surface(self, context):

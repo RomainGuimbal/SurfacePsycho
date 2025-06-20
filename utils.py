@@ -499,6 +499,21 @@ def vec_list_to_gp_pnt(array: list):
 def blender_to_gp_vec(vec: Vector):
     return gp_Vec(vec.x, vec.y, vec.z)
 
+def gp_pnt_to_blender_vec(vec: gp_Pnt):
+    return Vector((vec.X(), vec.Y(), vec.Z()))
+
+def gp_pnt2d_to_blender_vec(vec: gp_Pnt2d):
+    return Vector((vec.X(), vec.Y(), 0))
+
+def gp_pnt_to_blender_vec_list(vecs: list[gp_Pnt]) -> list[Vector]:
+    try :
+        res = [Vector((vec.X(), vec.Y(), vec.Z())) for vec in vecs]
+    except Exception:
+        res = [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
+    return res
+
+# def gp_pnt2d_to_blender_vec_list(vecs: list):
+#     return [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
 
 def normalize_array(array):
     mini = min(array)
@@ -841,8 +856,8 @@ def curve_range_from_type(curve_type):
             case GeomAbs.GeomAbs_BSplineCurve:
                 min_u, max_u = 0, 1
             case GeomAbs.GeomAbs_Circle:
-                min_u, max_u = -math.pi(), math.pi()
+                min_u, max_u = -math.pi, math.pi
             case GeomAbs.GeomAbs_Ellipse:
-                min_u, max_u = -math.pi(), math.pi()
+                min_u, max_u = -math.pi, math.pi
 
     return min_u, max_u
