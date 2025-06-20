@@ -27,13 +27,19 @@ wheels = [
 ]
 
 [permissions]
-files = "Import/export CAD files"
+files = "Import and export CAD files"
 
 [build]
 paths_exclude_pattern = [
   "__pycache__/",
   "/.git/",
+  "/.trunk/",
+  "/.vscode/",
+  "/.github/",
   "/*.zip",
   "/*.blend1",
+  ".gitignore",
+  ".gitattributes",
+  "README.md",
   "Asset Importer.py",
 ]

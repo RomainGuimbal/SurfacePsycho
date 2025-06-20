@@ -102,9 +102,19 @@ class SP_Curve_no_edge_import:
         #     poles = [start_point, end_point]
 
     def bezier(self, edge_adaptor):
+        # Get geom curve
         bezier = edge_adaptor.Bezier()
+
+        # Trim for poles matching param range
+        first = edge_adaptor.FirstParameter()
+        last = edge_adaptor.LastParameter()
+        bezier.Segment(first, last)
+        
+        # Get poles
         p_count = bezier.NbPoles()
         gp_pnt_poles = [bezier.Pole(i + 1) for i in range(p_count)]
+
+        # Set attributes
         self.type = EDGES_TYPES["bezier"]
         self.type_att = [EDGES_TYPES["bezier"]] * p_count
         self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
@@ -115,9 +125,19 @@ class SP_Curve_no_edge_import:
         self.mult = [0] * p_count
 
     def bspline(self, edge_adaptor):
+        # Get geom curve
         bspline = edge_adaptor.BSpline()
+
+        # Trim for poles matching param range
+        first = edge_adaptor.FirstParameter()
+        last = edge_adaptor.LastParameter()
+        bspline.Segment(first, last)
+        
+        # Get poles
         p_count = bspline.NbPoles()
         gp_pnt_poles = [bspline.Pole(i + 1) for i in range(p_count)]
+        
+        # Set attributes
         self.degree = bspline.Degree()
         self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.type = EDGES_TYPES["nurbs"]
@@ -209,6 +229,8 @@ class SP_Edge_import:
     def __init__(self, topods_edge: TopoDS_Edge, topods_face=None, scale=None):
         # Edge adaptor
         # 3D
+
+
         if topods_face is None:
             edge_adaptor = BRepAdaptor_Curve(topods_edge)
         # 2D

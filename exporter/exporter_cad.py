@@ -9,10 +9,6 @@ import warnings
 from collections import Counter
 from .ellipse import *
 
-file_dirname = dirname(__file__)
-if file_dirname not in sys.path:
-    sys.path.append(file_dirname)
-
 
 from OCP.BRepBuilderAPI import (
     BRepBuilderAPI_Copy,

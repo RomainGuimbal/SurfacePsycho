@@ -203,6 +203,7 @@ gr_surf = [
     "SP - Displace Patch",
     "SP - Displace Precisely",
     "SP - Fillet Trim Contour",
+    "SP - Fit Bezier Patch",
     "SP - Flatten Patch",
     "SP - Flatten Patch Side",
     "SP - Gradient Map",
@@ -316,29 +317,32 @@ full_set = set(
     + obj_preset
     + [
         "SP - Connect Bezier Patch",
+        "SP - Bezier Patch Meshing",
         # "SP - Auto Snap Continuities",
         "SP - Continuities Curve",
         "SP - Curve Meshing",
         "SP - Crop or Extend Curve",
-        "SP - Bezier Patch Meshing",
+        "SP - FlatPatch Meshing",
     ]
 )
 
 shape_set = set(obj_preset + coll_preset)
 
 
-#print("\n\n______________________________________________________\n")
-
+print("\n\n______________________________________________________\n")
+print("Manual deduplication..\n")
 # for ng in full_list:
 #    bpy.ops.sp.replace_node_group(target_name=ng+".001", new_name=ng)
 #
-# bpy.ops.sp.replace_node_group(target_name="SP - Bezier Patch Meshing.100", new_name = "SP - Bezier Patch Meshing")
+bpy.ops.sp.replace_node_group(target_name="SP - Crop or Extend Patch.001", new_name = "SP - Crop or Extend Patch")
+bpy.ops.sp.replace_node_group(target_name="SP - Connect Bezier Patch.001", new_name = "SP - Connect Bezier Patch")
+bpy.ops.sp.replace_node_group(target_name="SP - Reorder Grid Index.001", new_name = "SP - Reorder Grid Index")
+bpy.ops.sp.replace_node_group(target_name="SP - NURBS Patch Meshing.001", new_name = "SP - NURBS Patch Meshing")
+bpy.ops.sp.replace_node_group(target_name="SP - NURBS Segment to Bezier segments.001", new_name = "SP - NURBS Segment to Bezier segments")
+bpy.ops.sp.replace_node_group(target_name="SP - Crop or Extend Curve.001", new_name = "SP - Crop or Extend Curve")
 
-
-#print("\n\n______________________________________________________\n\n")
-#print("Clearing unused data..\n")
-
-
+print("\n\n______________________________________________________\n")
+print("Clearing unused data..\n")
 # clear unused data. Do several times to fake recursive
 for ng in bpy.data.node_groups:
     if ng.asset_data == None:
@@ -376,5 +380,37 @@ for ng in bpy.data.node_groups:
 print("\n\n______________________________________________________\n")
 print("Assign to catalogs..\n")
 
-assign_assets_to_catalog(full_set - shape_set, "SurfacePsycho")
+bezier_patch_set = set(
+    obj_surf 
+    + gr_surf 
+    + ["SP - Connect Bezier Patch", "SP - Bezier Patch Meshing"]
+) - {"SP - Sew and Symmetrize", 
+        "SP - Displace Precisely", 
+        "Internal Curve For Patch", 
+        "SP - Convert Flat Patch to Bezier Patch",
+        "SP - Select Patch Range",
+        "SP - Project Curve on Bezier Patch",
+        "SP - Curvature Analysis",
+        "SP - Convert Contour",
+        "SP - Copy Flat Patch as Trim Contour",
+        "SP - Copy Segment",
+        "SP - Nearest Curve on Bezier Patch",
+        "SP - Interpolation Patch Grid",
+        "SP - Flatten Patch",
+        }
+        
+curve_flat_set = set(
+    obj_curve_flat 
+    + gr_curve_flat 
+    + ["SP - Project Curve on Bezier Patch", 
+        "SP - Nearest Curve on Bezier Patch", 
+        "SP - Crop or Extend Curve", 
+        "SP - Curve Meshing",
+        "SP - FlatPatch Meshing"]
+) - {"SP - Project on Flat Patch"}
+
+
+assign_assets_to_catalog(full_set, "SurfacePsycho")
+assign_assets_to_catalog(bezier_patch_set, "SurfacePsycho/Bezier Patch")
+assign_assets_to_catalog(curve_flat_set, "SurfacePsycho/Curve & FlatPatch")
 assign_assets_to_catalog(shape_set, "SurfacePsycho/Shape")
