@@ -352,11 +352,11 @@ class SP_PT_MainPanel(bpy.types.Panel):
                 icon="OUTLINER_OB_SURFACE",
             )
 
-            # Add Probe
-            row = self.layout.row()
-            row.operator(
-                "sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR"
-            )
+            # # Add Probe
+            # row = self.layout.row()
+            # row.operator(
+            #     "sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR"
+            # )
 
             # Replace node group
             row = self.layout.row()
