@@ -23,17 +23,23 @@ class SP_OT_quick_export(bpy.types.Operator):
     def execute(self, context):
 
         blenddir = bpy.path.abspath("//")
+        blendname = bpy.path.display_name_from_filepath(bpy.data.filepath)
+        if blendname == "":
+            blendname = "SP_Quick_Export"
+        today = datetime.today()
+        date_str = today.strftime("%d-%m-%Y")
+        filename = f"{blendname} {date_str}.step"
+
         if blenddir != "":  # avoids exporting to root
             dir = blenddir
         else:
             dir = context.preferences.filepaths.temporary_directory
-        pathstr = dir + str(datetime.today())[:-7].replace("-", "").replace(
-            " ", "-"
-        ).replace(":", "")
 
-        export_isdone = export_step(context, f"{pathstr}.step", True, 1000, 1e-1)
+        pathstr = join(dir, filename)
+
+        export_isdone = export_step(context, pathstr, True, 1000, 1e-1)
         if export_isdone:
-            self.report({"INFO"}, f"Step file exported as {pathstr}.step")
+            self.report({"INFO"}, f"Step file exported at {pathstr}")
         else:
             self.report({"INFO"}, "No SurfacePsycho Objects selected")
         return {"FINISHED"}
@@ -169,7 +175,7 @@ class SP_OT_add_library(bpy.types.Operator):
 
     def execute(self, context):
         # create lib
-        asset_lib_path = join(dirname(abspath(__file__)), "assets")
+        asset_lib_path = join(dirname(dirname(abspath(__file__))), "assets")
         paths = [a.path for a in bpy.context.preferences.filepaths.asset_libraries]
         if asset_lib_path not in paths:
             bpy.ops.preferences.asset_library_add(directory=asset_lib_path)
@@ -829,6 +835,7 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
         # Switch to object mode to modify vertex groups
         bpy.ops.object.mode_set(mode="OBJECT")
 
+        ## TO REPLACE WITH THE ATTRIBUTE SYSTEM
         # Add vertex groups
         if "Trim Contour" not in obj.vertex_groups:
             obj.vertex_groups.new(name="Trim Contour")

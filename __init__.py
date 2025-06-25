@@ -14,8 +14,8 @@
 bl_info = {
     "name": "Surface Psycho",
     "author": "Romain Guimbal",
-    "version": (0, 8),
-    "blender": (4, 3, 0),
+    "version": (0, 8, 1),
+    "blender": (4, 4, 0),
     "description": "Precision Surface Design",
     "warning": "Alpha",
     "doc_url": "https://github.com/RomainGuimbal/SurfacePsycho/wiki",
