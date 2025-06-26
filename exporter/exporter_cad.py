@@ -1489,12 +1489,11 @@ def prepare_export(context, use_selection :bool, scale=1000, sew_tolerance=1e-1)
         sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
         separated_shapes_list.extend(shells_to_solids(sewed))
 
-    # prepare sp compound objects
-    if len(hierarchy.compounds) > 0:
-        pass
-        # TODO
-        # sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
-        # separated_shapes_list.extend(shells_to_solids(sewed))
+    # TODO prepare sp compound objects
+    # if len(hierarchy.compounds) > 0:
+    #     pass
+    #     sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
+    #     separated_shapes_list.extend(shells_to_solids(sewed))
 
     # prepare instances
     if len(hierarchy.instances) > 0:

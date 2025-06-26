@@ -91,8 +91,7 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
 
-@orientation_helper(axis_forward="Y", axis_up="Z")
-class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
+class SP_OT_ImportCAD(bpy.types.Operator):
     bl_idname = "sp.cad_import"
     bl_label = "Import CAD"
     bl_options = {"REGISTER", "UNDO"}
@@ -351,12 +350,6 @@ class SP_PT_MainPanel(bpy.types.Panel):
                 text="Surfaces",
                 icon="OUTLINER_OB_SURFACE",
             )
-
-            # # Add Probe
-            # row = self.layout.row()
-            # row.operator(
-            #     "sp.add_curvatures_probe", text="Add Curvatures Probe", icon="CURSOR"
-            # )
 
             # Replace node group
             row = self.layout.row()

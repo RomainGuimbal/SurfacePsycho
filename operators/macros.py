@@ -157,17 +157,6 @@ class SP_OT_add_curve(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# class SP_OT_add_curvatures_probe(bpy.types.Operator):
-#     bl_idname = "sp.add_curvatures_probe"
-#     bl_label = "Add Curvatures Probe"
-#     bl_options = {"REGISTER", "UNDO"}
-#     bl_description = "Discrete mesh curvature inspector object. Bind to any surface through modifier properties"
-
-#     def execute(self, context):
-#         append_object_by_name("SP - Curvatures Probe", context)
-#         return {"FINISHED"}
-
-
 class SP_OT_add_library(bpy.types.Operator):
     bl_idname = "sp.add_library"
     bl_label = "Add Library"
@@ -285,63 +274,6 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# class SP_OT_unify_versions(bpy.types.Operator):
-#     bl_idname = "sp.unify_versions"
-#     bl_label = "SP - Unify versions"
-#     bl_options = {"REGISTER", "UNDO"}
-
-#     def execute(self, context):
-#         effect_counter = 0
-#         # Store modifier names
-#         objects = [ob for ob in context.visible_objects]
-#         mod_names = []
-#         for o in objects:
-#             for m in o.modifiers:
-#                 if (
-#                     m.type == "NODES"
-#                     and m.node_group.name[:5] == "SP - "
-#                     and m.node_group.name not in mod_names
-#                 ):
-#                     mod_names.append(m.node_group.name)
-
-#         latest_mod_names = highest_suffix_of_each_object_name(mod_names)
-#         latest_mod_names_no_suffix = [l[:-4] for l in latest_mod_names]
-
-#         for o in objects:
-#             for m in o.modifiers:
-#                 if (
-#                     m.type == "NODES"
-#                     and m.node_group.name[:5] == "SP - "
-#                     and m.node_group.name not in latest_mod_names
-#                 ):
-#                     name = m.node_group.name
-#                     name_no_suffix = name[:-4]
-
-#                     if (
-#                         name in latest_mod_names_no_suffix
-#                     ):  # if only latest_v_name has a suffix
-#                         found_name = latest_mod_names[
-#                             latest_mod_names_no_suffix.index(name)
-#                         ]
-#                         m.node_group = bpy.data.node_groups[found_name]
-#                         effect_counter += 1
-
-#                     elif (
-#                         name_no_suffix in latest_mod_names_no_suffix
-#                     ):  # if latest_v_name AND name have a suffix
-#                         found_name = latest_mod_names[
-#                             latest_mod_names_no_suffix.index(name_no_suffix)
-#                         ]
-#                         m.node_group = bpy.data.node_groups[found_name]
-#                         effect_counter += 1
-#         if effect_counter > 0:
-#             self.report({"INFO"}, str(effect_counter) + " modifiers replaced")
-#         else:
-#             self.report({"INFO"}, "No SP modifiers replaced")
-
-#         return {"FINISHED"}
-
-
 class SP_OT_update_modifiers(bpy.types.Operator):
     bl_idname = "sp.update_modifiers"
     bl_label = "SP - Update Modifiers"
@@ -367,16 +299,6 @@ class SP_OT_update_modifiers(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_Invoke_replace_node_panel(bpy.types.Operator):
-    bl_idname = "sp.invoke_replace_node_panel"
-    bl_label = "Invoker for SP - Replace Node Group"
-    bl_options = {"INTERNAL"}
-
-    def execute(self, context):
-        bpy.ops.sp.replace_node_group
-        return {"FINISHED"}
-
-
 class SP_OT_replace_node_group(bpy.types.Operator):
     bl_idname = "sp.replace_node_group"
     bl_label = "SP - Replace Node Group"
@@ -393,12 +315,12 @@ class SP_OT_replace_node_group(bpy.types.Operator):
         r = replace_all_instances_of_node_group(
             target_node_group_name, new_node_group_name
         )
-        if r == 1:
-            self.report({"INFO"}, f"Successfully replaced")
+        if r >= 1:
+            self.report({"INFO"}, f"{r} node groups successfully replaced")
         elif r == 0:
-            self.report({"INFO"}, f"{new_node_group_name} not found")
+            self.report({"INFO"}, f"{new_node_group_name} does not exist")
         elif r == -1:
-            self.report({"INFO"}, f"{target_node_group_name} not found")
+            self.report({"INFO"}, f"{target_node_group_name} does not exist")
         return {"FINISHED"}
 
     # Display panel
@@ -1077,9 +999,6 @@ class SP_OT_set_spline(bpy.types.Operator):
         set_vert_weight(self.weight, context)
         return {"FINISHED"}
 
-# TODO
-# Bridge patches
-
 
 class SP_OT_add_oriented_empty(bpy.types.Operator):
     bl_idname = "sp.add_oriented_empty"
@@ -1148,7 +1067,6 @@ class SP_OT_add_oriented_empty(bpy.types.Operator):
 classes = [
     SP_OT_add_NURBS_patch,
     SP_OT_add_bezier_patch,
-    # SP_OT_add_curvatures_probe,
     SP_OT_add_curve,
     SP_OT_add_flat_patch,
     SP_OT_add_library,
@@ -1163,11 +1081,9 @@ classes = [
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,
     SP_OT_toggle_control_geom,
-    # SP_OT_unify_versions,
     SP_OT_select_endpoints,
     SP_OT_update_modifiers,
     SP_OT_replace_node_group,
-    SP_OT_Invoke_replace_node_panel,
     SP_Props_Group,
     SP_OT_quick_export,
     SP_OT_set_segment_degree,
