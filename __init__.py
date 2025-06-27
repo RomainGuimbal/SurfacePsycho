@@ -28,7 +28,7 @@ from . import gui
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = __name__
+    bl_idname = __package__
 
     def draw(self, context):
         layout = self.layout
@@ -46,5 +46,5 @@ def unregister():
     gui.unregister()
 
 
-if __name__ == "__main__":
+if __package__ == "__main__":
     register()

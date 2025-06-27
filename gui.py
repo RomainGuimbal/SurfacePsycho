@@ -574,5 +574,5 @@ def unregister():
     macros.unregister()
 
 
-if __name__ == "__main__":
+if __package__ == "__main__":
     bpy.ops.sp.cad_import()

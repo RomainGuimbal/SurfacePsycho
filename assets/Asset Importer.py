@@ -412,7 +412,7 @@ def clear_unused_data():
             bpy.data.node_groups.remove(ng)
 
 
-if __name__ == "__main__":
+if __package__ == "__main__":
     delete_all_data()
 
     print("\n\n\n\n______________________________________________________")

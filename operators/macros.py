@@ -28,7 +28,8 @@ class SP_OT_quick_export(bpy.types.Operator):
             blendname = "SP_Quick_Export"
         today = datetime.today()
         date_str = today.strftime("%d-%m-%Y")
-        filename = f"{blendname} {date_str}.step"
+        time_str = today.strftime("%H-%M-%S")
+        filename = f"{blendname} {time_str} {date_str}.step"
 
         if blenddir != "":  # avoids exporting to root
             dir = blenddir
