@@ -21,7 +21,7 @@ class PipelineConfig:
     """Configuration for the pipeline processing"""
     io_workers: Optional[int] = None
     compute_workers: Optional[int] = None
-    batch_size: int = 1000
+    batch_size: int = 300
     poll_interval: float = 0.1
     shutdown_timeout: float = 5.0
     

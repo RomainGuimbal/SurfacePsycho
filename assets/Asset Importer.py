@@ -1,5 +1,4 @@
 import bpy
-import time
 from pathlib import Path
 
 
@@ -156,16 +155,16 @@ obj_curve_flat = {
 gr_curve_flat = {
     "SP - Bezier Circlular Arc",
     "SP - Blend Curve",
-    "SP - Compose FlatPatch From Sides",
+#    "SP - Compose FlatPatch From Sides",
     "SP - Continuities between Segments",
     "SP - Convert Circles and Ellipses to Splines",
     "SP - Copy Curve or FlatPatch",
     "SP - Copy Flat Patch Side",
     "SP - Copy Mesh Face",
     "SP - Curve on Surface from UV",
-    "SP - Interpolation Curve",
     "SP - Distance Between Curves",
     "SP - Fillet Curve or FlatPatch",
+    "SP - Fillet Polyline with Circles",
     "SP - Fit Curve",
     "SP - Inset FlatPatch",
     "SP - Intervale Curve",
@@ -187,6 +186,7 @@ gr_curve_flat = {
     "SP - Split Curve",
     "SP - Switch Curve Direction",
     "SP - Text to Curve or FlatPatch",
+    "SP - Interpolate Wire",
     # "SP - Continuities Curve",
     # "SP - Curve Meshing",
     # "SP - Crop or Extend Curve",
@@ -349,31 +349,28 @@ nurbs_set = obj_nurbs | gr_nurbs - {"SP - Continuity Analysis"}
 def replace_duplicates():
     print("\n\n______________________________________________________\n")
     print("Manual deduplication..\n")
-    # for ng in full_list:
-    #    bpy.ops.sp.replace_node_group(target_name=ng+".001", new_name=ng)
-    #
-    bpy.ops.sp.replace_node_group(
-        target_name="SP - Crop or Extend Patch.001",
-        new_name="SP - Crop or Extend Patch",
-    )
-    bpy.ops.sp.replace_node_group(
-        target_name="SP - Connect Bezier Patch.001",
-        new_name="SP - Connect Bezier Patch",
-    )
-    bpy.ops.sp.replace_node_group(
-        target_name="SP - Reorder Grid Index.001", new_name="SP - Reorder Grid Index"
-    )
-    bpy.ops.sp.replace_node_group(
-        target_name="SP - NURBS Patch Meshing.001", new_name="SP - NURBS Patch Meshing"
-    )
-    bpy.ops.sp.replace_node_group(
-        target_name="SP - NURBS Segment to Bezier segments.001",
-        new_name="SP - NURBS Segment to Bezier segments",
-    )
-    bpy.ops.sp.replace_node_group(
-        target_name="SP - Crop or Extend Curve.001",
-        new_name="SP - Crop or Extend Curve",
-    )
+    
+    #############################
+    #         DANGER            #          
+    # May remove different node #
+    #   groups with same name   #
+    #############################
+    
+    duplicated_list = []
+    for ng in bpy.data.node_groups:
+        if ng.name[-4] ==".":
+            duplicated_list.append(ng.name[:-4])
+    duplicated_groups = set(duplicated_list)
+    
+    replace_pairs = []
+    for d in duplicated_groups :
+        replace_pairs.append((d+".*",d))
+    
+    for p in replace_pairs : 
+        bpy.ops.object.sp_replace_node_group(target_name = p[0], new_name = p[1])
+        
+        
+
 
 
 def clear_unused_data():
@@ -412,7 +409,7 @@ def clear_unused_data():
             bpy.data.node_groups.remove(ng)
 
 
-if __package__ == "__main__":
+if __name__ == "__main__":
     delete_all_data()
 
     print("\n\n\n\n______________________________________________________")

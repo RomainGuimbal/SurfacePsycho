@@ -10,7 +10,7 @@ from .operators import macros
 # from .macros import SP_Props_Group
 from .exporter.exporter_cad import export_step, export_iges
 from .exporter.exporter_svg import export_svg
-from .importer.multiStagePipeline import *
+from .importer.multiStagePipelineALT import *
 from .importer.shape_to_blender_object import *
 from .importer.reader import read_cad
 from bpy.props import (
@@ -23,14 +23,12 @@ from bpy.props import (
 from bpy_extras.io_utils import (
     ExportHelper,
     ImportHelper,
-    orientation_helper,
-    axis_conversion,
 )
 
 
 
 class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
-    bl_idname = "sp.step_export"
+    bl_idname = "object.sp_step_export"
     bl_label = "Export STEP"
     filename_ext = ".step"
     filter_glob: StringProperty(default="*.step", options={"HIDDEN"}, maxlen=255)
@@ -64,7 +62,7 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
 
 
 class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
-    bl_idname = "sp.iges_export"
+    bl_idname = "object.sp_iges_export"
     bl_label = "Export IGES"
     filename_ext = ".iges"
     filter_glob: StringProperty(default="*.iges", options={"HIDDEN"}, maxlen=255)
@@ -91,8 +89,8 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
 
-class SP_OT_ImportCAD(bpy.types.Operator):
-    bl_idname = "sp.cad_import"
+class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
+    bl_idname = "object.sp_cad_import"
     bl_label = "Import CAD"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -140,8 +138,7 @@ class SP_OT_ImportCAD(bpy.types.Operator):
 
         # Setup pipeline
         config = PipelineConfig(
-            io_workers=min(len(shapes), (os.cpu_count()) * 5),
-            compute_workers=os.cpu_count(),
+            # io_workers=min(len(shapes), (os.cpu_count()) * 5),
             batch_size=100,
         )
 
@@ -240,7 +237,7 @@ class SP_OT_ImportCAD(bpy.types.Operator):
 
 
 class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
-    bl_idname = "sp.svg_export"
+    bl_idname = "object.sp_svg_export"
     bl_label = "Export SVG"
 
     filename_ext = ".svg"
@@ -317,12 +314,12 @@ class SP_PT_MainPanel(bpy.types.Panel):
         if context.mode == "OBJECT":
             row = self.layout.row()
             row.scale_y = 2.0
-            row.operator("sp.quick_export", text="Quick .STEP Export", icon="EXPORT")
+            row.operator("object.sp_quick_export", text="Quick .STEP Export", icon="EXPORT")
 
             # Toggle control geom
             row = self.layout.row()
             row.operator(
-                "sp.toggle_control_geom",
+                "object.sp_toggle_control_geom",
                 text="Toggle Control Geometry",
                 icon="OUTLINER_DATA_LATTICE",
             )
@@ -343,10 +340,10 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row.label(text="Select Visible")
             sub = row.row(align=True)
             sub.operator(
-                "sp.select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE"
+                "object.sp_select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE"
             )
             sub.operator(
-                "sp.select_visible_surfaces",
+                "object.sp_select_visible_surfaces",
                 text="Surfaces",
                 icon="OUTLINER_OB_SURFACE",
             )
@@ -354,7 +351,7 @@ class SP_PT_MainPanel(bpy.types.Panel):
             # Replace node group
             row = self.layout.row()
             row.operator(
-                "sp.replace_node_group",
+                "object.sp_replace_node_group",
                 text="Replace Node Group",
                 icon="UV_SYNC_SELECT",
             )
@@ -372,7 +369,7 @@ class SP_PT_EditPanel(bpy.types.Panel):
         if context.mode == "OBJECT" or context.mode == "EDIT_MESH":
             row = self.layout.row()
             row.operator(
-                "sp.add_trim_contour", text="Add Trim Contour", icon="MOD_MESHDEFORM"
+                "object.sp_add_trim_contour", text="Add Trim Contour", icon="MOD_MESHDEFORM"
             )
 
         if context.mode == "EDIT_MESH":
@@ -380,29 +377,29 @@ class SP_PT_EditPanel(bpy.types.Panel):
             row = self.layout.row()
             row.label(text="Endpoints")
             sub = row.row(align=True)
-            sub.operator("sp.toggle_endpoints", text="Toggle")
-            sub.operator("sp.select_endpoints", text="Select")
+            sub.operator("object.sp_toggle_endpoints", text="Toggle")
+            sub.operator("object.sp_select_endpoints", text="Select")
 
             # Type
             row = self.layout.row()
             row.operator(
-                "sp.set_segment_type", text="Spline", icon="MOD_CURVE"
+                "object.sp_set_segment_type", text="Spline", icon="MOD_CURVE"
             ).type = "spline"
 
             row = self.layout.row()
             sub = row.row(align=True)
             sub.operator(
-                "sp.set_segment_type", text="Circle", icon="MESH_CIRCLE"
+                "object.sp_set_segment_type", text="Circle", icon="MESH_CIRCLE"
             ).type = "circle"
-            sub.operator("sp.set_segment_type", text="Arc", icon="SPHERECURVE").type = "circle_arc"
+            sub.operator("object.sp_set_segment_type", text="Arc", icon="SPHERECURVE").type = "circle_arc"
 
             row = self.layout.row()
             sub = row.row(align=True)
             sub.operator(
-                "sp.set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
+                "object.sp_set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
             ).type = "ellipse"
             sub.operator(
-                "sp.set_segment_type", text="Arc", icon="INVERSESQUARECURVE"
+                "object.sp_set_segment_type", text="Arc", icon="INVERSESQUARECURVE"
             ).type = "ellipse_arc"
 
             # Segment Degree
@@ -430,16 +427,16 @@ class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
             layout = self.layout
             pie = layout.menu_pie()
             # Pie order: west, east, south, north, north-west, north-east, south-west, south-east
-            pie.operator("sp.set_segment_type", text="Circle", icon="MESH_CIRCLE").type = "circle"#West
+            pie.operator("object.sp_set_segment_type", text="Circle", icon="MESH_CIRCLE").type = "circle"#West
             pie.operator(
-                "sp.set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
+                "object.sp_set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
             ).type = "ellipse" #East
-            pie.operator("sp.toggle_endpoints", text="Toggle Endpoints") #South
-            pie.operator("sp.set_spline", text="Spline", icon="RNDCURVE") #North
-            pie.operator("sp.set_segment_type", text="Circle Arc", icon="SPHERECURVE"
+            pie.operator("object.sp_toggle_endpoints", text="Toggle Endpoints") #South
+            pie.operator("object.sp_set_spline", text="Spline", icon="RNDCURVE") #North
+            pie.operator("object.sp_set_segment_type", text="Circle Arc", icon="SPHERECURVE"
             ).type = "circle_arc" #North-west
             pie.operator(
-                "sp.set_segment_type", text="Ellipse Arc", icon="INVERSESQUARECURVE"
+                "object.sp_set_segment_type", text="Ellipse Arc", icon="INVERSESQUARECURVE"
             ).type = "ellipse_arc" #North-east
             # pie.separator() #South-west
             # pie.separator() #South-east
@@ -449,21 +446,21 @@ def menu_surface(self, context):
     self.layout.separator()
     if context.mode == "OBJECT":
         self.layout.operator(
-            "sp.add_bezier_patch", text="Bezier PsychoPatch", icon="SURFACE_NSURFACE"
+            "object.sp_add_bezier_patch", text="Bezier PsychoPatch", icon="SURFACE_NSURFACE"
         )
         self.layout.operator(
-            "sp.add_nurbs_patch", text="NURBS PsychoPatch", icon="SURFACE_NSURFACE"
+            "object.sp_add_nurbs_patch", text="NURBS PsychoPatch", icon="SURFACE_NSURFACE"
         )
         self.layout.operator(
-            "sp.add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE"
+            "object.sp_add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE"
         )
-        # self.layout.operator("sp.add_cylinder", text="Cylinder", icon="SURFACE_NCYLINDER")
+        # self.layout.operator("object.sp_add_cylinder", text="Cylinder", icon="SURFACE_NCYLINDER")
 
 
 def menu_curve(self, context):
     self.layout.separator()
     if context.mode == "OBJECT":
-        self.layout.operator("sp.add_curve", text="PsychoCurve", icon="CURVE_NCURVE")
+        self.layout.operator("object.sp_add_curve", text="PsychoCurve", icon="CURVE_NCURVE")
 
 
 def menu_convert(self, context):
@@ -472,35 +469,34 @@ def menu_convert(self, context):
     # if context.mode == "OBJECT":
     # if context.active_object.type == "SURFACE":
     self.layout.operator(
-        "sp.bl_nurbs_to_psychopatch",
+        "object.sp_bl_nurbs_to_psychopatch",
         text="Internal NURBS to PsychoPatch",
         icon="SURFACE_NSURFACE",
     )
     # if context.active_object.type == "MESH":
     self.layout.operator(
-        "sp.psychopatch_to_bl_nurbs",
+        "object.sp_psychopatch_to_bl_nurbs",
         text="PsychoPatch to internal NURBS",
         icon="SURFACE_NSURFACE",
     )
 
 
 def menu_export_step(self, context):
-    self.layout.operator("sp.step_export", text="SurfacePsycho CAD (.step)")
+    self.layout.operator("object.sp_step_export", text="SurfacePsycho STEP (.step)")
 
 
 def menu_export_iges(self, context):
-    self.layout.operator("sp.iges_export", text="SurfacePsycho CAD (.iges)")
+    self.layout.operator("object.sp_iges_export", text="SurfacePsycho IGES (.iges)")
+
+
+def menu_export_svg(self, context):
+    self.layout.operator("object.sp_svg_export", text="SurfacePsycho SVG (.svg)")
 
 
 def menu_func_import(self, context):
     self.layout.operator(
         SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)"
     )
-
-
-def menu_export_svg(self, context):
-    self.layout.operator("sp.svg_export", text="SurfacePsycho SVG (.svg)")
-
 
 # topbar menu (fails)
 def menu_segment_edit(self, context):
@@ -516,7 +512,7 @@ def hotkeys_add(addon_keymaps):
     if kc:
         km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
 
-        kmi = km.keymap_items.new("sp.toggle_endpoints","F", "PRESS", shift=True, alt= True)
+        kmi = km.keymap_items.new("object.sp_toggle_endpoints","F", "PRESS", shift=True, alt= True)
         addon_keymaps.append((km, kmi))
         
         kmi = km.keymap_items.new("wm.call_menu_pie","F", "PRESS", shift=True)
@@ -575,4 +571,4 @@ def unregister():
 
 
 if __package__ == "__main__":
-    bpy.ops.sp.cad_import()
+    bpy.ops.object.sp_cad_import()

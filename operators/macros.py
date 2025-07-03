@@ -1,5 +1,7 @@
 import bpy
 import bmesh
+import re
+import os
 from ..utils import *
 from mathutils import Vector
 from datetime import datetime
@@ -15,7 +17,7 @@ from ..exporter.exporter_cad import *
 
 
 class SP_OT_quick_export(bpy.types.Operator):
-    bl_idname = "sp.quick_export"
+    bl_idname = "object.sp_quick_export"
     bl_label = "SP - Quick export"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Exports selection as .STEP at current .blend location."
@@ -28,14 +30,25 @@ class SP_OT_quick_export(bpy.types.Operator):
             blendname = "SP_Quick_Export"
         today = datetime.today()
         date_str = today.strftime("%d-%m-%Y")
-        time_str = today.strftime("%H-%M-%S")
-        filename = f"{blendname} {time_str} {date_str}.step"
 
-        if blenddir != "":  # avoids exporting to root
+        # Find next available number to avoid overrides
+        if blenddir != "":
             dir = blenddir
         else:
             dir = context.preferences.filepaths.temporary_directory
 
+        # Pattern for files: blendname (number) date_str.step
+        pattern = re.compile(rf"^{re.escape(blendname)} \((\d+)\) {re.escape(date_str)}\.step$")
+        existing_numbers = []
+        for fname in os.listdir(dir):
+            match = pattern.match(fname)
+            if match:
+                existing_numbers.append(int(match.group(1)))
+        next_number = 1
+        if existing_numbers:
+            next_number = max(existing_numbers) + 1
+
+        filename = f"{blendname} ({next_number}) {date_str}.step"
         pathstr = join(dir, filename)
 
         export_isdone = export_step(context, pathstr, True, 1000, 1e-1)
@@ -47,7 +60,7 @@ class SP_OT_quick_export(bpy.types.Operator):
 
 
 class SP_OT_add_NURBS_patch(bpy.types.Operator):
-    bl_idname = "sp.add_nurbs_patch"
+    bl_idname = "object.sp_add_nurbs_patch"
     bl_label = "Add NURBS PsychoPatch"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -57,7 +70,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
 
 
 class SP_OT_add_bezier_patch(bpy.types.Operator):
-    bl_idname = "sp.add_bezier_patch"
+    bl_idname = "object.sp_add_bezier_patch"
     bl_label = "Add Bezier Patch"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -139,7 +152,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
 
 
 class SP_OT_add_flat_patch(bpy.types.Operator):
-    bl_idname = "sp.add_flat_patch"
+    bl_idname = "object.sp_add_flat_patch"
     bl_label = "Add flat PsychoPatch"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -149,7 +162,7 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
 
 
 class SP_OT_add_curve(bpy.types.Operator):
-    bl_idname = "sp.add_curve"
+    bl_idname = "object.sp_add_curve"
     bl_label = "Add PsychoCurve"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -159,7 +172,7 @@ class SP_OT_add_curve(bpy.types.Operator):
 
 
 class SP_OT_add_library(bpy.types.Operator):
-    bl_idname = "sp.add_library"
+    bl_idname = "object.sp_add_library"
     bl_label = "Add Library"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -179,7 +192,7 @@ class SP_OT_add_library(bpy.types.Operator):
 
 
 class SP_OT_toggle_control_geom(bpy.types.Operator):
-    bl_idname = "sp.toggle_control_geom"
+    bl_idname = "object.sp_toggle_control_geom"
     bl_label = "SP - Toggle Control Geom"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle the control geometry of selected object. The active object determines whether to show or hide"
@@ -211,7 +224,7 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
 
 
 class SP_OT_select_visible_curves(bpy.types.Operator):
-    bl_idname = "sp.select_visible_curves"
+    bl_idname = "object.sp_select_visible_curves"
     bl_label = "SP - Select Visible Curves"
     bl_description = "Select Visible Curves"
     bl_options = {"REGISTER", "UNDO"}
@@ -243,7 +256,7 @@ class SP_OT_select_visible_curves(bpy.types.Operator):
 
 
 class SP_OT_select_visible_surfaces(bpy.types.Operator):
-    bl_idname = "sp.select_visible_surfaces"
+    bl_idname = "object.sp_select_visible_surfaces"
     bl_label = "SP - Select Visible Surfaces"
     bl_description = "Select Visible Surfaces"
     bl_options = {"REGISTER", "UNDO"}
@@ -276,7 +289,7 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
 
 
 class SP_OT_update_modifiers(bpy.types.Operator):
-    bl_idname = "sp.update_modifiers"
+    bl_idname = "object.sp_update_modifiers"
     bl_label = "SP - Update Modifiers"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -301,7 +314,7 @@ class SP_OT_update_modifiers(bpy.types.Operator):
 
 
 class SP_OT_replace_node_group(bpy.types.Operator):
-    bl_idname = "sp.replace_node_group"
+    bl_idname = "object.sp_replace_node_group"
     bl_label = "SP - Replace Node Group"
     bl_description = "For updating old assets. Replaces all instance of a modifier with another"
     bl_options = {"REGISTER", "UNDO"}
@@ -332,7 +345,7 @@ class SP_OT_replace_node_group(bpy.types.Operator):
 
 
 class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
-    bl_idname = "sp.psychopatch_to_bl_nurbs"
+    bl_idname = "object.sp_psychopatch_to_bl_nurbs"
     bl_label = "Convert Psychopatches to internal NURBS"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -457,7 +470,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
 
 
 class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
-    bl_idname = "sp.bl_nurbs_to_psychopatch"
+    bl_idname = "object.sp_bl_nurbs_to_psychopatch"
     bl_label = "Convert internal NURBS to Psychopatches"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -526,7 +539,7 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
 class SP_OT_toggle_endpoints(bpy.types.Operator):
     """Mark or unmark selected vertices as endpoint depending on the active vertex"""
 
-    bl_idname = "sp.toggle_endpoints"
+    bl_idname = "object.sp_toggle_endpoints"
     bl_label = "Toggle Endpoints"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -565,7 +578,7 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
 class SP_OT_select_endpoints(bpy.types.Operator):
     """Select vertices marked as segment ends"""
 
-    bl_idname = "sp.select_endpoints"
+    bl_idname = "object.sp_select_endpoints"
     bl_label = "Select Endpoints"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -607,7 +620,7 @@ class SP_OT_select_endpoints(bpy.types.Operator):
 class SP_OT_set_segment_type(bpy.types.Operator):
     """Mark segment type for selection"""
 
-    bl_idname = "sp.set_segment_type"
+    bl_idname = "object.sp_set_segment_type"
     bl_label = "Set Segment Type"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -642,7 +655,7 @@ class SP_OT_set_segment_type(bpy.types.Operator):
 
 
 class SP_OT_assign_as_ellipse(bpy.types.Operator):
-    bl_idname = "sp.assign_as_ellipse"
+    bl_idname = "object.sp_assign_as_ellipse"
     bl_label = "Assign as Ellipse"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -667,7 +680,7 @@ class SP_OT_assign_as_ellipse(bpy.types.Operator):
 
 
 class SP_OT_remove_from_ellipses(bpy.types.Operator):
-    bl_idname = "sp.remove_from_ellipses"
+    bl_idname = "object.sp_remove_from_ellipses"
     bl_label = "Remove from Ellipses"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -688,7 +701,7 @@ class SP_OT_remove_from_ellipses(bpy.types.Operator):
 
 
 class SP_OT_add_trim_contour(bpy.types.Operator):
-    bl_idname = "sp.add_trim_contour"
+    bl_idname = "object.sp_add_trim_contour"
     bl_label = "Add Trim Contour"
     bl_description = "Add Trim Contour to selected patch"
     bl_options = {"REGISTER", "UNDO"}
@@ -900,7 +913,7 @@ class SP_Props_Group(bpy.types.PropertyGroup):
 
 
 class SP_OT_set_segment_degree(bpy.types.Operator):
-    bl_idname = "sp.set_segment_degree"
+    bl_idname = "object.sp_set_segment_degree"
     bl_label = "Set Segment Degree"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -946,7 +959,7 @@ class SP_OT_set_segment_degree(bpy.types.Operator):
 
 
 class SP_OT_set_spline(bpy.types.Operator):
-    bl_idname = "sp.set_spline"
+    bl_idname = "object.sp_set_spline"
     bl_label = "Set Spline"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -1002,7 +1015,7 @@ class SP_OT_set_spline(bpy.types.Operator):
 
 
 class SP_OT_add_oriented_empty(bpy.types.Operator):
-    bl_idname = "sp.add_oriented_empty"
+    bl_idname = "object.sp_add_oriented_empty"
     bl_label = "Add Oriented Empty"
     bl_description = "Add oriented empty from 3 vertices"
     bl_options = {"REGISTER", "UNDO"}

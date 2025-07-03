@@ -33,7 +33,7 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.operator("sp.add_library", text="Add Assets Path")
+        col.operator("object.sp_add_library", text="Add Assets Path")
 
 
 def register():
