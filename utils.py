@@ -413,49 +413,90 @@ def set_segment_type(context, type):
     return set_attribute(context, "Type", type, "INT")
 
 
-def toggle_attribute(context, att_name):
-    objs = context.objects_in_mode
-    for o in objs:
-        # Switch to object mode
-        bpy.ops.object.mode_set(mode="OBJECT")
+def toggle_bool_attribute(o, att_name):
+    bpy.ops.object.mode_set(mode="OBJECT")
 
-        if att_name not in o.data.attributes:
-            o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
-            o.data.update()
-
-        # Get attribute
-        att = o.data.attributes[att_name]
-
-        # Init values (To complete for vectors if needed)
-        data_type = att.data_type
-        if data_type == "BOOLEAN":
-            values = [False] * len(o.data.vertices)
-        elif data_type == "FLOAT":
-            values = [0.0] * len(o.data.vertices)
-        elif data_type == "INT":
-            values = [0] * len(o.data.vertices)
-
-        # Fill with existing values
-        att.data.foreach_get("value", values)
-
-        # Update values
-        value = None
-        for i, v in enumerate(o.data.vertices):
-            if v.select:
-                if value == None:
-                    if data_type == "BOOLEAN":
-                        value = not values[i]
-                    elif data_type == "FLOAT":
-                        value = 1.0 if values[i] <= 0.6 else 0.0
-                    elif data_type == "INT":
-                        value = 1 if values[i] <= 0.6 else 0
-                
-                values[i] = value
-
-        # Set new
-        att.data.foreach_set("value", values)
-
+    # Get attribute
+    att = o.data.attributes[att_name]
+    if att.data_type != "BOOLEAN":
         bpy.ops.object.mode_set(mode="EDIT")
+        return False
+    
+    # Init values
+    values = [False] * len(o.data.vertices)
+    
+    # Fill with existing values
+    att.data.foreach_get("value", values)
+
+    # Make values the opposite of first found value
+    value = None
+    for i, v in enumerate(o.data.vertices):
+        if v.select:
+            if value == None:
+                value = not values[i]
+            values[i] = value
+
+    # Set new
+    att.data.foreach_set("value", values)
+
+    bpy.ops.object.mode_set(mode="EDIT")
+    return True
+
+
+def toggle_pseudo_bool_attribute(o, att_name):
+    # Get attribute
+    att = o.data.attributes[att_name]
+
+    # Init values
+    data_type = att.data_type
+    if data_type not in ["FLOAT", "INT"]:
+        return False
+
+    bpy.ops.object.mode_set(mode="OBJECT")
+    if data_type == "FLOAT":
+        values = [0.0] * len(o.data.vertices)
+    elif data_type == "INT":
+        values = [0] * len(o.data.vertices)
+
+    # Fill values with existing values
+    att.data.foreach_get("value", values)
+
+    # Update values
+    value = None
+    for i, v in enumerate(o.data.vertices):
+        if v.select:
+            if value == None:
+                if data_type == "FLOAT":
+                    value = 1.0 if values[i] <= 0.6 else 0.0
+                elif data_type == "INT":
+                    value = 1 if values[i] <= 0.6 else 0
+            
+            values[i] = value
+
+    # Set new
+    att.data.foreach_set("value", values)
+
+    bpy.ops.object.mode_set(mode="EDIT")
+    return True
+
+
+def toggle_pseudo_bool_vertex_group(o, vg_name):
+    bpy.ops.object.mode_set(mode="OBJECT")
+    vg = o.vertex_groups[vg_name]
+
+    # Toggle selected vertices of the vertex group
+    for v in o.data.vertices:
+        if v.select:
+            try:
+                # keep old behaviour because timesaver
+                if vg.weight(v.index) > 0.6:
+                    vg.remove([v.index])
+                else:
+                    vg.add([v.index], 1.0, "REPLACE")
+            except RuntimeError:
+                vg.add([v.index], 1.0, "REPLACE")
+    
+    bpy.ops.object.mode_set(mode="EDIT")
     return True
 
 

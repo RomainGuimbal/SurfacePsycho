@@ -544,31 +544,20 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        att_name = "Endpoints"
         objs = context.objects_in_mode
         for o in objs:
-            # Attribute
-            if "Endpoints" in o.data.attributes:
-                toggle_attribute(context, "Endpoints")
-
-            # Vertex group
-            elif "Endpoints" in o.vertex_groups:
-                bpy.ops.object.mode_set(mode="OBJECT")
-                vg = o.vertex_groups["Endpoints"]
-
-                # Toggle selected vertices to the vertex group
-                for v in o.data.vertices:
-                    if v.select:
-                        try:
-                            # keep old behaviour because timesaver
-                            if vg.weight(v.index) > 0.6:
-                                vg.remove([v.index])
-                            else:
-                                vg.add([v.index], 1.0, "REPLACE")
-                        except RuntimeError:
-                            vg.add([v.index], 1.0, "REPLACE")
-
+            if att_name in o.data.attributes:
+                if not toggle_bool_attribute(o, att_name):
+                    if not toggle_pseudo_bool_attribute(o, att_name) :
+                        o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
+                        o.data.update()
+            
+            # Vertex group (LEGACY)
+            elif att_name in o.vertex_groups:
+                toggle_pseudo_bool_vertex_group(o, att_name)
             else:
-                o.data.attributes.new(name="Endpoints", type="BOOLEAN", domain="POINT")
+                o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                 o.data.update()
 
             bpy.ops.object.mode_set(mode="EDIT")
