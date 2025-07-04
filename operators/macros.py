@@ -550,17 +550,19 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
             if att_name in o.data.attributes:
                 if not toggle_bool_attribute(o, att_name):
                     if not toggle_pseudo_bool_attribute(o, att_name) :
+                        bpy.ops.object.mode_set(mode="OBJECT")
                         o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                         o.data.update()
+                        bpy.ops.object.mode_set(mode="OBJECT")
             
             # Vertex group (LEGACY)
             elif att_name in o.vertex_groups:
                 toggle_pseudo_bool_vertex_group(o, att_name)
             else:
+                bpy.ops.object.mode_set(mode="OBJECT")
                 o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                 o.data.update()
-
-            bpy.ops.object.mode_set(mode="EDIT")
+                bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 
 

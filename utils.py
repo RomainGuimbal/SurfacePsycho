@@ -123,6 +123,7 @@ geom_to_sp_type = {
     GeomAbs_OtherSurface: SP_obj_type.OTHER_SURFACE,
 }
 
+
 # to replace with official index
 class SP_segment_type(Enum):
     BEZIER = 0
@@ -206,9 +207,9 @@ def read_attribute_by_name(object, name, len_attr=None):
             att.data.foreach_get("vector", attribute)
             attribute = attribute.reshape((-1, 2))[0:len_attr]
 
-        case _ :
+        case _:
             raise Exception(f"Unknown attribute type: {type}")
-        
+
     return attribute
 
 
@@ -421,10 +422,10 @@ def toggle_bool_attribute(o, att_name):
     if att.data_type != "BOOLEAN":
         bpy.ops.object.mode_set(mode="EDIT")
         return False
-    
+
     # Init values
     values = [False] * len(o.data.vertices)
-    
+
     # Fill with existing values
     att.data.foreach_get("value", values)
 
@@ -445,14 +446,15 @@ def toggle_bool_attribute(o, att_name):
 
 def toggle_pseudo_bool_attribute(o, att_name):
     # Get attribute
+    bpy.ops.object.mode_set(mode="OBJECT")
     att = o.data.attributes[att_name]
 
     # Init values
     data_type = att.data_type
     if data_type not in ["FLOAT", "INT"]:
+        bpy.ops.object.mode_set(mode="EDIT")
         return False
 
-    bpy.ops.object.mode_set(mode="OBJECT")
     if data_type == "FLOAT":
         values = [0.0] * len(o.data.vertices)
     elif data_type == "INT":
@@ -470,7 +472,7 @@ def toggle_pseudo_bool_attribute(o, att_name):
                     value = 1.0 if values[i] <= 0.6 else 0.0
                 elif data_type == "INT":
                     value = 1 if values[i] <= 0.6 else 0
-            
+
             values[i] = value
 
     # Set new
@@ -495,7 +497,7 @@ def toggle_pseudo_bool_vertex_group(o, vg_name):
                     vg.add([v.index], 1.0, "REPLACE")
             except RuntimeError:
                 vg.add([v.index], 1.0, "REPLACE")
-    
+
     bpy.ops.object.mode_set(mode="EDIT")
     return True
 
@@ -541,21 +543,26 @@ def vec_list_to_gp_pnt(array: list):
 def blender_to_gp_vec(vec: Vector):
     return gp_Vec(vec.x, vec.y, vec.z)
 
+
 def gp_pnt_to_blender_vec(vec: gp_Pnt):
     return Vector((vec.X(), vec.Y(), vec.Z()))
+
 
 def gp_pnt2d_to_blender_vec(vec: gp_Pnt2d):
     return Vector((vec.X(), vec.Y(), 0))
 
+
 def gp_pnt_to_blender_vec_list(vecs: list[gp_Pnt]) -> list[Vector]:
-    try :
+    try:
         res = [Vector((vec.X(), vec.Y(), vec.Z())) for vec in vecs]
     except Exception:
         res = [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
     return res
 
+
 # def gp_pnt2d_to_blender_vec_list(vecs: list):
 #     return [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
+
 
 def normalize_array(array):
     mini = min(array)
@@ -755,14 +762,17 @@ EDGES_TYPES = {
     "ellipse": 5,
 }
 
+
 def replace_all_instances_of_node_group(target_node_group_name, new_node_group_name):
     # Get the target node group
     prefix, suffix = target_node_group_name[:-2], target_node_group_name[-2:]
-    
-    if suffix == ".*" :
+
+    if suffix == ".*":
         pattern = rf"^{re.escape(prefix)}\.(\d{{3}}|\d{{3}}\.\d{{3}})$"
-        target_node_groups = [ng for ng in bpy.data.node_groups if re.match(pattern, ng.name)]
-    else :
+        target_node_groups = [
+            ng for ng in bpy.data.node_groups if re.match(pattern, ng.name)
+        ]
+    else:
         target_node_groups = [bpy.data.node_groups.get(target_node_group_name)]
 
     # Get the new node group
@@ -771,14 +781,14 @@ def replace_all_instances_of_node_group(target_node_group_name, new_node_group_n
         return 0  # New node group not found
 
     if len(target_node_groups) > 0:
-        for t in target_node_groups :
-            if t and t != new_node_group :
+        for t in target_node_groups:
+            if t and t != new_node_group:
                 # Replace the node group data
                 t.user_remap(new_node_group)
 
                 # Remove the old node group
                 bpy.data.node_groups.remove(t)
-        
+
         return len(target_node_groups)
     else:
         return -1
@@ -892,17 +902,18 @@ def get_geom_adapt_curve_type(adaptor_curve: GeomAdaptor_Curve):
         curve_type = adaptor_curve.GetType()
     return curve_type
 
+
 def curve_range_from_type(curve_type):
     match curve_type:
-            case GeomAbs.GeomAbs_Line:
-                min_u, max_u = 0, 1
-            case GeomAbs.GeomAbs_BezierCurve:
-                min_u, max_u = 0, 1
-            case GeomAbs.GeomAbs_BSplineCurve:
-                min_u, max_u = 0, 1
-            case GeomAbs.GeomAbs_Circle:
-                min_u, max_u = -math.pi, math.pi
-            case GeomAbs.GeomAbs_Ellipse:
-                min_u, max_u = -math.pi, math.pi
+        case GeomAbs.GeomAbs_Line:
+            min_u, max_u = 0, 1
+        case GeomAbs.GeomAbs_BezierCurve:
+            min_u, max_u = 0, 1
+        case GeomAbs.GeomAbs_BSplineCurve:
+            min_u, max_u = 0, 1
+        case GeomAbs.GeomAbs_Circle:
+            min_u, max_u = -math.pi, math.pi
+        case GeomAbs.GeomAbs_Ellipse:
+            min_u, max_u = -math.pi, math.pi
 
     return min_u, max_u
