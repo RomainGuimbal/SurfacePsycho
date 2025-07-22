@@ -7,7 +7,7 @@ from ..utils import *
 import copy
 import warnings
 from collections import Counter
-from .ellipse import *
+from .export_ellipse import *
 
 
 from OCP.BRepBuilderAPI import (

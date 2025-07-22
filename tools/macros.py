@@ -7,13 +7,13 @@ from mathutils import Vector
 from datetime import datetime
 from os.path import dirname, abspath, join
 import platform
-from ..exporter.exporter_svg import *
+from ..exporter.export_process_svg import *
 
 os = platform.system()
 
 
-from ..importer.shape_to_blender_object import *
-from ..exporter.exporter_cad import *
+from ..importer.import_shape_to_blender_object import *
+from ..exporter.export_process_cad import *
 
 
 class SP_OT_quick_export(bpy.types.Operator):

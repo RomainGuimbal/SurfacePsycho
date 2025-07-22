@@ -4,7 +4,7 @@ from mathutils import Vector
 from ..utils import *
 import copy
 from typing import List, Dict
-from .exporter_cad import SP_Contour_export
+from .export_process_cad import SP_Contour_export
 
 
 #####################################
