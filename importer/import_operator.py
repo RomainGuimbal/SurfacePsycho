@@ -65,34 +65,51 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             self.report({"WARNING"}, "No shapes to import")
             return {"CANCELLED"}
 
-        # Create and run pipeline
-        pipeline = IOCPUPipeline(
-            io_function=_process_cad_io,
-            cpu_function=_process_cad_compute,
-            io_workers=3,
-            cpu_workers=mp.cpu_count(),
-        )
+        # # Create and run pipeline
+        # pipeline = IOCPUPipeline(
+        #     io_function=process_cad_io,
+        #     cpu_function=process_cad_compute,
+        #     io_workers=3,
+        #     cpu_workers=mp.cpu_count(),
+        # )
 
-        tasks = [f"task_{i}" for i in range(len(shapes_args))]
-        task_args = list(zip(shapes_args, (self.doc, self.trims_on, self.scale, self.resolution)*len(shapes_args)))
 
-        start_time = time.time()
-        # Pass both tasks and arguments
-        results = pipeline.process_tasks(tasks, task_args)
-        end_time = time.time()
+        import cProfile
+        profiler = cProfile.Profile()
+        profiler.enable()
+        object_data = []
+        for s in shapes_args:
+            shape, col, iscurve = s
+            object_data.append(process_object_data_of_shape(
+                shape,
+                self.doc,
+                col,
+                self.trims_on,
+                self.scale,
+                self.resolution,
+                iscurve,
+            ))
+        profiler.disable()
+        profiler.print_stats()
 
-        print(f"\nProcessed {len(tasks)} tasks in {end_time - start_time:.2f} seconds")
-        print(f"First few results:")
-        for i, result in enumerate(results[:3]):
-            if isinstance(result, Exception):
-                print(f"  Task {i}: ERROR - {result}")
-            else:
-                print(f"  Task {i}: {result[:50]}...")
+        # start_time = time.time()
+        # # Pass both tasks and arguments
+        # results = pipeline.process_tasks(tasks, task_args)
+        # end_time = time.time()
+
+        # print(f"\nProcessed {len(tasks)} tasks in {end_time - start_time:.2f} seconds")
+        # print(f"First few results:")
+        # for i, result in enumerate(results[:3]):
+        #     if isinstance(result, Exception):
+        #         print(f"  Task {i}: ERROR - {result}")
+        #     else:
+        #         print(f"  Task {i}: {result[:50]}...")
+
 
         # Setup progress bar
-        context.window.cursor_set("DEFAULT")
         wm = context.window_manager
-        wm.progress_begin(0, len(tasks))
+        wm.progress_begin(0, len(shapes_args))
+        context.window.cursor_set("DEFAULT")
 
         # Start modal timer
         self._timer = wm.event_timer_add(0.1, window=context.window)
@@ -100,39 +117,37 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
-        if event.type == "TIMER" and self._timer and self.pipeline:
+        if event.type == "TIMER" and self._timer:
 
             for area in self.context.screen.areas:
                 if area.type in {"VIEW_3D", "OUTLINER"}:
                     area.tag_redraw()
 
-            # status = self.pipeline.poll()
-            # if status != PipelineStatus.RUNNING:
-            #     return self._finish_modal(context, status)
+    #         # status = self.pipeline.poll()
+    #         # if status != PipelineStatus.RUNNING:
+    #         #     return self._finish_modal(context, status)
 
-        # elif event.type == "ESC":
-        #     if self.pipeline:
-        #         self.pipeline.cancel()
-        #     return self._finish_modal(context, PipelineStatus.CANCELLED)
+    #     # elif event.type == "ESC":
+    #     #     if self.pipeline:
+    #     #         self.pipeline.cancel()
+    #     #     return self._finish_modal(context, PipelineStatus.CANCELLED)
 
-        return {"PASS_THROUGH"}
-
-
-
-def _process_cad_io(shape_args, global_args):
-    """I/O stage: Parse CAD data"""
-    shape, col, iscurve = shape_args
-    doc, trims_on, scale, resolution = global_args
-
-    return process_object_data_of_shape(
-        shape, doc, col, trims_on, scale, resolution, iscurve
-    )
-
-def _process_cad_compute(object_data):
-    create_blender_object(object_data)
-    return f"CPU_processed_{object_data['name']}"
+    #     return {"PASS_THROUGH"}
 
 
+# def process_cad_io(shape_args, global_args):
+#     """I/O stage: Parse CAD data"""
+#     shape, col, iscurve = shape_args
+#     doc, trims_on, scale, resolution = global_args
+
+#     return process_object_data_of_shape(
+#         shape, doc, col, trims_on, scale, resolution, iscurve
+#     )
+
+
+# def process_cad_compute(object_data):
+#     create_blender_object(object_data)
+#     return f"CPU_processed_{object_data['name']}"
 
 
 classes = [

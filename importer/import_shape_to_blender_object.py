@@ -66,7 +66,10 @@ class SP_Curve_no_edge_import:
                 end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
                 gp_pnt_poles = [start_point, end_point]
                 self.type_att = [EDGES_TYPES["line"]] * 2
-                self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+                if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+                    self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
+                else :
+                    self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
                 self.degree_att = [0, 0]
                 self.endpoints_att = [True] * 2
                 self.weight = [0.0, 0.0]
@@ -85,7 +88,10 @@ class SP_Curve_no_edge_import:
         gp_pnt_poles = [start_point, end_point]
         self.type = EDGES_TYPES["line"]
         self.type_att = [EDGES_TYPES["line"]] * 2
-        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+            self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
+        else :
+            self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.degree_att = [0, 0]
         self.endpoints_att = [True] * 2
         self.weight = [0.0, 0.0]
@@ -117,7 +123,10 @@ class SP_Curve_no_edge_import:
         # Set attributes
         self.type = EDGES_TYPES["bezier"]
         self.type_att = [EDGES_TYPES["bezier"]] * p_count
-        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+            self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
+        else :
+            self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.degree_att = [0] * p_count
         self.endpoints_att = [True] + [False] * (p_count - 2) + [True]
         self.weight = [bezier.Weight(i + 1) for i in range(p_count)]
@@ -139,7 +148,10 @@ class SP_Curve_no_edge_import:
         
         # Set attributes
         self.degree = bspline.Degree()
-        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+            self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
+        else :
+            self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.type = EDGES_TYPES["nurbs"]
         self.type_att = [EDGES_TYPES["nurbs"]] * p_count
         self.degree_att = [bspline.Degree()] + [0] * (p_count - 2) + [bspline.Degree()]
@@ -149,8 +161,8 @@ class SP_Curve_no_edge_import:
             self.endpoints_att = [True] + [False] * (p_count - 2) + [True]
         self.weight = [bspline.Weight(i + 1) for i in range(p_count)]
 
-        knot = normalize_array(tcolstd_array1_to_list(bspline.Knots()))
-        mult = tcolstd_array1_to_list(bspline.Multiplicities())
+        knot = normalize_array(haarray1_of_real_to_list(bspline.Knots()))
+        mult = haarray1_of_int_to_list(bspline.Multiplicities())
         self.knot = knot + [0.0] * (p_count - len(knot))
         self.mult = mult + [0] * (p_count - len(mult))
 
@@ -187,7 +199,10 @@ class SP_Curve_no_edge_import:
         self.weight = [0.0] * 3
         self.knot = [0.0] * 3
         self.mult = [0] * 3
-        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+            self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
+        else :
+            self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
 
     def ellipse(self, edge_adaptor):
         # arc from 3 pts
@@ -223,7 +238,10 @@ class SP_Curve_no_edge_import:
             self.knot = [0.0, 0.0, 0.0, 0.0, 0.0]
             self.mult = [0, 0, 0, 0, 0]
 
-        self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+            self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
+        else :
+            self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
 
 class SP_Edge_import:
     def __init__(self, topods_edge: TopoDS_Edge, topods_face=None, scale=None):
@@ -778,10 +796,10 @@ def build_SP_NURBS_patch(
     u_periodic = bspline_surface.IsUPeriodic()
     v_periodic = bspline_surface.IsVPeriodic()
     uv_bounds = bspline_surface.Bounds()
-    u_knots = normalize_array(tcolstd_array1_to_list(bspline_surface.UKnots()))
-    v_knots = normalize_array(tcolstd_array1_to_list(bspline_surface.VKnots()))
-    u_mult = tcolstd_array1_to_list(bspline_surface.UMultiplicities())
-    v_mult = tcolstd_array1_to_list(bspline_surface.VMultiplicities())
+    u_knots = normalize_array(haarray1_of_real_to_list(bspline_surface.UKnots()))
+    v_knots = normalize_array(haarray1_of_real_to_list(bspline_surface.VKnots()))
+    u_mult = haarray1_of_int_to_list(bspline_surface.UMultiplicities())
+    v_mult = haarray1_of_int_to_list(bspline_surface.VMultiplicities())
 
     # Custom knot
     custom_knot = False

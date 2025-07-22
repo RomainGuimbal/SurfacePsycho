@@ -11,6 +11,7 @@ from enum import Enum
 from dataclasses import dataclass
 import dataclasses
 import re
+import ctypes
 
 from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
@@ -507,9 +508,16 @@ def tcolstd_array1_to_list(array):
     if isinstance(array, TColStd_HArray1OfReal) or isinstance(
         array, TColStd_HArray1OfInteger
     ):
-        return list(array)
+        return [array(i) for i in range(array.Lower(), array.Upper() + 1)]
     else:
-        return [array.Value(i) for i in range(array.Lower(), array.Upper() + 1)]
+        return [array(i) for i in range(array.Lower(), array.Upper() + 1)]
+
+
+def haarray1_of_real_to_list(harray):
+    return [harray(i) for i in range(harray.Lower(), harray.Upper() + 1)]
+
+def haarray1_of_int_to_list(harray):
+    return [harray(i) for i in range(harray.Lower(), harray.Upper() + 1)]
 
 
 def gp_list_to_arrayofpnt(array: list):
@@ -553,12 +561,10 @@ def gp_pnt2d_to_blender_vec(vec: gp_Pnt2d):
 
 
 def gp_pnt_to_blender_vec_list(vecs: list[gp_Pnt]) -> list[Vector]:
-    try:
-        res = [Vector((vec.X(), vec.Y(), vec.Z())) for vec in vecs]
-    except Exception:
-        res = [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
-    return res
+    return [Vector((vec.X(), vec.Y(), vec.Z())) for vec in vecs]
 
+def gp_pnt_to_blender_vec_list_2d(vecs: list[gp_Pnt2d]) -> list[Vector]:
+    return [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
 
 # def gp_pnt2d_to_blender_vec_list(vecs: list):
 #     return [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
