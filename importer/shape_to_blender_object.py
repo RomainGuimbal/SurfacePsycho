@@ -1026,7 +1026,8 @@ def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resol
         new_uv_bounds=(min_u, max_u, None, None),
     )
 
-    # Ideally should be an input of generic_import_surface which merges it
+    # Add curve attributes
+        # Ideally should be an input of generic_import_surface which merges it
     curve_p_count = len(curve_no_edge.verts)
     object_data["attrs"]["Degree"][1] = curve_no_edge.degree
     object_data["attrs"]["Type"][1] = curve_no_edge.type
@@ -1090,7 +1091,8 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
         new_uv_bounds=(None, None, min_u, max_u),
     )
 
-    # Ideally should be an input of generic_import_surface which merges it
+    # Add curve attributes
+        # Ideally should be an input of generic_import_surface which merges it
     curve_p_count = len(curve_no_edge.verts)
     object_data["attrs"]["Degree"][2] = curve_no_edge.degree
     object_data["attrs"]["Type"][2] = curve_no_edge.type

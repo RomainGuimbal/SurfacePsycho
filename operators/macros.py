@@ -23,7 +23,6 @@ class SP_OT_quick_export(bpy.types.Operator):
     bl_description = "Exports selection as .STEP at current .blend location."
 
     def execute(self, context):
-
         blenddir = bpy.path.abspath("//")
         blendname = bpy.path.display_name_from_filepath(bpy.data.filepath)
         if blendname == "":
