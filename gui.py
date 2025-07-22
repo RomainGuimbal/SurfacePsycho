@@ -6,7 +6,14 @@ import platform
 
 os = platform.system()
 from .tools import macros
+from .importer import import_operator
+from .exporter import export_operator
 from .importer.import_operator import SP_OT_ImportCAD
+from .exporter.export_operator import (
+    SP_OT_ExportStep,
+    SP_OT_ExportIges,
+    SP_OT_ExportSvg,
+)
 
 # from .macros import SP_Props_Group
 from .importer.import_process_pipeline import *
@@ -24,7 +31,9 @@ class SP_PT_MainPanel(bpy.types.Panel):
         if context.mode == "OBJECT":
             row = self.layout.row()
             row.scale_y = 2.0
-            row.operator("object.sp_quick_export", text="Quick .STEP Export", icon="EXPORT")
+            row.operator(
+                "object.sp_quick_export", text="Quick .STEP Export", icon="EXPORT"
+            )
 
             # Toggle control geom
             row = self.layout.row()
@@ -50,7 +59,9 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row.label(text="Select Visible")
             sub = row.row(align=True)
             sub.operator(
-                "object.sp_select_visible_curves", text="Curves", icon="OUTLINER_OB_CURVE"
+                "object.sp_select_visible_curves",
+                text="Curves",
+                icon="OUTLINER_OB_CURVE",
             )
             sub.operator(
                 "object.sp_select_visible_surfaces",
@@ -79,7 +90,9 @@ class SP_PT_EditPanel(bpy.types.Panel):
         if context.mode == "OBJECT" or context.mode == "EDIT_MESH":
             row = self.layout.row()
             row.operator(
-                "object.sp_add_trim_contour", text="Add Trim Contour", icon="MOD_MESHDEFORM"
+                "object.sp_add_trim_contour",
+                text="Add Trim Contour",
+                icon="MOD_MESHDEFORM",
             )
 
         if context.mode == "EDIT_MESH":
@@ -101,7 +114,9 @@ class SP_PT_EditPanel(bpy.types.Panel):
             sub.operator(
                 "object.sp_set_segment_type", text="Circle", icon="MESH_CIRCLE"
             ).type = "circle"
-            sub.operator("object.sp_set_segment_type", text="Arc", icon="SPHERECURVE").type = "circle_arc"
+            sub.operator(
+                "object.sp_set_segment_type", text="Arc", icon="SPHERECURVE"
+            ).type = "circle_arc"
 
             row = self.layout.row()
             sub = row.row(align=True)
@@ -137,17 +152,24 @@ class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
             layout = self.layout
             pie = layout.menu_pie()
             # Pie order: west, east, south, north, north-west, north-east, south-west, south-east
-            pie.operator("object.sp_set_segment_type", text="Circle", icon="MESH_CIRCLE").type = "circle"#West
+            pie.operator(
+                "object.sp_set_segment_type", text="Circle", icon="MESH_CIRCLE"
+            ).type = "circle"  # West
             pie.operator(
                 "object.sp_set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
-            ).type = "ellipse" #East
-            pie.operator("object.sp_toggle_endpoints", text="Toggle Endpoints") #South
-            pie.operator("object.sp_set_spline", text="Spline", icon="RNDCURVE") #North
-            pie.operator("object.sp_set_segment_type", text="Circle Arc", icon="SPHERECURVE"
-            ).type = "circle_arc" #North-west
+            ).type = "ellipse"  # East
+            pie.operator("object.sp_toggle_endpoints", text="Toggle Endpoints")  # South
             pie.operator(
-                "object.sp_set_segment_type", text="Ellipse Arc", icon="INVERSESQUARECURVE"
-            ).type = "ellipse_arc" #North-east
+                "object.sp_set_spline", text="Spline", icon="RNDCURVE"
+            )  # North
+            pie.operator(
+                "object.sp_set_segment_type", text="Circle Arc", icon="SPHERECURVE"
+            ).type = "circle_arc"  # North-west
+            pie.operator(
+                "object.sp_set_segment_type",
+                text="Ellipse Arc",
+                icon="INVERSESQUARECURVE",
+            ).type = "ellipse_arc"  # North-east
             # pie.separator() #South-west
             # pie.separator() #South-east
 
@@ -156,10 +178,14 @@ def menu_surface(self, context):
     self.layout.separator()
     if context.mode == "OBJECT":
         self.layout.operator(
-            "object.sp_add_bezier_patch", text="Bezier PsychoPatch", icon="SURFACE_NSURFACE"
+            "object.sp_add_bezier_patch",
+            text="Bezier PsychoPatch",
+            icon="SURFACE_NSURFACE",
         )
         self.layout.operator(
-            "object.sp_add_nurbs_patch", text="NURBS PsychoPatch", icon="SURFACE_NSURFACE"
+            "object.sp_add_nurbs_patch",
+            text="NURBS PsychoPatch",
+            icon="SURFACE_NSURFACE",
         )
         self.layout.operator(
             "object.sp_add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE"
@@ -170,7 +196,9 @@ def menu_surface(self, context):
 def menu_curve(self, context):
     self.layout.separator()
     if context.mode == "OBJECT":
-        self.layout.operator("object.sp_add_curve", text="PsychoCurve", icon="CURVE_NCURVE")
+        self.layout.operator(
+            "object.sp_add_curve", text="PsychoCurve", icon="CURVE_NCURVE"
+        )
 
 
 def menu_convert(self, context):
@@ -192,21 +220,22 @@ def menu_convert(self, context):
 
 
 def menu_export_step(self, context):
-    self.layout.operator("object.sp_step_export", text="SurfacePsycho STEP (.step)")
+    self.layout.operator(SP_OT_ExportStep.bl_idname, text="SurfacePsycho STEP (.step)")
 
 
 def menu_export_iges(self, context):
-    self.layout.operator("object.sp_iges_export", text="SurfacePsycho IGES (.iges)")
+    self.layout.operator(SP_OT_ExportIges.bl_idname, text="SurfacePsycho IGES (.iges)")
 
 
 def menu_export_svg(self, context):
-    self.layout.operator("object.sp_svg_export", text="SurfacePsycho SVG (.svg)")
+    self.layout.operator(SP_OT_ExportSvg.bl_idname, text="SurfacePsycho SVG (.svg)")
 
 
 def menu_func_import(self, context):
     self.layout.operator(
         SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)"
     )
+
 
 # topbar menu (fails)
 def menu_segment_edit(self, context):
@@ -222,10 +251,12 @@ def hotkeys_add(addon_keymaps):
     if kc:
         km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
 
-        kmi = km.keymap_items.new("object.sp_toggle_endpoints","F", "PRESS", shift=True, alt= True)
+        kmi = km.keymap_items.new(
+            "object.sp_toggle_endpoints", "F", "PRESS", shift=True, alt=True
+        )
         addon_keymaps.append((km, kmi))
-        
-        kmi = km.keymap_items.new("wm.call_menu_pie","F", "PRESS", shift=True)
+
+        kmi = km.keymap_items.new("wm.call_menu_pie", "F", "PRESS", shift=True)
         kmi.properties.name = "SP_MT_PIE_SegmentEdit"
         addon_keymaps.append((km, kmi))
 
@@ -245,6 +276,9 @@ classes = [
 
 def register():
     macros.register()
+    import_operator.register()
+    export_operator.register()
+
     for c in classes:
         bpy.utils.register_class(c)
     bpy.types.VIEW3D_MT_surface_add.append(menu_surface)
@@ -273,4 +307,7 @@ def unregister():
 
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)
+
     macros.unregister()
+    export_operator.unregister()
+    import_operator.unregister()

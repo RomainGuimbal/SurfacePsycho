@@ -17,6 +17,7 @@ from bpy_extras.io_utils import (
     ExportHelper,
 )
 
+
 class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
     bl_idname = "object.sp_step_export"
     bl_label = "Export STEP"
@@ -144,8 +145,6 @@ class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
             self.color_mode,
         )
         return {"FINISHED"}
-    
-
 
 
 classes = [
@@ -163,4 +162,3 @@ def register():
 def unregister():
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)
-
