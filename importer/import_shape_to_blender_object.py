@@ -945,7 +945,7 @@ def build_SP_curve(shape, doc, collection, scale=0.001, resolution=16):
     return object_data
 
 
-def build_SP_flat(topods_face, doc, collection, scale=0.001, resolution=16):
+def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=16):
     # Get contour
     contour = SP_Contour_import(topods_face, scale)
     verts = contour.verts
@@ -957,7 +957,6 @@ def build_SP_flat(topods_face, doc, collection, scale=0.001, resolution=16):
     knot_att = contour.knot
     mult_att = contour.mult
 
-    name, color = get_shape_name_and_color(topods_face, doc)
     if name == None:
         name = "STEP FlatPatch"
 
@@ -1242,7 +1241,7 @@ def import_face_nodegroups(shape_hierarchy):
 
 
 def process_object_data_of_shape(
-    topods_shape, doc, collection, trims_enabled, scale, resolution: int, iscurve: bool
+    topods_shape, name, color, collection, trims_enabled, scale, resolution: int, iscurve: bool
 ):
     if iscurve:
         return build_SP_curve(topods_shape, doc, collection, scale, resolution)
@@ -1251,7 +1250,7 @@ def process_object_data_of_shape(
     match ft:
         case SP_obj_type.PLANE:
             object_data = build_SP_flat(
-                topods_shape, doc, collection, scale, resolution
+                topods_shape, name, color, collection, scale, resolution
             )
         case SP_obj_type.CYLINDER:
             object_data = build_SP_cylinder(

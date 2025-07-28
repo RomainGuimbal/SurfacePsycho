@@ -16,8 +16,7 @@ from .exporter.export_operator import (
 )
 
 # from .macros import SP_Props_Group
-from .importer.import_process_pipeline import *
-from .importer.import_shape_to_blender_object import *
+
 
 
 class SP_PT_MainPanel(bpy.types.Panel):
