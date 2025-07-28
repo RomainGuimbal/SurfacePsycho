@@ -1,11 +1,7 @@
-import bpy
-import sys
 import numpy as np
 from mathutils import Vector
 from os.path import dirname, abspath, isfile
 from ..utils import *
-import copy
-import warnings
 from collections import Counter
 from .export_ellipse import *
 

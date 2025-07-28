@@ -1,17 +1,11 @@
 import bpy
-
-# import bmesh
 import numpy as np
 from mathutils import Vector, Matrix, Quaternion
 import math
-from math import isclose
 from typing import List, Tuple
-from os.path import dirname, abspath, join
+from os.path import dirname, abspath
 from enum import Enum
-from dataclasses import dataclass
-import dataclasses
 import re
-import ctypes
 
 from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
@@ -376,9 +370,9 @@ def add_bool_attribute(object: bpy.types.Object, name, values, fallback_value=Fa
 
 def set_attribute(context, att_name, value, fallback_type):
     objs = context.objects_in_mode
+    bpy.ops.object.mode_set(mode="OBJECT")
     for o in objs:
         # Switch to object mode
-        bpy.ops.object.mode_set(mode="OBJECT")
 
         if att_name not in o.data.attributes:
             o.data.attributes.new(name=att_name, type=fallback_type, domain="POINT")
@@ -407,7 +401,7 @@ def set_attribute(context, att_name, value, fallback_type):
         # Set new
         att.data.foreach_set("value", values)
 
-        bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.object.mode_set(mode="EDIT")
     return True
 
 
@@ -416,12 +410,10 @@ def set_segment_type(context, type):
 
 
 def toggle_bool_attribute(o, att_name):
-    bpy.ops.object.mode_set(mode="OBJECT")
-
+    # Must be in object mode
     # Get attribute
     att = o.data.attributes[att_name]
     if att.data_type != "BOOLEAN":
-        bpy.ops.object.mode_set(mode="EDIT")
         return False
 
     # Init values
@@ -440,14 +432,12 @@ def toggle_bool_attribute(o, att_name):
 
     # Set new
     att.data.foreach_set("value", values)
-
-    bpy.ops.object.mode_set(mode="EDIT")
     return True
 
 
 def toggle_pseudo_bool_attribute(o, att_name):
+    # Must be in object mode
     # Get attribute
-    bpy.ops.object.mode_set(mode="OBJECT")
     att = o.data.attributes[att_name]
 
     # Init values
@@ -478,8 +468,6 @@ def toggle_pseudo_bool_attribute(o, att_name):
 
     # Set new
     att.data.foreach_set("value", values)
-
-    bpy.ops.object.mode_set(mode="EDIT")
     return True
 
 

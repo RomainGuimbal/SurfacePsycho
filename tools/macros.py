@@ -9,7 +9,6 @@ from ..exporter.export_process_svg import *
 
 os = platform.system()
 
-
 from ..importer.import_shape_to_blender_object import *
 from ..exporter.export_process_cad import *
 
@@ -493,45 +492,43 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
 class SP_OT_toggle_endpoints(bpy.types.Operator):
     """Mark or unmark selected vertices as endpoint depending on the active vertex"""
 
-    bl_idname = "object.sp_toggle_endpoints"
+    bl_idname = "mesh.sp_toggle_endpoints"
     bl_label = "Toggle Endpoints"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         att_name = "Endpoints"
         objs = context.objects_in_mode
+        bpy.ops.object.mode_set(mode="OBJECT")
         for o in objs:
             if att_name in o.data.attributes:
                 if not toggle_bool_attribute(o, att_name):
                     if not toggle_pseudo_bool_attribute(o, att_name) :
-                        bpy.ops.object.mode_set(mode="OBJECT")
                         o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                         o.data.update()
-                        bpy.ops.object.mode_set(mode="OBJECT")
             
             # Vertex group (LEGACY)
             elif att_name in o.vertex_groups:
                 toggle_pseudo_bool_vertex_group(o, att_name)
             else:
-                bpy.ops.object.mode_set(mode="OBJECT")
                 o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                 o.data.update()
-                bpy.ops.object.mode_set(mode="EDIT")
+
+        bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 
 
 class SP_OT_select_endpoints(bpy.types.Operator):
     """Select vertices marked as segment ends"""
 
-    bl_idname = "object.sp_select_endpoints"
+    bl_idname = "mesh.sp_select_endpoints"
     bl_label = "Select Endpoints"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         objs = context.objects_in_mode
+        bpy.ops.object.mode_set(mode="OBJECT")
         for o in objs:
-            bpy.ops.object.mode_set(mode="OBJECT")
-
             # Attribute
             if "Endpoints" in o.data.attributes:
                 att_type = o.data.attributes["Endpoints"].data_type
@@ -555,8 +552,7 @@ class SP_OT_select_endpoints(bpy.types.Operator):
                     except RuntimeError:
                         # Vertex is not in the group, skip it
                         pass
-
-            # Switch back to edit mode to show the selection
+                    
             bpy.ops.object.mode_set(mode="EDIT")
 
         return {"FINISHED"}
@@ -565,7 +561,7 @@ class SP_OT_select_endpoints(bpy.types.Operator):
 class SP_OT_set_segment_type(bpy.types.Operator):
     """Mark segment type for selection"""
 
-    bl_idname = "object.sp_set_segment_type"
+    bl_idname = "mesh.sp_set_segment_type"
     bl_label = "Set Segment Type"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -648,7 +644,7 @@ class SP_OT_remove_from_ellipses(bpy.types.Operator):
 class SP_OT_add_trim_contour(bpy.types.Operator):
     bl_idname = "object.sp_add_trim_contour"
     bl_label = "Add Trim Contour"
-    bl_description = "Add Trim Contour to selected patch"
+    bl_description = "Add a trim contour to selected patch"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -892,7 +888,7 @@ class SP_OT_set_segment_degree(bpy.types.Operator):
 
 
 class SP_OT_set_spline(bpy.types.Operator):
-    bl_idname = "object.sp_set_spline"
+    bl_idname = "mesh.sp_set_spline"
     bl_label = "Set Spline"
     bl_options = {"REGISTER", "UNDO"}
 

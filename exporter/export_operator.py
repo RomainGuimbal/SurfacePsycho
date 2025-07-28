@@ -1,11 +1,8 @@
 import bpy
-# import platform
 from datetime import datetime
 import re
 import os
 from os.path import join
-
-# os = platform.system()
 
 # from .macros import SP_Props_Group
 from .export_process_cad import export_step, export_iges
@@ -23,7 +20,7 @@ from bpy_extras.io_utils import (
 
 
 class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
-    bl_idname = "object.sp_step_export"
+    bl_idname = "wm.sp_step_export"
     bl_label = "Export STEP"
     filename_ext = ".step"
     filter_glob: StringProperty(default="*.step", options={"HIDDEN"}, maxlen=255)
@@ -57,7 +54,7 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
 
 
 class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
-    bl_idname = "object.sp_iges_export"
+    bl_idname = "wm.sp_iges_export"
     bl_label = "Export IGES"
     filename_ext = ".iges"
     filter_glob: StringProperty(default="*.iges", options={"HIDDEN"}, maxlen=255)
@@ -85,7 +82,7 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
 
 
 class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
-    bl_idname = "object.sp_svg_export"
+    bl_idname = "wm.sp_svg_export"
     bl_label = "Export SVG"
 
     filename_ext = ".svg"
@@ -152,8 +149,8 @@ class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
 
 
 
-class SP_OT_quick_export(bpy.types.Operator):
-    bl_idname = "object.sp_quick_export"
+class SP_OT_QuickExport(bpy.types.Operator):
+    bl_idname = "wm.sp_quick_export"
     bl_label = "SP - Quick export"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Exports selection as .STEP at current .blend location."
@@ -203,7 +200,7 @@ classes = [
     SP_OT_ExportSvg,
     SP_OT_ExportStep,
     SP_OT_ExportIges,
-    SP_OT_quick_export
+    SP_OT_QuickExport
 ]
 
 

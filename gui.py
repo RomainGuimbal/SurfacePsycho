@@ -8,15 +8,10 @@ os = platform.system()
 from .tools import macros
 from .importer import import_operator
 from .exporter import export_operator
-from .importer.import_operator import SP_OT_ImportCAD
-from .exporter.export_operator import (
-    SP_OT_ExportStep,
-    SP_OT_ExportIges,
-    SP_OT_ExportSvg,
-)
+from .importer.import_operator import *
+from .exporter.export_operator import *
 
 # from .macros import SP_Props_Group
-
 
 
 class SP_PT_MainPanel(bpy.types.Panel):
@@ -31,7 +26,7 @@ class SP_PT_MainPanel(bpy.types.Panel):
             row = self.layout.row()
             row.scale_y = 2.0
             row.operator(
-                "object.sp_quick_export", text="Quick .STEP Export", icon="EXPORT"
+                SP_OT_QuickExport.bl_idname, text="Quick .STEP Export", icon="EXPORT"
             )
 
             # Toggle control geom
@@ -99,31 +94,31 @@ class SP_PT_EditPanel(bpy.types.Panel):
             row = self.layout.row()
             row.label(text="Endpoints")
             sub = row.row(align=True)
-            sub.operator("object.sp_toggle_endpoints", text="Toggle")
-            sub.operator("object.sp_select_endpoints", text="Select")
+            sub.operator("mesh.sp_toggle_endpoints", text="Toggle")
+            sub.operator("mesh.sp_select_endpoints", text="Select")
 
             # Type
             row = self.layout.row()
             row.operator(
-                "object.sp_set_segment_type", text="Spline", icon="MOD_CURVE"
+                "mesh.sp_set_segment_type", text="Spline", icon="MOD_CURVE"
             ).type = "spline"
 
             row = self.layout.row()
             sub = row.row(align=True)
             sub.operator(
-                "object.sp_set_segment_type", text="Circle", icon="MESH_CIRCLE"
+                "mesh.sp_set_segment_type", text="Circle", icon="MESH_CIRCLE"
             ).type = "circle"
             sub.operator(
-                "object.sp_set_segment_type", text="Arc", icon="SPHERECURVE"
+                "mesh.sp_set_segment_type", text="Arc", icon="SPHERECURVE"
             ).type = "circle_arc"
 
             row = self.layout.row()
             sub = row.row(align=True)
             sub.operator(
-                "object.sp_set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
+                "mesh.sp_set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
             ).type = "ellipse"
             sub.operator(
-                "object.sp_set_segment_type", text="Arc", icon="INVERSESQUARECURVE"
+                "mesh.sp_set_segment_type", text="Arc", icon="INVERSESQUARECURVE"
             ).type = "ellipse_arc"
 
             # Segment Degree
@@ -152,20 +147,20 @@ class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
             pie = layout.menu_pie()
             # Pie order: west, east, south, north, north-west, north-east, south-west, south-east
             pie.operator(
-                "object.sp_set_segment_type", text="Circle", icon="MESH_CIRCLE"
+                "mesh.sp_set_segment_type", text="Circle", icon="MESH_CIRCLE"
             ).type = "circle"  # West
             pie.operator(
-                "object.sp_set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
+                "mesh.sp_set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
             ).type = "ellipse"  # East
-            pie.operator("object.sp_toggle_endpoints", text="Toggle Endpoints")  # South
+            pie.operator("mesh.sp_toggle_endpoints", text="Toggle Endpoints")  # South
             pie.operator(
-                "object.sp_set_spline", text="Spline", icon="RNDCURVE"
+                "mesh.sp_set_spline", text="Spline", icon="RNDCURVE"
             )  # North
             pie.operator(
-                "object.sp_set_segment_type", text="Circle Arc", icon="SPHERECURVE"
+                "mesh.sp_set_segment_type", text="Circle Arc", icon="SPHERECURVE"
             ).type = "circle_arc"  # North-west
             pie.operator(
-                "object.sp_set_segment_type",
+                "mesh.sp_set_segment_type",
                 text="Ellipse Arc",
                 icon="INVERSESQUARECURVE",
             ).type = "ellipse_arc"  # North-east
@@ -251,7 +246,7 @@ def hotkeys_add(addon_keymaps):
         km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
 
         kmi = km.keymap_items.new(
-            "object.sp_toggle_endpoints", "F", "PRESS", shift=True, alt=True
+            "mesh.sp_toggle_endpoints", "F", "PRESS", shift=True, alt=True
         )
         addon_keymaps.append((km, kmi))
 
