@@ -762,21 +762,9 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
         # Switch to object mode to modify vertex groups
         bpy.ops.object.mode_set(mode="OBJECT")
 
-        ## TO REPLACE WITH THE ATTRIBUTE SYSTEM
-        # Add vertex groups
-        if "Trim Contour" not in obj.vertex_groups:
-            obj.vertex_groups.new(name="Trim Contour")
-        if "Endpoints" not in obj.vertex_groups:
-            obj.vertex_groups.new(name="Endpoints")
-
-        vg_contour = obj.vertex_groups["Trim Contour"]
-        vg_endpoint = obj.vertex_groups["Endpoints"]
-
-        # Add selected vertices to the vertex group
-        for v in obj.data.vertices[-4:]:
-            if v.select:
-                vg_contour.add([v.index], 1.0, "ADD")
-                vg_endpoint.add([v.index], 1.0, "ADD")
+        # Add attributes
+        add_bool_attribute(obj, "Trim Contour", [False] * (len(obj.data.vertices) - 4) + [True]*4)
+        add_bool_attribute(obj, "Endpoints", [False] * (len(obj.data.vertices) - 4) + [True]*4)
 
 
 def show_combs(self, context):
