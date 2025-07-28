@@ -113,7 +113,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
         # Initialize your CAD import data
         shape, doc, container_name = read_cad(self.filepath)
-        shape_hierarchy = ShapeHierarchy(shape, container_name)
+        shape_hierarchy = ShapeHierarchy(shape, container_name, doc)
 
         # Collect shapes to process
         shapes_args = []
@@ -121,13 +121,13 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         if self.faces_on:
             import_face_nodegroups(shape_hierarchy)
             shapes_args.extend(
-                [(shape, name, color, collection, False) for shape, collection in shape_hierarchy.faces]
+                [(shape, name, color, collection, False) for shape, name, color, collection in shape_hierarchy.faces]
             )
 
         if self.curves_on:
             append_node_group("SP - Curve Meshing")
             shapes_args.extend(
-                [(shape, col, True) for shape, col in shape_hierarchy.edges]
+                [(shape, name, color, collection, True) for shape, name, color, collection in shape_hierarchy.edges]
             )
 
         if (not self.faces_on) and (not self.curves_on):

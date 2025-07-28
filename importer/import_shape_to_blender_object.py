@@ -465,7 +465,8 @@ class SP_Contour_import:
 
 def generic_import_surface(
     face: TopoDS_Face,
-    doc,
+    name,
+    color,
     collection,
     trims_enabled: bool,
     CPvert,
@@ -512,7 +513,6 @@ def generic_import_surface(
         mesh_data = (CPvert, CPedges, CPfaces)
         attrs = attrs | {"Weight": weight}
 
-    name, color = get_shape_name_and_color(face, doc)
     if name == None:
         name = ob_name
 
@@ -534,7 +534,7 @@ def generic_import_surface(
 
 
 def build_SP_cylinder(
-    topods_face: TopoDS_Face, doc, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face: TopoDS_Face, name, color, collection, trims_enabled, scale=0.001, resolution=16
 ):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cylinder = face_adpator.Surface().Cylinder()
@@ -569,7 +569,8 @@ def build_SP_cylinder(
 
     object_data = generic_import_surface(
         topods_face,
-        doc,
+        name,
+        color,
         collection,
         trims_enabled,
         CPvert,
@@ -583,7 +584,7 @@ def build_SP_cylinder(
 
 
 def build_SP_torus(
-    topods_face: TopoDS_Face, doc, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face: TopoDS_Face, name, color, collection, trims_enabled, scale=0.001, resolution=16
 ):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_torus = face_adpator.Surface().Torus()
@@ -621,7 +622,8 @@ def build_SP_torus(
 
     object_data = generic_import_surface(
         topods_face,
-        doc,
+        name,
+        color,
         collection,
         trims_enabled,
         CPvert,
@@ -635,7 +637,7 @@ def build_SP_torus(
 
 
 def build_SP_sphere(
-    topods_face: TopoDS_Face, doc, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face: TopoDS_Face, name, color, collection, trims_enabled, scale=0.001, resolution=16
 ):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_sphere = face_adpator.Surface().Sphere()
@@ -672,7 +674,8 @@ def build_SP_sphere(
 
     object_data = generic_import_surface(
         topods_face,
-        doc,
+        name,
+        color,
         collection,
         trims_enabled,
         CPvert,
@@ -685,7 +688,7 @@ def build_SP_sphere(
 
 
 def build_SP_cone(
-    topods_face: TopoDS_Face, doc, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face: TopoDS_Face, name, color, collection, trims_enabled, scale=0.001, resolution=16
 ):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cone = face_adpator.Surface().Cone()
@@ -724,7 +727,8 @@ def build_SP_cone(
     )
     object_data = generic_import_surface(
         topods_face,
-        doc,
+        name,
+        color,
         collection,
         trims_enabled,
         CPvert,
@@ -738,7 +742,7 @@ def build_SP_cone(
 
 
 def build_SP_bezier_patch(
-    topods_face, doc, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face, name, color, collection, trims_enabled, scale=0.001, resolution=16
 ):
     bezier_surface = BRepAdaptor_Surface(topods_face).Surface().Bezier()
 
@@ -770,7 +774,8 @@ def build_SP_bezier_patch(
 
     object_data = generic_import_surface(
         topods_face,
-        doc,
+        name,
+        color,
         collection,
         trims_enabled,
         CPvert.tolist(),
@@ -784,7 +789,7 @@ def build_SP_bezier_patch(
 
 
 def build_SP_NURBS_patch(
-    topods_face, doc, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face, name, color, collection, trims_enabled, scale=0.001, resolution=16
 ):
     # Patch attributes
     bspline_surface = BRepAdaptor_Surface(topods_face).Surface().BSpline()
@@ -870,7 +875,8 @@ def build_SP_NURBS_patch(
 
     object_data = generic_import_surface(
         topods_face,
-        doc,
+        name,
+        color,
         collection,
         trims_enabled,
         CPvert.tolist(),
@@ -884,7 +890,7 @@ def build_SP_NURBS_patch(
     return object_data
 
 
-def build_SP_curve(shape, doc, collection, scale=0.001, resolution=16):
+def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
     if shape.ShapeType() == TopAbs.TopAbs_WIRE:
         sp_wire = SP_Wire_import(shape, scale=scale)
         verts = sp_wire.CP
@@ -913,7 +919,6 @@ def build_SP_curve(shape, doc, collection, scale=0.001, resolution=16):
         edges = [(i, i + 1) for i in range(len(verts) - 1)]
 
     # create object
-    name, color = get_shape_name_and_color(shape, doc)
     if name == None:
         name = "STEP Curve"
 
@@ -1122,8 +1127,9 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
 
 
 class ShapeHierarchy:
-    def __init__(self, shape, container_name):
-        self.faces = []  # tuples (face, collection)
+    def __init__(self, shape, container_name, doc):
+        self.doc = doc
+        self.faces = []  # tuples (face, name, color, collection)
         self.edges = []  # tuples (edges, collection)
         self.hierarchy = {}
         container_collection = self.create_collection(container_name)
@@ -1193,7 +1199,8 @@ class ShapeHierarchy:
             case TopAbs.TopAbs_FACE:  # must be before wire and edge
                 face = TopoDS.Face_s(shape)
                 hierarchy["Face"] = face
-                self.faces.append((face, parent_col))
+                name, color = get_shape_name_and_color(face, self.doc)
+                self.faces.append((face, name, color, parent_col))
 
             case TopAbs.TopAbs_WIRE:  # must be before edge
                 wire = TopoDS.Wire_s(shape)
@@ -1244,7 +1251,7 @@ def process_object_data_of_shape(
     topods_shape, name, color, collection, trims_enabled, scale, resolution: int, iscurve: bool
 ):
     if iscurve:
-        return build_SP_curve(topods_shape, doc, collection, scale, resolution)
+        return build_SP_curve(topods_shape, name, color, collection, scale, resolution)
 
     ft = get_face_sp_type(topods_shape)
     match ft:
@@ -1254,35 +1261,35 @@ def process_object_data_of_shape(
             )
         case SP_obj_type.CYLINDER:
             object_data = build_SP_cylinder(
-                topods_shape, doc, collection, trims_enabled, scale, resolution
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case SP_obj_type.CONE:
             object_data = build_SP_cone(
-                topods_shape, doc, collection, trims_enabled, scale, resolution
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case SP_obj_type.SPHERE:
             object_data = build_SP_sphere(
-                topods_shape, doc, collection, trims_enabled, scale, resolution
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case SP_obj_type.TORUS:
             object_data = build_SP_torus(
-                topods_shape, doc, collection, trims_enabled, scale, resolution
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case SP_obj_type.BEZIER_SURFACE:
             object_data = build_SP_bezier_patch(
-                topods_shape, doc, collection, trims_enabled, scale, resolution
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case SP_obj_type.BSPLINE_SURFACE:
             object_data = build_SP_NURBS_patch(
-                topods_shape, doc, collection, trims_enabled, scale, resolution
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case SP_obj_type.SURFACE_OF_REVOLUTION:
             object_data = build_SP_revolution(
-                topods_shape, doc, collection, trims_enabled, scale, resolution
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case SP_obj_type.SURFACE_OF_EXTRUSION:
             object_data = build_SP_extrusion(
-                topods_shape, doc, collection, trims_enabled, scale, resolution
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case _:
             print(f"Unsupported Face Type : {ft}")
