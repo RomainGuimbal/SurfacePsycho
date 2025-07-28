@@ -1,10 +1,8 @@
 import bpy
 import bmesh
-import re
-import os
 from ..utils import *
 from mathutils import Vector
-from datetime import datetime
+
 from os.path import dirname, abspath, join
 import platform
 from ..exporter.export_process_svg import *
@@ -14,49 +12,6 @@ os = platform.system()
 
 from ..importer.import_shape_to_blender_object import *
 from ..exporter.export_process_cad import *
-
-
-class SP_OT_quick_export(bpy.types.Operator):
-    bl_idname = "object.sp_quick_export"
-    bl_label = "SP - Quick export"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Exports selection as .STEP at current .blend location."
-
-    def execute(self, context):
-        blenddir = bpy.path.abspath("//")
-        blendname = bpy.path.display_name_from_filepath(bpy.data.filepath)
-        if blendname == "":
-            blendname = "SP_Quick_Export"
-        today = datetime.today()
-        date_str = today.strftime("%d-%m-%Y")
-
-        # Find next available number to avoid overrides
-        if blenddir != "":
-            dir = blenddir
-        else:
-            dir = context.preferences.filepaths.temporary_directory
-
-        # Pattern for files: blendname (number) date_str.step
-        pattern = re.compile(rf"^{re.escape(blendname)} \((\d+)\) {re.escape(date_str)}\.step$")
-        existing_numbers = []
-        for fname in os.listdir(dir):
-            match = pattern.match(fname)
-            if match:
-                existing_numbers.append(int(match.group(1)))
-        next_number = 1
-        if existing_numbers:
-            next_number = max(existing_numbers) + 1
-
-        filename = f"{blendname} ({next_number}) {date_str}.step"
-        pathstr = join(dir, filename)
-
-        export_isdone = export_step(context, pathstr, True, 1000, 1e-1)
-        if export_isdone:
-            self.report({"INFO"}, f"Step file exported at {pathstr}")
-        else:
-            self.report({"INFO"}, "No SurfacePsycho Objects selected")
-        return {"FINISHED"}
-
 
 class SP_OT_add_NURBS_patch(bpy.types.Operator):
     bl_idname = "object.sp_add_nurbs_patch"
@@ -1077,7 +1032,6 @@ classes = [
     SP_OT_update_modifiers,
     SP_OT_replace_node_group,
     SP_Props_Group,
-    SP_OT_quick_export,
     SP_OT_set_segment_degree,
     SP_OT_set_spline,
 ]

@@ -1,7 +1,11 @@
 import bpy
-import platform
+# import platform
+from datetime import datetime
+import re
+import os
+from os.path import join
 
-os = platform.system()
+# os = platform.system()
 
 # from .macros import SP_Props_Group
 from .export_process_cad import export_step, export_iges
@@ -147,10 +151,59 @@ class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
 
+
+class SP_OT_quick_export(bpy.types.Operator):
+    bl_idname = "object.sp_quick_export"
+    bl_label = "SP - Quick export"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Exports selection as .STEP at current .blend location."
+
+    def execute(self, context):
+        # Get file name
+        blendname = bpy.path.display_name_from_filepath(bpy.data.filepath)
+        if blendname == "":
+            blendname = "SP Export"
+        
+        # Get date
+        today = datetime.today()
+        date_str = today.strftime("%d-%m-%Y")
+
+        # Find next available number to avoid overrides
+        blenddir = bpy.path.abspath("//")
+        if blenddir != "":
+            dir = blenddir
+        else:
+            dir = context.preferences.filepaths.temporary_directory
+
+        # Pattern for files: blendname (number) date_str.step
+        pattern = re.compile(rf"^{re.escape(blendname)} {re.escape(date_str)} \((\d+)\)\.step$")
+        existing_numbers = []
+        for fname in os.listdir(dir):
+            match = pattern.match(fname)
+            if match:
+                existing_numbers.append(int(match.group(1)))
+        next_number = 1
+        if existing_numbers:
+            next_number = max(existing_numbers) + 1
+
+        filename = f"{blendname} {date_str} ({next_number}).step"
+        pathstr = join(dir, filename)
+
+        export_isdone = export_step(context, pathstr, True, 1000, 1e-1)
+        if export_isdone:
+            self.report({"INFO"}, f"Step file exported at {pathstr}")
+        else:
+            self.report({"INFO"}, "No SurfacePsycho Objects selected")
+        return {"FINISHED"}
+
+
+
+
 classes = [
     SP_OT_ExportSvg,
     SP_OT_ExportStep,
     SP_OT_ExportIges,
+    SP_OT_quick_export
 ]
 
 

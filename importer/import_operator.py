@@ -25,8 +25,10 @@ def process_batch(self, context):
             create_blender_object(self.object_data[self.created_object_count])
             self.created_object_count += 1
             if self.created_object_count >= self.total_count:
+                context.window_manager.progress_end()
                 return {"FINISHED"}
     else:
+        context.window_manager.progress_end()
         return {"FINISHED"}
 
     # Report progress
