@@ -1001,7 +1001,7 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
     return object_data
 
 
-def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resolution):
+def build_SP_extrusion(topods_face, name, color, collection, trims_enabled, scale, resolution):
     adapt_surf = BRepAdaptor_Surface(topods_face).Surface()
     adapt_curve = adapt_surf.BasisCurve()
     geom_surf = adapt_surf.Surface()
@@ -1031,7 +1031,8 @@ def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resol
 
     object_data = generic_import_surface(
         topods_face,
-        doc,
+        name, 
+        color,
         collection,
         trims_enabled,
         CPvert,
@@ -1061,7 +1062,7 @@ def build_SP_extrusion(topods_face, doc, collection, trims_enabled, scale, resol
     return object_data
 
 
-def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, resolution):
+def build_SP_revolution(topods_face, name, color, collection, trims_enabled, scale, resolution):
     adapt_surf = BRepAdaptor_Surface(topods_face).Surface()
     adapt_curve = adapt_surf.BasisCurve()
     geom_surf = adapt_surf.Surface()
@@ -1096,7 +1097,8 @@ def build_SP_revolution(topods_face, doc, collection, trims_enabled, scale, reso
 
     object_data = generic_import_surface(
         topods_face,
-        doc,
+        name,
+        color,
         collection,
         trims_enabled,
         CPvert,
@@ -1205,12 +1207,14 @@ class ShapeHierarchy:
             case TopAbs.TopAbs_WIRE:  # must be before edge
                 wire = TopoDS.Wire_s(shape)
                 hierarchy["Wire"] = wire
-                self.edges.append((wire, parent_col))
+                name, color = get_shape_name_and_color(wire, self.doc)
+                self.edges.append((wire, name, color, parent_col))
 
             case TopAbs.TopAbs_EDGE:
                 edge = TopoDS.Edge_s(shape)
                 hierarchy["Edge"] = edge
-                self.edges.append((edge, parent_col))
+                name, color = get_shape_name_and_color(edge, self.doc)
+                self.edges.append((edge, name, color, parent_col))
 
         return hierarchy
 
@@ -1288,9 +1292,10 @@ def process_object_data_of_shape(
                 topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case SP_obj_type.SURFACE_OF_EXTRUSION:
-            object_data = build_SP_extrusion(
-                topods_shape, name, color, collection, trims_enabled, scale, resolution
-            )
+            print("Extrusion not supported yet")
+            # object_data = build_SP_extrusion(
+            #     topods_shape, name, color, collection, trims_enabled, scale, resolution
+            # )
         case _:
             print(f"Unsupported Face Type : {ft}")
             return {}
