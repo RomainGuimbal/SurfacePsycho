@@ -1219,7 +1219,7 @@ def import_face_nodegroups(shape_hierarchy):
     to_import_ng_names = []
     face_encountered = set()
 
-    for face, _ in shape_hierarchy.faces:
+    for face, _, _, _ in shape_hierarchy.faces:
         adapt_surf = BRepAdaptor_Surface(face)
         ft = adapt_surf.GetType()
         if ft not in face_encountered:
