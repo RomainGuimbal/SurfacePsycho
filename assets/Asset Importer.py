@@ -275,6 +275,9 @@ coll_preset = {
     "Thick Arch",
     "Tube",
     "Frame",
+    "Cube",
+    "Oblong Extruded",
+    "Oblong Extruded Hollow",
 }
 
 
