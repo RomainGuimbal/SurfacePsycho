@@ -471,8 +471,29 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
         if not context.active_object:
             return False
         return any(o.type == 'SURFACE' for o in context.selected_objects)
-
+    
     def execute(self, context):
+        
+        def set_first_vertex_smooth(target_obj):
+            if target_obj and target_obj.type == 'MESH' and target_obj.data:
+                mesh_data = target_obj.data
+                
+                bm = bmesh.new()
+                bm.from_mesh(mesh_data)
+
+                bm.verts.ensure_lookup_table()
+
+                if len(bm.verts) > 0:
+                    first_vertex = bm.verts[0]
+                    
+                    for face in first_vertex.link_faces:
+                        face.smooth = True
+
+                bm.to_mesh(mesh_data)
+                bm.free()
+
+                mesh_data.update()
+
         obj_to_convert = [o for o in context.selected_objects if o.type == "SURFACE"]
         if not obj_to_convert:
             self.report({'WARNING'}, "No selected surface objects (NURBS) were found.")
@@ -536,6 +557,7 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
                 new_obj.matrix_world = obj.matrix_world
                 collection.objects.link(new_obj)
 
+                set_first_vertex_smooth(new_obj)
                 new_obj.hide_viewport = False
                 new_obj.hide_render = False
                 new_obj.select_set(True)
