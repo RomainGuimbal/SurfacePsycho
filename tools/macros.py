@@ -3,6 +3,7 @@ import bmesh
 from ..utils import *
 from mathutils import Vector
 
+from pathlib import Path
 from os.path import dirname, abspath, join
 import platform
 from ..exporter.export_process_svg import *
@@ -422,71 +423,136 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def append_object_from_assets(object_name: str, context: bpy.types.Context):
+    """
+    Find the 'assets/assets.blend' file relative to the root of this addon
+    and import an object by name.
+    """
+    try:
+        addon_root_path = Path(__file__).parent.parent
+    except NameError:
+        if bpy.data.filepath:
+            addon_root_path = Path(bpy.data.filepath).parent
+        else:
+            print("Error: The script path cannot be determined. Please save the .blend file or install the add-on.")
+            return None
+
+    filepath = addon_root_path / "assets" / "assets.blend"
+
+    if not filepath.exists():
+        print(f"Asset Error: File not found in expected path: {filepath}")
+        return None
+
+    with bpy.data.libraries.load(str(filepath), link=False) as (data_from, data_to):
+        if object_name in data_from.objects:
+            data_to.objects = [object_name]
+        else:
+            print(f"Asset Error: The object '{object_name}' does not exist in {filepath}")
+            return None
+
+    if data_to.objects:
+        imported_obj = data_to.objects[0]
+        context.collection.objects.link(imported_obj)
+        return imported_obj
+
+    return None
+
 class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
+    """
+    Convert NURBS surfaces to Psychopatches using templates
+    with Geometry Nodes from an external asset file.
+    """
     bl_idname = "object.sp_bl_nurbs_to_psychopatch"
-    bl_label = "Convert internal NURBS to Psychopatches"
+    bl_label = "Convert NURBS to Psychopatch"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
-        return context.active_object.type == "SURFACE"
+        if not context.active_object:
+            return False
+        return any(o.type == 'SURFACE' for o in context.selected_objects)
 
     def execute(self, context):
-        obj_to_convert = context.selected_objects
-        first_bezier_patch_flag = True
-        first_bspline_patch_flag = True
+        obj_to_convert = [o for o in context.selected_objects if o.type == "SURFACE"]
+        if not obj_to_convert:
+            self.report({'WARNING'}, "No selected surface objects (NURBS) were found.")
+            return {'CANCELLED'}
+        
+        collection = context.collection or context.scene.collection
 
-        for o in obj_to_convert:
-            if o.type == "SURFACE":
-                for s in o.data.splines:
-                    if s.use_bezier_u and s.use_bezier_v:
-                        if first_bezier_patch_flag:
-                            append_object_by_name("Bezier Patch", context)
-                            first_bezier_patch_flag = False
-                            first_sp_bezier_patch = context.selected_objects[0]
-                            first_sp_bezier_patch.location = o.location
-                            sp_patch = first_sp_bezier_patch
-                        else:
-                            sp_patch = first_sp_bezier_patch.copy()
-                            sp_patch.animation_data_clear()
-                            sp_patch.matrix_world = o.matrix_world
-                            bpy.context.collection.objects.link(sp_patch)
-                    else:
-                        if first_bspline_patch_flag:
-                            append_object_by_name("NURBS Patch", context)
-                            first_bspline_patch_flag = False
-                            first_sp_bspline_patch = context.selected_objects[0]
-                            first_sp_bspline_patch.location = o.location
-                            sp_patch = first_sp_bspline_patch
-                        else:
-                            sp_patch = first_sp_bspline_patch.copy()
-                            sp_patch.animation_data_clear()
-                            sp_patch.matrix_world = o.matrix_world
-                            bpy.context.collection.objects.link(sp_patch)
+        def get_or_create_template(name):
+            if name in bpy.data.objects:
+                return bpy.data.objects[name], False
 
-                    spline_cp = [Vector(p.co[0:3]) for p in s.points]
+            template_obj = append_object_from_assets(name, context)
+            if template_obj:
+                template_obj.hide_viewport = True
+                template_obj.hide_render = True
+                template_obj.select_set(False)
+                return template_obj, True
+            return None, False
+        
+        bezier_template, created_bezier = get_or_create_template("Bezier Patch")
+        bspline_template, created_bspline = get_or_create_template("NURBS Patch")
 
-                    # create mesh grid
-                    u_count = s.order_u
-                    v_count = s.order_v
+        if not bezier_template or not bspline_template:
+            self.report({'ERROR'}, "The templates could not be loaded from assets.blend. Check the console.")
+            if created_bezier and bezier_template: bpy.data.objects.remove(bezier_template)
+            if created_bspline and bspline_template: bpy.data.objects.remove(bspline_template)
+            return {'CANCELLED'}
 
-                    # TODO change modifier options for clamped U and V
+        new_patches = []
+        bpy.ops.object.select_all(action='DESELECT')
 
-                    faces = [
-                        (
-                            v * u_count + u,
-                            (v + 1) * u_count + u,
-                            (v + 1) * u_count + 1 + u,
-                            v * u_count + 1 + u,
-                        )
-                        for v in range(v_count - 1)
-                        for u in range(u_count - 1)
-                    ]
-                    mesh = bpy.data.meshes.new("Grid")
-                    mesh.from_pydata(spline_cp, [], faces)
-                    sp_patch.data = mesh
-                    bpy.ops.object.shade_smooth()
-        return {"FINISHED"}
+        for obj in obj_to_convert:
+            for spline in obj.data.splines:
+                is_bezier = spline.use_bezier_u and spline.use_bezier_v
+                control_points = []
+                
+                if is_bezier:
+                    for bp in spline.bezier_points:
+                        control_points.extend([bp.handle_left, bp.co, bp.handle_right])
+                else:
+                    for p in spline.points:
+                        control_points.append(Vector(p.co[0:3]))
+                
+                u_count = spline.order_u
+                v_count = len(control_points) // u_count
+                
+                faces = [
+                    (v * u_count + u, (v + 1) * u_count + u, (v + 1) * u_count + u + 1, v * u_count + u + 1)
+                    for v in range(v_count - 1) for u in range(u_count - 1)
+                ]
+
+                mesh = bpy.data.meshes.new(name="Psychopatch_Mesh")
+                if control_points and faces:
+                    mesh.from_pydata(control_points, [], faces)
+                    mesh.update()
+
+                template_to_use = bezier_template if is_bezier else bspline_template
+                new_obj = template_to_use.copy()
+                new_obj.data = mesh
+                new_obj.animation_data_clear()
+                new_obj.matrix_world = obj.matrix_world
+                collection.objects.link(new_obj)
+
+                new_obj.hide_viewport = False
+                new_obj.hide_render = False
+                new_obj.select_set(True)
+                new_patches.append(new_obj)
+        
+        if new_patches:
+            context.view_layer.objects.active = new_patches[-1]
+
+        if created_bezier and bezier_template.name in bpy.data.objects:
+            bpy.data.objects.remove(bezier_template)
+        if created_bspline and bspline_template.name in bpy.data.objects:
+            bpy.data.objects.remove(bspline_template)
+
+        self.report({'INFO'}, f" {len(new_patches)} patches were converted.")
+        return {'FINISHED'}
+
+
 
 
 class SP_OT_toggle_endpoints(bpy.types.Operator):
