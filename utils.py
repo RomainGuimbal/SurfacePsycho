@@ -100,8 +100,8 @@ TYPES_FROM_CP_ATTR = {
     "axis3_torus": SP_obj_type.TORUS,
     "axis3_cone": SP_obj_type.CONE,
     "axis3_sphere": SP_obj_type.SPHERE,
-    "CP_swept_surf": SP_obj_type.SURFACE_OF_EXTRUSION,
-    "CP_revolution_surf": SP_obj_type.SURFACE_OF_REVOLUTION,
+    "CP_extrusion": SP_obj_type.SURFACE_OF_EXTRUSION,
+    "CP_revolution": SP_obj_type.SURFACE_OF_REVOLUTION,
 }
 
 geom_to_sp_type = {

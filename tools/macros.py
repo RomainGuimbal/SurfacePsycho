@@ -722,8 +722,6 @@ class SP_OT_toggle_trim_contour_belonging(bpy.types.Operator):
         return {"FINISHED"}
 
 
-
-
 class SP_OT_select_trim_contour(bpy.types.Operator):
     """Select vertices marked as segment ends"""
 
@@ -739,7 +737,6 @@ class SP_OT_select_trim_contour(bpy.types.Operator):
 
         return {"FINISHED"}
                     
-
 
 def show_combs(self, context):
     objects = [ob for ob in context.selected_objects]

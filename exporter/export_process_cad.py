@@ -118,12 +118,12 @@ class SP_Edge_export:
             if self.geom_plane != None:
                 self.gp_cp = [
                     GeomAPI_ProjectPointOnSurf(
-                        gp_Pnt(v.x, v.y, v.z), self.geom_plane
+                        gp_Pnt(v[0], v[1], v[2]), self.geom_plane
                     ).Point(1)
                     for v in self.vec_cp
                 ]
             else:
-                self.gp_cp = [gp_Pnt(v.x, v.y, v.z) for v in self.vec_cp]
+                self.gp_cp = [gp_Pnt(v[0], v[1], v[2]) for v in self.vec_cp]
 
         # Generate shapes
         type = self.get_type()
@@ -1059,6 +1059,66 @@ def cylinder_face_to_topods(o, context, scale=1000):
     return face
 
 
+def revolution_face_to_topods(o, context, scale=1000):
+    # Get attr
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    origin, dir1 = read_attribute_by_name(ob, "axis1_revolution", 2)
+    p_count = read_attribute_by_name(ob, "p_count_revolution", 1)[0]
+    segment_CP = read_attribute_by_name(ob, "CP_revolution", p_count)
+    segment_CP *= scale
+    weight = read_attribute_by_name(ob, "weight_revolution", p_count)
+    type = read_attribute_by_name(ob, "type_revolution", 1)[0]
+    degree = read_attribute_by_name(ob, "degree_revolution", 1)[0]
+    is_clamped, is_periodic = read_attribute_by_name(ob, "clamped_periodic_revolution", 2)
+
+
+    geom_segment = SP_Edge_export(
+        {"CP": segment_CP, "weight": weight},
+        {
+            "degree": degree,
+            "isclamped": is_clamped,
+            "isperiodic": is_periodic,
+            "type": type,
+        },
+        single_seg=True,
+        is2D=False,
+    ).geom
+
+    # Create geom
+    axis1 = gp_Ax1(
+        gp_Pnt(origin[0] * scale, origin[1] * scale, origin[2] * scale),
+        gp_Dir(dir1[0], dir1[1], dir1[2]),
+    )
+    geom_surf = Geom_SurfaceOfRevolution(geom_segment, axis1)
+
+    # Build trim contour
+    contour = SP_Contour_export(
+        ob,
+        "CP_trim_contour_UV",
+        "CP_count_trim_contour_UV",
+        "IsClamped_trim_contour",
+        "IsPeriodic_trim_contour",
+        is2D=True,
+        geom_surf=geom_surf,
+    )
+
+    # Create topods face
+    if not contour.has_wire:
+        return geom_to_topods_face(geom_surf)
+    else:
+        wires = contour.wires_dict
+
+    # Get topods wires
+    outer_wire = wires[-1].get_topods_wire()
+    inner_wires = []
+    for k in wires.keys():
+        if k != -1:
+            inner_wires.append(wires[k].get_topods_wire())
+
+    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+    return face
+
+
 def curve_to_topods(o, context, scale=1000):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -1379,6 +1439,10 @@ def blender_object_to_topods_shapes(
             shape = curve_to_topods(object, context, scale)
             shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
 
+        case SP_obj_type.SURFACE_OF_REVOLUTION:
+            shape = revolution_face_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+
         case _:
             raise Exception(f"Invalid type {sp_type}")
 
@@ -1471,7 +1535,7 @@ def sew_shapes(shape_list, tolerance=1e-1):
 
     # Sew
     aSew.SetNonManifoldMode(True)
-    
+
     # try :
     aSew.Perform()
     return aSew.SewedShape()
@@ -1479,7 +1543,9 @@ def sew_shapes(shape_list, tolerance=1e-1):
     #     return shape_list_to_compound(shape_list) # necessary ?
 
 
-def prepare_export(context, use_selection :bool, scale=1000, sew_tolerance=1e-1)-> TopoDS_Compound:
+def prepare_export(
+    context, use_selection: bool, scale=1000, sew_tolerance=1e-1
+) -> TopoDS_Compound:
     separated_shapes_list = []
     hierarchy = ShapeHierarchy_export(context, use_selection, scale)
 
