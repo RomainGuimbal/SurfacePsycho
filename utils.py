@@ -911,3 +911,30 @@ def curve_range_from_type(curve_type):
             min_u, max_u = -math.pi, math.pi
 
     return min_u, max_u
+
+
+def select_by_attriute(att_name, objects):
+    for o in objects:
+        # Attribute
+        if att_name in o.data.attributes:
+            att_type = o.data.attributes[att_name].data_type
+            if att_type == "FLOAT":
+                weights = read_attribute_by_name(o, att_name)
+                for v in o.data.vertices:
+                    weight = weights[v.index]
+                    v.select = weight > 0.6
+            elif att_type == "BOOLEAN":
+                weights = read_attribute_by_name(o, att_name)
+                for v in o.data.vertices:
+                    v.select = weights[v.index]
+
+        # Vertex group
+        elif att_name in o.vertex_groups:
+            vertex_group = o.vertex_groups[att_name]
+            for v in o.data.vertices:
+                try:
+                    weight = vertex_group.weight(v.index)
+                    v.select = weight > 0.6
+                except RuntimeError:
+                    # Vertex is not in the group, skip it
+                    pass

@@ -1471,9 +1471,12 @@ def sew_shapes(shape_list, tolerance=1e-1):
 
     # Sew
     aSew.SetNonManifoldMode(True)
+    
+    # try :
     aSew.Perform()
-
     return aSew.SewedShape()
+    # except Exception:
+    #     return shape_list_to_compound(shape_list) # necessary ?
 
 
 def prepare_export(context, use_selection :bool, scale=1000, sew_tolerance=1e-1)-> TopoDS_Compound:

@@ -526,34 +526,10 @@ class SP_OT_select_endpoints(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        objs = context.objects_in_mode
+        objects = context.objects_in_mode
         bpy.ops.object.mode_set(mode="OBJECT")
-        for o in objs:
-            # Attribute
-            if "Endpoints" in o.data.attributes:
-                att_type = o.data.attributes["Endpoints"].data_type
-                if att_type == "FLOAT":
-                    weights = read_attribute_by_name(o, "Endpoints")
-                    for v in o.data.vertices:
-                        weight = weights[v.index]
-                        v.select = weight > 0.6
-                elif att_type == "BOOLEAN":
-                    weights = read_attribute_by_name(o, "Endpoints")
-                    for v in o.data.vertices:
-                        v.select = weights[v.index]
-
-            # Vertex group
-            elif "Endpoints" in o.vertex_groups:
-                vertex_group = o.vertex_groups["Endpoints"]
-                for v in o.data.vertices:
-                    try:
-                        weight = vertex_group.weight(v.index)
-                        v.select = weight > 0.6
-                    except RuntimeError:
-                        # Vertex is not in the group, skip it
-                        pass
-                    
-            bpy.ops.object.mode_set(mode="EDIT")
+        select_by_attriute("Endpoints", objects)
+        bpy.ops.object.mode_set(mode="EDIT")
 
         return {"FINISHED"}
 
@@ -642,7 +618,7 @@ class SP_OT_remove_from_ellipses(bpy.types.Operator):
 
 
 class SP_OT_add_trim_contour(bpy.types.Operator):
-    bl_idname = "object.sp_add_trim_contour"
+    bl_idname = "mesh.sp_add_trim_contour"
     bl_label = "Add Trim Contour"
     bl_description = "Add a trim contour to selected patch"
     bl_options = {"REGISTER", "UNDO"}
@@ -716,6 +692,53 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
         # Add attributes
         add_bool_attribute(obj, "Trim Contour", [False] * (len(obj.data.vertices) - 4) + [True]*4)
         add_bool_attribute(obj, "Endpoints", [False] * (len(obj.data.vertices) - 4) + [True]*4)
+
+
+class SP_OT_toggle_trim_contour_belonging(bpy.types.Operator):
+    bl_idname = "mesh.sp_toggle_trim_contour_belonging"
+    bl_label = "Toggle Trim Contour Belonging"
+    bl_description = "Toggle selection as part of the patch trim contour"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        att_name = "Trim Contour"
+        objs = context.objects_in_mode
+        bpy.ops.object.mode_set(mode="OBJECT")
+        for o in objs:
+            if att_name in o.data.attributes:
+                if not toggle_bool_attribute(o, att_name):
+                    if not toggle_pseudo_bool_attribute(o, att_name) :
+                        o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
+                        o.data.update()
+            
+            # Vertex group (LEGACY)
+            elif att_name in o.vertex_groups:
+                toggle_pseudo_bool_vertex_group(o, att_name)
+            else:
+                o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
+                o.data.update()
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        return {"FINISHED"}
+
+
+
+
+class SP_OT_select_trim_contour(bpy.types.Operator):
+    """Select vertices marked as segment ends"""
+
+    bl_idname = "mesh.sp_select_trim_contour"
+    bl_label = "Select Trim Contour"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        objects = context.objects_in_mode
+        bpy.ops.object.mode_set(mode="OBJECT")
+        select_by_attriute("Trim Contour", objects)
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        return {"FINISHED"}
+                    
 
 
 def show_combs(self, context):
@@ -1030,6 +1053,8 @@ classes = [
     SP_Props_Group,
     SP_OT_set_segment_degree,
     SP_OT_set_spline,
+    SP_OT_toggle_trim_contour_belonging,
+    SP_OT_select_trim_contour,
 ]
 
 

@@ -82,12 +82,15 @@ class SP_PT_EditPanel(bpy.types.Panel):
 
     def draw(self, context):
         if context.mode == "OBJECT" or context.mode == "EDIT_MESH":
+            # Trim Contour
             row = self.layout.row()
-            row.operator(
-                "object.sp_add_trim_contour",
-                text="Add Trim Contour",
-                icon="MOD_MESHDEFORM",
-            )
+            row.label(text="Trim Contour")
+            col = row.column(align=True)
+            col.operator("mesh.sp_add_trim_contour", text="Add")
+            sub = col.row(align=True)
+            if context.mode == "EDIT_MESH":
+                sub.operator("mesh.sp_toggle_trim_contour_belonging", text="Toggle")
+                sub.operator("mesh.sp_select_trim_contour", text="Select")
 
         if context.mode == "EDIT_MESH":
             # Endpoints
@@ -153,9 +156,7 @@ class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
                 "mesh.sp_set_segment_type", text="Ellipse", icon="MESH_CAPSULE"
             ).type = "ellipse"  # East
             pie.operator("mesh.sp_toggle_endpoints", text="Toggle Endpoints")  # South
-            pie.operator(
-                "mesh.sp_set_spline", text="Spline", icon="RNDCURVE"
-            )  # North
+            pie.operator("mesh.sp_set_spline", text="Spline", icon="RNDCURVE")  # North
             pie.operator(
                 "mesh.sp_set_segment_type", text="Circle Arc", icon="SPHERECURVE"
             ).type = "circle_arc"  # North-west

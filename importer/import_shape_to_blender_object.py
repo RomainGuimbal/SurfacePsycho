@@ -3,6 +3,7 @@ import numpy as np
 from mathutils import Vector
 from os.path import abspath, splitext, split, isfile
 from ..utils import *
+from math import isclose
 
 from OCP.BRepAdaptor import (
     BRepAdaptor_Curve,
@@ -1095,6 +1096,13 @@ def build_SP_revolution(topods_face, name, color, collection, trims_enabled, sca
     curve_type = get_geom_adapt_curve_type(adapt_curve)
     min_u, max_u = curve_range_from_type(curve_type)
 
+    attrs = {
+        "Degree": curve_no_edge.degree_att,
+        "Type": curve_no_edge.type_att,
+        "Knot": curve_no_edge.knot,
+        "Multiplicity": curve_no_edge.mult,
+    }
+
     object_data = generic_import_surface(
         topods_face,
         name,
@@ -1105,6 +1113,7 @@ def build_SP_revolution(topods_face, name, color, collection, trims_enabled, sca
         CPedges,
         [],
         modifier,
+        attrs=attrs,
         ob_name="STEP Revolution",
         curr_uv_bounds=(
             None,
@@ -1114,14 +1123,6 @@ def build_SP_revolution(topods_face, name, color, collection, trims_enabled, sca
         ),
         new_uv_bounds=(None, None, min_u, max_u),
     )
-
-    # Add curve attributes
-        # Ideally should be an input of generic_import_surface which merges it
-    curve_p_count = len(curve_no_edge.verts)
-    object_data["attrs"]["Degree"][2] = curve_no_edge.degree
-    object_data["attrs"]["Type"][2] = curve_no_edge.type
-    object_data["attrs"]["Knot"][2 : 2 + curve_p_count] = curve_no_edge.knot
-    object_data["attrs"]["Multiplicity"][2 : 2 + curve_p_count] = curve_no_edge.mult
 
     # Cyclic todo (both cyclic CP and cyclic eval)
 
@@ -1296,6 +1297,7 @@ def process_object_data_of_shape(
             # object_data = build_SP_extrusion(
             #     topods_shape, name, color, collection, trims_enabled, scale, resolution
             # )
+            return {}
         case _:
             print(f"Unsupported Face Type : {ft}")
             return {}
