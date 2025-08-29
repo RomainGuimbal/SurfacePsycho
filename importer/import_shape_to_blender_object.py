@@ -501,7 +501,7 @@ def generic_import_surface(
         mesh_data = join_mesh_entities(
             CPvert, CPedges, CPfaces, contour.verts, contour.edges, []
         )
-        attrs = attrs | {
+        trim_attrs = {
             "Weight": weight + contour.weight,
             "Knot": [0.0] * len(CPvert) + contour.knot,
             "Multiplicity": [0] * len(CPvert) + contour.mult,
@@ -510,6 +510,7 @@ def generic_import_surface(
             "Degree": [0] * len(CPvert) + contour.degrees,
             "Type": [0] * len(CPvert) + contour.type_att,
         }
+        attrs = override_attribute_dictionary(trim_attrs, attrs)
     else:
         mesh_data = (CPvert, CPedges, CPfaces)
         attrs = attrs | {"Weight": weight}

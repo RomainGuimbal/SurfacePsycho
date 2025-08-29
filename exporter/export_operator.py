@@ -171,6 +171,9 @@ class SP_OT_QuickExport(bpy.types.Operator):
             dir = blenddir
         else:
             dir = context.preferences.filepaths.temporary_directory
+            if dir == "":
+                self.report({"WARNING"}, "Save your file first or set the temporary directory in preferences")
+                return {"CANCELED"}
 
         # Pattern for files: blendname (number) date_str.step
         pattern = re.compile(rf"^{re.escape(blendname)} {re.escape(date_str)} \((\d+)\)\.step$")

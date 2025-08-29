@@ -938,3 +938,13 @@ def select_by_attriute(att_name, objects):
                 except RuntimeError:
                     # Vertex is not in the group, skip it
                     pass
+
+def override_attribute_dictionary(dict1, dict2):
+    res = dict1.copy()
+    for key, value in dict2.items():
+        if key in res:
+            for i in range(len(value)):
+                res[key][i] = value[i]
+        else:
+            res[key] = value
+    return res

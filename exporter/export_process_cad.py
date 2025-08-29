@@ -111,8 +111,17 @@ class SP_Edge_export:
         self.geom_plane = geom_plane
         self.single_seg = single_seg
 
+        # Generate Geom
+        self.format_cp()
+        self.type = self.get_type()
+        self.generate_geom()
+
+        # Make edge
+        self.make_edge(geom_surf)
+
+    def format_cp(self):
         # Create GP points
-        if is2D:
+        if self.is2D:
             self.gp_cp = [gp_Pnt2d(v[0], v[1]) for v in self.vec_cp]
         else:
             if self.geom_plane != None:
@@ -124,39 +133,6 @@ class SP_Edge_export:
                 ]
             else:
                 self.gp_cp = [gp_Pnt(v[0], v[1], v[2]) for v in self.vec_cp]
-
-        # Generate shapes
-        type = self.get_type()
-        match type:
-            case SP_segment_type.BEZIER:
-                if self.p_count == 2:
-                    self.line()
-                else:
-                    self.bezier()
-            case SP_segment_type.NURBS:
-                if self.p_count == 2:
-                    self.line()
-                else:
-                    self.bspline()
-            case SP_segment_type.CIRCLE_ARC:
-                self.circle_arc()
-            case SP_segment_type.CIRCLE:
-                self.circle()
-            case SP_segment_type.ELLIPSE_ARC:
-                self.ellipse_arc()
-            case SP_segment_type.ELLIPSE:
-                self.ellipse()
-            case _:
-                raise Exception("Invalid segment type")
-
-        # make segment
-        if geom_surf == None:
-            self.topods_edge = BRepBuilderAPI_MakeEdge(self.geom).Edge()
-        else:  # 2D
-            adapt = GeomAdaptor_Surface(geom_surf)
-            self.topods_edge = BRepBuilderAPI_MakeEdge(
-                self.geom, adapt.Surface()
-            ).Edge()
 
     def get_type(self):
         if "type" in self.seg_attrs.keys():
@@ -181,6 +157,29 @@ class SP_Edge_export:
                 return SP_segment_type.BEZIER
             else:
                 return SP_segment_type.NURBS
+
+    def generate_geom(self):
+        match self.type:
+            case SP_segment_type.BEZIER:
+                if self.p_count == 2:
+                    self.line()
+                else:
+                    self.bezier()
+            case SP_segment_type.NURBS:
+                if self.p_count == 2:
+                    self.line()
+                else:
+                    self.bspline()
+            case SP_segment_type.CIRCLE_ARC:
+                self.circle_arc()
+            case SP_segment_type.CIRCLE:
+                self.circle()
+            case SP_segment_type.ELLIPSE_ARC:
+                self.ellipse_arc()
+            case SP_segment_type.ELLIPSE:
+                self.ellipse()
+            case _:
+                raise Exception("Invalid segment type")
 
     def line(self):
         if self.is2D:
@@ -334,6 +333,15 @@ class SP_Edge_export:
             )
             makesegment = GC_MakeEllipse(gp_elips)
             self.geom = makesegment.Value()
+
+    def make_edge(self, geom_surf):
+        if geom_surf == None:
+            self.topods_edge = BRepBuilderAPI_MakeEdge(self.geom).Edge()
+        else:  # 2D
+            adapt = GeomAdaptor_Surface(geom_surf)
+            self.topods_edge = BRepBuilderAPI_MakeEdge(
+                self.geom, adapt.Surface()
+            ).Edge()
 
 
 def auto_knot_and_mult(p_count, degree, isclamped=True, is_unclamped_periodic=False):
@@ -1069,15 +1077,16 @@ def revolution_face_to_topods(o, context, scale=1000):
     weight = read_attribute_by_name(ob, "weight_revolution", p_count)
     type = read_attribute_by_name(ob, "type_revolution", 1)[0]
     degree = read_attribute_by_name(ob, "degree_revolution", 1)[0]
-    is_clamped, is_periodic = read_attribute_by_name(ob, "clamped_periodic_revolution", 2)
-
+    is_clamped, is_periodic = read_attribute_by_name(
+        ob, "clamped_periodic_revolution", 2
+    )
 
     geom_segment = SP_Edge_export(
         {"CP": segment_CP, "weight": weight},
         {
             "degree": degree,
-            "isclamped": is_clamped,
-            "isperiodic": is_periodic,
+            "isclamped": [is_clamped],
+            "isperiodic": [is_periodic],
             "type": type,
         },
         single_seg=True,
