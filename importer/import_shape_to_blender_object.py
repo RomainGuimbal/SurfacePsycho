@@ -1031,6 +1031,14 @@ def build_SP_extrusion(topods_face, name, color, collection, trims_enabled, scal
     curve_type = get_geom_adapt_curve_type(adapt_curve)
     min_u, max_u = curve_range_from_type(curve_type)
 
+    # Attributes
+    attrs = {
+        "Degree": curve_no_edge.degree_att,
+        "Type": curve_no_edge.type_att,
+        "Knot": curve_no_edge.knot,
+        "Multiplicity": curve_no_edge.mult,
+    }
+
     object_data = generic_import_surface(
         topods_face,
         name, 
@@ -1041,6 +1049,7 @@ def build_SP_extrusion(topods_face, name, color, collection, trims_enabled, scal
         CPedges,
         [],
         modifier,
+        attrs,
         ob_name="STEP Extrusion",
         curr_uv_bounds=(
             adapt_curve.FirstParameter(),
@@ -1050,16 +1059,6 @@ def build_SP_extrusion(topods_face, name, color, collection, trims_enabled, scal
         ),
         new_uv_bounds=(min_u, max_u, None, None),
     )
-
-    # Add curve attributes
-        # Ideally should be an input of generic_import_surface which merges it
-    curve_p_count = len(curve_no_edge.verts)
-    object_data["attrs"]["Degree"][1] = curve_no_edge.degree
-    object_data["attrs"]["Type"][1] = curve_no_edge.type
-    object_data["attrs"]["Knot"][1 : 1 + curve_p_count] = curve_no_edge.knot
-    object_data["attrs"]["Multiplicity"][1 : 1 + curve_p_count] = curve_no_edge.mult
-
-    # Cyclic todo (both cyclic CP and cyclic eval)
 
     return object_data
 
@@ -1294,11 +1293,9 @@ def process_object_data_of_shape(
                 topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case SP_obj_type.SURFACE_OF_EXTRUSION:
-            print("Extrusion not supported yet")
-            # object_data = build_SP_extrusion(
-            #     topods_shape, name, color, collection, trims_enabled, scale, resolution
-            # )
-            return {}
+            object_data = build_SP_extrusion(
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
+            )
         case _:
             print(f"Unsupported Face Type : {ft}")
             return {}
