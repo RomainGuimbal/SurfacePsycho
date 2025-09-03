@@ -165,7 +165,7 @@ class SP_OT_QuickExport(bpy.types.Operator):
         today = datetime.today()
         date_str = today.strftime("%d-%m-%Y")
 
-        # Find next available number to avoid overrides
+        # Get temp dir
         blenddir = bpy.path.abspath("//")
         if blenddir != "":
             dir = blenddir
@@ -177,6 +177,8 @@ class SP_OT_QuickExport(bpy.types.Operator):
 
         # Pattern for files: blendname (number) date_str.step
         pattern = re.compile(rf"^{re.escape(blendname)} {re.escape(date_str)} \((\d+)\)\.step$")
+
+        # Find next available number to avoid overrides
         existing_numbers = []
         for fname in os.listdir(dir):
             match = pattern.match(fname)

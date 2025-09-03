@@ -10,7 +10,6 @@ from OCP.BRepAdaptor import (
     BRepAdaptor_Curve2d,
     BRepAdaptor_Surface,
 )
-# from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.gp import gp_Pnt, gp_Pnt2d
 from OCP.TopAbs import (
     TopAbs_FORWARD,
@@ -32,6 +31,7 @@ import OCP.TopAbs as TopAbs
 ##############################
 ##    Converter classes     ##
 ##############################
+
 
 class SP_Curve_no_edge_import:
     def __init__(self, adaptor_curve, scale=None):
@@ -67,9 +67,9 @@ class SP_Curve_no_edge_import:
                 end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
                 gp_pnt_poles = [start_point, end_point]
                 self.type_att = [EDGES_TYPES["line"]] * 2
-                if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+                if isinstance(gp_pnt_poles[0], gp_Pnt2d):
                     self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
-                else :
+                else:
                     self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
                 self.degree_att = [0, 0]
                 self.endpoints_att = [True] * 2
@@ -89,9 +89,9 @@ class SP_Curve_no_edge_import:
         gp_pnt_poles = [start_point, end_point]
         self.type = EDGES_TYPES["line"]
         self.type_att = [EDGES_TYPES["line"]] * 2
-        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d):
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
-        else :
+        else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.degree_att = [0, 0]
         self.endpoints_att = [True] * 2
@@ -116,7 +116,7 @@ class SP_Curve_no_edge_import:
         first = edge_adaptor.FirstParameter()
         last = edge_adaptor.LastParameter()
         bezier.Segment(first, last)
-        
+
         # Get poles
         p_count = bezier.NbPoles()
         gp_pnt_poles = [bezier.Pole(i + 1) for i in range(p_count)]
@@ -124,9 +124,9 @@ class SP_Curve_no_edge_import:
         # Set attributes
         self.type = EDGES_TYPES["bezier"]
         self.type_att = [EDGES_TYPES["bezier"]] * p_count
-        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d):
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
-        else :
+        else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.degree_att = [0] * p_count
         self.endpoints_att = [True] + [False] * (p_count - 2) + [True]
@@ -142,16 +142,16 @@ class SP_Curve_no_edge_import:
         first = edge_adaptor.FirstParameter()
         last = edge_adaptor.LastParameter()
         bspline.Segment(first, last)
-        
+
         # Get poles
         p_count = bspline.NbPoles()
         gp_pnt_poles = [bspline.Pole(i + 1) for i in range(p_count)]
-        
+
         # Set attributes
         self.degree = bspline.Degree()
-        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d):
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
-        else :
+        else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
         self.type = EDGES_TYPES["nurbs"]
         self.type_att = [EDGES_TYPES["nurbs"]] * p_count
@@ -200,9 +200,9 @@ class SP_Curve_no_edge_import:
         self.weight = [0.0] * 3
         self.knot = [0.0] * 3
         self.mult = [0] * 3
-        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d):
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
-        else :
+        else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
 
     def ellipse(self, edge_adaptor):
@@ -239,17 +239,16 @@ class SP_Curve_no_edge_import:
             self.knot = [0.0, 0.0, 0.0, 0.0, 0.0]
             self.mult = [0, 0, 0, 0, 0]
 
-        if isinstance(gp_pnt_poles[0], gp_Pnt2d ):       
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d):
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
-        else :
+        else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+
 
 class SP_Edge_import:
     def __init__(self, topods_edge: TopoDS_Edge, topods_face=None, scale=None):
         # Edge adaptor
         # 3D
-
-
         if topods_face is None:
             edge_adaptor = BRepAdaptor_Curve(topods_edge)
         # 2D
@@ -536,7 +535,13 @@ def generic_import_surface(
 
 
 def build_SP_cylinder(
-    topods_face: TopoDS_Face, name, color, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face: TopoDS_Face,
+    name,
+    color,
+    collection,
+    trims_enabled,
+    scale=0.001,
+    resolution=16,
 ):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cylinder = face_adpator.Surface().Cylinder()
@@ -586,7 +591,13 @@ def build_SP_cylinder(
 
 
 def build_SP_torus(
-    topods_face: TopoDS_Face, name, color, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face: TopoDS_Face,
+    name,
+    color,
+    collection,
+    trims_enabled,
+    scale=0.001,
+    resolution=16,
 ):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_torus = face_adpator.Surface().Torus()
@@ -639,7 +650,13 @@ def build_SP_torus(
 
 
 def build_SP_sphere(
-    topods_face: TopoDS_Face, name, color, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face: TopoDS_Face,
+    name,
+    color,
+    collection,
+    trims_enabled,
+    scale=0.001,
+    resolution=16,
 ):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_sphere = face_adpator.Surface().Sphere()
@@ -690,7 +707,13 @@ def build_SP_sphere(
 
 
 def build_SP_cone(
-    topods_face: TopoDS_Face, name, color, collection, trims_enabled, scale=0.001, resolution=16
+    topods_face: TopoDS_Face,
+    name,
+    color,
+    collection,
+    trims_enabled,
+    scale=0.001,
+    resolution=16,
 ):
     face_adpator = BRepAdaptor_Surface(topods_face)
     gp_cone = face_adpator.Surface().Cone()
@@ -1003,7 +1026,9 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
     return object_data
 
 
-def build_SP_extrusion(topods_face, name, color, collection, trims_enabled, scale, resolution):
+def build_SP_extrusion(
+    topods_face, name, color, collection, trims_enabled, scale, resolution
+):
     adapt_surf = BRepAdaptor_Surface(topods_face).Surface()
     adapt_curve = adapt_surf.BasisCurve()
     geom_surf = adapt_surf.Surface()
@@ -1037,11 +1062,14 @@ def build_SP_extrusion(topods_face, name, color, collection, trims_enabled, scal
         "Type": curve_no_edge.type_att,
         "Knot": curve_no_edge.knot,
         "Multiplicity": curve_no_edge.mult,
+        # TODO
+        # "Cyclic": curve_no_edge.isclosed,
+        # "Clamped": curve_no_edge.isclamped,
     }
 
     object_data = generic_import_surface(
         topods_face,
-        name, 
+        name,
         color,
         collection,
         trims_enabled,
@@ -1063,7 +1091,9 @@ def build_SP_extrusion(topods_face, name, color, collection, trims_enabled, scal
     return object_data
 
 
-def build_SP_revolution(topods_face, name, color, collection, trims_enabled, scale, resolution):
+def build_SP_revolution(
+    topods_face, name, color, collection, trims_enabled, scale, resolution
+):
     adapt_surf = BRepAdaptor_Surface(topods_face).Surface()
     adapt_curve = adapt_surf.BasisCurve()
     geom_surf = adapt_surf.Surface()
@@ -1101,6 +1131,9 @@ def build_SP_revolution(topods_face, name, color, collection, trims_enabled, sca
         "Type": curve_no_edge.type_att,
         "Knot": curve_no_edge.knot,
         "Multiplicity": curve_no_edge.mult,
+        # TODO
+        # "Cyclic": curve_no_edge.isclosed,
+        # "Clamped": curve_no_edge.isclamped,
     }
 
     object_data = generic_import_surface(
@@ -1124,9 +1157,15 @@ def build_SP_revolution(topods_face, name, color, collection, trims_enabled, sca
         new_uv_bounds=(None, None, min_u, max_u),
     )
 
-    # Cyclic todo (both cyclic CP and cyclic eval)
-
     return object_data
+
+
+def build_SP_offset_patch(
+    topods_face, name, color, collection, trims_enabled, scale, resolution
+):
+    # TODO
+    print("Offset surface not supported yet")
+    return {}
 
 
 class ShapeHierarchy:
@@ -1146,7 +1185,7 @@ class ShapeHierarchy:
 
     def create_collection(self, name, parent=None):
         new_collection = bpy.data.collections.new(name)
-
+        
         # If no parent, link to scene collection
         if parent is None:
             bpy.context.scene.collection.children.link(new_collection)
@@ -1248,12 +1287,21 @@ def import_face_nodegroups(shape_hierarchy):
                     to_import_ng_names.append("SP - Surface of Revolution Meshing")
                 case GeomAbs.GeomAbs_SurfaceOfExtrusion:
                     to_import_ng_names.append("SP - Surface of Extrusion Meshing")
+                case GeomAbs.GeomAbs_OffsetSurface:
+                    to_import_ng_names.append("SP - Offset Patch Meshing")
 
     append_multiple_node_groups(to_import_ng_names)
 
 
 def process_object_data_of_shape(
-    topods_shape, name, color, collection, trims_enabled, scale, resolution: int, iscurve: bool
+    topods_shape,
+    name,
+    color,
+    collection,
+    trims_enabled,
+    scale,
+    resolution: int,
+    iscurve: bool,
 ):
     if iscurve:
         return build_SP_curve(topods_shape, name, color, collection, scale, resolution)
@@ -1294,6 +1342,10 @@ def process_object_data_of_shape(
             )
         case SP_obj_type.SURFACE_OF_EXTRUSION:
             object_data = build_SP_extrusion(
+                topods_shape, name, color, collection, trims_enabled, scale, resolution
+            )
+        case SP_obj_type.OFFSET_SURFACE:
+            object_data = build_SP_offset_patch(
                 topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case _:

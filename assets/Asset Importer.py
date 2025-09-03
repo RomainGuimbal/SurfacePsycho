@@ -118,12 +118,12 @@ def assign_assets_to_catalog(asset_names, catalog_identifier, debug=False):
         asset = None
 
         # Check different data types
-        if a in bpy.data.objects.keys():
+        if a in bpy.data.collections.keys():
+            asset = bpy.data.collections[a]
+        elif a in bpy.data.objects.keys():
             asset = bpy.data.objects[a]
         elif a in bpy.data.node_groups.keys():
             asset = bpy.data.node_groups[a]
-        elif a in bpy.data.collections.keys():
-            asset = bpy.data.collections[a]
         elif a in bpy.data.materials.keys():
             asset = bpy.data.materials[a]
         elif a in bpy.data.meshes.keys():
@@ -210,11 +210,9 @@ gr_surf = {
     "SP - Displace Patch",
     "SP - Displace Precisely",
     "SP - Fillet Trim Contour",
-    "SP - Fit Patch",
     "SP - Flatten Patch",
     "SP - Flatten Patch Side",
     "SP - Gradient Map",
-    "SP - Interpolate Patch",
     "SP - Loft",
     #    "SP - Loft from Internal Curves",
     "SP - Mirror Patch Control Points",
@@ -249,6 +247,8 @@ gr_nurbs = {
     "SP - Insert Knot NURBS Patch",
     "SP - Curvature Analysis NURBS",
     "SP - Continuity Analysis",
+    "SP - Fit Patch",
+    "SP - Interpolate Patch",
 }
 
 

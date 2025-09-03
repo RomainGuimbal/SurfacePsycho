@@ -26,9 +26,11 @@ def process_batch(self, context):
             self.created_object_count += 1
             if self.created_object_count >= self.total_count:
                 context.window_manager.progress_end()
+                self.object_data.clear()
                 return {"FINISHED"}
     else:
         context.window_manager.progress_end()
+        self.object_data.clear()
         return {"FINISHED"}
 
     # Report progress
