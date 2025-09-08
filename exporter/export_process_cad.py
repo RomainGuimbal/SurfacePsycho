@@ -495,9 +495,9 @@ class SP_Wire_export:
                     sup = inf + self.segs_p_counts[i + 1]
         return split_attr
 
-    def get_topods_wire(
-        self,
-    ):  # split because not needed with svg. Can be judged unnecessary
+    def get_topods_wire(self):
+        # split because not needed with svg. Can be judged unnecessary
+
         # Split attrs per segment
         vec_cp_per_seg = self.split_cp_aligned_attr_per_seg(self.CP)
         weight = self.split_cp_aligned_attr_per_seg(self.weight_attr)

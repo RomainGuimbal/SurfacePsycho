@@ -1052,7 +1052,6 @@ def build_SP_extrusion(
         True,
     )
 
-    # needed rebound
     curve_type = get_geom_adapt_curve_type(adapt_curve)
     min_u, max_u = curve_range_from_type(curve_type)
 
@@ -1122,7 +1121,6 @@ def build_SP_revolution(
         True,
     )
 
-    # needed rebound
     curve_type = get_geom_adapt_curve_type(adapt_curve)
     min_u, max_u = curve_range_from_type(curve_type)
 

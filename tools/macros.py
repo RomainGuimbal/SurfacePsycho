@@ -12,6 +12,7 @@ os = platform.system()
 from ..importer.import_shape_to_blender_object import *
 from ..exporter.export_process_cad import *
 
+
 class SP_OT_add_NURBS_patch(bpy.types.Operator):
     bl_idname = "object.sp_add_nurbs_patch"
     bl_label = "Add NURBS PsychoPatch"
@@ -82,24 +83,24 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         mesh.update()
 
         # Link the object to the scene
-        bpy.context.collection.objects.link(self.obj)
+        context.collection.objects.link(self.obj)
 
-        add_sp_modifier(self.obj, "SP - Reorder Grid Index", add_mode=True)
+        add_sp_modifier(self.obj, "SP - Reorder Grid Index", append=True)
         add_sp_modifier(
             self.obj,
             "SP - Connect Bezier Patch",
             {"Continuity Level": 3},
-            add_mode=True,
+            append=True,
         )
-        add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", pin=True, add_mode=True)
+        add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", pin=True, append=True)
 
         # Set object location to 3D cursor
-        self.obj.location = bpy.context.scene.cursor.location
+        self.obj.location = context.scene.cursor.location
 
         # Select the new object and make it active
         bpy.ops.object.select_all(action="DESELECT")
         self.obj.select_set(True)
-        bpy.context.view_layer.objects.active = self.obj
+        context.view_layer.objects.active = self.obj
 
         return {"FINISHED"}
 
@@ -132,12 +133,12 @@ class SP_OT_add_library(bpy.types.Operator):
     def execute(self, context):
         # create lib
         asset_lib_path = join(dirname(dirname(abspath(__file__))), "assets")
-        paths = [a.path for a in bpy.context.preferences.filepaths.asset_libraries]
+        paths = [a.path for a in context.preferences.filepaths.asset_libraries]
         if asset_lib_path not in paths:
             bpy.ops.preferences.asset_library_add(directory=asset_lib_path)
 
         # Rename lib
-        asset_library = bpy.context.preferences.filepaths.asset_libraries.get("assets")
+        asset_library = context.preferences.filepaths.asset_libraries.get("assets")
         if asset_library:
             asset_library.name = "SurfacePsycho"
 
@@ -269,7 +270,9 @@ class SP_OT_update_modifiers(bpy.types.Operator):
 class SP_OT_replace_node_group(bpy.types.Operator):
     bl_idname = "object.sp_replace_node_group"
     bl_label = "SP - Replace Node Group"
-    bl_description = "For updating old assets. Replaces all instance of a modifier with another"
+    bl_description = (
+        "For updating old assets. Replaces all instance of a modifier with another"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     target_name: bpy.props.StringProperty(name="Target", description="", default="")
@@ -450,7 +453,7 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
                             sp_patch = first_sp_bezier_patch.copy()
                             sp_patch.animation_data_clear()
                             sp_patch.matrix_world = o.matrix_world
-                            bpy.context.collection.objects.link(sp_patch)
+                            context.collection.objects.link(sp_patch)
                     else:
                         if first_bspline_patch_flag:
                             append_object_by_name("NURBS Patch", context)
@@ -462,7 +465,7 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
                             sp_patch = first_sp_bspline_patch.copy()
                             sp_patch.animation_data_clear()
                             sp_patch.matrix_world = o.matrix_world
-                            bpy.context.collection.objects.link(sp_patch)
+                            context.collection.objects.link(sp_patch)
 
                     spline_cp = [Vector(p.co[0:3]) for p in s.points]
 
@@ -503,10 +506,12 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
         for o in objs:
             if att_name in o.data.attributes:
                 if not toggle_bool_attribute(o, att_name):
-                    if not toggle_pseudo_bool_attribute(o, att_name) :
-                        o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
+                    if not toggle_pseudo_bool_attribute(o, att_name):
+                        o.data.attributes.new(
+                            name=att_name, type="BOOLEAN", domain="POINT"
+                        )
                         o.data.update()
-            
+
             # Vertex group (LEGACY)
             elif att_name in o.vertex_groups:
                 toggle_pseudo_bool_vertex_group(o, att_name)
@@ -625,7 +630,7 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
 
     def execute(self, context):
         # set mode
-        original_mode = bpy.context.mode
+        original_mode = context.mode
         if original_mode == "EDIT_MESH":
             selected_objects = context.objects_in_mode
         else:
@@ -657,7 +662,7 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
     def add_square_inside_mesh(self, context, obj):
 
         # Ensure the object is active and enter Edit mode
-        bpy.context.view_layer.objects.active = obj
+        context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode="EDIT")
 
         # Create bmesh from the object
@@ -690,8 +695,12 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
         bpy.ops.object.mode_set(mode="OBJECT")
 
         # Add attributes
-        add_bool_attribute(obj, "Trim Contour", [False] * (len(obj.data.vertices) - 4) + [True]*4)
-        add_bool_attribute(obj, "Endpoints", [False] * (len(obj.data.vertices) - 4) + [True]*4)
+        add_bool_attribute(
+            obj, "Trim Contour", [False] * (len(obj.data.vertices) - 4) + [True] * 4
+        )
+        add_bool_attribute(
+            obj, "Endpoints", [False] * (len(obj.data.vertices) - 4) + [True] * 4
+        )
 
 
 class SP_OT_toggle_trim_contour_belonging(bpy.types.Operator):
@@ -707,10 +716,12 @@ class SP_OT_toggle_trim_contour_belonging(bpy.types.Operator):
         for o in objs:
             if att_name in o.data.attributes:
                 if not toggle_bool_attribute(o, att_name):
-                    if not toggle_pseudo_bool_attribute(o, att_name) :
-                        o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
+                    if not toggle_pseudo_bool_attribute(o, att_name):
+                        o.data.attributes.new(
+                            name=att_name, type="BOOLEAN", domain="POINT"
+                        )
                         o.data.update()
-            
+
             # Vertex group (LEGACY)
             elif att_name in o.vertex_groups:
                 toggle_pseudo_bool_vertex_group(o, att_name)
@@ -736,7 +747,7 @@ class SP_OT_select_trim_contour(bpy.types.Operator):
         bpy.ops.object.mode_set(mode="EDIT")
 
         return {"FINISHED"}
-                    
+
 
 def show_combs(self, context):
     objects = [ob for ob in context.selected_objects]
@@ -873,14 +884,14 @@ class SP_OT_set_segment_degree(bpy.types.Operator):
 
     def modal(self, context, event):
         # Handle scroll wheel events
-        if event.type == "WHEELUPMOUSE":
+        if event.type == "WHEELDOWNMOUSE":
             self.degree += 1
             set_seg_degree(self.degree, context)
             context.area.header_text_set(f"Degree: {self.degree}")
             context.view_layer.update()
             return {"RUNNING_MODAL"}
 
-        elif event.type == "WHEELDOWNMOUSE":
+        elif event.type == "WHEELUPMOUSE":
             if self.degree > 0:
                 self.degree -= 1
                 set_seg_degree(self.degree, context)
@@ -913,10 +924,16 @@ class SP_OT_set_spline(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     degree: bpy.props.IntProperty(
-        name="Degree", default=2, min=0, description="Degree attribute assigned to selection"
+        name="Degree",
+        default=2,
+        min=0,
+        description="Degree attribute assigned to selection",
     )
     weight: bpy.props.FloatProperty(
-        name="Weight", default=1.0, min = 0.0, description="Weight attribute assigned to selection"
+        name="Weight",
+        default=1.0,
+        min=0.0,
+        description="Weight attribute assigned to selection",
     )
 
     def modal(self, context, event):
@@ -970,7 +987,7 @@ class SP_OT_add_oriented_empty(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        if bpy.context.mode == "EDIT_MESH":
+        if context.mode == "EDIT_MESH":
             obj = context.objects_in_mode[0]
             bm = bmesh.from_edit_mesh(obj.data)
 
@@ -1008,7 +1025,7 @@ class SP_OT_add_oriented_empty(bpy.types.Operator):
             # Create the empty
             bpy.ops.object.mode_set(mode="OBJECT")
             empty = bpy.data.objects.new("OrientedEmpty", None)
-            bpy.context.collection.objects.link(empty)
+            context.collection.objects.link(empty)
 
             # Set the empty's location and rotation
             empty.location = centroid
@@ -1027,6 +1044,42 @@ class SP_OT_add_oriented_empty(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_blend_surfaces(bpy.types.Operator):
+    bl_idname = "object.sp_blend_surfaces"
+    bl_label = "Blend Surfaces"
+    bl_description = "Add a blend surface between the selected surfaces"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def poll(self, context):
+        return context.mode == "OBJECT"
+
+    def execute(self, context):
+        if len(context.selected_objects) < 2:
+            self.report({"INFO"}, "Select 2 surfaces")
+            return {"CANCELLED"}
+        else:
+            surf1 = context.selected_objects[0]
+            surf2 = context.selected_objects[1]
+            loc = surf1.location / 2 + surf2.location / 2
+
+            mesh = bpy.data.meshes.new("Blend Patch")
+            blend_surf = bpy.data.objects.new("Blend Patch", mesh)
+            blend_surf.location = loc
+            context.collection.objects.link(blend_surf)
+
+            add_sp_modifier(
+                blend_surf,
+                "SP - Blend Surfaces",
+                {"Target 1": surf1,
+                 "Target 2": surf2,
+                 "Auto": True,
+                 "Continuity Level": 3},
+                append=True,
+            )
+
+        return {"FINISHED"}
+
+
 classes = [
     SP_OT_add_NURBS_patch,
     SP_OT_add_bezier_patch,
@@ -1039,6 +1092,7 @@ classes = [
     SP_OT_assign_as_ellipse,
     SP_OT_toggle_endpoints,
     SP_OT_bl_nurbs_to_psychopatch,
+    SP_OT_blend_surfaces,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_from_ellipses,
     SP_OT_select_visible_curves,

@@ -151,6 +151,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             return process_batch(self, context)
         elif event.type == "ESC":
             context.window_manager.progress_end()
+            self.object_data.clear()
             return {"CANCELLED"}
         return {"PASS_THROUGH"}
 

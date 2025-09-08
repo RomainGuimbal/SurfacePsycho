@@ -159,7 +159,6 @@ gr_curve_flat = {
     "SP - Continuities between Segments",
     "SP - Convert Circles and Ellipses to Splines",
     "SP - Copy Curve or FlatPatch",
-    "SP - Copy Flat Patch Side",
     "SP - Copy Mesh Face",
     "SP - Curve on Surface from UV",
     "SP - Distance Between Curves",

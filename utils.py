@@ -615,9 +615,9 @@ def append_multiple_node_groups(ng_names: set):
 
 
 def add_node_group_modifier_from_asset(
-    obj, asset_name, settings_dict={}, pin=False, add_mode=False
+    obj, asset_name, settings_dict={}, pin=False, append=False
 ):
-    if add_mode:
+    if append:
         append_node_group(asset_name)
 
     # Create the modifier and assign the loaded node group
@@ -629,9 +629,9 @@ def add_node_group_modifier_from_asset(
     change_GN_modifier_settings(modifier, settings_dict)
 
 
-def add_sp_modifier(ob, name: str, settings_dict={}, pin=False, add_mode=False):
+def add_sp_modifier(ob, name: str, settings_dict={}, pin=False, append=False):
     add_node_group_modifier_from_asset(
-        ob, name, settings_dict, pin=pin, add_mode=add_mode
+        ob, name, settings_dict, pin=pin, append=append
     )
 
 
