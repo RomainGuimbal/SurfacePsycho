@@ -273,10 +273,25 @@ def change_node_socket_value(
     for m in ob.modifiers:
         if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
             for it in m.node_group.interface.items_tree:
-                if it.name in potential_names and it.socket_type == socket_type:
-                    input_id = it.identifier
-                    m[input_id] = value
-                    m.node_group.interface_update(context)
+                if it.socket_type == socket_type:
+                    if it.name in potential_names :
+                        input_id = it.identifier
+                        m[input_id] = value
+                        m.node_group.interface_update(context)
+
+
+def flip_node_socket_bool(
+    ob: bpy.types.Object, potential_names, context
+):
+    for m in ob.modifiers:
+        if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+            for it in m.node_group.interface.items_tree:
+                if it.socket_type == "NodeSocketBool":
+                    if it.name in potential_names :
+                        input_id = it.identifier
+                        m[input_id] = not m[input_id]
+                        m.node_group.interface_update(context)
+
 
 
 def change_GN_modifier_settings(modifier, settings_dict):

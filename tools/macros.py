@@ -15,7 +15,7 @@ from ..exporter.export_process_cad import *
 
 class SP_OT_add_NURBS_patch(bpy.types.Operator):
     bl_idname = "object.sp_add_nurbs_patch"
-    bl_label = "Add NURBS PsychoPatch"
+    bl_label = "SP - Add NURBS PsychoPatch"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -25,7 +25,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
 
 class SP_OT_add_bezier_patch(bpy.types.Operator):
     bl_idname = "object.sp_add_bezier_patch"
-    bl_label = "Add Bezier Patch"
+    bl_label = "SP - Add Bezier Patch"
     bl_options = {"REGISTER", "UNDO"}
 
     degree_u: bpy.props.IntProperty(
@@ -107,7 +107,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
 
 class SP_OT_add_flat_patch(bpy.types.Operator):
     bl_idname = "object.sp_add_flat_patch"
-    bl_label = "Add flat PsychoPatch"
+    bl_label = "SP - Add flat PsychoPatch"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -117,7 +117,7 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
 
 class SP_OT_add_curve(bpy.types.Operator):
     bl_idname = "object.sp_add_curve"
-    bl_label = "Add PsychoCurve"
+    bl_label = "SP - Add PsychoCurve"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -127,7 +127,7 @@ class SP_OT_add_curve(bpy.types.Operator):
 
 class SP_OT_add_library(bpy.types.Operator):
     bl_idname = "object.sp_add_library"
-    bl_label = "Add Library"
+    bl_label = "SP - Add Library"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -302,7 +302,7 @@ class SP_OT_replace_node_group(bpy.types.Operator):
 
 class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
     bl_idname = "object.sp_psychopatch_to_bl_nurbs"
-    bl_label = "Convert Psychopatches to internal NURBS"
+    bl_label = "SP - Convert Psychopatches to internal NURBS"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -427,7 +427,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
 
 class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
     bl_idname = "object.sp_bl_nurbs_to_psychopatch"
-    bl_label = "Convert internal NURBS to Psychopatches"
+    bl_label = "SP - Convert internal NURBS to Psychopatches"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -496,7 +496,7 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
     """Mark or unmark selected vertices as endpoint depending on the active vertex"""
 
     bl_idname = "mesh.sp_toggle_endpoints"
-    bl_label = "Toggle Endpoints"
+    bl_label = "SP - Toggle Endpoints"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -527,7 +527,7 @@ class SP_OT_select_endpoints(bpy.types.Operator):
     """Select vertices marked as segment ends"""
 
     bl_idname = "mesh.sp_select_endpoints"
-    bl_label = "Select Endpoints"
+    bl_label = "SP - Select Endpoints"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -543,7 +543,7 @@ class SP_OT_set_segment_type(bpy.types.Operator):
     """Mark segment type for selection"""
 
     bl_idname = "mesh.sp_set_segment_type"
-    bl_label = "Set Segment Type"
+    bl_label = "SP - Set Segment Type"
     bl_options = {"REGISTER", "UNDO"}
 
     type: bpy.props.EnumProperty(
@@ -578,7 +578,7 @@ class SP_OT_set_segment_type(bpy.types.Operator):
 
 class SP_OT_assign_as_ellipse(bpy.types.Operator):
     bl_idname = "object.sp_assign_as_ellipse"
-    bl_label = "Assign as Ellipse"
+    bl_label = "SP - Assign as Ellipse"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -603,7 +603,7 @@ class SP_OT_assign_as_ellipse(bpy.types.Operator):
 
 class SP_OT_remove_from_ellipses(bpy.types.Operator):
     bl_idname = "object.sp_remove_from_ellipses"
-    bl_label = "Remove from Ellipses"
+    bl_label = "SP - Remove from Ellipses"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -624,7 +624,7 @@ class SP_OT_remove_from_ellipses(bpy.types.Operator):
 
 class SP_OT_add_trim_contour(bpy.types.Operator):
     bl_idname = "mesh.sp_add_trim_contour"
-    bl_label = "Add Trim Contour"
+    bl_label = "SP - Add Trim Contour"
     bl_description = "Add a trim contour to selected patch"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -705,7 +705,7 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
 
 class SP_OT_toggle_trim_contour_belonging(bpy.types.Operator):
     bl_idname = "mesh.sp_toggle_trim_contour_belonging"
-    bl_label = "Toggle Trim Contour Belonging"
+    bl_label = "SP - Toggle Trim Contour Belonging"
     bl_description = "Toggle selection as part of the patch trim contour"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -737,7 +737,7 @@ class SP_OT_select_trim_contour(bpy.types.Operator):
     """Select vertices marked as segment ends"""
 
     bl_idname = "mesh.sp_select_trim_contour"
-    bl_label = "Select Trim Contour"
+    bl_label = "SP - Select Trim Contour"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -874,7 +874,7 @@ class SP_Props_Group(bpy.types.PropertyGroup):
 
 class SP_OT_set_segment_degree(bpy.types.Operator):
     bl_idname = "object.sp_set_segment_degree"
-    bl_label = "Set Segment Degree"
+    bl_label = "SP - Set Segment Degree"
     bl_options = {"REGISTER", "UNDO"}
 
     # Properties to store the current value
@@ -920,7 +920,7 @@ class SP_OT_set_segment_degree(bpy.types.Operator):
 
 class SP_OT_set_spline(bpy.types.Operator):
     bl_idname = "mesh.sp_set_spline"
-    bl_label = "Set Spline"
+    bl_label = "SP - Set Spline"
     bl_options = {"REGISTER", "UNDO"}
 
     degree: bpy.props.IntProperty(
@@ -982,7 +982,7 @@ class SP_OT_set_spline(bpy.types.Operator):
 
 class SP_OT_add_oriented_empty(bpy.types.Operator):
     bl_idname = "object.sp_add_oriented_empty"
-    bl_label = "Add Oriented Empty"
+    bl_label = "SP - Add Oriented Empty"
     bl_description = "Add oriented empty from 3 vertices"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -1046,14 +1046,17 @@ class SP_OT_add_oriented_empty(bpy.types.Operator):
 
 class SP_OT_blend_surfaces(bpy.types.Operator):
     bl_idname = "object.sp_blend_surfaces"
-    bl_label = "Blend Surfaces"
+    bl_label = "SP - Blend Surfaces"
     bl_description = "Add a blend surface between the selected surfaces"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
     def poll(self, context):
         return context.mode == "OBJECT"
 
     def execute(self, context):
+        # Add a check if SP surfaces ?
+
         if len(context.selected_objects) < 2:
             self.report({"INFO"}, "Select 2 surfaces")
             return {"CANCELLED"}
@@ -1067,45 +1070,110 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
             blend_surf.location = loc
             context.collection.objects.link(blend_surf)
 
+            # Add blend modifier
             add_sp_modifier(
                 blend_surf,
                 "SP - Blend Surfaces",
-                {"Target 1": surf1,
-                 "Target 2": surf2,
-                 "Auto": True,
-                 "Continuity Level": 3},
+                {
+                    "Target 1": surf1,
+                    "Target 2": surf2,
+                    "Auto": True,
+                    "Continuity Level": 3,
+                },
+                append=True,
+            )
+
+            # Add meshing modifier
+            add_sp_modifier(
+                blend_surf,
+                "SP - Bezier Patch Meshing",
                 append=True,
             )
 
         return {"FINISHED"}
 
 
+class SP_OT_flip_normals(bpy.types.Operator):
+    bl_idname = "object.sp_flip_normals"
+    bl_label = "SP - Flip Normals"
+    bl_description = "Flip normals of selected surfaces"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(self, context):
+        return context.mode == "OBJECT"
+
+    def execute(self, context):
+        for o in context.selected_objects:
+            flip_node_socket_bool(o, ["Flip Normal", "Flip Normals"], context)
+        return {"FINISHED"}
+
+
+class SP_OT_enable_exact_normals(bpy.types.Operator):
+    bl_idname = "object.sp_enable_exact_normals"
+    bl_label = "SP - Enable Exact Normals"
+    bl_description = "Enable exact normals on selected surfaces"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(self, context):
+        return context.mode == "OBJECT"
+
+    def execute(self, context):
+        for o in context.selected_objects:
+            change_node_socket_value(
+                o, True, ["Exact Normals", "Exact Normal"], "NodeSocketBool", context
+            )
+        return {"FINISHED"}
+
+
+class SP_OT_disable_exact_normals(bpy.types.Operator):
+    bl_idname = "object.sp_disable_exact_normals"
+    bl_label = "SP - Disable Exact Normals"
+    bl_description = "Disable exact normals on selected surfaces"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(self, context):
+        return context.mode == "OBJECT"
+
+    def execute(self, context):
+        for o in context.selected_objects:
+            change_node_socket_value(
+                o, False, ["Exact Normals", "Exact Normal"], "NodeSocketBool", context
+            )
+        return {"FINISHED"}
+
+
 classes = [
-    SP_OT_add_NURBS_patch,
     SP_OT_add_bezier_patch,
     SP_OT_add_curve,
     SP_OT_add_flat_patch,
     SP_OT_add_library,
+    SP_OT_add_NURBS_patch,
     SP_OT_add_oriented_empty,
     SP_OT_add_trim_contour,
-    SP_OT_set_segment_type,
     SP_OT_assign_as_ellipse,
-    SP_OT_toggle_endpoints,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_blend_surfaces,
+    SP_OT_flip_normals,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_from_ellipses,
+    SP_OT_replace_node_group,
+    SP_OT_select_endpoints,
+    SP_OT_select_trim_contour,
     SP_OT_select_visible_curves,
     SP_OT_select_visible_surfaces,
-    SP_OT_toggle_control_geom,
-    SP_OT_select_endpoints,
-    SP_OT_update_modifiers,
-    SP_OT_replace_node_group,
-    SP_Props_Group,
     SP_OT_set_segment_degree,
+    SP_OT_set_segment_type,
     SP_OT_set_spline,
+    SP_OT_toggle_control_geom,
+    SP_OT_toggle_endpoints,
     SP_OT_toggle_trim_contour_belonging,
-    SP_OT_select_trim_contour,
+    SP_OT_update_modifiers,
+    SP_Props_Group,
+    SP_OT_disable_exact_normals,
+    SP_OT_enable_exact_normals,
 ]
 
 

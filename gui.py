@@ -92,6 +92,21 @@ class SP_PT_EditPanel(bpy.types.Panel):
                 sub.operator("mesh.sp_toggle_trim_contour_belonging", text="Toggle")
                 sub.operator("mesh.sp_select_trim_contour", text="Select")
 
+            # Blend surfaces
+            row = self.layout.row()
+            row.operator("object.sp_blend_surfaces", text="Blend Surfaces", icon="IPO_EASE_IN_OUT")
+
+            # Flip normal
+            row = self.layout.row()
+            row.operator("object.sp_flip_normals", text="Flip Normals", icon="NORMALS_FACE")
+            
+            # Exact normals
+            row = self.layout.row()
+            row.label(text="Exact Normals")
+            sub = row.row(align=True)
+            sub.operator("object.sp_enable_exact_normals", text="Enable")
+            sub.operator("object.sp_disable_exact_normals", text="Disable")
+
         if context.mode == "EDIT_MESH":
             # Endpoints
             row = self.layout.row()
