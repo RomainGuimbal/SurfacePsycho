@@ -271,27 +271,38 @@ def change_node_socket_value(
     ob: bpy.types.Object, value, potential_names, socket_type, context
 ):
     for m in ob.modifiers:
-        if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+        if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
             for it in m.node_group.interface.items_tree:
-                if it.socket_type == socket_type:
-                    if it.name in potential_names :
+                if it.item_type == "SOCKET":
+                    if it.socket_type == socket_type and it.name in potential_names:
                         input_id = it.identifier
                         m[input_id] = value
                         m.node_group.interface_update(context)
 
 
-def flip_node_socket_bool(
-    ob: bpy.types.Object, potential_names, context
-):
+def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
     for m in ob.modifiers:
-        if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
-            for it in m.node_group.interface.items_tree:
-                if it.socket_type == "NodeSocketBool":
-                    if it.name in potential_names :
-                        input_id = it.identifier
-                        m[input_id] = not m[input_id]
-                        m.node_group.interface_update(context)
-
+        if m.type == "NODES" and m.node_group and m.node_group.name.startswith("SP - "):
+            # Collect items first to avoid modifying during iteration
+            items_to_process = []
+            
+            for it in list(m.node_group.interface.items_tree):  # Create a copy
+                if (it.item_type == "SOCKET" and 
+                    it.socket_type == "NodeSocketBool" and 
+                    it.name in potential_names):
+                    items_to_process.append(it)
+            
+            # Process collected items
+            modifier_updated = False
+            for it in items_to_process:
+                input_id = it.identifier
+                # if input_id in m:  # Check existence before access
+                m[input_id] = not m[input_id]
+                modifier_updated = True
+            
+            # Single interface update after all changes
+            if modifier_updated:
+                m.node_group.interface_update(context)
 
 
 def change_GN_modifier_settings(modifier, settings_dict):
