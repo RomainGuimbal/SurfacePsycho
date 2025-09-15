@@ -271,13 +271,27 @@ def change_node_socket_value(
     ob: bpy.types.Object, value, potential_names, socket_type, context
 ):
     for m in ob.modifiers:
-        if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
-            for it in m.node_group.interface.items_tree:
-                if it.item_type == "SOCKET":
-                    if it.socket_type == socket_type and it.name in potential_names:
-                        input_id = it.identifier
-                        m[input_id] = value
-                        m.node_group.interface_update(context)
+        if m.type == "NODES" and m.node_group and m.node_group.name.startswith("SP - "):
+            # Collect items first to avoid modifying during iteration
+            items_to_process = []
+            
+            for it in list(m.node_group.interface.items_tree):  # Create a copy
+                if (it.item_type == "SOCKET" and 
+                    it.socket_type == socket_type and 
+                    it.name in potential_names):
+                    items_to_process.append(it)
+            
+            # Process collected items
+            modifier_updated = False
+            for it in items_to_process:
+                input_id = it.identifier
+                # if input_id in m:  # Check existence before access
+                m[input_id] = value
+                modifier_updated = True
+            
+            # Single interface update after all changes
+            if modifier_updated:
+                m.node_group.interface_update(context)
 
 
 def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):

@@ -55,7 +55,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
 
         # Create vertices
         for i in range(self.degree_u + 1):
-            for j in range(self.degree_v + 1):
+            for j in range(self.degree_v, -1, -1):
                 x = j * step_x - 1  # Subtract 1 to center
                 y = i * step_y - 1  # Subtract 1 to center
                 self.bm.verts.new((x, y, 0))
