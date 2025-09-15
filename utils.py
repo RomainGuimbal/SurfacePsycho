@@ -1,3 +1,4 @@
+import bmesh
 import bpy
 import numpy as np
 from mathutils import Vector, Matrix, Quaternion
@@ -274,13 +275,15 @@ def change_node_socket_value(
         if m.type == "NODES" and m.node_group and m.node_group.name.startswith("SP - "):
             # Collect items first to avoid modifying during iteration
             items_to_process = []
-            
+
             for it in list(m.node_group.interface.items_tree):  # Create a copy
-                if (it.item_type == "SOCKET" and 
-                    it.socket_type == socket_type and 
-                    it.name in potential_names):
+                if (
+                    it.item_type == "SOCKET"
+                    and it.socket_type == socket_type
+                    and it.name in potential_names
+                ):
                     items_to_process.append(it)
-            
+
             # Process collected items
             modifier_updated = False
             for it in items_to_process:
@@ -288,7 +291,7 @@ def change_node_socket_value(
                 # if input_id in m:  # Check existence before access
                 m[input_id] = value
                 modifier_updated = True
-            
+
             # Single interface update after all changes
             if modifier_updated:
                 m.node_group.interface_update(context)
@@ -299,13 +302,15 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
         if m.type == "NODES" and m.node_group and m.node_group.name.startswith("SP - "):
             # Collect items first to avoid modifying during iteration
             items_to_process = []
-            
+
             for it in list(m.node_group.interface.items_tree):  # Create a copy
-                if (it.item_type == "SOCKET" and 
-                    it.socket_type == "NodeSocketBool" and 
-                    it.name in potential_names):
+                if (
+                    it.item_type == "SOCKET"
+                    and it.socket_type == "NodeSocketBool"
+                    and it.name in potential_names
+                ):
                     items_to_process.append(it)
-            
+
             # Process collected items
             modifier_updated = False
             for it in items_to_process:
@@ -313,7 +318,7 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
                 # if input_id in m:  # Check existence before access
                 m[input_id] = not m[input_id]
                 modifier_updated = True
-            
+
             # Single interface update after all changes
             if modifier_updated:
                 m.node_group.interface_update(context)
@@ -544,6 +549,7 @@ def tcolstd_array1_to_list(array):
 def haarray1_of_real_to_list(harray):
     return [harray(i) for i in range(harray.Lower(), harray.Upper() + 1)]
 
+
 def haarray1_of_int_to_list(harray):
     return [harray(i) for i in range(harray.Lower(), harray.Upper() + 1)]
 
@@ -591,8 +597,10 @@ def gp_pnt2d_to_blender_vec(vec: gp_Pnt2d):
 def gp_pnt_to_blender_vec_list(vecs: list[gp_Pnt]) -> list[Vector]:
     return [Vector((vec.X(), vec.Y(), vec.Z())) for vec in vecs]
 
+
 def gp_pnt_to_blender_vec_list_2d(vecs: list[gp_Pnt2d]) -> list[Vector]:
     return [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
+
 
 # def gp_pnt2d_to_blender_vec_list(vecs: list):
 #     return [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
@@ -670,9 +678,7 @@ def add_node_group_modifier_from_asset(
 
 
 def add_sp_modifier(ob, name: str, settings_dict={}, pin=False, append=False):
-    add_node_group_modifier_from_asset(
-        ob, name, settings_dict, pin=pin, append=append
-    )
+    add_node_group_modifier_from_asset(ob, name, settings_dict, pin=pin, append=append)
 
 
 def join_mesh_entities(verts1, edges1, faces1, verts2, edges2, faces2):
@@ -979,6 +985,7 @@ def select_by_attriute(att_name, objects):
                     # Vertex is not in the group, skip it
                     pass
 
+
 def override_attribute_dictionary(dict1, dict2):
     res = dict1.copy()
     for key, value in dict2.items():
@@ -988,3 +995,45 @@ def override_attribute_dictionary(dict1, dict2):
         else:
             res[key] = value
     return res
+
+
+def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
+
+    # bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1)
+
+    mesh = bpy.data.meshes.new(name="Grid")
+    bm = bmesh.new()
+
+    # divide grid
+    step_x = 2 / (vertex_count_v - 1)
+    step_y = 2 / (vertex_count_u - 1)
+
+    # Create vertices
+    for i in range(vertex_count_u):
+        for j in range(vertex_count_v - 1, -1, -1):
+            x = j * step_x - 1  # Subtract 1 to center
+            y = i * step_y - 1  # Subtract 1 to center
+            bm.verts.new((x, y, 0))
+
+    bm.verts.ensure_lookup_table()
+
+    # Create faces
+    for i in range(vertex_count_u - 1):
+        for j in range(vertex_count_v - 1):
+            v1 = bm.verts[i * vertex_count_v + j]
+            v2 = bm.verts[i * vertex_count_v + j + 1]
+            v3 = bm.verts[(i + 1) * vertex_count_v + j + 1]
+            v4 = bm.verts[(i + 1) * vertex_count_v + j]
+            bm.faces.new((v1, v2, v3, v4))
+
+    # Update bmesh
+    bm.to_mesh(mesh)
+    bm.free()
+
+    # Set smooth
+    if smooth:
+        values = [True] * len(mesh.polygons)
+        mesh.polygons.foreach_set("use_smooth", values)
+        mesh.update()
+
+    return mesh

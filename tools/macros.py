@@ -42,47 +42,15 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         min=1,
     )
 
+    show_control_geom: bpy.props.BoolProperty(
+        name="Show Control Geometry", default=False
+    )
+
     def execute(self, context):
-        mesh = bpy.data.meshes.new(name="Grid")
+        mesh = create_grid_mesh(self.degree_u + 1, self.degree_v + 1)
+
+        # Create and link the object
         self.obj = bpy.data.objects.new("Bezier Patch", mesh)
-
-        # Create a new bmesh
-        self.bm = bmesh.new()
-
-        # divide grid
-        step_x = 2 / self.degree_v
-        step_y = 2 / self.degree_u
-
-        # Create vertices
-        for i in range(self.degree_u + 1):
-            for j in range(self.degree_v, -1, -1):
-                x = j * step_x - 1  # Subtract 1 to center
-                y = i * step_y - 1  # Subtract 1 to center
-                self.bm.verts.new((x, y, 0))
-
-        self.bm.verts.ensure_lookup_table()
-
-        # Create faces
-        for i in range(self.degree_u):
-            for j in range(self.degree_v):
-                v1 = self.bm.verts[i * (self.degree_v + 1) + j]
-                v2 = self.bm.verts[i * (self.degree_v + 1) + j + 1]
-                v3 = self.bm.verts[(i + 1) * (self.degree_v + 1) + j + 1]
-                v4 = self.bm.verts[(i + 1) * (self.degree_v + 1) + j]
-                self.bm.faces.new((v1, v2, v3, v4))
-
-        # Update bmesh
-        self.bm.to_mesh(mesh)
-        self.bm.free()
-
-        # # set smooth
-        values = [True] * len(mesh.polygons)
-        mesh.polygons.foreach_set("use_smooth", values)
-
-        # Update mesh
-        mesh.update()
-
-        # Link the object to the scene
         context.collection.objects.link(self.obj)
 
         add_sp_modifier(self.obj, "SP - Reorder Grid Index", append=True)
@@ -92,7 +60,13 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
             {"Continuity Level": 3},
             append=True,
         )
-        add_sp_modifier(self.obj, "SP - Bezier Patch Meshing", pin=True, append=True)
+        add_sp_modifier(
+            self.obj,
+            "SP - Bezier Patch Meshing",
+            {"Control Polygon": self.show_control_geom},
+            pin=True,
+            append=True,
+        )
 
         # Set object location to 3D cursor
         self.obj.location = context.scene.cursor.location
