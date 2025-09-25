@@ -1,5 +1,6 @@
 import bpy
 from pathlib import Path
+import re
 
 
 def delete_all_data():
@@ -140,6 +141,37 @@ def assign_assets_to_catalog(asset_names, catalog_identifier, debug=False):
             print(f"'{a}' is not marked as an asset")
 
 
+def replace_all_instances_of_node_group(target_node_group_name, new_node_group_name):
+    # Get the target node group
+    prefix, suffix = target_node_group_name[:-2], target_node_group_name[-2:]
+
+    if suffix == ".*":
+        pattern = rf"^{re.escape(prefix)}\.(\d{{3}}|\d{{3}}\.\d{{3}})$"
+        target_node_groups = [
+            ng for ng in bpy.data.node_groups if re.match(pattern, ng.name)
+        ]
+    else:
+        target_node_groups = [bpy.data.node_groups.get(target_node_group_name)]
+
+    # Get the new node group
+    new_node_group = bpy.data.node_groups.get(new_node_group_name)
+    if not new_node_group:
+        return 0  # New node group not found
+
+    if len(target_node_groups) > 0:
+        for t in target_node_groups:
+            if t and t != new_node_group:
+                # Replace the node group data
+                t.user_remap(new_node_group)
+
+                # Remove the old node group
+                bpy.data.node_groups.remove(t)
+
+        return len(target_node_groups)
+    else:
+        return -1
+
+
 ##############################################
 
 # PROBE
@@ -263,6 +295,13 @@ gr_other = {
     "SP - Surface of Revolution Meshing",
 }
 
+# COMPOUND
+filepath_compound = "//..\..\SP - Compound.blend"
+gr_compound = {
+    "SP - Compound Meshing",
+    "SP - SubD to Bezier",
+}
+
 # SHAPES
 filepath_preset = "//..\..\SP - Shapes presets.blend"
 obj_preset = {"Quadaratic Dome", "Cubic Dome", "Torus", "Sphere", "Cone"}
@@ -280,7 +319,12 @@ coll_preset = {
 }
 
 
-######  CATALOGS SETS  ######
+
+################################
+#                              #
+#        CATALOGS SETS         #
+#                              #
+################################
 
 full_set = (
     gr_surf
@@ -364,15 +408,8 @@ def replace_duplicates():
             duplicated_list.append(ng.name[:-4])
     duplicated_groups = set(duplicated_list)
     
-    replace_pairs = []
     for d in duplicated_groups :
-        replace_pairs.append((d+".*",d))
-    
-    for p in replace_pairs : 
-        bpy.ops.object.sp_replace_node_group(target_name = p[0], new_name = p[1])
-        
-        
-
+        replace_all_instances_of_node_group(d+".*", d)
 
 
 def clear_unused_data():
@@ -411,7 +448,20 @@ def clear_unused_data():
             bpy.data.node_groups.remove(ng)
 
 
+
+
+################################
+#                              #
+#            MAIN              #
+#                              #
+################################
+
 if __name__ == "__main__":
+#    import cProfile
+#    profiler = cProfile.Profile()
+#    profiler.enable()
+
+
     delete_all_data()
 
     print("\n\n\n\n______________________________________________________")
@@ -423,6 +473,7 @@ if __name__ == "__main__":
     append_node_group_by_names(filepath_surf, gr_surf)
     append_node_group_by_names(filepath_nurbs, gr_nurbs)
     append_node_group_by_names(filepath_other, gr_other)
+    append_node_group_by_names(filepath_compound, gr_compound)
 
     print("\n\n______________________________________________________\n")
     print("Appending Objects..\n")
@@ -449,3 +500,8 @@ if __name__ == "__main__":
     assign_assets_to_catalog(bezier_patch_set, "SurfacePsycho/Bezier Patch")
     assign_assets_to_catalog(curve_flat_set, "SurfacePsycho/Curve & FlatPatch")
     assign_assets_to_catalog(shape_set, "SurfacePsycho/Shape")
+    
+#    
+#    profiler.disable()
+#    profiler.print_stats()
+
