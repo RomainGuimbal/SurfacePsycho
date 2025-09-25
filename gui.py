@@ -107,6 +107,10 @@ class SP_PT_EditPanel(bpy.types.Panel):
             sub.operator("object.sp_enable_exact_normals", text="Enable")
             sub.operator("object.sp_disable_exact_normals", text="Disable")
 
+            # Conversions
+            row = self.layout.row()
+            row.operator("object.sp_explode_compound", text="Explode Compound", icon="MOD_EXPLODE")
+
         if context.mode == "EDIT_MESH":
             # Endpoints
             row = self.layout.row()

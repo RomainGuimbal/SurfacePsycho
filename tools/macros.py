@@ -1,6 +1,7 @@
 import bpy
 import bmesh
 from ..utils import *
+from .compound_utils import *
 from mathutils import Vector
 
 from os.path import dirname, abspath, join
@@ -1119,6 +1120,30 @@ class SP_OT_disable_exact_normals(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_explode_compound(bpy.types.Operator):
+    bl_idname = "object.sp_explode_compound"
+    bl_label = "SP - Explode Compound"
+    bl_description = "Convert selected compounds to individual patches"
+    bl_options = {"REGISTER", "UNDO"}
+
+    keep_original: bpy.props.BoolProperty(name="Keep Original", default=True)
+
+    @classmethod
+    def poll(self, context):
+        return context.mode == "OBJECT"
+
+    def execute(self, context):
+        for o in context.selected_objects:
+            if sp_type_of_object(o, context) == SP_obj_type.COMPOUND:
+                convert_compound_to_patches(o, context)
+            
+        
+        if not self.keep_original:
+            bpy.ops.object.delete(use_global=False)
+
+        return {"FINISHED"}
+
+
 classes = [
     SP_OT_add_bezier_patch,
     SP_OT_add_curve,
@@ -1130,6 +1155,7 @@ classes = [
     SP_OT_assign_as_ellipse,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_blend_surfaces,
+    SP_OT_explode_compound,
     SP_OT_flip_normals,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_from_ellipses,
