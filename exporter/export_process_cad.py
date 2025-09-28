@@ -784,10 +784,9 @@ def NURBS_face_to_topods(o, context, scale=1000):
     points *= scale
     degree_u, degree_v = read_attribute_by_name(ob, "Degrees", 2)
     try:
-        isclamped_u, isclamped_v = read_attribute_by_name(ob, "IsClamped", 2)
         isperiodic_u, isperiodic_v = read_attribute_by_name(ob, "IsPeriodic", 2)
     except KeyError:
-        isclamped_u, isclamped_v, isperiodic_u, isperiodic_v = True, True, False, False
+        isperiodic_u, isperiodic_v = False, False
 
     # Knots and Multiplicities
     uknots, vknots, umult, vmult = get_patch_knot_and_mult(ob)
@@ -801,7 +800,7 @@ def NURBS_face_to_topods(o, context, scale=1000):
                 j + 1, i + 1, gp_Pnt(points[id][0], points[id][1], points[id][2])
             )
 
-    # Compose Geom
+    # Create Geom
     geom_surf = Geom_BSplineSurface(
         poles,
         uknots,
@@ -1147,35 +1146,43 @@ def curve_to_topods(o, context, scale=1000):
     # crop segs_p_counts
     segs_p_counts = segs_p_counts[:segment_count]
 
-    # 1 point less if closed
-    is_closed = bool(ob.data.attributes["IsPeriodic"].data[0].value)
+    # is closed
+    is_closed = read_attribute_by_name(ob, "IsPeriodic", 1)[0]
+    
+    # One point less if closed
     total_p_count -= is_closed and segment_count > 1
 
     # is clamped
-    is_clamped = bool(ob.data.attributes["IsClamped"].data[0].value)
+    is_clamped = read_attribute_by_name(ob, "IsClamped", 1)[0]
 
     # Type
     try:
         type_att = read_attribute_by_name(ob, "Type", segment_count)
-    except Exception:
+    except KeyError:
         type_att = [0] * segment_count
 
     # Degree
     try:
         segs_degrees = read_attribute_by_name(ob, "Degree", segment_count)
-    except Exception:
+    except KeyError:
         segs_degrees = [0] * segment_count
 
     # Get CP position attr
     points = read_attribute_by_name(ob, "CP_curve", total_p_count)
     points *= scale
 
-    ## Weight
+    # Weight
     try:
         weight_attr = read_attribute_by_name(ob, "Weight", total_p_count)
     except KeyError:
         weight_attr = [1.0] * total_p_count
 
+    # Knots
+    knots_segment = read_attribute_by_name(ob, "knot_segment") 
+    knots = read_attribute_by_name(ob, "knots")
+    knot_per_seg = split_by_index(knots_segment, knots)
+
+    # Build wire
     wire = SP_Wire_export(
         {"CP": points, "weight": weight_attr},
         {
@@ -1184,6 +1191,7 @@ def curve_to_topods(o, context, scale=1000):
             "isperiodic": [is_closed] * segment_count,
             "isclamped": [is_clamped] * segment_count,
             "type": type_att,
+            # TODO add knots
         },
         is2D=False,
     )
