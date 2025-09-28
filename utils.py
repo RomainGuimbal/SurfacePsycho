@@ -1037,3 +1037,15 @@ def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
         mesh.update()
 
     return mesh
+
+
+
+def split_by_index(index:list[int], attribute:list)-> list[list]:
+    split_attr = []
+    for i,a in enumerate(attribute):
+        if split_attr[index[i]] == None:
+            split_attr[index[i]] = [a]
+        else:
+            split_attr[index[i]].append(a)
+            
+    return split_attr
