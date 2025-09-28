@@ -28,6 +28,9 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
         name="Selected Only", description="Selected only", default=True
     )
     scale: FloatProperty(name="Scale", default=1000, min=0)
+
+    sew: BoolProperty(name="Sew Surfaces", description="Sew", default=True)
+
     sew_tolerance_exponent: IntProperty(
         name="Sewing Tolerance Exponent",
         description="In millimeter, after scale have been applied (-1 = 0.1mm)",
@@ -42,6 +45,7 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
             self.filepath,
             self.use_selection,
             self.scale,
+            self.sew,
             10**self.sew_tolerance_exponent,
         )
 
@@ -62,6 +66,9 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
         name="Selected Only", description="Selected only", default=True
     )
     scale: FloatProperty(name="Scale", default=1000, min=0)
+
+    sew: BoolProperty(name="Sew Surfaces", description="Sew", default=True)
+
     sew_tolerance_exponent: IntProperty(
         name="Sewing Tolerance Exponent",
         description="In millimeter, after scale have been applied (-1 = 0.1mm)",
@@ -76,6 +83,7 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
             self.filepath,
             self.use_selection,
             self.scale,
+            self.sew,
             10**self.sew_tolerance_exponent,
         )
         return {"FINISHED"}
@@ -148,7 +156,6 @@ class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
 
-
 class SP_OT_QuickExport(bpy.types.Operator):
     bl_idname = "wm.sp_quick_export"
     bl_label = "SP - Quick export"
@@ -160,7 +167,7 @@ class SP_OT_QuickExport(bpy.types.Operator):
         blendname = bpy.path.display_name_from_filepath(bpy.data.filepath)
         if blendname == "":
             blendname = "SP Export"
-        
+
         # Get date
         today = datetime.today()
         date_str = today.strftime("%d-%m-%Y")
@@ -172,11 +179,16 @@ class SP_OT_QuickExport(bpy.types.Operator):
         else:
             dir = context.preferences.filepaths.temporary_directory
             if dir == "":
-                self.report({"WARNING"}, "Save your file first or set the temporary directory in preferences")
+                self.report(
+                    {"WARNING"},
+                    "Save your file first or set the temporary directory in preferences",
+                )
                 return {"CANCELED"}
 
         # Pattern for files: blendname (number) date_str.step
-        pattern = re.compile(rf"^{re.escape(blendname)} {re.escape(date_str)} \((\d+)\)\.step$")
+        pattern = re.compile(
+            rf"^{re.escape(blendname)} {re.escape(date_str)} \((\d+)\)\.step$"
+        )
 
         # Find next available number to avoid overrides
         existing_numbers = []
@@ -191,7 +203,7 @@ class SP_OT_QuickExport(bpy.types.Operator):
         filename = f"{blendname} {date_str} ({next_number}).step"
         pathstr = join(dir, filename)
 
-        export_isdone = export_step(context, pathstr, True, 1000, 1e-1)
+        export_isdone = export_step(context, pathstr, True, 1000, False, 1e-1)
         if export_isdone:
             self.report({"INFO"}, f"Step file exported at {pathstr}")
         else:
@@ -199,14 +211,7 @@ class SP_OT_QuickExport(bpy.types.Operator):
         return {"FINISHED"}
 
 
-
-
-classes = [
-    SP_OT_ExportSvg,
-    SP_OT_ExportStep,
-    SP_OT_ExportIges,
-    SP_OT_QuickExport
-]
+classes = [SP_OT_ExportSvg, SP_OT_ExportStep, SP_OT_ExportIges, SP_OT_QuickExport]
 
 
 def register():

@@ -371,36 +371,23 @@ def auto_knot_and_mult(p_count, degree, isclamped=True, is_unclamped_periodic=Fa
 
 def get_patch_knot_and_mult(
     ob,
-    u_count,
-    v_count,
-    degree_u,
-    degree_v,
-    isclamped_u,
-    isclamped_v,
-    isperiodic_u,
-    isperiodic_v,
 ):
+    # try:
     try:
-        try:
-            umult_att = read_attribute_by_name(ob, "Multiplicity U")
-            u_length = sum(np.asarray(umult_att) > 0)
-        except KeyError:
-            umult_att = read_attribute_by_name(ob, "Multiplicity U")
-            u_length = int(sum(np.asarray(umult_att) > 0))
-        uknots_att = read_attribute_by_name(ob, "Knot U", u_length)
+        umult_att = read_attribute_by_name(ob, "Multiplicity U")
+        u_length = sum(np.asarray(umult_att) > 0)
+    except KeyError:
+        umult_att = read_attribute_by_name(ob, "Multiplicity U")
+        u_length = int(sum(np.asarray(umult_att) > 0))
+    uknots_att = read_attribute_by_name(ob, "Knot U", u_length)
 
-        try:
-            vmult_att = read_attribute_by_name(ob, "Multiplicity V")
-            v_length = sum(np.asarray(vmult_att) > 0)
-        except Exception:
-            vmult_att = read_attribute_by_name(ob, "Multiplicity V")
-            v_length = int(sum(np.asarray(vmult_att) > 0))
-        vknots_att = read_attribute_by_name(ob, "Knot V", v_length)
-
-    except KeyError:  # No custom knot
-        uknot, umult = auto_knot_and_mult(u_count, degree_u, isclamped_u, isperiodic_u)
-        vknot, vmult = auto_knot_and_mult(v_count, degree_v, isclamped_v, isperiodic_v)
-        return uknot, vknot, umult, vmult
+    try:
+        vmult_att = read_attribute_by_name(ob, "Multiplicity V")
+        v_length = sum(np.asarray(vmult_att) > 0)
+    except Exception:
+        vmult_att = read_attribute_by_name(ob, "Multiplicity V")
+        v_length = int(sum(np.asarray(vmult_att) > 0))
+    vknots_att = read_attribute_by_name(ob, "Knot V", v_length)
 
     uknot = TColStd_Array1OfReal(1, u_length)
     umult = TColStd_Array1OfInteger(1, u_length)
@@ -835,17 +822,7 @@ def NURBS_face_to_topods(o, context, scale=1000):
         isclamped_u, isclamped_v, isperiodic_u, isperiodic_v = True, True, False, False
 
     # Knots and Multiplicities
-    uknots, vknots, umult, vmult = get_patch_knot_and_mult(
-        ob,
-        u_count,
-        v_count,
-        degree_u,
-        degree_v,
-        isclamped_u,
-        isclamped_v,
-        isperiodic_u,
-        isperiodic_v,
-    )
+    uknots, vknots, umult, vmult = get_patch_knot_and_mult(ob)
 
     # Poles grid
     poles = TColgp_Array2OfPnt(1, u_count, 1, v_count)
@@ -1128,6 +1105,64 @@ def revolution_face_to_topods(o, context, scale=1000):
     return face
 
 
+def extrusion_face_to_topods(o, context, scale=1000):
+    # Get attr
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    dir_att = read_attribute_by_name(ob, "dir_extrusion", 1)[0]
+    p_count = read_attribute_by_name(ob, "p_count_extrusion", 1)[0]
+    segment_CP = read_attribute_by_name(ob, "CP_extrusion", p_count)
+    segment_CP *= scale
+    weight = read_attribute_by_name(ob, "weight_extrusion", p_count)
+    type = read_attribute_by_name(ob, "type_extrusion", 1)[0]
+    degree = read_attribute_by_name(ob, "degree_extrusion", 1)[0]
+    is_clamped, is_periodic = read_attribute_by_name(
+        ob, "clamped_periodic_extrusion", 2
+    )
+
+    geom_segment = SP_Edge_export(
+        {"CP": segment_CP, "weight": weight},
+        {
+            "degree": degree,
+            "isclamped": [is_clamped],
+            "isperiodic": [is_periodic],
+            "type": type,
+        },
+        single_seg=True,
+        is2D=False,
+    ).geom
+
+    # Create geom
+    dir = gp_Dir(dir_att[0], dir_att[1], dir_att[2])
+    geom_surf = Geom_SurfaceOfLinearExtrusion(geom_segment, dir)
+
+    # Build trim contour
+    contour = SP_Contour_export(
+        ob,
+        "CP_trim_contour_UV",
+        "CP_count_trim_contour_UV",
+        "IsClamped_trim_contour",
+        "IsPeriodic_trim_contour",
+        is2D=True,
+        geom_surf=geom_surf,
+    )
+
+    # Create topods face
+    if not contour.has_wire:
+        return geom_to_topods_face(geom_surf)
+    else:
+        wires = contour.wires_dict
+
+    # Get topods wires
+    outer_wire = wires[-1].get_topods_wire()
+    inner_wires = []
+    for k in wires.keys():
+        if k != -1:
+            inner_wires.append(wires[k].get_topods_wire())
+
+    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+    return face
+
+
 def curve_to_topods(o, context, scale=1000):
     # Get point count attr
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -1248,13 +1283,14 @@ def empty_to_topods(o, context, scale=1000):
     return topods_plane
 
 
-def mirror_topods_shape(o, shape, scale=1000, sew_tolerance=1e-1):
-    ms = BRepBuilderAPI_Sewing(sew_tolerance)
-    ms.SetNonManifoldMode(True)
-    ms.Add(shape)
+def mirror_topods_shape(o, shape, scale=1000, sew = True, sew_tolerance=1e-1):
+    if sew :
+        ms = BRepBuilderAPI_Sewing(sew_tolerance)
+        ms.SetNonManifoldMode(True)
+        ms.Add(shape)
+        ms.Perform()
+        shape = ms.SewedShape()
 
-    ms.Perform()
-    shape = ms.SewedShape()
     loc, rot, _ = o.matrix_world.decompose()
 
     for m in o.modifiers:
@@ -1285,7 +1321,9 @@ def mirror_topods_shape(o, shape, scale=1000, sew_tolerance=1e-1):
             zscales = [0, 0, 1, 1, 1, 1, 0]
             symtype = [x + y + z for x, y, z in zip(xscales, yscales, zscales)]
 
-            ms2 = BRepBuilderAPI_Sewing(1e-1)
+            
+
+            ms2 = BRepBuilderAPI_Sewing(sew_tolerance)
             ms2.SetNonManifoldMode(True)
 
             for i in range(7):  # 7 = 8 mirror configs -1 original config
@@ -1331,25 +1369,20 @@ def mirror_topods_shape(o, shape, scale=1000, sew_tolerance=1e-1):
                     mshape = BRepBuilderAPI_Transform(shape, atrsf).Shape()
                     ms2.Add(shape)
                     ms2.Add(mshape)
-                    # mshape = BRepBuilderAPI_Transform(shape, atrsf).Shape()
-                    # ms.Add(mshape)
 
             ms2.Perform()
             shape = ms2.SewedShape()
-            # ms.Perform()
-            # shape = ms.SewedShape()
 
-    # ms.Perform()
-    # shape = ms.SewedShape()
     return shape
 
 
 # not a true hierarchy. too complex for now
 class ShapeHierarchy_export:
-    def __init__(self, context, use_selection=True, scale=1000, sew_tolerance=1e-1):
+    def __init__(self, context, use_selection, scale, sew, sew_tolerance):
         self.context = context
         self.use_selection = use_selection
         self.scale = scale
+        self.sew = sew
         self.sew_tolerance = sew_tolerance
 
         objs, shapes, empties, instances, compounds = self.create_shape_hierarchy(
@@ -1395,7 +1428,7 @@ class ShapeHierarchy_export:
                         for inst in dg.object_instances:
                             if inst.is_instance and inst.parent == ob:
                                 # TODO
-                                #         blender_object_to_topods_shapes(self.context, o, sp_type, self.scale, self.sew_tolerance)
+                                #         blender_object_to_topods_shapes(self.context, o, sp_type, self.scale, self.sew, self.sew_tolerance)
                                 # sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
                                 # separated_shapes_list.extend(shells_to_solids(sewed))
                                 # compounds.append(o)
@@ -1404,7 +1437,7 @@ class ShapeHierarchy_export:
                     # Standard shape
                     case _:
                         s = blender_object_to_topods_shapes(
-                            self.context, o, sp_type, self.scale, self.sew_tolerance
+                            self.context, o, sp_type, self.scale, self.sew, self.sew_tolerance
                         )
                         objs.append(o)
                         shapes.append(s)
@@ -1413,44 +1446,48 @@ class ShapeHierarchy_export:
 
 
 def blender_object_to_topods_shapes(
-    context, object, sp_type, scale=1000, sew_tolerance=1e-1
+    context, object, sp_type, scale=1000, sew = True, sew_tolerance=1e-1
 ):
     match sp_type:
         case SP_obj_type.CONE:
             shape = cone_face_to_topods(object, context, scale)
-            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
         case SP_obj_type.SPHERE:
             shape = sphere_face_to_topods(object, context, scale)
-            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
         case SP_obj_type.CYLINDER:
             shape = cylinder_face_to_topods(object, context, scale)
-            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
         case SP_obj_type.TORUS:
             shape = torus_face_to_topods(object, context, scale)
-            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
         case SP_obj_type.BEZIER_SURFACE:
             shape = bezier_face_to_topods(object, context, scale)
-            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
         case SP_obj_type.BSPLINE_SURFACE:
             shape = NURBS_face_to_topods(object, context, scale)
-            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
         case SP_obj_type.PLANE:
             shape = flat_patch_to_topods(object, context, scale)
-            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
         case SP_obj_type.CURVE:
             shape = curve_to_topods(object, context, scale)
-            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
         case SP_obj_type.SURFACE_OF_REVOLUTION:
             shape = revolution_face_to_topods(object, context, scale)
-            shape_mirrored = mirror_topods_shape(object, shape, scale, sew_tolerance)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
+
+        case SP_obj_type.SURFACE_OF_EXTRUSION:
+            shape = extrusion_face_to_topods(object, context, scale)
+            shape_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
         case _:
             raise Exception(f"Invalid type {sp_type}")
@@ -1553,15 +1590,18 @@ def sew_shapes(shape_list, tolerance=1e-1):
 
 
 def prepare_export(
-    context, use_selection: bool, scale=1000, sew_tolerance=1e-1
+    context, use_selection: bool, scale=1000, sew: bool = True, sew_tolerance=1e-1
 ) -> TopoDS_Compound:
     separated_shapes_list = []
-    hierarchy = ShapeHierarchy_export(context, use_selection, scale)
+    hierarchy = ShapeHierarchy_export(context, use_selection, scale, sew, sew_tolerance)
 
     # prepare shapes
     if len(hierarchy.shapes) > 0:
-        sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
-        separated_shapes_list.extend(shells_to_solids(sewed))
+        if sew:
+            sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
+            separated_shapes_list.extend(shells_to_solids(sewed))
+        else:
+            separated_shapes_list.extend(hierarchy.shapes)
 
     # TODO prepare sp compound objects
     # if len(hierarchy.compounds) > 0:
@@ -1590,9 +1630,10 @@ def export_step(
     filepath,
     use_selection,
     scale,
+    sew,
     sew_tolerance,
 ):
-    brep_shapes = prepare_export(context, use_selection, scale, sew_tolerance)
+    brep_shapes = prepare_export(context, use_selection, scale, sew, sew_tolerance)
     if brep_shapes is not None:
         write_step_file(brep_shapes, filepath, application_protocol="AP203")
         return True
@@ -1605,9 +1646,10 @@ def export_iges(
     filepath,
     use_selection,
     scale,
+    sew,
     sew_tolerance,
 ):
-    brep_shapes = prepare_export(context, use_selection, scale, sew_tolerance)
+    brep_shapes = prepare_export(context, use_selection, scale, sew, sew_tolerance)
     if brep_shapes is not None:
         write_iges_file(brep_shapes, filepath)
         return True

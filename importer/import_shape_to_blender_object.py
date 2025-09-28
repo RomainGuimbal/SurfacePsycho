@@ -826,8 +826,8 @@ def build_SP_NURBS_patch(
     u_periodic = bspline_surface.IsUPeriodic()
     v_periodic = bspline_surface.IsVPeriodic()
     uv_bounds = bspline_surface.Bounds()
-    u_knots = normalize_array(haarray1_of_real_to_list(bspline_surface.UKnots()))
-    v_knots = normalize_array(haarray1_of_real_to_list(bspline_surface.VKnots()))
+    u_knots = haarray1_of_real_to_list(bspline_surface.UKnots())
+    v_knots = haarray1_of_real_to_list(bspline_surface.VKnots())
     u_mult = haarray1_of_int_to_list(bspline_surface.UMultiplicities())
     v_mult = haarray1_of_int_to_list(bspline_surface.VMultiplicities())
 
