@@ -137,26 +137,8 @@ class SP_Edge_export:
     def get_type(self):
         if "type" in self.seg_attrs.keys():
             return SP_segment_type(self.seg_attrs["type"])
-
-        # Legacy system
         else:
-            circle_exists = "circle" in self.seg_attrs.keys()
-            if self.p_count < 2:
-                raise Exception("Invalid segment")
-            elif self.p_count == 2:
-                if circle_exists and self.seg_attrs["circle"] > 0.1 and self.single_seg:
-                    return SP_segment_type.CIRCLE
-                else:
-                    return SP_segment_type.BEZIER  # line
-            elif circle_exists and self.p_count == 3 and self.seg_attrs["circle"] > 0.1:
-                return SP_segment_type.CIRCLE_ARC
-            elif (
-                self.seg_attrs["degree"] == None
-                or self.p_count == self.seg_attrs["degree"] + 1
-            ) and not (self.seg_attrs["isperiodic"] or not self.seg_attrs["isclamped"]):
-                return SP_segment_type.BEZIER
-            else:
-                return SP_segment_type.NURBS
+            raise ValueError("Missing segment type")
 
     def generate_geom(self):
         match self.type:
@@ -179,7 +161,7 @@ class SP_Edge_export:
             case SP_segment_type.ELLIPSE:
                 self.ellipse()
             case _:
-                raise Exception("Invalid segment type")
+                raise ValueError("Invalid segment type")
 
     def line(self):
         if self.is2D:
@@ -434,10 +416,6 @@ class SP_Wire_export:
         self.segs_degrees = seg_aligned_attrs["degree"]
         self.isclamped_per_seg = seg_aligned_attrs["isclamped"]
         self.isperiodic_per_seg = seg_aligned_attrs["isperiodic"]
-        if "circle" in list(seg_aligned_attrs.keys()):
-            self.circle_att_seg_aligned = seg_aligned_attrs["circle"]
-        else:
-            self.circle_att_seg_aligned = [0.0] * self.seg_count
 
         # Domains :
         ## Is closed : per wire
@@ -472,7 +450,6 @@ class SP_Wire_export:
                 i == self.seg_count - 1
                 and self.isclosed
                 and self.seg_count > 1
-                and self.circle_att_seg_aligned[i] < 0.1
             ):
                 split_attr.append(attr[inf : len(self.CP)] + [attr[0]])
             else:
@@ -496,7 +473,6 @@ class SP_Wire_export:
                 {"CP": vec_cp_per_seg[i], "weight": weight[i]},
                 {
                     "degree": edges_degrees[i],
-                    "circle": self.circle_att_seg_aligned[i],
                     "isclamped": self.isclamped_per_seg,
                     "isperiodic": self.isperiodic_per_seg,
                     "type": self.segs_type_seg_aligned[i],
@@ -632,13 +608,6 @@ class SP_Contour_export:
                 type_att = [0] * self.segment_count
             type_att_per_wire = self.split_seg_attr_per_wire(type_att)
 
-            ## Circle LEGACY
-            try:
-                circle_att = read_attribute_by_name(ob, "Circle", self.segment_count)
-            except KeyError:
-                circle_att = [0.0] * self.segment_count
-            circle_att_per_wire = self.split_seg_attr_per_wire(circle_att)
-
             ## Degree
             try:
                 try:
@@ -686,7 +655,6 @@ class SP_Contour_export:
                         "degree": segs_degrees_per_wire[w],
                         "isclamped": isclamped_per_wire[w],
                         "isperiodic": isperiodic_per_wire[w],
-                        "circle": circle_att_per_wire[w],
                         "type": type_att_per_wire[w],
                     },
                     geom_surf=geom_surf,
@@ -1198,12 +1166,6 @@ def curve_to_topods(o, context, scale=1000):
     except Exception:
         segs_degrees = [0] * segment_count
 
-    # Circles LEGACY
-    try:
-        circle_att = read_attribute_by_name(ob, "Circle", segment_count)
-    except KeyError:
-        circle_att = [0.0] * segment_count
-
     # Get CP position attr
     points = read_attribute_by_name(ob, "CP_curve", total_p_count)
     points *= scale
@@ -1221,7 +1183,6 @@ def curve_to_topods(o, context, scale=1000):
             "degree": segs_degrees,
             "isperiodic": [is_closed] * segment_count,
             "isclamped": [is_clamped] * segment_count,
-            "circle": circle_att,
             "type": type_att,
         },
         is2D=False,
@@ -1479,7 +1440,7 @@ def blender_object_to_topods_shapes(
             shape = extrusion_face_to_topods(object, context, scale)
 
         case _:
-            raise Exception(f"Invalid type {sp_type}")
+            raise Exception(f"Invalid shape of type {sp_type}")
 
     shape_list_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
 
