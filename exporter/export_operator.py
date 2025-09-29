@@ -202,8 +202,10 @@ class SP_OT_QuickExport(bpy.types.Operator):
 
         filename = f"{blendname} {date_str} ({next_number}).step"
         pathstr = join(dir, filename)
+        
+        # Export
+        export_isdone = export_step(context, pathstr, True, 1000, True, 1e-1)
 
-        export_isdone = export_step(context, pathstr, True, 1000, False, 1e-1)
         if export_isdone:
             self.report({"INFO"}, f"Step file exported at {pathstr}")
         else:

@@ -164,7 +164,7 @@ def copy_mesh_attributes(source_mesh, target_mesh):
 
 def convert_compound_to_patches(o, context):
     mod = o.modifiers[-1]
-    if mod.node_group.name == "SP - Compound Meshing":
+    if mod.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
         mod.show_viewport = False
         created_objects = create_objects_from_instances(
             o,
@@ -178,31 +178,40 @@ def convert_compound_to_patches(o, context):
         types = np.zeros(len(created_objects), dtype=np.int32)
 
         ob = o.evaluated_get(context.evaluated_depsgraph_get())
-        for att in ob.data.attributes :
-            if att.domain == "POINT" and att.name == "SP_type" and att.data_type == "INT":
+        for att in ob.data.attributes:
+            if (
+                att.domain == "POINT"
+                and att.name == "SP_type"
+                and att.data_type == "INT"
+            ):
                 types = np.zeros(len(att.data), dtype=np.int32)
                 att.data.foreach_get("value", types)
                 break
-        
+
         for i, obj in enumerate(created_objects):
-            if types[i]==0:
+            if types[i] == 0:
                 add_sp_modifier(obj, "SP - FlatPatch Meshing", pin=True, append=False)
-            elif types[i]==1:
+            elif types[i] == 1:
                 pass
-            elif types[i]==2:
+            elif types[i] == 2:
                 pass
-            elif types[i]==3:
+            elif types[i] == 3:
                 pass
-            elif types[i]==4:
+            elif types[i] == 4:
                 pass
-            elif types[i]==5:    
-                add_sp_modifier(obj, "SP - Bezier Patch Meshing", pin=True, append=False)
-            elif types[i]==6:
+            elif types[i] == 5:
+                add_sp_modifier(
+                    obj, "SP - Bezier Patch Meshing", pin=True, append=False
+                )
+            elif types[i] == 6:
                 add_sp_modifier(obj, "SP - NURBS Patch Meshing", pin=True, append=False)
-            elif types[i]==7:
+            elif types[i] == 7:
                 pass
-            elif types[i]==8:
-                add_sp_modifier(obj, "SP - Surface of Extrusion Meshing", pin=True, append=False)
-            elif types[i]==9:
+            elif types[i] == 8:
+                add_sp_modifier(
+                    obj, "SP - Surface of Extrusion Meshing", pin=True, append=False
+                )
+            elif types[i] == 9:
                 pass
-        
+
+        created_objects.clear()

@@ -145,7 +145,7 @@ def sp_type_of_object(o: bpy.types.Object, context: bpy.types.Context) -> SP_obj
 
     for m in o.modifiers:
         if m.type == "NODES" and m.node_group:
-            if m.node_group.name == "SP - Compound Meshing":
+            if m.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
                 return SP_obj_type.COMPOUND
 
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -1039,13 +1039,12 @@ def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
     return mesh
 
 
-
-def split_by_index(index:list[int], attribute:list)-> list[list]:
+def split_by_index(index: list[int], attribute: list) -> list[list]:
     split_attr = []
-    for i,a in enumerate(attribute):
+    for i, a in enumerate(attribute):
         if split_attr[index[i]] == None:
             split_attr[index[i]] = [a]
         else:
             split_attr[index[i]].append(a)
-            
+
     return split_attr

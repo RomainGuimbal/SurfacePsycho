@@ -1113,7 +1113,7 @@ def extrusion_face_to_topods(o, context, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
-        scale=(1, length*scale),
+        scale=(1,1),
     )
 
     # Create topods face
