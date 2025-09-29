@@ -1086,6 +1086,8 @@ def extrusion_face_to_topods(o, context, scale=1000):
         ob, "clamped_periodic_extrusion", 2
     )
 
+    length = Vector(dir_att).length
+
     geom_segment = SP_Edge_export(
         {"CP": segment_CP, "weight": weight},
         {
@@ -1102,31 +1104,37 @@ def extrusion_face_to_topods(o, context, scale=1000):
     dir = gp_Dir(dir_att[0], dir_att[1], dir_att[2])
     geom_surf = Geom_SurfaceOfLinearExtrusion(geom_segment, dir)
 
-    # Build trim contour
-    contour = SP_Contour_export(
-        ob,
-        "CP_trim_contour_UV",
-        "CP_count_trim_contour_UV",
-        "IsClamped_trim_contour",
-        "IsPeriodic_trim_contour",
-        is2D=True,
-        geom_surf=geom_surf,
-    )
+    # # Build trim contour
+    # contour = SP_Contour_export(
+    #     ob,
+    #     "CP_trim_contour_UV",
+    #     "CP_count_trim_contour_UV",
+    #     "IsClamped_trim_contour",
+    #     "IsPeriodic_trim_contour",
+    #     is2D=True,
+    #     geom_surf=geom_surf,
+    #     scale=(length*scale, 1),
+    # )
 
-    # Create topods face
-    if not contour.has_wire:
-        return geom_to_topods_face(geom_surf)
-    else:
-        wires = contour.wires_dict
+    u_min, u_max = geom_segment.FirstParameter(), geom_segment.LastParameter()
+    v_min, v_max = 0.0, length*scale  # Extrusion length
 
-    # Get topods wires
-    outer_wire = wires[-1].get_topods_wire()
-    inner_wires = []
-    for k in wires.keys():
-        if k != -1:
-            inner_wires.append(wires[k].get_topods_wire())
+    face = BRepBuilderAPI_MakeFace(geom_surf, u_min, u_max, v_min, v_max, 1e-6).Face()
 
-    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+    # # Create topods face
+    # if not contour.has_wire:
+    #     return geom_to_topods_face(geom_surf)
+    # else:
+    #     wires = contour.wires_dict
+
+    # # Get topods wires
+    # outer_wire = wires[-1].get_topods_wire()
+    # inner_wires = []
+    # for k in wires.keys():
+    #     if k != -1:
+    #         inner_wires.append(wires[k].get_topods_wire())
+
+    # face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
     return face
 
 
@@ -1252,7 +1260,7 @@ def empty_to_topods(o, context, scale=1000):
     return topods_plane
 
 
-def mirror_topods_shape(o, shape, scale=1000, sew=True, sew_tolerance=1e-1):
+def mirror_topods_shape(o, shape, scale=1000):
     shape_list = [shape]
 
     loc, rot, _ = o.matrix_world.decompose()
@@ -1450,7 +1458,7 @@ def blender_object_to_topods_shapes(
         case _:
             raise Exception(f"Invalid shape of type {sp_type}")
 
-    shape_list_mirrored = mirror_topods_shape(object, shape, scale, sew, sew_tolerance)
+    shape_list_mirrored = mirror_topods_shape(object, shape, scale)
 
     if sew:
         compound = sew_shapes(shape_list_mirrored, sew_tolerance)
