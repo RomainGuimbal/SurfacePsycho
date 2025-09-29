@@ -1104,37 +1104,33 @@ def extrusion_face_to_topods(o, context, scale=1000):
     dir = gp_Dir(dir_att[0], dir_att[1], dir_att[2])
     geom_surf = Geom_SurfaceOfLinearExtrusion(geom_segment, dir)
 
-    # # Build trim contour
-    # contour = SP_Contour_export(
-    #     ob,
-    #     "CP_trim_contour_UV",
-    #     "CP_count_trim_contour_UV",
-    #     "IsClamped_trim_contour",
-    #     "IsPeriodic_trim_contour",
-    #     is2D=True,
-    #     geom_surf=geom_surf,
-    #     scale=(length*scale, 1),
-    # )
+    # Build trim contour
+    contour = SP_Contour_export(
+        ob,
+        "CP_trim_contour_UV",
+        "CP_count_trim_contour_UV",
+        "IsClamped_trim_contour",
+        "IsPeriodic_trim_contour",
+        is2D=True,
+        geom_surf=geom_surf,
+        scale=(1, length*scale),
+    )
 
-    u_min, u_max = geom_segment.FirstParameter(), geom_segment.LastParameter()
-    v_min, v_max = 0.0, length*scale  # Extrusion length
+    # Create topods face
+    if not contour.has_wire:
+        u_min, u_max = geom_segment.FirstParameter(), geom_segment.LastParameter()
+        v_min, v_max = 0.0, length*scale  # Extrusion length
+        face = BRepBuilderAPI_MakeFace(geom_surf, u_min, u_max, v_min, v_max, 1e-6).Face()
+    else:
+        wires = contour.wires_dict
+        outer_wire = wires[-1].get_topods_wire()
+        inner_wires = []
+        for k in wires.keys():
+            if k != -1:
+                inner_wires.append(wires[k].get_topods_wire())
 
-    face = BRepBuilderAPI_MakeFace(geom_surf, u_min, u_max, v_min, v_max, 1e-6).Face()
+        face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
 
-    # # Create topods face
-    # if not contour.has_wire:
-    #     return geom_to_topods_face(geom_surf)
-    # else:
-    #     wires = contour.wires_dict
-
-    # # Get topods wires
-    # outer_wire = wires[-1].get_topods_wire()
-    # inner_wires = []
-    # for k in wires.keys():
-    #     if k != -1:
-    #         inner_wires.append(wires[k].get_topods_wire())
-
-    # face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
     return face
 
 

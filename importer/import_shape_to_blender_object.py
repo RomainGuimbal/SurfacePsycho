@@ -479,6 +479,7 @@ def generic_import_surface(
     curr_uv_bounds=None,
     new_uv_bounds=(0.0, 1.0, 0.0, 1.0),
     weight=None,
+    switch_u_and_v=True,
 ):
     if weight == None:
         weight = [1.0] * len(CPvert)
@@ -490,7 +491,8 @@ def generic_import_surface(
         if curr_uv_bounds != None:
             contour.rebound(curr_uv_bounds, new_uv_bounds)
 
-        contour.switch_u_and_v()
+        if switch_u_and_v :
+            contour.switch_u_and_v()
         istrivial = contour.is_trivial()
 
         if istrivial:
@@ -1085,6 +1087,7 @@ def build_SP_extrusion(
             None,
         ),
         new_uv_bounds=(min_u, max_u, None, None),
+        switch_u_and_v= False,
     )
 
     return object_data
