@@ -229,6 +229,7 @@ def append_object_by_name(obj_name, context):  # for importing from the asset fi
         # Iterate through all objects and their geometry node modifiers
         for mod in o.modifiers:
             if mod.type == "NODES" and mod.node_group:
+                remove_preview_image(mod.node_group)
                 mod.node_group.asset_clear()
 
 
@@ -620,7 +621,7 @@ def list_geometry_node_groups():
     return geometry_node_groups
 
 
-def append_node_group(asset_name, force=False):
+def append_node_group(asset_name, force=False, remove_asset_data=True):
     # check if asset is already imported
     if force:
         asset_already = False
@@ -633,15 +634,19 @@ def append_node_group(asset_name, force=False):
         # Load the asset file
         with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
             # Find the node group in the file
-            if asset_name in data_from.node_groups:
-                data_to.node_groups = [asset_name]
-                return True
-            else:
+            if asset_name not in data_from.node_groups:
                 print(f"Asset '{asset_name}' not found")
                 return False
+            else:
+                data_to.node_groups = [asset_name]
+        if remove_asset_data:
+            for ng in data_to.node_groups:
+                remove_preview_image(ng)
+                ng.asset_clear()
+        return True
 
 
-def append_multiple_node_groups(ng_names: set):
+def append_multiple_node_groups(ng_names: set, remove_asset_data=True):
     # Get the current node group names
     existing_node_groups = set(bpy.data.node_groups.keys())
 
@@ -649,15 +654,20 @@ def append_multiple_node_groups(ng_names: set):
     with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
         # Filter the node groups that exist in the asset file
         valid_node_groups = [name for name in ng_names if name in data_from.node_groups]
-
+        
         # Append the valid node groups
         data_to.node_groups = valid_node_groups
+        
+    if remove_asset_data:
+        for ng in data_to.node_groups:
+            remove_preview_image(ng)
+            ng.asset_clear()
 
     # Find the newly added node groups
-    new_node_groups = []
-    new_node_groups_keys = set(bpy.data.node_groups.keys()) - existing_node_groups
-    for k in new_node_groups_keys:
-        new_node_groups.append(bpy.data.node_groups[k])
+    # new_node_groups = []
+    # new_node_groups_keys = set(bpy.data.node_groups.keys()) - existing_node_groups
+    # for k in new_node_groups_keys:
+    #     new_node_groups.append(bpy.data.node_groups[k])
 
     # return new_node_groups
 
@@ -1048,3 +1058,17 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
             split_attr[index[i]].append(a)
 
     return split_attr
+
+
+def remove_preview_image(ng : bpy.types.GeometryNodeTree):
+    # Somhow broken D:
+
+    override = bpy.context.copy()
+    override['id'] = ng
+
+    # Call the remove preview operator with the override
+    with bpy.context.temp_override(**override):
+        if bpy.ops.ed.lib_id_remove_preview.poll():
+            bpy.ops.ed.lib_id_remove_preview()
+            return True
+    return False

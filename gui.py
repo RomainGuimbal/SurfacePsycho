@@ -5,14 +5,11 @@ import bpy
 import platform
 
 os = platform.system()
-from .tools import macros
+from .tools import macros, add_objects
 from .importer import import_operator
 from .exporter import export_operator
 from .importer.import_operator import *
 from .exporter.export_operator import *
-
-# from .macros import SP_Props_Group
-
 
 class SP_PT_MainPanel(bpy.types.Panel):
     bl_idname = "SP_PT_MainPanel"
@@ -290,6 +287,7 @@ classes = [
 
 def register():
     macros.register()
+    add_objects.register()
     import_operator.register()
     export_operator.register()
 
@@ -322,6 +320,8 @@ def unregister():
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)
 
-    macros.unregister()
     export_operator.unregister()
     import_operator.unregister()
+    add_objects.unregister()
+    macros.unregister()
+
