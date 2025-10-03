@@ -1,7 +1,8 @@
 import bpy
 from pathlib import Path
 import re
-
+import uuid
+FILE_PATH = Path(bpy.data.filepath)
 
 def delete_all_data():
     # Delete all data except scripts
@@ -15,89 +16,53 @@ def delete_all_data():
     bpy.data.batch_remove(bpy.data.materials)
 
 
-# LINK = False parce que Link = True conserve pas les asset data
+def clear_and_create_catalogs(cat_names):
+    catalog_file = FILE_PATH.parent / "blender_assets.cats.txt"
+
+    # Clear the catalog file (or create it if it doesn't exist)
+    with open(catalog_file, "w") as f:
+        f.write("# This is an Asset Catalog Definition file for Blender.\n")
+        f.write("#\n")
+        f.write("# Empty lines and lines starting with `#` will be ignored.\n")
+        f.write("# The first non-ignored line should be the version indicator.\n")
+        f.write(
+            '# Other lines are of the format "UUID:catalog/path/for/assets:simple catalog name"\n\n'
+        )
+        f.write("VERSION 1\n\n")
+
+    print(f"Cleared catalog file at: {catalog_file}")
+
+    # Create new catalogs
+    new_catalogs = []
+    for c in cat_names:
+        if c == "SurfacePsycho":     
+            new_catalogs.append((c, c))
+        else :
+            new_catalogs.append((c, "SurfacePsycho/"+c))
+
+    # Append new catalogs to the file
+    with open(catalog_file, "a") as f:
+        for catalog_name, catalog_path in new_catalogs:
+            catalog_uuid = str(uuid.uuid4())
+            f.write(f"{catalog_uuid}:{catalog_path}:{catalog_name}\n")
+            print(f"Created catalog: {catalog_name} ({catalog_path})")
 
 
-def append_objs_by_names(filepath, obj_names):
-    print(f"Linking from {filepath}")
-    # link all objects in the list
-    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
-        data_to.objects = []
-        for name in obj_names:
-            if name in data_from.objects:
-                data_to.objects.append(name)
-            else:
-                raise ValueError(f"{name} NOT found")
-
-    # link object
-    for obj in data_to.objects:
-        if obj is not None:
-            bpy.context.collection.objects.link(obj)
-            obj.location = (0, 0, 0)
-
-
-def append_node_group_by_names(filepath, to_import_names):
-    print(f"Linking from {filepath}")
-    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
-        data_to.node_groups = []
-        for name in to_import_names:
-            if name in data_from.node_groups:
-                data_to.node_groups.append(name)
-            else:
-                raise ValueError(f"{name} NOT found")
-
-
-def append_collections_by_names(filepath, collection_names):
-    print(f"Linking from {filepath}")
-    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
-        data_to.collections = []
-        for name in collection_names:
-            if name in data_from.collections:
-                data_to.collections.append(name)
-            else:
-                raise ValueError(f"{name} NOT found")
-
-    # Link collections
-    for collection in data_to.collections:
-        if collection is not None:
-            bpy.context.scene.collection.children.link(collection)
-
-
-def assign_assets_to_catalog(asset_names, catalog_identifier, debug=False):
-    folder = Path(bpy.data.filepath).parent
-
+def get_catalog_uuid(catalog_identifier, folder):
     catalog_uuid = None
-
-    if debug:
-        print(f"Looking for catalog: '{catalog_identifier}'")
-        print("Parsing catalog file...")
 
     with (folder / "blender_assets.cats.txt").open() as f:
         for line_num, line in enumerate(f.readlines(), 1):
             if line.startswith(("#", "VERSION", "\n")) or line.strip() == "":
                 continue
 
-            # Debug: show raw line
-            if debug:
-                print(f"Line {line_num}: '{line.strip()}'")
-
             # Each line format: 'uuid:catalog_path:catalog_name'
             parts = line.strip().split(":")
-            if debug:
-                print(f"  Split into {len(parts)} parts: {parts}")
 
             if len(parts) >= 3:
                 uuid = parts[0]
                 catalog_path = parts[1]
                 catalog_name = parts[2]
-
-                if debug:
-                    print(f"  UUID: '{uuid}'")
-                    print(f"  Path: '{catalog_path}'")
-                    print(f"  Name: '{catalog_name}'")
-                    print(
-                        f"  Checking if '{catalog_identifier}' == '{catalog_path}' or '{catalog_name}'"
-                    )
 
                 # Check if the identifier matches either the path or the name
                 if (
@@ -106,39 +71,41 @@ def assign_assets_to_catalog(asset_names, catalog_identifier, debug=False):
                 ):
                     catalog_uuid = uuid
                     break
-                elif debug:
-                    print(f"  No match")
 
         if not catalog_uuid:
-            print(
+            raise ValueError(
                 f"Error: Catalog '{catalog_identifier}' not found in blender_assets.cats.txt"
             )
-            return
+    return catalog_uuid
 
-    for a in asset_names:
-        asset = None
 
-        # Check different data types
-        if a in bpy.data.collections.keys():
-            asset = bpy.data.collections[a]
-        elif a in bpy.data.objects.keys():
-            asset = bpy.data.objects[a]
-        elif a in bpy.data.node_groups.keys():
-            asset = bpy.data.node_groups[a]
-        elif a in bpy.data.materials.keys():
-            asset = bpy.data.materials[a]
-        elif a in bpy.data.meshes.keys():
-            asset = bpy.data.meshes[a]
-        else:
-            print(f"Asset '{a}' not found in any data category")
-            continue
+def assign_asset_to_catalog(asset_name, catalog_identifier):
+    folder = FILE_PATH.parent
 
-        # Assign to catalog if it's an asset
-        if asset.asset_data is not None:
-            asset.asset_data.catalog_id = catalog_uuid
-            asset.asset_data.author = "Romain Guimbal"
-        else:
-            print(f"'{a}' is not marked as an asset")
+    catalog_uuid = get_catalog_uuid(catalog_identifier, folder)
+
+    asset = None
+
+    # Check different data types
+    if asset_name in bpy.data.collections.keys():
+        asset = bpy.data.collections[asset_name]
+    elif asset_name in bpy.data.objects.keys():
+        asset = bpy.data.objects[asset_name]
+    elif asset_name in bpy.data.node_groups.keys():
+        asset = bpy.data.node_groups[asset_name]
+    elif asset_name in bpy.data.materials.keys():
+        asset = bpy.data.materials[asset_name]
+    elif asset_name in bpy.data.meshes.keys():
+        asset = bpy.data.meshes[asset_name]
+    else:
+        print(f"Asset '{asset_name}' not found in any data category")
+
+    # Assign to catalog if it's an asset
+    if asset.asset_data is not None:
+        asset.asset_data.catalog_id = catalog_uuid
+        asset.asset_data.author = "Romain Guimbal"
+    else:
+        raise ValueError(f"'{asset_name}' is not marked as an asset")
 
 
 def replace_all_instances_of_node_group(target_node_group_name, new_node_group_name):
@@ -172,6 +139,71 @@ def replace_all_instances_of_node_group(target_node_group_name, new_node_group_n
         return -1
 
 
+def append_by_name(filepath, asset_names, asset_type="node_groups"):
+    # Determine which data block to access
+    datablock_path = {
+        "node_groups": "node_groups",
+        "objects": "objects",
+        "collections": "collections",
+    }.get(asset_type, "node_groups")
+    
+    # link = False parce que link = True ne conserve pas les asset_data
+    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
+        # Get all available names from the file
+        available = getattr(data_from, datablock_path)
+
+        # Load only the assets we need
+        for name in asset_names:
+            if name in available:
+                getattr(data_to, datablock_path).append(name)
+
+    # Access the loaded assets and get their catalog IDs
+    loaded_data = getattr(data_to, datablock_path)
+
+    # Read catalog definition file
+    catalogs_id_name_pairs = {}
+    for item in loaded_data:
+        if item and item.asset_data:
+            catalog_id = item.asset_data.catalog_id
+            catalog_file = (FILE_PATH.parent.parent.parent).joinpath("blender_assets.cats.txt")
+            with open(catalog_file, "r") as f:
+                for line in f:
+                    if line.startswith(("#", "VERSION", "\n")) or line.strip() == "":
+                        continue
+
+                    # Each line format: 'uuid:catalog_path:catalog_name'
+                    parts = line.strip().split(":")
+
+                    if len(parts) >= 3 and parts[0] == str(catalog_id):
+                        catalogs_id_name_pairs[catalog_id] = parts[2]
+
+    # Assign to catalog
+    for item in loaded_data:
+        if item and item.asset_data:
+            catalog_id = item.asset_data.catalog_id
+            try :
+                catalog_name = catalogs_id_name_pairs[catalog_id]
+            except KeyError :
+                print(f"{item.name} has invalid catalog id {str(catalog_id)}")
+                continue
+            assign_asset_to_catalog(item.name, catalog_name)
+
+    # link object
+    if asset_type == "objects":
+        for obj in data_to.objects:
+            if obj is not None:
+                bpy.context.collection.objects.link(obj)
+                obj.location = (0, 0, 0)
+
+    # Link collections
+    elif asset_type == "collections":
+        for collection in data_to.collections:
+            if collection is not None:
+                bpy.context.scene.collection.children.link(collection)
+
+    return
+
+
 ##############################################
 
 # PROBE
@@ -187,7 +219,7 @@ obj_curve_flat = {
 gr_curve_flat = {
     "SP - Bezier Circlular Arc",
     "SP - Blend Curve",
-#    "SP - Compose FlatPatch From Sides",
+    #    "SP - Compose FlatPatch From Sides",
     "SP - Continuities between Segments",
     "SP - Convert Circles and Ellipses to Splines",
     "SP - Copy Curve or FlatPatch",
@@ -218,7 +250,7 @@ gr_curve_flat = {
     "SP - Switch Curve Direction",
     "SP - Text to Curve or FlatPatch",
     "SP - Interpolate Wire",
-    # "SP - Continuities Curve",
+    # "SP - Connect Curve",
     # "SP - Curve Meshing",
     # "SP - Crop or Extend Curve",
     # "SP - Offset Curve",
@@ -237,9 +269,8 @@ gr_surf = {
     "SP - Convert Contour",
     "SP - Crop or Extend Patch",
     "SP - Crop Patch to Point",
-    "SP - Curvature Analysis Bezier Patch",
-    "SP - Displace Patch",
-    "SP - Displace Precisely",
+    "SP - Displace Bezier Patch Control Grid",
+    "SP - Offset Precisely",
     "SP - Fillet Trim Contour",
     "SP - Flatten Patch",
     "SP - Flatten Patch Side",
@@ -254,14 +285,9 @@ gr_surf = {
     "SP - Reorder Grid Index",
     "SP - Ruled Surface from Mesh Loop",
     "SP - Select Patch Range",
-    "SP - Sew and Symmetrize",
     "SP - Copy Segment",
     "SP - Copy Flat Patch as Trim Contour",
     "SP - Convert Flat Patch to Bezier Patch",
-    # "SP - Sweep Linear Bicubic",
-    # "SP - Sweep Bicubic",
-    # "SP - Auto Snap Continuities",
-    # "SP - Straighten Rows",
 }
 
 
@@ -269,14 +295,13 @@ gr_surf = {
 filepath_nurbs = "//..\..\SP - NURBS.blend"
 obj_nurbs = {"NURBS Patch"}
 gr_nurbs = {
-    # "SP - NURBS Curve Meshing",
     "SP - NURBS Patch Meshing",
     "SP - NURBS Weighting",
     "SP - Set Knot NURBS Patch",
     "SP - NURBS to Bezier Patch [Naive slow]",
     "SP - Crop NURBS Patch",
     "SP - Insert Knot NURBS Patch",
-    "SP - Curvature Analysis NURBS",
+    "SP - Curvature Analysis",
     "SP - Continuity Analysis",
     "SP - Fit Patch",
     "SP - Interpolate Patch",
@@ -293,6 +318,7 @@ gr_other = {
     "SP - Conical Meshing",
     "SP - Surface of Extrusion Meshing",
     "SP - Surface of Revolution Meshing",
+    "SP - Plot Distance from Mesh"
 }
 
 # COMPOUND
@@ -319,7 +345,6 @@ coll_preset = {
 }
 
 
-
 ################################
 #                              #
 #        CATALOGS SETS         #
@@ -341,8 +366,7 @@ full_set = (
     | {
         "SP - Connect Bezier Patch",
         "SP - Bezier Patch Meshing",
-        # "SP - Auto Snap Continuities",
-        "SP - Continuities Curve",
+        "SP - SP - Connect Curve",
         "SP - Curve Meshing",
         "SP - Crop or Extend Curve",
         "SP - FlatPatch Meshing",
@@ -353,30 +377,27 @@ full_set = (
 shape_set = obj_preset | coll_preset
 
 bezier_patch_set = (
-    (obj_surf
-    | gr_surf
-    | {"SP - Connect Bezier Patch", "SP - Bezier Patch Meshing"})
-    - {
-        "SP - Sew and Symmetrize",
-        "SP - Displace Precisely",
-        "Internal Curve For Patch",
-        "SP - Convert Flat Patch to Bezier Patch",
-        "SP - Select Patch Range",
-        "SP - Project Curve on Bezier Patch",
-        "SP - Curvature Analysis",
-        "SP - Convert Contour",
-        "SP - Copy Flat Patch as Trim Contour",
-        "SP - Copy Segment",
-        "SP - Nearest Curve on Bezier Patch",
-        "SP - Flatten Patch",
-        "SP - Patch Exact Normals",
-        "SP - Ruled Surface from Mesh Loop",
-        "SP - Flatten Patch Side",
-    }
-)
+    obj_surf | gr_surf | {"SP - Connect Bezier Patch", "SP - Bezier Patch Meshing"}
+) - {
+    "SP - Sew and Symmetrize",
+    "SP - Displace Precisely",
+    "Internal Curve For Patch",
+    "SP - Convert Flat Patch to Bezier Patch",
+    "SP - Select Patch Range",
+    "SP - Project Curve on Bezier Patch",
+    "SP - Curvature Analysis",
+    "SP - Convert Contour",
+    "SP - Copy Flat Patch as Trim Contour",
+    "SP - Copy Segment",
+    "SP - Nearest Curve on Bezier Patch",
+    "SP - Flatten Patch",
+    "SP - Patch Exact Normals",
+    "SP - Ruled Surface from Mesh Loop",
+    "SP - Flatten Patch Side",
+}
 
 curve_flat_set = (
-    (obj_curve_flat
+    obj_curve_flat
     | gr_curve_flat
     | {
         "SP - Project Curve on Bezier Patch",
@@ -385,9 +406,9 @@ curve_flat_set = (
         "SP - Curve Meshing",
         "SP - FlatPatch Meshing",
         "SP - Convert Flat Patch to Bezier Patch",
-    })
-    - {"SP - Project on Flat Patch"}
-)
+    }
+) - {"SP - Project on Flat Patch"}
+
 
 nurbs_set = obj_nurbs | gr_nurbs - {"SP - Continuity Analysis"}
 
@@ -395,21 +416,21 @@ nurbs_set = obj_nurbs | gr_nurbs - {"SP - Continuity Analysis"}
 def replace_duplicates():
     print("\n\n______________________________________________________\n")
     print("Manual deduplication..\n")
-    
+
     #############################
-    #         DANGER            #          
+    #         DANGER            #
     # May remove different node #
     #   groups with same name   #
     #############################
-    
+
     duplicated_list = []
     for ng in bpy.data.node_groups:
-        if ng.name[-4] ==".":
+        if ng.name[-4] == ".":
             duplicated_list.append(ng.name[:-4])
     duplicated_groups = set(duplicated_list)
-    
-    for d in duplicated_groups :
-        replace_all_instances_of_node_group(d+".*", d)
+
+    for d in duplicated_groups:
+        replace_all_instances_of_node_group(d + ".*", d)
 
 
 def clear_unused_data():
@@ -448,8 +469,6 @@ def clear_unused_data():
             bpy.data.node_groups.remove(ng)
 
 
-
-
 ################################
 #                              #
 #            MAIN              #
@@ -457,35 +476,49 @@ def clear_unused_data():
 ################################
 
 if __name__ == "__main__":
-#    import cProfile
-#    profiler = cProfile.Profile()
-#    profiler.enable()
-
-
-    delete_all_data()
+    #    import cProfile
+    #    profiler = cProfile.Profile()
+    #    profiler.enable()
 
     print("\n\n\n\n______________________________________________________")
-    print("______________________________________________________\n")
-    print("\n\n______________________________________________________\n")
-    print("Appending Groups..\n")
+    print("______________________________________________________")
 
-    append_node_group_by_names(filepath_curve_flat, gr_curve_flat)
-    append_node_group_by_names(filepath_surf, gr_surf)
-    append_node_group_by_names(filepath_nurbs, gr_nurbs)
-    append_node_group_by_names(filepath_other, gr_other)
-    append_node_group_by_names(filepath_compound, gr_compound)
+    print("Deleting Data..\n")
+    print("\n______________________________________________________\n")
+    print("Create Catalogs..\n")
+    delete_all_data()
+    clear_and_create_catalogs(
+        [   
+            "SurfacePsycho",
+            "Analysis",
+            "Convert",
+            "Deform",
+            "Edit",
+            "Generate",
+            "Meshing",
+            "Shape",
+            "Utility",
+        ]
+    )
+    print("\n______________________________________________________\n")
+    print("Appending Groups..\n")
+    append_by_name(filepath_curve_flat, gr_curve_flat, "node_groups")
+    append_by_name(filepath_surf, gr_surf, "node_groups")
+    append_by_name(filepath_nurbs, gr_nurbs, "node_groups")
+    append_by_name(filepath_other, gr_other, "node_groups")
+    append_by_name(filepath_compound, gr_compound, "node_groups")
 
     print("\n\n______________________________________________________\n")
     print("Appending Objects..\n")
-    append_objs_by_names(filepath_probe, obj_probe)
-    append_objs_by_names(filepath_curve_flat, obj_curve_flat)
-    append_objs_by_names(filepath_surf, obj_surf)
-    append_objs_by_names(filepath_nurbs, obj_nurbs)
-    append_objs_by_names(filepath_preset, obj_preset)
+    append_by_name(filepath_probe, obj_probe, "objects")
+    append_by_name(filepath_curve_flat, obj_curve_flat, "objects")
+    append_by_name(filepath_surf, obj_surf, "objects")
+    append_by_name(filepath_nurbs, obj_nurbs, "objects")
+    append_by_name(filepath_preset, obj_preset, "objects")
 
     print("\n\n______________________________________________________\n")
     print("Appending Collections..\n")
-    append_collections_by_names(filepath_preset, coll_preset)
+    append_by_name(filepath_preset, coll_preset, "collections")
 
     print("\n\n______________________________________________________\n")
     print("Make Local..\n")
@@ -493,15 +526,5 @@ if __name__ == "__main__":
     replace_duplicates()
     clear_unused_data()
 
-    print("\n\n______________________________________________________\n")
-    print("Assign to catalogs..\n")
-    assign_assets_to_catalog(full_set, "SurfacePsycho/Common")
-    assign_assets_to_catalog(nurbs_set, "SurfacePsycho/NURBS Patch")
-    assign_assets_to_catalog(bezier_patch_set, "SurfacePsycho/Bezier Patch")
-    assign_assets_to_catalog(curve_flat_set, "SurfacePsycho/Curve & FlatPatch")
-    assign_assets_to_catalog(shape_set, "SurfacePsycho/Shape")
-    
-#    
 #    profiler.disable()
 #    profiler.print_stats()
-
