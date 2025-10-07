@@ -2,7 +2,9 @@ import bpy
 from pathlib import Path
 import re
 import uuid
+
 FILE_PATH = Path(bpy.data.filepath)
+
 
 def delete_all_data():
     # Delete all data except scripts
@@ -35,10 +37,10 @@ def clear_and_create_catalogs(cat_names):
     # Create new catalogs
     new_catalogs = []
     for c in cat_names:
-        if c == "SurfacePsycho":     
+        if c == "SurfacePsycho":
             new_catalogs.append((c, c))
-        else :
-            new_catalogs.append((c, "SurfacePsycho/"+c))
+        else:
+            new_catalogs.append((c, "SurfacePsycho/" + c))
 
     # Append new catalogs to the file
     with open(catalog_file, "a") as f:
@@ -146,9 +148,12 @@ def append_by_name(filepath, asset_names, asset_type="node_groups"):
         "objects": "objects",
         "collections": "collections",
     }.get(asset_type, "node_groups")
-    
+
     # link = False parce que link = True ne conserve pas les asset_data
-    with bpy.data.libraries.load(filepath, link=False) as (data_from, data_to):
+    with bpy.data.libraries.load(filepath, link=False, assets_only=True) as (
+        data_from,
+        data_to,
+    ):
         # Get all available names from the file
         available = getattr(data_from, datablock_path)
 
@@ -165,7 +170,9 @@ def append_by_name(filepath, asset_names, asset_type="node_groups"):
     for item in loaded_data:
         if item and item.asset_data:
             catalog_id = item.asset_data.catalog_id
-            catalog_file = (FILE_PATH.parent.parent.parent).joinpath("blender_assets.cats.txt")
+            catalog_file = (FILE_PATH.parent.parent.parent).joinpath(
+                "blender_assets.cats.txt"
+            )
             with open(catalog_file, "r") as f:
                 for line in f:
                     if line.startswith(("#", "VERSION", "\n")) or line.strip() == "":
@@ -181,9 +188,9 @@ def append_by_name(filepath, asset_names, asset_type="node_groups"):
     for item in loaded_data:
         if item and item.asset_data:
             catalog_id = item.asset_data.catalog_id
-            try :
+            try:
                 catalog_name = catalogs_id_name_pairs[catalog_id]
-            except KeyError :
+            except KeyError:
                 print(f"{item.name} has invalid catalog id {str(catalog_id)}")
                 continue
             assign_asset_to_catalog(item.name, catalog_name)
@@ -204,7 +211,72 @@ def append_by_name(filepath, asset_names, asset_type="node_groups"):
     return
 
 
-##############################################
+def clear_unused_data():
+    print("\n\n______________________________________________________\n")
+    print("Clearing unused data..\n")
+    # clear unused data. Do several times to fake recursive
+    for ng in bpy.data.node_groups:
+        if ng.asset_data == None:
+            if ng.use_fake_user:
+                ng.use_fake_user = False
+            if ng.users == 0:
+                bpy.data.node_groups.remove(ng)
+
+    for ng in bpy.data.node_groups:
+        if ng.users == 0 and ng.asset_data == None:
+            bpy.data.node_groups.remove(ng)
+
+    for ng in bpy.data.node_groups:
+        if ng.users == 0 and ng.asset_data == None:
+            bpy.data.node_groups.remove(ng)
+
+    for ng in bpy.data.node_groups:
+        if ng.users == 0 and ng.asset_data == None:
+            bpy.data.node_groups.remove(ng)
+
+    for ng in bpy.data.node_groups:
+        if ng.users == 0 and ng.asset_data == None:
+            bpy.data.node_groups.remove(ng)
+
+    for ng in bpy.data.node_groups:
+        if ng.users == 0 and ng.asset_data == None:
+            bpy.data.node_groups.remove(ng)
+
+    for ng in bpy.data.node_groups:
+        if ng.users == 0 and ng.asset_data == None:
+            bpy.data.node_groups.remove(ng)
+
+
+def replace_duplicates():
+    print("\n\n______________________________________________________\n")
+    print("Manual deduplication..\n")
+
+    #############################
+    #         DANGER            #
+    # May remove different node #
+    #   groups with same name   #
+    #############################
+
+    duplicated_list = []
+    for ng in bpy.data.node_groups:
+        if ng.name[-4] == ".":
+            duplicated_list.append(ng.name[:-4])
+    duplicated_groups = set(duplicated_list)
+
+    for d in duplicated_groups:
+        replace_all_instances_of_node_group(d + ".*", d)
+
+
+############################################################################################
+############################################################################################
+############################################################################################
+
+
+################################
+#                              #
+#          TO IMPORT           #
+#                              #
+################################
 
 # PROBE
 filepath_probe = "//..\..\Principal curvature.blend"
@@ -267,7 +339,6 @@ gr_surf = {
     "SP - Blend Surfaces",
     "SP - Connect Bezier Patch",
     "SP - Convert Contour",
-    "SP - Crop or Extend Patch",
     "SP - Crop Patch to Point",
     "SP - Displace Bezier Patch Control Grid",
     "SP - Offset Precisely",
@@ -299,7 +370,7 @@ gr_nurbs = {
     "SP - NURBS Weighting",
     "SP - Set Knot NURBS Patch",
     "SP - NURBS to Bezier Patch [Naive slow]",
-    "SP - Crop NURBS Patch",
+    "SP - Crop or Extend Patch",
     "SP - Insert Knot NURBS Patch",
     "SP - Curvature Analysis",
     "SP - Continuity Analysis",
@@ -318,7 +389,7 @@ gr_other = {
     "SP - Conical Meshing",
     "SP - Surface of Extrusion Meshing",
     "SP - Surface of Revolution Meshing",
-    "SP - Plot Distance from Mesh"
+    "SP - Plot Distance from Mesh",
 }
 
 # COMPOUND
@@ -351,123 +422,28 @@ coll_preset = {
 #                              #
 ################################
 
-full_set = (
-    gr_surf
-    | gr_curve_flat
-    | gr_nurbs
-    | gr_surf
-    | gr_other
-    | coll_preset
-    | obj_probe
-    | obj_curve_flat
-    | obj_surf
-    | obj_nurbs
-    | obj_preset
-    | {
-        "SP - Connect Bezier Patch",
-        "SP - Bezier Patch Meshing",
-        "SP - SP - Connect Curve",
-        "SP - Curve Meshing",
-        "SP - Crop or Extend Curve",
-        "SP - FlatPatch Meshing",
-        "SP - Loft from Internal Curves",
-    }
-)
-
-shape_set = obj_preset | coll_preset
-
-bezier_patch_set = (
-    obj_surf | gr_surf | {"SP - Connect Bezier Patch", "SP - Bezier Patch Meshing"}
-) - {
-    "SP - Sew and Symmetrize",
-    "SP - Displace Precisely",
-    "Internal Curve For Patch",
-    "SP - Convert Flat Patch to Bezier Patch",
-    "SP - Select Patch Range",
-    "SP - Project Curve on Bezier Patch",
-    "SP - Curvature Analysis",
-    "SP - Convert Contour",
-    "SP - Copy Flat Patch as Trim Contour",
-    "SP - Copy Segment",
-    "SP - Nearest Curve on Bezier Patch",
-    "SP - Flatten Patch",
-    "SP - Patch Exact Normals",
-    "SP - Ruled Surface from Mesh Loop",
-    "SP - Flatten Patch Side",
-}
-
-curve_flat_set = (
-    obj_curve_flat
-    | gr_curve_flat
-    | {
-        "SP - Project Curve on Bezier Patch",
-        "SP - Nearest Curve on Bezier Patch",
-        "SP - Crop or Extend Curve",
-        "SP - Curve Meshing",
-        "SP - FlatPatch Meshing",
-        "SP - Convert Flat Patch to Bezier Patch",
-    }
-) - {"SP - Project on Flat Patch"}
-
-
-nurbs_set = obj_nurbs | gr_nurbs - {"SP - Continuity Analysis"}
-
-
-def replace_duplicates():
-    print("\n\n______________________________________________________\n")
-    print("Manual deduplication..\n")
-
-    #############################
-    #         DANGER            #
-    # May remove different node #
-    #   groups with same name   #
-    #############################
-
-    duplicated_list = []
-    for ng in bpy.data.node_groups:
-        if ng.name[-4] == ".":
-            duplicated_list.append(ng.name[:-4])
-    duplicated_groups = set(duplicated_list)
-
-    for d in duplicated_groups:
-        replace_all_instances_of_node_group(d + ".*", d)
-
-
-def clear_unused_data():
-    print("\n\n______________________________________________________\n")
-    print("Clearing unused data..\n")
-    # clear unused data. Do several times to fake recursive
-    for ng in bpy.data.node_groups:
-        if ng.asset_data == None:
-            if ng.use_fake_user:
-                ng.use_fake_user = False
-            if ng.users == 0:
-                bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
+# full_set = (
+#     gr_surf
+#     | gr_curve_flat
+#     | gr_nurbs
+#     | gr_surf
+#     | gr_other
+#     | coll_preset
+#     | obj_probe
+#     | obj_curve_flat
+#     | obj_surf
+#     | obj_nurbs
+#     | obj_preset
+#     | {
+#         "SP - Connect Bezier Patch",
+#         "SP - Bezier Patch Meshing",
+#         "SP - SP - Connect Curve",
+#         "SP - Curve Meshing",
+#         "SP - Crop or Extend Curve",
+#         "SP - FlatPatch Meshing",
+#         "SP - Loft from Internal Curves",
+#     }
+# )
 
 ################################
 #                              #
@@ -488,7 +464,7 @@ if __name__ == "__main__":
     print("Create Catalogs..\n")
     delete_all_data()
     clear_and_create_catalogs(
-        [   
+        [
             "SurfacePsycho",
             "Analysis",
             "Convert",
@@ -522,9 +498,9 @@ if __name__ == "__main__":
 
     print("\n\n______________________________________________________\n")
     print("Make Local..\n")
-    bpy.ops.object.make_local(type="ALL")
-    replace_duplicates()
-    clear_unused_data()
+    # bpy.ops.object.make_local(type="ALL")
+    # replace_duplicates()
+    # clear_unused_data()
 
 #    profiler.disable()
 #    profiler.print_stats()

@@ -966,7 +966,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
                     "Target 1": surf1,
                     "Target 2": surf2,
                     "Auto": True,
-                    "Continuity Level": 3,
+                    "Continuity": 3,
                 },
                 append=True,
             )
