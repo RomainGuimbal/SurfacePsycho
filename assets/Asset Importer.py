@@ -320,7 +320,6 @@ gr_curve_flat = {
     "SP - Sample Curve Per Degree",
     "SP - Split Curve",
     "SP - Switch Curve Direction",
-    "SP - Text to Curve or FlatPatch",
     "SP - Interpolate Wire",
     # "SP - Connect Curve",
     # "SP - Curve Meshing",
@@ -359,6 +358,7 @@ gr_surf = {
     "SP - Copy Segment",
     "SP - Copy Flat Patch as Trim Contour",
     "SP - Convert Flat Patch to Bezier Patch",
+    "SP - Copy Trim Contour from Patch",
 }
 
 
@@ -397,6 +397,8 @@ filepath_compound = "//..\..\SP - Compound.blend"
 gr_compound = {
     "SP - Compound Meshing",
     "SP - SubD to Bezier",
+    "SP - Poly to Compound",
+    "SP - Text to Compound"
 }
 
 # SHAPES

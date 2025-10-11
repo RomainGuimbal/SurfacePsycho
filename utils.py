@@ -1020,9 +1020,9 @@ def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
 
     # Create vertices
     for i in range(vertex_count_u):
-        for j in range(vertex_count_v - 1, -1, -1):
-            x = j * step_x - 1  # Subtract 1 to center
-            y = i * step_y - 1  # Subtract 1 to center
+        for j in range(vertex_count_v):
+            x = j * step_x - 1.  # Subtract 1 to center
+            y = i * step_y - 1.  # Subtract 1 to center
             bm.verts.new((x, y, 0))
 
     bm.verts.ensure_lookup_table()

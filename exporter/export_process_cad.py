@@ -588,7 +588,7 @@ class SP_Contour_export:
                 points *= scale
 
             if is2D:
-                points = [Vector((p[1], p[0], 0.0)) for p in points]
+                points = [Vector((p[1], p[0], 0.0)) for p in points] # Inverted UV
             points_per_wire = self.split_cp_attr_per_wire(points[: self.total_p_count])
 
             ## Weight
