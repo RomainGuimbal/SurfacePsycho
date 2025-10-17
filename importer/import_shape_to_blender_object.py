@@ -567,7 +567,7 @@ def build_SP_cylinder(
     modifier = (
         "SP - Cylindrical Meshing",
         {
-            "Use Trim Contour": trims_enabled,
+            "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
             "Scaling Method": 1,
             "Resolution U": resolution,
@@ -626,7 +626,7 @@ def build_SP_torus(
     modifier = (
         "SP - Toroidal Meshing",
         {
-            "Use Trim Contour": trims_enabled,
+            "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
             "Scaling Method": 1,
             "Resolution U": resolution,
@@ -684,7 +684,7 @@ def build_SP_sphere(
     modifier = (
         "SP - Spherical Meshing",
         {
-            "Use Trim Contour": trims_enabled,
+            "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
             "Scaling Method": 1,
             "Resolution U": resolution,
@@ -744,7 +744,7 @@ def build_SP_cone(
     modifier = (
         "SP - Conical Meshing",
         {
-            "Use Trim Contour": trims_enabled,
+            "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
             "Scaling Method": 1,
             "Resolution U": resolution,
@@ -790,7 +790,7 @@ def build_SP_bezier_patch(
     modifier = (
         "SP - Bezier Patch Meshing",
         {
-            "Use Trim Contour": trims_enabled,
+            "Trim Contour": trims_enabled,
             "Resolution U": resolution,
             "Resolution V": resolution,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
@@ -890,7 +890,7 @@ def build_SP_NURBS_patch(
             "Resolution U": resolution,
             "Resolution V": resolution,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
-            "Use Trim Contour": trims_enabled,
+            "Trim Contour": trims_enabled,
             "Scaling Method": 1,
             "Endpoint U": u_clamped,
             "Endpoint V": v_clamped,
@@ -1045,7 +1045,7 @@ def build_SP_extrusion(
     modifier = (
         "SP - Surface of Extrusion Meshing",
         {
-            "Use Trim Contour": trims_enabled,
+            "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
             "Scaling Method": 1,
             "Resolution U": resolution,
@@ -1115,7 +1115,7 @@ def build_SP_revolution(
     modifier = (
         "SP - Surface of Revolution Meshing",
         {
-            "Use Trim Contour": trims_enabled,
+            "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Scaling Method": 1,
             "Resolution U": resolution,

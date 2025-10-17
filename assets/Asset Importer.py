@@ -289,7 +289,7 @@ obj_curve_flat = {
     "PsychoCurve",
 }
 gr_curve_flat = {
-    "SP - Bezier Circlular Arc",
+    # "SP - Bezier Circlular Arc",
     "SP - Blend Curve",
     #    "SP - Compose FlatPatch From Sides",
     "SP - Continuities between Segments",
@@ -498,11 +498,15 @@ if __name__ == "__main__":
     print("Appending Collections..\n")
     append_by_name(filepath_preset, coll_preset, "collections")
 
-    print("\n\n______________________________________________________\n")
-    print("Make Local..\n")
+    # print("\n\n______________________________________________________\n")
+    # print("Make Local..\n")
+
+    # # /!\ CORRUPTS FILE /!\
     # bpy.ops.object.make_local(type="ALL")
+    
     # replace_duplicates()
     # clear_unused_data()
 
-#    profiler.disable()
-#    profiler.print_stats()
+
+    #    profiler.disable()
+    #    profiler.print_stats()

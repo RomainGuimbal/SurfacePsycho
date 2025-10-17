@@ -328,7 +328,7 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
 def change_GN_modifier_settings(modifier, settings_dict):
     for key, value in settings_dict.items():
         try:
-            id = modifier.node_group.interface.items_tree[key].identifier
+            id = modifier.node_group.interface.items_tree[key].name
             modifier[id] = value
         except Exception:
             raise Exception("Modifier settings failed to apply")
