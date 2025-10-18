@@ -137,8 +137,7 @@ class SP_PT_EditPanel(bpy.types.Panel):
             )
 
             # Replace node group
-            row = self.layout.row()
-            row.operator(
+            col.operator(
                 "object.sp_replace_node_group",
                 text="Replace Node Group",
                 icon="UV_SYNC_SELECT",

@@ -1030,16 +1030,30 @@ class SP_OT_explode_compound(bpy.types.Operator):
 class SP_OT_mesh_to_compound(bpy.types.Operator):
     bl_idname = "object.sp_mesh_to_compound"
     bl_label = "SP - Mesh to Compound"
-    bl_description = "Convert selected mesh objects to SP compounds"
+    bl_description = (
+        "Convert selected mesh objects to SP compounds. Each polygon becomes a patch."
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         for o in context.selected_objects:
-            if o.type == "MESH":
+            if o.type == "MESH" and sp_type_of_object(o, context) == None:
                 add_sp_modifier(o, "SP - Poly to Compound", append=True)
                 add_sp_modifier(o, "SP - Compound Meshing", pin=True, append=True)
         return {"FINISHED"}
 
+    def invoke(self, context, event):
+        for o in context.selected_objects:
+            if o.type == "MESH" and sp_type_of_object(o, context) == None:
+                ob = o.evaluated_get(context.evaluated_depsgraph_get())
+                if len(ob.data.polygons) > 5000:
+                    return context.window_manager.invoke_props_dialog(self)
+        return self.execute(context)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="More than 5000 polygons will each become an SP patch.") 
+        layout.label(text="Proceed anyway ?")
 
 classes = [
     SP_OT_add_library,
