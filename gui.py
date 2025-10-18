@@ -11,6 +11,7 @@ from .exporter import export_operator
 from .importer.import_operator import *
 from .exporter.export_operator import *
 
+
 class SP_PT_MainPanel(bpy.types.Panel):
     bl_idname = "SP_PT_MainPanel"
     bl_label = "Surface Psycho"
@@ -26,6 +27,17 @@ class SP_PT_MainPanel(bpy.types.Panel):
                 SP_OT_QuickExport.bl_idname, text="Quick .STEP Export", icon="EXPORT"
             )
 
+
+class SP_PT_ViewPanel(bpy.types.Panel):
+    bl_idname = "SP_PT_ViewPanel"
+    bl_parent_id = "SP_PT_MainPanel"
+    bl_label = "View"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Surface Psycho"
+
+    def draw(self, context):
+        if context.mode == "OBJECT":
             # Toggle control geom
             row = self.layout.row()
             row.operator(
@@ -44,11 +56,21 @@ class SP_PT_MainPanel(bpy.types.Panel):
         sub.active = context.scene.sp_properties.combs_on
         sub.prop(context.scene.sp_properties, "combs_scale", text="")
 
+
+class SP_PT_SelectPanel(bpy.types.Panel):
+    bl_idname = "SP_PT_SelectPanel"
+    bl_parent_id = "SP_PT_MainPanel"
+    bl_label = "Select"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Surface Psycho"
+
+    def draw(self, context):
         if context.mode == "OBJECT":
             # Select all
             row = self.layout.row()
-            row.label(text="Select Visible")
             sub = row.row(align=True)
+            sub.operator("object.sp_select_all", text="All")
             sub.operator(
                 "object.sp_select_visible_curves",
                 text="Curves",
@@ -58,14 +80,6 @@ class SP_PT_MainPanel(bpy.types.Panel):
                 "object.sp_select_visible_surfaces",
                 text="Surfaces",
                 icon="OUTLINER_OB_SURFACE",
-            )
-
-            # Replace node group
-            row = self.layout.row()
-            row.operator(
-                "object.sp_replace_node_group",
-                text="Replace Node Group",
-                icon="UV_SYNC_SELECT",
             )
 
 
@@ -89,14 +103,21 @@ class SP_PT_EditPanel(bpy.types.Panel):
                 sub.operator("mesh.sp_toggle_trim_contour_belonging", text="Toggle")
                 sub.operator("mesh.sp_select_trim_contour", text="Select")
 
+        if context.mode == "OBJECT":
+
             # Blend surfaces
-            row = self.layout.row()
-            row.operator("object.sp_blend_surfaces", text="Blend Surfaces", icon="IPO_EASE_IN_OUT")
+            col = self.layout.column()
+            col.operator(
+                "object.sp_blend_surfaces",
+                text="Blend Surfaces",
+                icon="IPO_EASE_IN_OUT",
+            )
 
             # Flip normal
-            row = self.layout.row()
-            row.operator("object.sp_flip_normals", text="Flip Normals", icon="NORMALS_FACE")
-            
+            col.operator(
+                "object.sp_flip_normals", text="Flip Normals", icon="NORMALS_FACE"
+            )
+
             # Exact normals
             row = self.layout.row()
             row.label(text="Exact Normals")
@@ -105,8 +126,23 @@ class SP_PT_EditPanel(bpy.types.Panel):
             sub.operator("object.sp_disable_exact_normals", text="Disable")
 
             # Conversions
+            col = self.layout.column()
+            col.operator(
+                "object.sp_mesh_to_compound", text="Mesh to SP", icon="SHADING_BBOX"
+            )
+            col.operator(
+                "object.sp_explode_compound",
+                text="Explode Compound",
+                icon="MOD_EXPLODE",
+            )
+
+            # Replace node group
             row = self.layout.row()
-            row.operator("object.sp_explode_compound", text="Explode Compound", icon="MOD_EXPLODE")
+            row.operator(
+                "object.sp_replace_node_group",
+                text="Replace Node Group",
+                icon="UV_SYNC_SELECT",
+            )
 
         if context.mode == "EDIT_MESH":
             # Endpoints
@@ -280,6 +316,8 @@ def hotkeys_remove(addon_keymaps):
 
 classes = [
     SP_PT_MainPanel,
+    SP_PT_ViewPanel,
+    SP_PT_SelectPanel,
     SP_PT_EditPanel,
     SP_MT_PIE_SegmentEdit,
 ]
@@ -324,4 +362,3 @@ def unregister():
     import_operator.unregister()
     add_objects.unregister()
     macros.unregister()
-

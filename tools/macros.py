@@ -13,6 +13,7 @@ os = platform.system()
 from ..importer.import_shape_to_blender_object import *
 from ..exporter.export_process_cad import *
 
+
 class SP_OT_add_library(bpy.types.Operator):
     bl_idname = "object.sp_add_library"
     bl_label = "SP - Add Library"
@@ -65,6 +66,20 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_select_all(bpy.types.Operator):
+    bl_idname = "object.sp_select_all"
+    bl_label = "SP - Select All Visible"
+    bl_description = "Select all visible SP objects"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        objects = [ob for ob in context.visible_objects]
+        for o in objects:
+            if sp_type_of_object(o, context) != None:
+                o.select_set(True)
+        return {"FINISHED"}
+
+
 class SP_OT_select_visible_curves(bpy.types.Operator):
     bl_idname = "object.sp_select_visible_curves"
     bl_label = "SP - Select Visible Curves"
@@ -74,26 +89,8 @@ class SP_OT_select_visible_curves(bpy.types.Operator):
     def execute(self, context):
         objects = [ob for ob in context.visible_objects]
         for o in objects:
-            for m in o.modifiers:
-                if (
-                    m.type == "NODES"
-                    and m.node_group is not None
-                    and m.node_group.name[:-4]
-                    in [
-                        "SP - Mesh Bezier Chain",
-                        "SP - Bezier Curve Any Order",
-                        "SP - Mesh Bezier Chain",
-                        "SP - Bezier Curve Any Order",
-                        "SP - Curve Meshing",
-                        "SP - Mesh Bezier C",
-                        "SP - Bezier Curve Any O",
-                        "SP - Mesh Bezier C",
-                        "SP - Bezier Curve Any O",
-                        "SP - Curve Mes",
-                    ]
-                ):
-                    o.select_set(True)
-                    break
+            if sp_type_of_object(o, context) == SP_obj_type.CURVE:
+                o.select_set(True)
         return {"FINISHED"}
 
 
@@ -106,27 +103,21 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
     def execute(self, context):
         objects = [ob for ob in context.visible_objects]
         for o in objects:
-            for m in o.modifiers:
-                if (
-                    m.type == "NODES"
-                    and m.node_group is not None
-                    and m.node_group.name[:-4]
-                    in [
-                        "SP - Bezier Patch Meshing",
-                        "SP - Any Order Patch Meshing",
-                        "SP - Bicubic Patch Meshing",
-                        "SP - Mesh Flat patch",
-                        "SP - Patch meshing",
-                        "SP - FlatPatch Meshing" "SP - Bezier Patch Mes",
-                        "SP - Any Order Patch Mes",
-                        "SP - Bicubic Patch Mes",
-                        "SP - Mesh Flat p",
-                        "SP - Patch mes",
-                        "SP - FlatPatch Mes",
-                    ]
-                ):
-                    o.select_set(True)
-                    break
+            if sp_type_of_object(o, context) in [
+                SP_obj_type.PLANE,
+                SP_obj_type.CYLINDER,
+                SP_obj_type.CONE,
+                SP_obj_type.SPHERE,
+                SP_obj_type.TORUS,
+                SP_obj_type.BEZIER_SURFACE,
+                SP_obj_type.BSPLINE_SURFACE,
+                SP_obj_type.SURFACE_OF_REVOLUTION,
+                SP_obj_type.SURFACE_OF_EXTRUSION,
+                SP_obj_type.OFFSET_SURFACE,
+                SP_obj_type.OTHER_SURFACE,
+            ]:
+                o.select_set(True)
+
         return {"FINISHED"}
 
 
@@ -938,10 +929,6 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
     bl_description = "Add a blend surface between the selected surfaces"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(self, context):
-        return context.mode == "OBJECT"
-
     def execute(self, context):
         # Add a check if SP surfaces ?
 
@@ -987,10 +974,6 @@ class SP_OT_flip_normals(bpy.types.Operator):
     bl_description = "Flip normals of selected surfaces"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(self, context):
-        return context.mode == "OBJECT"
-
     def execute(self, context):
         for o in context.selected_objects:
             flip_node_socket_bool(o, ["Flip Normal", "Flip Normals"], context)
@@ -1002,10 +985,6 @@ class SP_OT_enable_exact_normals(bpy.types.Operator):
     bl_label = "SP - Enable Exact Normals"
     bl_description = "Enable exact normals on selected surfaces"
     bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(self, context):
-        return context.mode == "OBJECT"
 
     def execute(self, context):
         for o in context.selected_objects:
@@ -1020,10 +999,6 @@ class SP_OT_disable_exact_normals(bpy.types.Operator):
     bl_label = "SP - Disable Exact Normals"
     bl_description = "Disable exact normals on selected surfaces"
     bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(self, context):
-        return context.mode == "OBJECT"
 
     def execute(self, context):
         for o in context.selected_objects:
@@ -1041,19 +1016,28 @@ class SP_OT_explode_compound(bpy.types.Operator):
 
     keep_original: bpy.props.BoolProperty(name="Keep Original", default=True)
 
-    @classmethod
-    def poll(self, context):
-        return context.mode == "OBJECT"
-
     def execute(self, context):
         for o in context.selected_objects:
             if sp_type_of_object(o, context) == SP_obj_type.COMPOUND:
                 convert_compound_to_patches(o, context)
-            
-        
+
         if not self.keep_original:
             bpy.ops.object.delete(use_global=False)
 
+        return {"FINISHED"}
+
+
+class SP_OT_mesh_to_compound(bpy.types.Operator):
+    bl_idname = "object.sp_mesh_to_compound"
+    bl_label = "SP - Mesh to Compound"
+    bl_description = "Convert selected mesh objects to SP compounds"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        for o in context.selected_objects:
+            if o.type == "MESH":
+                add_sp_modifier(o, "SP - Poly to Compound", append=True)
+                add_sp_modifier(o, "SP - Compound Meshing", pin=True, append=True)
         return {"FINISHED"}
 
 
@@ -1069,6 +1053,7 @@ classes = [
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_from_ellipses,
     SP_OT_replace_node_group,
+    SP_OT_select_all,
     SP_OT_select_endpoints,
     SP_OT_select_trim_contour,
     SP_OT_select_visible_curves,
@@ -1083,6 +1068,7 @@ classes = [
     SP_Props_Group,
     SP_OT_disable_exact_normals,
     SP_OT_enable_exact_normals,
+    SP_OT_mesh_to_compound,
 ]
 
 

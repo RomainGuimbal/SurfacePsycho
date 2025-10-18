@@ -137,17 +137,21 @@ def get_face_sp_type(TopoDSface: TopoDS_Face):
 
 
 def sp_type_of_object(o: bpy.types.Object, context: bpy.types.Context) -> SP_obj_type:
+
+    # Instance or Empty
     if o.type == "EMPTY":
         if o.instance_collection != None:
             return SP_obj_type.INSTANCE
         else:
             return SP_obj_type.EMPTY
 
+    # Compound
     for m in o.modifiers:
         if m.type == "NODES" and m.node_group:
             if m.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
                 return SP_obj_type.COMPOUND
 
+    # Other
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     if hasattr(ob.data, "attributes"):
         for k in TYPES_FROM_CP_ATTR.keys():
