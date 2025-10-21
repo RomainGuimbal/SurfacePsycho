@@ -84,12 +84,11 @@ class SP_obj_type(Enum):
     BSPLINE_SURFACE = 6
     SURFACE_OF_REVOLUTION = 7
     SURFACE_OF_EXTRUSION = 8
-    OFFSET_SURFACE = 9
-    OTHER_SURFACE = 10
-    INSTANCE = 11
-    EMPTY = 12
-    CURVE = 13
-    COMPOUND = 14
+    OTHER_SURFACE = 9
+    INSTANCE = 10
+    EMPTY = 11
+    CURVE = 12
+    COMPOUND = 13
 
 
 TYPES_FROM_CP_ATTR = {
@@ -115,8 +114,21 @@ geom_to_sp_type = {
     GeomAbs_BSplineSurface: SP_obj_type.BSPLINE_SURFACE,
     GeomAbs_SurfaceOfRevolution: SP_obj_type.SURFACE_OF_REVOLUTION,
     GeomAbs_SurfaceOfExtrusion: SP_obj_type.SURFACE_OF_EXTRUSION,
-    GeomAbs_OffsetSurface: SP_obj_type.OFFSET_SURFACE,
     GeomAbs_OtherSurface: SP_obj_type.OTHER_SURFACE,
+}
+
+MESHER_NAMES = {
+    SP_obj_type.PLANE: "SP - FlatPatch Meshing",
+    SP_obj_type.CYLINDER: "SP - Cylindrical Meshing",
+    SP_obj_type.CONE: "SP - Conical Meshing",
+    SP_obj_type.SPHERE: "SP - Shperical Meshing",
+    SP_obj_type.TORUS: "SP - Toroidal Meshing",
+    SP_obj_type.BEZIER_SURFACE: "SP - Bezier Patch Meshing",
+    SP_obj_type.BSPLINE_SURFACE: "SP - NURBS Patch Meshing",
+    SP_obj_type.SURFACE_OF_REVOLUTION: "SP - Surface of Revolution Meshing",
+    SP_obj_type.SURFACE_OF_EXTRUSION: "SP - Surface of Extrusion Meshing",
+    SP_obj_type.CURVE: "SP - Curve Meshing",
+    SP_obj_type.COMPOUND: "SP - Compound Meshing",
 }
 
 

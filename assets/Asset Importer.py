@@ -358,7 +358,7 @@ gr_surf = {
     "SP - Copy Segment",
     "SP - Copy Flat Patch as Trim Contour",
     "SP - Convert Flat Patch to Bezier Patch",
-    "SP - Copy Trim Contour from Patch",
+    "SP - Copy Trim Contour of Patch",
 }
 
 

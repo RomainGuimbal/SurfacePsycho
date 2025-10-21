@@ -1,10 +1,10 @@
 import bpy
 import numpy as np
-from ..utils import add_sp_modifier
+from ..utils import *
 
 
 def create_objects_from_instances(
-    source_obj, collection_name="GN_Instances", clear_existing=True, context=bpy.context
+    source_obj, collection_name="GN_Instances", context=bpy.context
 ):
     """
     Create individual mesh objects from Geometry Nodes instances
@@ -18,15 +18,8 @@ def create_objects_from_instances(
     depsgraph = context.evaluated_depsgraph_get()
 
     # Get or create collection
-    if collection_name in bpy.data.collections:
-        collection = bpy.data.collections[collection_name]
-        if clear_existing:
-            # Remove existing objects
-            for obj in list(collection.objects):
-                bpy.data.objects.remove(obj, do_unlink=True)
-    else:
-        collection = bpy.data.collections.new(collection_name)
-        scene.collection.children.link(collection)
+    collection = bpy.data.collections.new(collection_name)
+    scene.collection.children.link(collection)
 
     # Extract instance data immediately to avoid reference errors
     instance_data = []
@@ -48,8 +41,8 @@ def create_objects_from_instances(
     # Create objects from extracted data
     for i, data in enumerate(instance_data):
         # Create new mesh and object
-        new_mesh = bpy.data.meshes.new(f"{source_obj.name}_instance_{i:03d}")
-        new_obj = bpy.data.objects.new(f"{source_obj.name}_instance_{i:03d}", new_mesh)
+        new_mesh = bpy.data.meshes.new(f"{source_obj.name}.{i:03d}")
+        new_obj = bpy.data.objects.new(f"{source_obj.name}.{i:03d}", new_mesh)
 
         # Copy mesh data
         copy_mesh_data(data["mesh"], new_mesh)
@@ -168,11 +161,9 @@ def convert_compound_to_patches(o, context):
         mod.show_viewport = False
         created_objects = create_objects_from_instances(
             o,
-            collection_name=f"{o.name} Patches",
-            clear_existing=True,
+            collection_name=f"{o.name} Exploded",
             context=context,
         )
-
         mod.show_viewport = True
 
         types = np.zeros(len(created_objects), dtype=np.int32)
@@ -189,29 +180,5 @@ def convert_compound_to_patches(o, context):
                 break
 
         for i, obj in enumerate(created_objects):
-            if types[i] == 0:
-                add_sp_modifier(obj, "SP - FlatPatch Meshing", pin=True, append=False)
-            elif types[i] == 1:
-                pass
-            elif types[i] == 2:
-                pass
-            elif types[i] == 3:
-                pass
-            elif types[i] == 4:
-                pass
-            elif types[i] == 5:
-                add_sp_modifier(
-                    obj, "SP - Bezier Patch Meshing", pin=True, append=False
-                )
-            elif types[i] == 6:
-                add_sp_modifier(obj, "SP - NURBS Patch Meshing", pin=True, append=False)
-            elif types[i] == 7:
-                pass
-            elif types[i] == 8:
-                add_sp_modifier(
-                    obj, "SP - Surface of Extrusion Meshing", pin=True, append=False
-                )
-            elif types[i] == 9:
-                pass
-
+            add_sp_modifier(obj, MESHER_NAMES[SP_obj_type(types[i])], pin=True, append=False)
         created_objects.clear()

@@ -60,22 +60,7 @@ class SP_Curve_no_edge_import:
             case GeomAbs.GeomAbs_Ellipse:
                 self.ellipse(adaptor_curve)
             case _:
-                print(
-                    f"Unsupported curve type: {curve_type}. Expect inaccurate results"
-                )
-                start_point = adaptor_curve.Value(adaptor_curve.FirstParameter())
-                end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
-                gp_pnt_poles = [start_point, end_point]
-                self.type_att = [EDGES_TYPES["line"]] * 2
-                if isinstance(gp_pnt_poles[0], gp_Pnt2d):
-                    self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
-                else:
-                    self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
-                self.degree_att = [0, 0]
-                self.endpoints_att = [True] * 2
-                self.weight = [0.0, 0.0]
-                self.knot = [0.0, 0.0]
-                self.mult = [0, 0]
+                self.unsupported_curve(adaptor_curve)
 
         if scale != None:
             self.scale(scale)
@@ -243,6 +228,24 @@ class SP_Curve_no_edge_import:
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
         else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+
+    def unsupported_curve(self, adaptor_curve):
+        print(
+            f"Unsupported curve type: {self.curve_type}. Expect inaccurate results"
+        )
+        start_point = adaptor_curve.Value(adaptor_curve.FirstParameter())
+        end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
+        gp_pnt_poles = [start_point, end_point]
+        self.type_att = [EDGES_TYPES["line"]] * 2
+        if isinstance(gp_pnt_poles[0], gp_Pnt2d):
+            self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
+        else:
+            self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+        self.degree_att = [0, 0]
+        self.endpoints_att = [True] * 2
+        self.weight = [0.0, 0.0]
+        self.knot = [0.0, 0.0]
+        self.mult = [0, 0]
 
 
 class SP_Edge_import:
@@ -479,7 +482,7 @@ def generic_import_surface(
     curr_uv_bounds=None,
     new_uv_bounds=(0.0, 1.0, 0.0, 1.0),
     weight=None,
-    switch_u_and_v=True,
+    switch_u_and_v=False,
 ):
     if weight == None:
         weight = [1.0] * len(CPvert)
@@ -491,8 +494,9 @@ def generic_import_surface(
         if curr_uv_bounds != None:
             contour.rebound(curr_uv_bounds, new_uv_bounds)
 
-        if switch_u_and_v :
+        if switch_u_and_v:
             contour.switch_u_and_v()
+        
         istrivial = contour.is_trivial()
 
         if istrivial:
@@ -705,6 +709,7 @@ def build_SP_sphere(
         modifier,
         ob_name="STEP Sphere",
     )
+
     return object_data
 
 
@@ -764,7 +769,6 @@ def build_SP_cone(
         modifier,
         ob_name="STEP Cone",
     )
-
     return object_data
 
 
@@ -820,7 +824,8 @@ def build_SP_NURBS_patch(
 ):
     # Patch attributes
     bspline_surface = BRepAdaptor_Surface(topods_face).Surface().BSpline()
-    u_count, v_count = bspline_surface.NbUPoles(), bspline_surface.NbVPoles()
+    u_count = bspline_surface.NbUPoles()
+    v_count = bspline_surface.NbVPoles()
     udeg = bspline_surface.UDegree()
     vdeg = bspline_surface.VDegree()
     u_closed = bspline_surface.IsUClosed()
@@ -833,62 +838,52 @@ def build_SP_NURBS_patch(
     u_mult = haarray1_of_int_to_list(bspline_surface.UMultiplicities())
     v_mult = haarray1_of_int_to_list(bspline_surface.VMultiplicities())
 
-    # Custom knot
-    custom_knot = False
-    # not custom if sequence a...a,b...b (bezier)
-    if any(x not in [min(u_knots), max(u_knots)] for x in u_knots) or any(
-        x not in [min(v_knots), max(v_knots)] for x in v_knots
-    ):
-        custom_knot = True
-    # TODO
-    # else :
-    #    Convert to bezier then
-    #    build_SP_BezierPatch(...)
-
+    # # Detect Bezier
+    # if len(u_knots) == 2 and len(v_knots) == 2 and u_mult == [udeg+1, udeg+1] and v_mult == [vdeg+1, vdeg+1]:
+    # TO DEBUG
+    #    return build_SP_bezier_patch(topods_face, name, color, collection, trims_enabled, scale, resolution)
+    
     # Vertex aligned attributes
-
     # CP Grid
-    vector_pts = np.zeros((v_count + v_closed, u_count + u_closed), dtype=Vector)
-    weight = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
+    vector_pts = np.zeros((u_count + u_closed, v_count + v_closed), dtype=Vector)
+    weight = np.ones((u_count + u_closed, v_count + v_closed), dtype=float)
     for u in range(u_count):
         for v in range(v_count):
             pole = bspline_surface.Pole(u + 1, v + 1)
-            vector_pts[v, u] = Vector((pole.X(), pole.Y(), pole.Z())) * scale
+            vector_pts[u, v] = Vector((pole.X(), pole.Y(), pole.Z())) * scale
 
             w = bspline_surface.Weight(u + 1, v + 1)
-            weight[v, u] = w
+            weight[u, v] = w
 
     if u_closed:
-        vector_pts[:, u_count] = vector_pts[:, 0]
-        weight[:, u_count] = weight[:, 0]
+        vector_pts[u_count, :] = vector_pts[0, :]
+        weight[u_count, :] = weight[0, :]
     if v_closed:
-        vector_pts[v_count, :] = vector_pts[0, :]
-        weight[v_count, :] = weight[0, :]
+        vector_pts[:,v_count] = vector_pts[:,0]
+        weight[:,v_count] = weight[:,0]
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
 
-    attrs = {}
-    if custom_knot:  # must be attr and not vertex groups to avoid collisions at export
-        attrs = {
-            "Knot U": u_knots,
-            "Knot V": v_knots,
-            "Multiplicity U": u_mult,
-            "Multiplicity V": v_mult,
-        }
+    attrs = {
+        "Knot U": u_knots,
+        "Knot V": v_knots,
+        "Multiplicity U": u_mult,
+        "Multiplicity V": v_mult,
+    }
 
-    # If 1 mult not 1 or no custom knot -> clamp
-    u_clamped = any(m != 1 for m in u_mult) or not custom_knot
-    v_clamped = any(m != 1 for m in v_mult) or not custom_knot
+    # If any mult is not 1 -> clamp
+    u_clamped = any(m != 1 for m in u_mult)
+    v_clamped = any(m != 1 for m in v_mult)
 
     # Meshing
     modifier = (
         "SP - NURBS Patch Meshing",
         {
-            "Degree U": udeg,
-            "Degree V": vdeg,
             "Resolution U": resolution,
             "Resolution V": resolution,
+            "Degree U": udeg,
+            "Degree V": vdeg,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
             "Trim Contour": trims_enabled,
             "Scaling Method": 1,
@@ -911,7 +906,7 @@ def build_SP_NURBS_patch(
         CPfaces,
         modifier,
         attrs,
-        curr_uv_bounds=uv_bounds,
+        # curr_uv_bounds=uv_bounds,
         weight=weight.flatten().tolist(),
     )
     return object_data
@@ -1087,9 +1082,7 @@ def build_SP_extrusion(
             None,
         ),
         new_uv_bounds=(min_u, max_u, None, None),
-        switch_u_and_v= False,
     )
-
     return object_data
 
 
@@ -1147,7 +1140,7 @@ def build_SP_revolution(
         CPedges,
         [],
         modifier,
-        attrs=attrs,
+        attrs,
         ob_name="STEP Revolution",
         curr_uv_bounds=(
             None,
@@ -1157,17 +1150,7 @@ def build_SP_revolution(
         ),
         new_uv_bounds=(None, None, min_u, max_u),
     )
-
     return object_data
-
-
-def build_SP_offset_patch(
-    topods_face, name, color, collection, trims_enabled, scale, resolution
-):
-    # TODO
-    print("Offset surface not supported yet")
-    return {}
-
 
 class ShapeHierarchy:
     def __init__(self, shape, container_name, doc):
@@ -1186,7 +1169,7 @@ class ShapeHierarchy:
 
     def create_collection(self, name, parent=None):
         new_collection = bpy.data.collections.new(name)
-        
+
         # If no parent, link to scene collection
         if parent is None:
             bpy.context.scene.collection.children.link(new_collection)
@@ -1343,10 +1326,6 @@ def process_object_data_of_shape(
             )
         case SP_obj_type.SURFACE_OF_EXTRUSION:
             object_data = build_SP_extrusion(
-                topods_shape, name, color, collection, trims_enabled, scale, resolution
-            )
-        case SP_obj_type.OFFSET_SURFACE:
-            object_data = build_SP_offset_patch(
                 topods_shape, name, color, collection, trims_enabled, scale, resolution
             )
         case _:

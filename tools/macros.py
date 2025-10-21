@@ -113,7 +113,6 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
                 SP_obj_type.BSPLINE_SURFACE,
                 SP_obj_type.SURFACE_OF_REVOLUTION,
                 SP_obj_type.SURFACE_OF_EXTRUSION,
-                SP_obj_type.OFFSET_SURFACE,
                 SP_obj_type.OTHER_SURFACE,
             ]:
                 o.select_set(True)
