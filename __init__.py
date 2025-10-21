@@ -24,7 +24,7 @@ bl_info = {
 }
 
 import bpy
-from . import gui
+from .common import gui
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):

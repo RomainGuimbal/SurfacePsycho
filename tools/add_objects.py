@@ -1,5 +1,5 @@
 import bpy
-from ..utils import *
+from ..common.utils import *
 from ..exporter.export_process_svg import *
 from ..importer.import_shape_to_blender_object import *
 from ..exporter.export_process_cad import *

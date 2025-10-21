@@ -1,25 +1,13 @@
 import bpy
 import numpy as np
-from ..utils import *
+from .utils import *
 
 
-def create_objects_from_instances(
-    source_obj, collection_name="GN_Instances", context=bpy.context
-):
+def create_objects_from_instances(source_obj, context=bpy.context):
     """
     Create individual mesh objects from Geometry Nodes instances
-
-    Args:
-        source_obj: The object with Geometry Nodes modifier
-        collection_name: Name of collection to store new objects
-        clear_existing: Whether to clear existing objects in the collection
     """
-    scene = context.scene
     depsgraph = context.evaluated_depsgraph_get()
-
-    # Get or create collection
-    collection = bpy.data.collections.new(collection_name)
-    scene.collection.children.link(collection)
 
     # Extract instance data immediately to avoid reference errors
     instance_data = []
@@ -55,10 +43,9 @@ def create_objects_from_instances(
         new_obj.matrix_world = data["matrix"]
 
         # Link to collection
-        collection.objects.link(new_obj)
         created_objects.append(new_obj)
 
-    print(f"Created {len(created_objects)} objects")
+    print(f"{len(created_objects)} objects created")
     return created_objects
 
 
@@ -158,12 +145,9 @@ def copy_mesh_attributes(source_mesh, target_mesh):
 def convert_compound_to_patches(o, context):
     mod = o.modifiers[-1]
     if mod.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
+        # Disable modifier to access non meshed data
         mod.show_viewport = False
-        created_objects = create_objects_from_instances(
-            o,
-            collection_name=f"{o.name} Exploded",
-            context=context,
-        )
+        created_objects = create_objects_from_instances(o, context)
         mod.show_viewport = True
 
         types = np.zeros(len(created_objects), dtype=np.int32)
@@ -180,5 +164,9 @@ def convert_compound_to_patches(o, context):
                 break
 
         for i, obj in enumerate(created_objects):
-            add_sp_modifier(obj, MESHER_NAMES[SP_obj_type(types[i])], pin=True, append=False)
-        created_objects.clear()
+            add_sp_modifier(
+                obj, MESHER_NAMES[SP_obj_type(types[i])], pin=True, append=False
+            )
+        
+        return created_objects
+

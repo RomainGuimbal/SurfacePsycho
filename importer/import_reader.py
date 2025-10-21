@@ -1,5 +1,5 @@
 from os.path import splitext, split, isfile
-from ..utils import *
+from ..common.utils import *
 import unicodedata
 
 from OCP.BRep import BRep_Builder

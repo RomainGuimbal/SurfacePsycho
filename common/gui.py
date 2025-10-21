@@ -5,11 +5,11 @@ import bpy
 import platform
 
 os = platform.system()
-from .tools import macros, add_objects
-from .importer import import_operator
-from .exporter import export_operator
-from .importer.import_operator import *
-from .exporter.export_operator import *
+from ..tools import macros, add_objects
+from ..importer import import_operator
+from ..exporter import export_operator
+from ..importer.import_operator import *
+from ..exporter.export_operator import *
 
 
 class SP_PT_MainPanel(bpy.types.Panel):

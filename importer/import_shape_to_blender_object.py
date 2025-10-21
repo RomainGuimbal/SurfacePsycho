@@ -2,7 +2,7 @@ import bpy
 import numpy as np
 from mathutils import Vector
 from os.path import abspath, splitext, split, isfile
-from ..utils import *
+from ..common.utils import *
 from math import isclose
 
 from OCP.BRepAdaptor import (
@@ -21,8 +21,6 @@ from OCP.TopoDS import (
     TopoDS_Wire,
     TopoDS_Edge,
     TopoDS_Face,
-    # TopoDS_Shape,
-    # TopoDS_Compound,
 )
 import OCP.GeomAbs as GeomAbs
 import OCP.TopAbs as TopAbs
@@ -83,15 +81,6 @@ class SP_Curve_no_edge_import:
         self.weight = [0.0, 0.0]
         self.knot = [0.0, 0.0]
         self.mult = [0, 0]
-
-        # if edge!=None :
-        #     start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
-        #     end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
-        #     poles = [start_point, end_point]
-        # else:
-        #     start_point = curve_adaptor.Value(curve_adaptor.FirstParameter())
-        #     end_point = curve_adaptor.Value(curve_adaptor.LastParameter())
-        #     poles = [start_point, end_point]
 
     def bezier(self, edge_adaptor):
         # Get geom curve
@@ -569,7 +558,7 @@ def build_SP_cylinder(
     CP_edges = [(0, 1)]
 
     modifier = (
-        "SP - Cylindrical Meshing",
+        MESHER_NAMES[SP_obj_type.CYLINDER],
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
@@ -628,7 +617,7 @@ def build_SP_torus(
     CP_edges = [(0, 1), (1, 2)]
 
     modifier = (
-        "SP - Toroidal Meshing",
+        MESHER_NAMES[SP_obj_type.TORUS],
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
@@ -686,7 +675,7 @@ def build_SP_sphere(
     CP_edges = [(0, 1)]
 
     modifier = (
-        "SP - Spherical Meshing",
+        MESHER_NAMES[SP_obj_type.SPHERE],
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
@@ -747,7 +736,7 @@ def build_SP_cone(
     CP_edges = [(0, 1), (1, 2), (2, 3)]
 
     modifier = (
-        "SP - Conical Meshing",
+        MESHER_NAMES[SP_obj_type.CONE],
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
@@ -792,7 +781,7 @@ def build_SP_bezier_patch(
     CPvert, _, CPfaces = create_grid(vector_pts)
 
     modifier = (
-        "SP - Bezier Patch Meshing",
+        MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
         {
             "Trim Contour": trims_enabled,
             "Resolution U": resolution,
@@ -878,7 +867,7 @@ def build_SP_NURBS_patch(
 
     # Meshing
     modifier = (
-        "SP - NURBS Patch Meshing",
+        MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE],
         {
             "Resolution U": resolution,
             "Resolution V": resolution,
@@ -947,7 +936,7 @@ def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
     if len(color) == 3:
         color = list(color) + [1.0]
 
-    modifier = ("SP - Curve Meshing", {"Resolution": resolution}, True)
+    modifier = (MESHER_NAMES[SP_obj_type.CURVE], {"Resolution": resolution}, True)
 
     attrs = {
         "Weight": weight_att,
@@ -991,7 +980,7 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
         color = list(color) + [1.0]
 
     modifier = (
-        "SP - FlatPatch Meshing",
+        MESHER_NAMES[SP_obj_type.PLANE],
         {
             "Orient": True,
             "Flip Normal": topods_face.Orientation() != TopAbs_REVERSED,
@@ -1038,7 +1027,7 @@ def build_SP_extrusion(
     CPedges = [(i, i + 1) for i in range(len(CPvert) - 1)]
 
     modifier = (
-        "SP - Surface of Extrusion Meshing",
+        MESHER_NAMES[SP_obj_type.SURFACE_OF_EXTRUSION],
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
@@ -1106,7 +1095,7 @@ def build_SP_revolution(
     CPedges = [(0, 1)] + [(i, i + 1) for i in range(2, len(CPvert) - 1)]
 
     modifier = (
-        "SP - Surface of Revolution Meshing",
+        MESHER_NAMES[SP_obj_type.SURFACE_OF_REVOLUTION],
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
@@ -1252,28 +1241,8 @@ def import_face_nodegroups(shape_hierarchy):
         ft = adapt_surf.GetType()
         if ft not in face_encountered:
             face_encountered.add(ft)
-            match ft:
-                case GeomAbs.GeomAbs_Plane:
-                    to_import_ng_names.append("SP - FlatPatch Meshing")
-                case GeomAbs.GeomAbs_Cylinder:
-                    to_import_ng_names.append("SP - Cylindrical Meshing")
-                case GeomAbs.GeomAbs_Cone:
-                    to_import_ng_names.append("SP - Conical Meshing")
-                case GeomAbs.GeomAbs_Sphere:
-                    to_import_ng_names.append("SP - Spherical Meshing")
-                case GeomAbs.GeomAbs_Torus:
-                    to_import_ng_names.append("SP - Toroidal Meshing")
-                case GeomAbs.GeomAbs_BezierSurface:
-                    to_import_ng_names.append("SP - Bezier Patch Meshing")
-                case GeomAbs.GeomAbs_BSplineSurface:
-                    to_import_ng_names.append("SP - NURBS Patch Meshing")
-                case GeomAbs.GeomAbs_SurfaceOfRevolution:
-                    to_import_ng_names.append("SP - Surface of Revolution Meshing")
-                case GeomAbs.GeomAbs_SurfaceOfExtrusion:
-                    to_import_ng_names.append("SP - Surface of Extrusion Meshing")
-                case GeomAbs.GeomAbs_OffsetSurface:
-                    to_import_ng_names.append("SP - Offset Patch Meshing")
-
+            to_import_ng_names.append(MESHER_NAMES[geom_to_sp_type[ft]])
+            
     append_multiple_node_groups(to_import_ng_names)
 
 

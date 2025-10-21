@@ -100,7 +100,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             )
 
         if self.curves_on:
-            append_node_group("SP - Curve Meshing")
+            append_node_group(MESHER_NAMES[SP_obj_type.CURVE])
             shapes_args.extend(
                 [
                     (shape, name, color, collection, True)

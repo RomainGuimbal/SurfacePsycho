@@ -1,7 +1,7 @@
 import bpy
 import bmesh
-from ..utils import *
-from .compound_utils import *
+from ..common.utils import *
+from ..common.compound_utils import *
 from mathutils import Vector
 
 from os.path import dirname, abspath, join
@@ -1018,7 +1018,17 @@ class SP_OT_explode_compound(bpy.types.Operator):
     def execute(self, context):
         for o in context.selected_objects:
             if sp_type_of_object(o, context) == SP_obj_type.COMPOUND:
-                convert_compound_to_patches(o, context)
+                new_objects = convert_compound_to_patches(o, context)
+
+                # Create collection
+                collection = bpy.data.collections.new(f"{o.name} Exploded")
+                context.scene.collection.children.link(collection)
+
+                # Create objects from extracted data
+                for o_new in new_objects:
+                    collection.objects.link(o_new)
+
+                new_objects.clear()
 
         if not self.keep_original:
             bpy.ops.object.delete(use_global=False)

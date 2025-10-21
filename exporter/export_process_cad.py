@@ -1,9 +1,10 @@
 import numpy as np
 from mathutils import Vector
 from os.path import dirname, abspath, isfile
-from ..utils import *
+from ..common.utils import *
 from collections import Counter
 from .export_ellipse import *
+from ..common.compound_utils import *
 
 
 from OCP.BRepBuilderAPI import (
@@ -74,16 +75,8 @@ from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2Of
 from OCP.TColStd import TColStd_Array1OfInteger, TColStd_Array1OfReal
 from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import (
-    TopoDS_Shape,
     TopoDS,
-    TopoDS_Wire,
-    TopoDS_Edge,
-    TopoDS_Face,
-    TopoDS_Shape,
     TopoDS_Compound,
-    TopoDS_Iterator,
-    TopoDS_Shell,
-    TopoDS_Solid,
 )
 
 
@@ -731,8 +724,7 @@ def geom_to_topods_face(geom_surf=None, outer_wire=None, inner_wires=[]):
     return fix.Face()
 
 
-def bezier_face_to_topods(o, context, scale=1000):
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+def bezier_face_to_topods(ob, scale=1000):
     u_count = int(ob.data.attributes["CP_count"].data[0].value)
     v_count = int(ob.data.attributes["CP_count"].data[1].value)
     points = read_attribute_by_name(ob, "CP_any_order_surf", u_count * v_count)
@@ -775,9 +767,8 @@ def bezier_face_to_topods(o, context, scale=1000):
     return face
 
 
-def NURBS_face_to_topods(o, context, scale=1000):
+def NURBS_face_to_topods(ob, scale=1000):
     # Get attributes
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
     u_count = int(ob.data.attributes["CP_count"].data[0].value)
     v_count = int(ob.data.attributes["CP_count"].data[1].value)
     points = read_attribute_by_name(ob, "CP_NURBS_surf", u_count * v_count)
@@ -839,9 +830,8 @@ def NURBS_face_to_topods(o, context, scale=1000):
         return face
 
 
-def cone_face_to_topods(o, context, scale=1000):
+def cone_face_to_topods(ob, scale=1000):
     # Get attr
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_cone", 3)
     semi_angle, radius = read_attribute_by_name(ob, "angle_radius", 2)
     radius *= scale
@@ -884,9 +874,8 @@ def cone_face_to_topods(o, context, scale=1000):
     return face
 
 
-def sphere_face_to_topods(o, context, scale=1000):
+def sphere_face_to_topods(ob, scale=1000):
     # Get attr
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_sphere", 3)
     radius = float(ob.data.attributes["radius"].data[0].value)
 
@@ -926,9 +915,8 @@ def sphere_face_to_topods(o, context, scale=1000):
     return face
 
 
-def torus_face_to_topods(o, context, scale=1000):
+def torus_face_to_topods(ob, scale=1000):
     # Get attr
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_torus", 3)
     radius_major, radius_minor = read_attribute_by_name(ob, "radius", 2)
 
@@ -968,9 +956,8 @@ def torus_face_to_topods(o, context, scale=1000):
     return face
 
 
-def cylinder_face_to_topods(o, context, scale=1000):
+def cylinder_face_to_topods(ob, scale=1000):
     # Get attr
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_cylinder", 3)
     radius, length = read_attribute_by_name(ob, "radius_length", 2)
 
@@ -1011,9 +998,8 @@ def cylinder_face_to_topods(o, context, scale=1000):
     return face
 
 
-def revolution_face_to_topods(o, context, scale=1000):
+def revolution_face_to_topods(ob, scale=1000):
     # Get attr
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
     origin, dir1 = read_attribute_by_name(ob, "axis1_revolution", 2)
     p_count = read_attribute_by_name(ob, "p_count_revolution", 1)[0]
     segment_CP = read_attribute_by_name(ob, "CP_revolution", p_count)
@@ -1204,12 +1190,10 @@ def curve_to_topods(o, context, scale=1000):
     return topods_wire
 
 
-def flat_patch_to_topods(o, context, scale=1000):
+def flat_patch_to_topods(ob, scale=1000):
     # Get point count attr
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
-
     # Orient and offset
-    loc, rot, _ = o.matrix_world.decompose()
+    loc, rot, _ = ob.matrix_world.decompose()
     try:
         offset = read_attribute_by_name(ob, "planar_offset", 1)[0]
         orient = read_attribute_by_name(ob, "planar_orient", 1)[0]
@@ -1246,8 +1230,7 @@ def flat_patch_to_topods(o, context, scale=1000):
     return face
 
 
-def empty_to_topods(o, context, scale=1000):
-
+def empty_to_topods(o, scale=1000):
     # Orient and offset
     gp_trsf = blender_matrix_to_gp_trsf(o.matrix_world, scale)
     gp_pln = gp_Pln(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1)).Transformed(gp_trsf)
@@ -1387,20 +1370,24 @@ class ShapeHierarchy_export:
                         instances.append(o)
                     case SP_obj_type.EMPTY:
                         empties.append(o)
-                    # treat empties later as they should not be sew (and are instances of the same compound)
+                        # treat empties later as they should not be sew (and are instances of the same compound)
+
                     # empty_to_topods(object, context, scale)
                     case SP_obj_type.COMPOUND:
-                        dg = self.context.evaluated_depsgraph_get()
-                        ob = o.evaluated_get(dg)
-                        for inst in dg.object_instances:
-                            if inst.is_instance and inst.parent == ob:
-                                # TODO
-                                #         blender_object_to_topods_shapes(self.context, o, sp_type, self.scale, self.sew, self.sew_tolerance)
-                                # sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
-                                # separated_shapes_list.extend(shells_to_solids(sewed))
-                                # compounds.append(o)
-                                pass
-
+                        new_objects = convert_compound_to_patches(o, self.context)
+                        shapes = []
+                        for o_new in new_objects:
+                            shapes.append(blender_object_to_topods_shapes(
+                                self.context,
+                                o_new,
+                                sp_type_of_object(o_new, self.context),
+                                self.scale,
+                                self.sew,
+                                self.sew_tolerance,
+                            ))
+                        new_objects.clear()
+                        shapes.append(shape_list_to_compound(shapes))
+                        
                     # Standard shape
                     case _:
                         s = blender_object_to_topods_shapes(
@@ -1420,36 +1407,48 @@ class ShapeHierarchy_export:
 def blender_object_to_topods_shapes(
     context, object, sp_type, scale=1000, sew=True, sew_tolerance=1e-1
 ):
+    
+    ob = object.evaluated_get(context.evaluated_depsgraph_get())
+
+    # eval if not evaluated
+    if ob is object:
+        # Temporarily link to the active view layer's collection
+        bpy.context.view_layer.active_layer_collection.collection.objects.link(object)
+        # Get eval
+        ob = object.evaluated_get(context.evaluated_depsgraph_get())
+        # Unlink when done
+        bpy.context.collection.objects.unlink(object)
+
     match sp_type:
         case SP_obj_type.CONE:
-            shape = cone_face_to_topods(object, context, scale)
+            shape = cone_face_to_topods(ob, scale)
 
         case SP_obj_type.SPHERE:
-            shape = sphere_face_to_topods(object, context, scale)
+            shape = sphere_face_to_topods(ob, scale)
 
         case SP_obj_type.CYLINDER:
-            shape = cylinder_face_to_topods(object, context, scale)
+            shape = cylinder_face_to_topods(ob, scale)
 
         case SP_obj_type.TORUS:
-            shape = torus_face_to_topods(object, context, scale)
+            shape = torus_face_to_topods(ob, scale)
 
         case SP_obj_type.BEZIER_SURFACE:
-            shape = bezier_face_to_topods(object, context, scale)
+            shape = bezier_face_to_topods(ob, scale)
 
         case SP_obj_type.BSPLINE_SURFACE:
-            shape = NURBS_face_to_topods(object, context, scale)
+            shape = NURBS_face_to_topods(ob, scale)
 
         case SP_obj_type.PLANE:
-            shape = flat_patch_to_topods(object, context, scale)
+            shape = flat_patch_to_topods(ob, scale)
 
         case SP_obj_type.CURVE:
-            shape = curve_to_topods(object, context, scale)
+            shape = curve_to_topods(ob, scale)
 
         case SP_obj_type.SURFACE_OF_REVOLUTION:
-            shape = revolution_face_to_topods(object, context, scale)
+            shape = revolution_face_to_topods(ob, scale)
 
         case SP_obj_type.SURFACE_OF_EXTRUSION:
-            shape = extrusion_face_to_topods(object, context, scale)
+            shape = extrusion_face_to_topods(ob, scale)
 
         case _:
             raise Exception(f"Invalid shape of type {sp_type}")
