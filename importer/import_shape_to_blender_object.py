@@ -22,6 +22,7 @@ from OCP.TopoDS import (
     TopoDS_Edge,
     TopoDS_Face,
 )
+from OCP.GeomConvert import GeomConvert_BSplineSurfaceToBezierSurface
 import OCP.GeomAbs as GeomAbs
 import OCP.TopAbs as TopAbs
 
@@ -219,9 +220,7 @@ class SP_Curve_no_edge_import:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
 
     def unsupported_curve(self, adaptor_curve):
-        print(
-            f"Unsupported curve type: {self.curve_type}. Expect inaccurate results"
-        )
+        print(f"Unsupported curve type: {self.curve_type}. Expect inaccurate results")
         start_point = adaptor_curve.Value(adaptor_curve.FirstParameter())
         end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
         gp_pnt_poles = [start_point, end_point]
@@ -485,7 +484,7 @@ def generic_import_surface(
 
         if switch_u_and_v:
             contour.switch_u_and_v()
-        
+
         istrivial = contour.is_trivial()
 
         if istrivial:
@@ -764,18 +763,22 @@ def build_SP_cone(
 def build_SP_bezier_patch(
     topods_face, name, color, collection, trims_enabled, scale=0.001, resolution=16
 ):
-    bezier_surface = BRepAdaptor_Surface(topods_face).Surface().Bezier()
+    try:
+        bezier_surface = BRepAdaptor_Surface(topods_face).Surface().Bezier()
+        uv_bounds = bezier_surface.Bounds()
+    except Exception:
+        bspline = BRepAdaptor_Surface(topods_face).Surface().BSpline()
+        bezier_surface = GeomConvert_BSplineSurfaceToBezierSurface(bspline).Patch(1,1)
+        uv_bounds = bspline.Bounds()
 
     u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
-    uv_bounds = bezier_surface.Bounds()
-    vector_pts = np.zeros((u_count, v_count), dtype=Vector)
+    vector_pts = np.zeros((v_count, u_count), dtype=Vector)
     weight = np.ones((v_count, u_count), dtype=float)
-    for u in range(1, u_count + 1):
-        for v in range(1, v_count + 1):
-            pole = bezier_surface.Pole(u, v)
-            vector_pts[u - 1, v - 1] = Vector((pole.X(), pole.Y(), pole.Z())) * scale
-
-            weight[u, v] = bezier_surface.Weight(u, v)
+    for u in range(u_count):
+        for v in range(v_count):
+            pole = bezier_surface.Pole(u + 1, v + 1)
+            vector_pts[v, u] = Vector((pole.X(), pole.Y(), pole.Z())) * scale
+            weight[v, u] = bezier_surface.Weight(u + 1, v + 1)
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
@@ -828,28 +831,38 @@ def build_SP_NURBS_patch(
     v_mult = haarray1_of_int_to_list(bspline_surface.VMultiplicities())
 
     # # Detect Bezier
-    # if len(u_knots) == 2 and len(v_knots) == 2 and u_mult == [udeg+1, udeg+1] and v_mult == [vdeg+1, vdeg+1]:
-    # TO DEBUG
-    #    return build_SP_bezier_patch(topods_face, name, color, collection, trims_enabled, scale, resolution)
-    
+    if (
+        len(u_knots) == 2
+        and len(v_knots) == 2
+        and u_mult == [udeg + 1, udeg + 1]
+        and v_mult == [vdeg + 1, vdeg + 1]
+    ):
+        return build_SP_bezier_patch(
+            topods_face, name, color, collection, trims_enabled, scale, resolution
+        )
+
     # Vertex aligned attributes
     # CP Grid
-    vector_pts = np.zeros((u_count + u_closed, v_count + v_closed), dtype=Vector)
-    weight = np.ones((u_count + u_closed, v_count + v_closed), dtype=float)
+    vector_pts = np.zeros((v_count + v_closed, u_count + u_closed), dtype=Vector)
+
+    # if bspline_surface.IsRational(): # contour weights are on the same attr so it must be added right ? :/
+    weight = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
+
     for u in range(u_count):
         for v in range(v_count):
             pole = bspline_surface.Pole(u + 1, v + 1)
-            vector_pts[u, v] = Vector((pole.X(), pole.Y(), pole.Z())) * scale
+            vector_pts[v, u] = Vector((pole.X(), pole.Y(), pole.Z())) * scale
 
+            # if bspline_surface.IsRational():
             w = bspline_surface.Weight(u + 1, v + 1)
-            weight[u, v] = w
+            weight[v, u] = w
 
     if u_closed:
         vector_pts[u_count, :] = vector_pts[0, :]
         weight[u_count, :] = weight[0, :]
     if v_closed:
-        vector_pts[:,v_count] = vector_pts[:,0]
-        weight[:,v_count] = weight[:,0]
+        vector_pts[:, v_count] = vector_pts[:, 0]
+        weight[:, v_count] = weight[:, 0]
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
@@ -1141,6 +1154,7 @@ def build_SP_revolution(
     )
     return object_data
 
+
 class ShapeHierarchy:
     def __init__(self, shape, container_name, doc):
         self.doc = doc
@@ -1242,7 +1256,11 @@ def import_face_nodegroups(shape_hierarchy):
         if ft not in face_encountered:
             face_encountered.add(ft)
             to_import_ng_names.append(MESHER_NAMES[geom_to_sp_type[ft]])
-            
+
+    # Bezier imported directly because it is not detected
+    if MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE] in to_import_ng_names:
+        to_import_ng_names.append(MESHER_NAMES[SP_obj_type.BEZIER_SURFACE])
+
     append_multiple_node_groups(to_import_ng_names)
 
 

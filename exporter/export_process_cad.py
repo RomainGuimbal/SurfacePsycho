@@ -439,11 +439,7 @@ class SP_Wire_export:
         sup = self.segs_p_counts[0]
         for i in range(self.seg_count):
             # for last segment but not only segment
-            if (
-                i == self.seg_count - 1
-                and self.isclosed
-                and self.seg_count > 1
-            ):
+            if i == self.seg_count - 1 and self.isclosed and self.seg_count > 1:
                 split_attr.append(attr[inf : len(self.CP)] + [attr[0]])
             else:
                 split_attr.append(attr[inf:sup])
@@ -581,7 +577,7 @@ class SP_Contour_export:
                 points *= scale
 
             if is2D:
-                points = [Vector((p[1], p[0], 0.0)) for p in points] # Inverted UV
+                points = [Vector((p[1], p[0], 0.0)) for p in points]  # Inverted UV
             points_per_wire = self.split_cp_attr_per_wire(points[: self.total_p_count])
 
             ## Weight
@@ -1099,14 +1095,16 @@ def extrusion_face_to_topods(o, context, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
-        scale=(1,1),
+        scale=(1, 1),
     )
 
     # Create topods face
     if not contour.has_wire:
         u_min, u_max = geom_segment.FirstParameter(), geom_segment.LastParameter()
-        v_min, v_max = 0.0, length*scale  # Extrusion length
-        face = BRepBuilderAPI_MakeFace(geom_surf, u_min, u_max, v_min, v_max, 1e-6).Face()
+        v_min, v_max = 0.0, length * scale  # Extrusion length
+        face = BRepBuilderAPI_MakeFace(
+            geom_surf, u_min, u_max, v_min, v_max, 1e-6
+        ).Face()
     else:
         wires = contour.wires_dict
         outer_wire = wires[-1].get_topods_wire()
@@ -1120,9 +1118,8 @@ def extrusion_face_to_topods(o, context, scale=1000):
     return face
 
 
-def curve_to_topods(o, context, scale=1000):
+def curve_to_topods(ob, scale=1000):
     # Get point count attr
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
     segs_p_counts = read_attribute_by_name(ob, "CP_count")
 
     # get total_p_count and segment_count
@@ -1138,7 +1135,7 @@ def curve_to_topods(o, context, scale=1000):
 
     # is closed
     is_closed = read_attribute_by_name(ob, "IsPeriodic", 1)[0]
-    
+
     # One point less if closed
     total_p_count -= is_closed and segment_count > 1
 
@@ -1168,9 +1165,10 @@ def curve_to_topods(o, context, scale=1000):
         weight_attr = [1.0] * total_p_count
 
     # Knots
-    knots_segment = read_attribute_by_name(ob, "knot_segment") 
-    knots = read_attribute_by_name(ob, "knots")
-    knot_per_seg = split_by_index(knots_segment, knots)
+    # TODO
+    # knots_segment = read_attribute_by_name(ob, "knot_segment")
+    knots = read_attribute_by_name(ob, "Knot")
+    # knot_per_seg = split_by_index(knots_segment, knots)
 
     # Build wire
     wire = SP_Wire_export(
@@ -1343,6 +1341,7 @@ class ShapeHierarchy_export:
         self.empties = empties
         self.compounds = compounds
 
+        # objs is used only for instancing
         self.obj_shapes = {}  # {obj: shape}
         for i, o in enumerate(objs):
             self.obj_shapes[o] = shapes[i]
@@ -1362,7 +1361,7 @@ class ShapeHierarchy_export:
             if ((not self.use_selection) or (o in self.context.selected_objects)) and (
                 not o.hide_viewport
             ):
-                sp_type = sp_type_of_object(o, self.context)
+                sp_type = sp_type_of_object(o)
                 match sp_type:
                     case None:
                         pass
@@ -1374,20 +1373,44 @@ class ShapeHierarchy_export:
 
                     # empty_to_topods(object, context, scale)
                     case SP_obj_type.COMPOUND:
-                        new_objects = convert_compound_to_patches(o, self.context)
-                        shapes = []
+                        new_objects = convert_compound_to_patches(
+                            o, self.context, objects_suffix="_export"
+                        )
+                        comp_shapes = []
+
+                        from line_profiler import LineProfiler
+                        lp = LineProfiler()
+                        lp.add_function(blender_object_to_topods_shapes)
+                        lp.enable()
+
                         for o_new in new_objects:
-                            shapes.append(blender_object_to_topods_shapes(
-                                self.context,
+
+                            # Temporarily link
+                            self.context.view_layer.active_layer_collection.collection.objects.link(
+                                o_new
+                            )
+                            type = sp_type_of_object(o_new)
+
+                            sh = blender_object_to_topods_shapes(
+                                bpy.context,
                                 o_new,
-                                sp_type_of_object(o_new, self.context),
-                                self.scale,
-                                self.sew,
-                                self.sew_tolerance,
-                            ))
+                                type,
+                                scale=self.scale,
+                                sew=self.sew,
+                            )
+                            comp_shapes.append(sh)
+
+                            # Unlink
+                            bpy.context.collection.objects.unlink(o_new)
+
                         new_objects.clear()
-                        shapes.append(shape_list_to_compound(shapes))
+                        del new_objects[:]
+                        shapes.append(shape_list_to_compound(comp_shapes))
+                        objs.append(o)
                         
+                        lp.disable()
+                        lp.print_stats()
+
                     # Standard shape
                     case _:
                         s = blender_object_to_topods_shapes(
@@ -1407,17 +1430,16 @@ class ShapeHierarchy_export:
 def blender_object_to_topods_shapes(
     context, object, sp_type, scale=1000, sew=True, sew_tolerance=1e-1
 ):
-    
     ob = object.evaluated_get(context.evaluated_depsgraph_get())
 
-    # eval if not evaluated
-    if ob is object:
-        # Temporarily link to the active view layer's collection
-        bpy.context.view_layer.active_layer_collection.collection.objects.link(object)
-        # Get eval
-        ob = object.evaluated_get(context.evaluated_depsgraph_get())
-        # Unlink when done
-        bpy.context.collection.objects.unlink(object)
+    # # eval if not evaluated
+    # if ob is object:
+    #     # Temporarily link
+    #     bpy.context.view_layer.active_layer_collection.collection.objects.link(object)
+    #     # Get eval
+    #     ob = object.evaluated_get(context.evaluated_depsgraph_get())
+    #     # Unlink
+    #     bpy.context.collection.objects.unlink(object)
 
     match sp_type:
         case SP_obj_type.CONE:
@@ -1498,7 +1520,7 @@ def blender_instance_to_topods_instance(
             ins_obj.append(o)
 
     for o in ins_obj:
-        sp_type = sp_type_of_object(o, context)
+        sp_type = sp_type_of_object(o)
         if sp_type not in (None, SP_obj_type.EMPTY, SP_obj_type.INSTANCE):
             if o in hierarchy.obj_shapes.keys():
                 shape = hierarchy.obj_shapes[o]

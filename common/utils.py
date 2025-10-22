@@ -21,7 +21,6 @@ from OCP.GeomAbs import (
     GeomAbs_BSplineSurface,
     GeomAbs_SurfaceOfRevolution,
     GeomAbs_SurfaceOfExtrusion,
-    GeomAbs_OffsetSurface,
     GeomAbs_OtherSurface,
 )
 from OCP.GeomAdaptor import GeomAdaptor_Curve
@@ -47,11 +46,9 @@ from OCP.gp import (
     gp_Trsf,
     gp_Ax1,
     gp_Ax2,
-    gp_Circ,
     gp_Ax2d,
     gp_Pnt2d,
     gp_Trsf,
-    gp_Circ2d,
     gp_Dir2d,
     gp_Vec,
 )
@@ -70,7 +67,7 @@ from OCP.BRepCheck import BRepCheck_Analyzer
 import OCP.TopAbs as TopAbs
 import OCP.GeomAbs as GeomAbs
 
-addonpath = dirname(abspath(__file__))  # The PsychoPath ;)
+addonpath = dirname(dirname(abspath(__file__)))  # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
 
 
@@ -91,18 +88,18 @@ class SP_obj_type(Enum):
     COMPOUND = 13
 
 
-TYPES_FROM_CP_ATTR = {
-    "CP_any_order_surf": SP_obj_type.BEZIER_SURFACE,
-    "CP_NURBS_surf": SP_obj_type.BSPLINE_SURFACE,
-    "CP_planar": SP_obj_type.PLANE,
-    "CP_curve": SP_obj_type.CURVE,
-    "axis3_cylinder": SP_obj_type.CYLINDER,
-    "axis3_torus": SP_obj_type.TORUS,
-    "axis3_cone": SP_obj_type.CONE,
-    "axis3_sphere": SP_obj_type.SPHERE,
-    "CP_extrusion": SP_obj_type.SURFACE_OF_EXTRUSION,
-    "CP_revolution": SP_obj_type.SURFACE_OF_REVOLUTION,
-}
+# TYPES_FROM_CP_ATTR = {
+#     "CP_any_order_surf": SP_obj_type.BEZIER_SURFACE,
+#     "CP_NURBS_surf": SP_obj_type.BSPLINE_SURFACE,
+#     "CP_planar": SP_obj_type.PLANE,
+#     "CP_curve": SP_obj_type.CURVE,
+#     "axis3_cylinder": SP_obj_type.CYLINDER,
+#     "axis3_torus": SP_obj_type.TORUS,
+#     "axis3_cone": SP_obj_type.CONE,
+#     "axis3_sphere": SP_obj_type.SPHERE,
+#     "CP_extrusion": SP_obj_type.SURFACE_OF_EXTRUSION,
+#     "CP_revolution": SP_obj_type.SURFACE_OF_REVOLUTION,
+# }
 
 geom_to_sp_type = {
     GeomAbs_Plane: SP_obj_type.PLANE,
@@ -148,7 +145,7 @@ def get_face_sp_type(TopoDSface: TopoDS_Face):
     return geom_to_sp_type.get(surface_type, f"Unknown type: {surface_type}")
 
 
-def sp_type_of_object(o: bpy.types.Object, context: bpy.types.Context) -> SP_obj_type:
+def sp_type_of_object(o: bpy.types.Object) -> SP_obj_type:
     # Instance or Empty
     if o.type == "EMPTY":
         if o.instance_collection != None:
@@ -157,14 +154,14 @@ def sp_type_of_object(o: bpy.types.Object, context: bpy.types.Context) -> SP_obj
             return SP_obj_type.EMPTY
 
     # Standard
-    for m in o.modifiers:
-        if m.type == "NODES" and m.node_group:
+    for m in reversed(o.modifiers):
+        if m.type == "NODES" and m.node_group :
             for k,v in MESHER_NAMES.items() :
                 if v == m.node_group.name[:-4] or v == m.node_group.name:
                     return k
 
-    # Non SP          
-    return None
+    # Non SP
+    raise ValueError(f"Object {o.name} is not a SP object")
 
 
 def read_attribute_by_name(object, name, len_attr=None):
@@ -338,9 +335,18 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
 def change_GN_modifier_settings(modifier, settings_dict):
     for key, value in settings_dict.items():
         try:
-            id = modifier.node_group.interface.items_tree[key].name
+            item = modifier.node_group.interface.items_tree[key]
+            if isinstance(item, bpy.types.NodeTreeInterfaceSocket):
+                id = item.identifier
+                
+            elif isinstance(item, bpy.types.NodeTreeInterfacePanel):
+                for item in modifier.node_group.interface.items_tree:
+                    if item.name == key and isinstance(item, bpy.types.NodeTreeInterfaceSocket):
+                        id = item.identifier
+                        break
+                    
             modifier[id] = value
-        except Exception:
+        except KeyError:
             raise Exception("Modifier settings failed to apply")
 
 
@@ -921,7 +927,7 @@ def shells_to_solids(topods_shape: TopoDS_Shape):
                     separated_shapes_list.append(make_solid.Solid())
                 else:
                     separated_shapes_list.append(sh)
-                    print("None Manifold Shell")
+                    # print("None Manifold Shell")
 
             # Face or wire pass trough
             elif (

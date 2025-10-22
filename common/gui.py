@@ -128,7 +128,7 @@ class SP_PT_EditPanel(bpy.types.Panel):
             # Conversions
             col = self.layout.column()
             col.operator(
-                "object.sp_mesh_to_compound", text="Mesh to SP", icon="SHADING_BBOX"
+                "object.sp_mesh_to_compound", text="Mesh to SP Compound", icon="SHADING_BBOX"
             )
             col.operator(
                 "object.sp_explode_compound",

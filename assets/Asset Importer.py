@@ -403,7 +403,7 @@ gr_compound = {
 
 # SHAPES
 filepath_preset = "//..\..\SP - Shapes presets.blend"
-obj_preset = {"Quadaratic Dome", "Cubic Dome", "Torus", "Sphere", "Cone"}
+obj_preset = {"Quadaratic Dome", "Cubic Dome", "Torus", "Sphere", "Cone", "Cube",}
 coll_preset = {
     "Slab",
     "Cylinder",
@@ -412,7 +412,6 @@ coll_preset = {
     "Thick Arch",
     "Tube",
     "Frame",
-    "Cube",
     "Oblong Extruded",
     "Oblong Extruded Hollow",
 }

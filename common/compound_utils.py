@@ -3,7 +3,7 @@ import numpy as np
 from .utils import *
 
 
-def create_objects_from_instances(source_obj, context=bpy.context):
+def create_objects_from_instances(source_obj, context=bpy.context, suffix = ""):
     """
     Create individual mesh objects from Geometry Nodes instances
     """
@@ -29,8 +29,8 @@ def create_objects_from_instances(source_obj, context=bpy.context):
     # Create objects from extracted data
     for i, data in enumerate(instance_data):
         # Create new mesh and object
-        new_mesh = bpy.data.meshes.new(f"{source_obj.name}.{i:03d}")
-        new_obj = bpy.data.objects.new(f"{source_obj.name}.{i:03d}", new_mesh)
+        new_mesh = bpy.data.meshes.new(f"{source_obj.name}.{i:03d}{suffix}")
+        new_obj = bpy.data.objects.new(f"{source_obj.name}.{i:03d}{suffix}", new_mesh)
 
         # Copy mesh data
         copy_mesh_data(data["mesh"], new_mesh)
@@ -142,31 +142,40 @@ def copy_mesh_attributes(source_mesh, target_mesh):
 #     return data
 
 
-def convert_compound_to_patches(o, context):
-    mod = o.modifiers[-1]
-    if mod.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
-        # Disable modifier to access non meshed data
-        mod.show_viewport = False
-        created_objects = create_objects_from_instances(o, context)
-        mod.show_viewport = True
+def convert_compound_to_patches(o, context, objects_suffix = ""):
+    mod = None
+    for m in reversed(o.modifiers) :
+        if m.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
+            mod = m
+            break
 
-        types = np.zeros(len(created_objects), dtype=np.int32)
+    if mod == None :
+        return None
+    
+    # Disable modifier to access non meshed data
+    mod.show_viewport = False
+    created_objects = create_objects_from_instances(o, context, objects_suffix)
+    mod.show_viewport = True
 
-        ob = o.evaluated_get(context.evaluated_depsgraph_get())
-        for att in ob.data.attributes:
-            if (
-                att.domain == "POINT"
-                and att.name == "SP_type"
-                and att.data_type == "INT"
-            ):
-                types = np.zeros(len(att.data), dtype=np.int32)
-                att.data.foreach_get("value", types)
-                break
+    types = np.zeros(len(created_objects), dtype=np.int32)
 
-        for i, obj in enumerate(created_objects):
-            add_sp_modifier(
-                obj, MESHER_NAMES[SP_obj_type(types[i])], pin=True, append=False
-            )
-        
-        return created_objects
+    ob = o.evaluated_get(context.evaluated_depsgraph_get())
+    for att in ob.data.attributes:
+        if (
+            att.domain == "POINT"
+            and att.name == "SP_type"
+            and att.data_type == "INT"
+        ):
+            types = np.zeros(len(att.data), dtype=np.int32)
+            att.data.foreach_get("value", types)
+            break
+
+    for i, obj in enumerate(created_objects):
+        if SP_obj_type(types[i]) in [SP_obj_type.BEZIER_SURFACE, SP_obj_type.BSPLINE_SURFACE]:
+            add_sp_modifier(obj, "SP - Reorder Grid Index", append=False)
+        add_sp_modifier(
+            obj, MESHER_NAMES[SP_obj_type(types[i])], pin=True, append=False
+        )
+    
+    return created_objects
 

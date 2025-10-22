@@ -239,7 +239,7 @@ def prepare_svg(
         obj_newly_real = []
 
         for o in obj_list:
-            type = sp_type_of_object(o, context)
+            type = sp_type_of_object(o)
 
             match type:
                 case SP_obj_type.PLANE:

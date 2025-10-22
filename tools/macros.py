@@ -75,7 +75,7 @@ class SP_OT_select_all(bpy.types.Operator):
     def execute(self, context):
         objects = [ob for ob in context.visible_objects]
         for o in objects:
-            if sp_type_of_object(o, context) != None:
+            if sp_type_of_object(o) != None:
                 o.select_set(True)
         return {"FINISHED"}
 
@@ -89,7 +89,7 @@ class SP_OT_select_visible_curves(bpy.types.Operator):
     def execute(self, context):
         objects = [ob for ob in context.visible_objects]
         for o in objects:
-            if sp_type_of_object(o, context) == SP_obj_type.CURVE:
+            if sp_type_of_object(o) == SP_obj_type.CURVE:
                 o.select_set(True)
         return {"FINISHED"}
 
@@ -103,7 +103,7 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
     def execute(self, context):
         objects = [ob for ob in context.visible_objects]
         for o in objects:
-            if sp_type_of_object(o, context) in [
+            if sp_type_of_object(o) in [
                 SP_obj_type.PLANE,
                 SP_obj_type.CYLINDER,
                 SP_obj_type.CONE,
@@ -190,7 +190,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
     def execute(self, context):
         spline_index = -1
         for o in context.selected_objects:
-            sp_type = sp_type_of_object(o, context)
+            sp_type = sp_type_of_object(o)
             ob = o.evaluated_get(context.evaluated_depsgraph_get())
             match sp_type:
                 case SP_obj_type.BEZIER_SURFACE:
@@ -1017,7 +1017,7 @@ class SP_OT_explode_compound(bpy.types.Operator):
 
     def execute(self, context):
         for o in context.selected_objects:
-            if sp_type_of_object(o, context) == SP_obj_type.COMPOUND:
+            if sp_type_of_object(o) == SP_obj_type.COMPOUND:
                 new_objects = convert_compound_to_patches(o, context)
 
                 # Create collection
@@ -1046,14 +1046,14 @@ class SP_OT_mesh_to_compound(bpy.types.Operator):
 
     def execute(self, context):
         for o in context.selected_objects:
-            if o.type == "MESH" and sp_type_of_object(o, context) == None:
+            if o.type == "MESH" and sp_type_of_object(o) == None:
                 add_sp_modifier(o, "SP - Poly to Compound", append=True)
                 add_sp_modifier(o, "SP - Compound Meshing", pin=True, append=True)
         return {"FINISHED"}
 
     def invoke(self, context, event):
         for o in context.selected_objects:
-            if o.type == "MESH" and sp_type_of_object(o, context) == None:
+            if o.type == "MESH" and sp_type_of_object(o) == None:
                 ob = o.evaluated_get(context.evaluated_depsgraph_get())
                 if len(ob.data.polygons) > 5000:
                     return context.window_manager.invoke_props_dialog(self)
