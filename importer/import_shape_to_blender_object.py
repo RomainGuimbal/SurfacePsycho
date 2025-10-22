@@ -858,11 +858,11 @@ def build_SP_NURBS_patch(
             weight[v, u] = w
 
     if u_closed:
-        vector_pts[u_count, :] = vector_pts[0, :]
-        weight[u_count, :] = weight[0, :]
+        vector_pts[:, u_count] = vector_pts[:, 0]
+        weight[:, u_count] = weight[:, 0]
     if v_closed:
-        vector_pts[:, v_count] = vector_pts[:, 0]
-        weight[:, v_count] = weight[:, 0]
+        vector_pts[v_count, :] = vector_pts[0, :]
+        weight[v_count, :] = weight[0, :]
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)
