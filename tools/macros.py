@@ -183,10 +183,6 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
     bl_label = "SP - Convert Psychopatches to internal NURBS"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return context.active_object.type == "MESH"
-
     def execute(self, context):
         spline_index = -1
         for o in context.selected_objects:
@@ -307,10 +303,6 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
     bl_idname = "object.sp_bl_nurbs_to_psychopatch"
     bl_label = "SP - Convert internal NURBS to Psychopatches"
     bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object.type == "SURFACE"
 
     def execute(self, context):
         obj_to_convert = context.selected_objects

@@ -545,7 +545,7 @@ def build_SP_cylinder(
     yaxis = gp_cylinder.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
+    zaxis_vec = np.cross(xaxis_vec, yaxis_vec)
 
     location = gp_cylinder.Location()
     loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
@@ -560,10 +560,10 @@ def build_SP_cylinder(
         MESHER_NAMES[SP_obj_type.CYLINDER],
         {
             "Trim Contour": trims_enabled,
-            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Scaling Method": 1,
-            "Resolution U": resolution,
-            "Resolution V": resolution * 2,
+            "Resolution U": resolution * 2,
+            "Resolution V": resolution,
         },
         True,
     )

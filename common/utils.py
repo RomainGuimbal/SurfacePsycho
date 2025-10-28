@@ -118,7 +118,7 @@ MESHER_NAMES = {
     SP_obj_type.PLANE: "SP - FlatPatch Meshing",
     SP_obj_type.CYLINDER: "SP - Cylindrical Meshing",
     SP_obj_type.CONE: "SP - Conical Meshing",
-    SP_obj_type.SPHERE: "SP - Shperical Meshing",
+    SP_obj_type.SPHERE: "SP - Spherical Meshing",
     SP_obj_type.TORUS: "SP - Toroidal Meshing",
     SP_obj_type.BEZIER_SURFACE: "SP - Bezier Patch Meshing",
     SP_obj_type.BSPLINE_SURFACE: "SP - NURBS Patch Meshing",
@@ -698,6 +698,9 @@ def add_node_group_modifier_from_asset(
     modifier = obj.modifiers.new(name=asset_name, type="NODES")
     modifier.node_group = bpy.data.node_groups.get(asset_name)
     modifier.use_pin_to_last = pin
+
+    if modifier.node_group == None :
+        raise ValueError(f"Node group '{asset_name}' not found")
 
     # Change settings
     change_GN_modifier_settings(modifier, settings_dict)
