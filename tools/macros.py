@@ -629,12 +629,13 @@ def show_combs(self, context):
                         "Combs"
                     ].interface_items:
                         if (
-                            it.name in ["Enable", "U", "V"]
+                            it.name in ["Combs", "U", "V"]
                             and it.socket_type == "NodeSocketBool"
                         ):
                             input_id = it.identifier
                             m[input_id] = self.combs_on
                     m.node_group.interface_update(context)
+                    break
 
 
 def scale_combs(self, context):
@@ -650,6 +651,7 @@ def scale_combs(self, context):
                             input_id = it.identifier
                             m[input_id] = self.combs_scale
                     m.node_group.interface_update(context)
+                    break
 
 
 def set_seg_degree_from_active_prop(self, context):
