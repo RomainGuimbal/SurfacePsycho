@@ -601,7 +601,7 @@ def build_SP_torus(
     yaxis = gp_torus.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
+    zaxis_vec = np.cross(xaxis_vec, yaxis_vec)
 
     location = gp_torus.Location()
     origin_vec = Vector(
@@ -619,10 +619,10 @@ def build_SP_torus(
         MESHER_NAMES[SP_obj_type.TORUS],
         {
             "Trim Contour": trims_enabled,
-            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Scaling Method": 1,
-            "Resolution U": resolution,
-            "Resolution V": resolution * 2,
+            "Resolution U": resolution * 2,
+            "Resolution V": resolution,
         },
         True,
     )
@@ -660,7 +660,7 @@ def build_SP_sphere(
     yaxis = gp_sphere.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    zaxis_vec = Vector(np.cross(yaxis_vec, xaxis_vec))
+    zaxis_vec = Vector(np.cross(xaxis_vec, yaxis_vec))
 
     location = gp_sphere.Location()
     loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
@@ -677,10 +677,10 @@ def build_SP_sphere(
         MESHER_NAMES[SP_obj_type.SPHERE],
         {
             "Trim Contour": trims_enabled,
-            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Scaling Method": 1,
-            "Resolution U": resolution,
-            "Resolution V": resolution * 2,
+            "Resolution U": resolution * 2,
+            "Resolution V": resolution,
         },
         True,
     )
@@ -718,7 +718,6 @@ def build_SP_cone(
     yaxis = gp_cone.YAxis().Direction()
     axis_vec = Vector([axis.X(), axis.Y(), axis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    # zaxis_vec = np.cross(yaxis_vec, xaxis_vec)
 
     location = gp_cone.Location()
     loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
@@ -738,7 +737,7 @@ def build_SP_cone(
         MESHER_NAMES[SP_obj_type.CONE],
         {
             "Trim Contour": trims_enabled,
-            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Scaling Method": 1,
             "Resolution U": resolution,
             "Resolution V": resolution * 2,
@@ -768,7 +767,7 @@ def build_SP_bezier_patch(
         uv_bounds = bezier_surface.Bounds()
     except Exception:
         bspline = BRepAdaptor_Surface(topods_face).Surface().BSpline()
-        bezier_surface = GeomConvert_BSplineSurfaceToBezierSurface(bspline).Patch(1,1)
+        bezier_surface = GeomConvert_BSplineSurfaceToBezierSurface(bspline).Patch(1, 1)
         uv_bounds = bspline.Bounds()
 
     u_count, v_count = bezier_surface.NbUPoles(), bezier_surface.NbVPoles()
@@ -789,7 +788,7 @@ def build_SP_bezier_patch(
             "Trim Contour": trims_enabled,
             "Resolution U": resolution,
             "Resolution V": resolution,
-            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Scaling Method": 1,
         },
         True,
@@ -886,7 +885,7 @@ def build_SP_NURBS_patch(
             "Resolution V": resolution,
             "Degree U": udeg,
             "Degree V": vdeg,
-            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Trim Contour": trims_enabled,
             "Scaling Method": 1,
             "Endpoint U": u_clamped,
@@ -1043,7 +1042,7 @@ def build_SP_extrusion(
         MESHER_NAMES[SP_obj_type.SURFACE_OF_EXTRUSION],
         {
             "Trim Contour": trims_enabled,
-            "Flip Normals": topods_face.Orientation() != TopAbs_REVERSED,
+            "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Scaling Method": 1,
             "Resolution U": resolution,
             "Resolution V": resolution,
@@ -1056,10 +1055,10 @@ def build_SP_extrusion(
 
     # Attributes
     attrs = {
-        "Degree": curve_no_edge.degree_att,
-        "Type": curve_no_edge.type_att,
-        "Knot": curve_no_edge.knot,
-        "Multiplicity": curve_no_edge.mult,
+        "Degree": [0] + curve_no_edge.degree_att,
+        "Type": [0] + curve_no_edge.type_att,
+        "Knot": [0.0] + curve_no_edge.knot,
+        "Multiplicity": [0] + curve_no_edge.mult,
         # TODO
         # "Cyclic": curve_no_edge.isclosed,
         # "Clamped": curve_no_edge.isclamped,
@@ -1096,6 +1095,7 @@ def build_SP_revolution(
     geom_surf = adapt_surf.Surface()
 
     curve_no_edge = SP_Curve_no_edge_import(adapt_curve, scale)
+    # The knot is normalized
 
     gpdir = geom_surf.Direction()
     gploc = geom_surf.Location()
@@ -1120,13 +1120,13 @@ def build_SP_revolution(
     )
 
     curve_type = get_geom_adapt_curve_type(adapt_curve)
-    min_u, max_u = curve_range_from_type(curve_type)
+    min_v, max_v = curve_range_from_type(curve_type)
 
     attrs = {
-        "Degree": curve_no_edge.degree_att,
-        "Type": curve_no_edge.type_att,
-        "Knot": curve_no_edge.knot,
-        "Multiplicity": curve_no_edge.mult,
+        "Degree": [0] * 2 + curve_no_edge.degree_att,
+        "Type": [0] * 2 + curve_no_edge.type_att,
+        "Knot": [0.0] * 2 + curve_no_edge.knot,
+        "Multiplicity": [0] * 2 + curve_no_edge.mult,
         # TODO
         # "Cyclic": curve_no_edge.isclosed,
         # "Clamped": curve_no_edge.isclamped,
@@ -1150,7 +1150,7 @@ def build_SP_revolution(
             adapt_curve.FirstParameter(),
             adapt_curve.LastParameter(),
         ),
-        new_uv_bounds=(None, None, min_u, max_u),
+        new_uv_bounds=(None, None, min_v, max_v),
     )
     return object_data
 

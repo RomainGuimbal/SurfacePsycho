@@ -294,7 +294,6 @@ gr_curve_flat = {
     #    "SP - Compose FlatPatch From Sides",
     "SP - Continuities between Segments",
     "SP - Convert Circles and Ellipses to Splines",
-    "SP - Copy Curve or FlatPatch",
     "SP - Copy Mesh Face",
     "SP - Curve on Surface from UV",
     "SP - Distance Between Curves",
@@ -320,7 +319,7 @@ gr_curve_flat = {
     "SP - Sample Curve Per Degree",
     "SP - Split Curve",
     "SP - Switch Curve Direction",
-    "SP - Interpolate Wire",
+    "SP - Interpolate Curve or FlatPatch",
     # "SP - Connect Curve",
     # "SP - Curve Meshing",
     # "SP - Crop or Extend Curve",
@@ -355,10 +354,7 @@ gr_surf = {
     "SP - Reorder Grid Index",
     "SP - Ruled Surface from Mesh Loop",
     "SP - Select Patch Range",
-    "SP - Copy Segment",
-    "SP - Copy Flat Patch as Trim Contour",
     "SP - Convert Flat Patch to Bezier Patch",
-    "SP - Copy Trim Contour of Patch",
 }
 
 
@@ -390,6 +386,7 @@ gr_other = {
     "SP - Surface of Extrusion Meshing",
     "SP - Surface of Revolution Meshing",
     "SP - Plot Distance from Mesh",
+    "SP - Copy Geometry",
 }
 
 # COMPOUND
@@ -467,7 +464,7 @@ if __name__ == "__main__":
     clear_and_create_catalogs(
         [
             "SurfacePsycho",
-            "Analysis",
+            "Analyse",
             "Convert",
             "Deform",
             "Edit",
