@@ -497,12 +497,13 @@ if __name__ == "__main__":
     # print("\n\n______________________________________________________\n")
     # print("Make Local..\n")
 
-    # # /!\ CORRUPTS FILE /!\
-    # bpy.ops.object.make_local(type="ALL")
+    bpy.ops.object.make_local(type="ALL")
     
-    # replace_duplicates()
-    # clear_unused_data()
+    replace_duplicates()
+    clear_unused_data()
 
 
     #    profiler.disable()
     #    profiler.print_stats()
+
+    bpy.ops.wm.save_mainfile()

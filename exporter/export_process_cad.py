@@ -535,7 +535,8 @@ class SP_Contour_export:
             self.has_wire = True
         except Exception:  # No trim
             self.has_wire = False
-
+        
+        # Make wire
         if self.has_wire:
             # Get total_p_count
             self.total_p_count = 0
@@ -577,7 +578,7 @@ class SP_Contour_export:
                 points *= scale
 
             if is2D:
-                points = [Vector((p[1], p[0], 0.0)) for p in points]  # Inverted UV
+                points = [Vector((p[0], p[1], 0.0)) for p in points]  # Inverted UV
             points_per_wire = self.split_cp_attr_per_wire(points[: self.total_p_count])
 
             ## Weight
