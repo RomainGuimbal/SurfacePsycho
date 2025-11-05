@@ -161,7 +161,7 @@ def sp_type_of_object(o: bpy.types.Object) -> SP_obj_type:
                     return k
 
     # Non SP
-    raise ValueError(f"Object {o.name} is not a SP object")
+    return None
 
 
 def read_attribute_by_name(object, name, len_attr=None):

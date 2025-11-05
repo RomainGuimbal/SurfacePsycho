@@ -211,45 +211,7 @@ def append_by_name(filepath, asset_names, asset_type="node_groups"):
     return
 
 
-def clear_unused_data():
-    print("\n\n______________________________________________________\n")
-    print("Clearing unused data..\n")
-    # clear unused data. Do several times to fake recursive
-    for ng in bpy.data.node_groups:
-        if ng.asset_data == None:
-            if ng.use_fake_user:
-                ng.use_fake_user = False
-            if ng.users == 0:
-                bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-    for ng in bpy.data.node_groups:
-        if ng.users == 0 and ng.asset_data == None:
-            bpy.data.node_groups.remove(ng)
-
-
 def replace_duplicates():
-    print("\n\n______________________________________________________\n")
-    print("Manual deduplication..\n")
 
     #############################
     #         DANGER            #
@@ -267,6 +229,11 @@ def replace_duplicates():
         replace_all_instances_of_node_group(d + ".*", d)
 
 
+def remove_fake_user_node_groups():
+    for ng in bpy.data.node_groups:
+        if ng.use_fake_user:
+            ng.use_fake_user = False
+    
 ############################################################################################
 ############################################################################################
 ############################################################################################
@@ -320,6 +287,7 @@ gr_curve_flat = {
     "SP - Split Curve",
     "SP - Switch Curve Direction",
     "SP - Interpolate Curve or FlatPatch",
+    "SP - Crown Curve",
     # "SP - Connect Curve",
     # "SP - Curve Meshing",
     # "SP - Crop or Extend Curve",
@@ -355,6 +323,7 @@ gr_surf = {
     "SP - Ruled Surface from Mesh Loop",
     "SP - Select Patch Range",
     "SP - Convert Flat Patch to Bezier Patch",
+    "SP - Trim Bezier Surface from Projected Wires",
 }
 
 
@@ -395,15 +364,18 @@ gr_compound = {
     "SP - Compound Meshing",
     "SP - SubD to Bezier",
     "SP - Poly to Compound",
-    "SP - Text to Compound"
+    "SP - Text to Compound",
+    "SP - Set Patch Intance Type",
+    "SP - Split to Patches",
+    "SP - Intersect Bezier Patches",
+
 }
 
 # SHAPES
 filepath_preset = "//..\..\SP - Shapes presets.blend"
-obj_preset = {"Quadaratic Dome", "Cubic Dome", "Torus", "Sphere", "Cone", "Cube",}
+obj_preset = {"Quadaratic Dome", "Cubic Dome", "Torus", "Sphere", "Cone", "Cube", "Cylinder"}
 coll_preset = {
     "Slab",
-    "Cylinder",
     "Corner",
     "Step",
     "Thick Arch",
@@ -454,8 +426,8 @@ if __name__ == "__main__":
     #    profiler = cProfile.Profile()
     #    profiler.enable()
 
-    print("\n\n\n\n______________________________________________________")
-    print("______________________________________________________")
+    print("\n\n______________________________________________________")
+    print("______________________________________________________\n\n")
 
     print("Deleting Data..\n")
     print("\n______________________________________________________\n")
@@ -482,7 +454,7 @@ if __name__ == "__main__":
     append_by_name(filepath_other, gr_other, "node_groups")
     append_by_name(filepath_compound, gr_compound, "node_groups")
 
-    print("\n\n______________________________________________________\n")
+    print("\n______________________________________________________\n")
     print("Appending Objects..\n")
     append_by_name(filepath_probe, obj_probe, "objects")
     append_by_name(filepath_curve_flat, obj_curve_flat, "objects")
@@ -490,18 +462,25 @@ if __name__ == "__main__":
     append_by_name(filepath_nurbs, obj_nurbs, "objects")
     append_by_name(filepath_preset, obj_preset, "objects")
 
-    print("\n\n______________________________________________________\n")
+    print("\n______________________________________________________\n")
     print("Appending Collections..\n")
     append_by_name(filepath_preset, coll_preset, "collections")
 
-    # print("\n\n______________________________________________________\n")
-    # print("Make Local..\n")
+    print("\n______________________________________________________\n")
+    print("Make Local..\n")
 
     bpy.ops.object.make_local(type="ALL")
+
+    print("\n______________________________________________________\n")
+    print("Replace duplicates..\n")
     
     replace_duplicates()
-    clear_unused_data()
 
+    print("\n______________________________________________________\n")
+    print("Clear unused data..\n")
+
+    remove_fake_user_node_groups()
+    bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=False, do_recursive=True)
 
     #    profiler.disable()
     #    profiler.print_stats()
