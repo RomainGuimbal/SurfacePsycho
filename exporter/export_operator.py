@@ -183,7 +183,7 @@ class SP_OT_QuickExport(bpy.types.Operator):
                     {"WARNING"},
                     "Save your file first or set the temporary directory in preferences",
                 )
-                return {"CANCELED"}
+                return {"CANCELLED"}
 
         # Pattern for files: blendname (number) date_str.step
         pattern = re.compile(

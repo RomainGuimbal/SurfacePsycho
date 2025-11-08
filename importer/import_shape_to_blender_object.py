@@ -238,7 +238,9 @@ class SP_Curve_no_edge_import:
 
 class SP_Edge_import:
     def __init__(self, topods_edge: TopoDS_Edge, topods_face=None, scale=None):
+        
         # Edge adaptor
+        
         # 3D
         if topods_face is None:
             edge_adaptor = BRepAdaptor_Curve(topods_edge)
@@ -259,12 +261,13 @@ class SP_Edge_import:
 
         # Reverse
         if (
-            topods_edge.Orientation() != TopAbs_FORWARD
-            and self.type_att[0] != EDGES_TYPES["circle"]
+            topods_edge.Orientation() == TopAbs_REVERSED
+            and (self.type_att[0] != EDGES_TYPES["circle"] or self.type_att[0] != EDGES_TYPES["ellipse"])
         ):
             self.verts.reverse()
             self.weight.reverse()
             # type, endpoints, degree are symmetric
+            # Knot and mult are already in the right order?
 
         self.isclosed = sp_curve_no_edge.isclosed
 
@@ -290,26 +293,28 @@ class SP_Wire_import:
         for e in topods_edges:
             sp_edge = SP_Edge_import(e, topods_face, scale)
             e_vert = sp_edge.verts
+            e_weig = sp_edge.weight
 
             if not is_wire_forward:
                 e_vert.reverse()
+                e_weig.reverse()
                 # other att are symmetric
 
             self.CP.extend(e_vert[:-1])
+            self.weight_att.extend(e_weig[:-1])
             self.endpoints_att.extend(sp_edge.endpoints_att[:-1])
             self.degree_att.extend(sp_edge.degree_att[:-1])
             self.type_att.extend(sp_edge.type_att[:-1])
-            self.weight_att.extend(sp_edge.weight[:-1])
             self.knot_att.extend(sp_edge.knot[:-1])
             self.mult_att.extend(sp_edge.mult[:-1])
 
-        # Add last point for single edge wire
+        # Add last point
         if (
             len(topods_edges) == 1
         ):  # Skip circle (unclosed control mesh structure for single segment wire)
             # OR closed single wire
             # OR single segment curve
-            # if sp_edge.isclosed :
+            # if not topods_wire.isclosed :
             self.CP.append(e_vert[-1])
             self.endpoints_att.append(sp_edge.endpoints_att[-1])
             self.degree_att.append(sp_edge.degree_att[-1])
@@ -367,9 +372,7 @@ class SP_Contour_import:
     def is_trivial(self):
         is_trivial_trim = False
         if len(self.verts) == 4:
-
-            # print(self.verts)
-
+            
             t1 = self.verts == [
                 Vector((0.0, 0.0, 0.0)),
                 Vector((0.0, 1.0, 0.0)),
@@ -450,8 +453,8 @@ class SP_Contour_import:
             if curr_range_v != 0.0:
                 v.y = ((v.y - curr_min_v) / curr_range_v) * new_range_v + new_min_v
 
-    def switch_u_and_v(self):
-        self.verts = [Vector((v.y, v.x, v.z)) for v in self.verts]
+    # def switch_u_and_v(self):
+    #     self.verts = [Vector((v.y, v.x, v.z)) for v in self.verts]
 
 
 def generic_import_surface(
@@ -470,7 +473,6 @@ def generic_import_surface(
     curr_uv_bounds=None,
     new_uv_bounds=(0.0, 1.0, 0.0, 1.0),
     weight=None,
-    switch_u_and_v=False,
 ):
     if weight == None:
         weight = [1.0] * len(CPvert)
@@ -481,9 +483,6 @@ def generic_import_surface(
         contour = SP_Contour_import(face)
         if curr_uv_bounds != None:
             contour.rebound(curr_uv_bounds, new_uv_bounds)
-
-        if switch_u_and_v:
-            contour.switch_u_and_v()
 
         istrivial = contour.is_trivial()
 
@@ -819,8 +818,8 @@ def build_SP_NURBS_patch(
     v_count = bspline_surface.NbVPoles()
     udeg = bspline_surface.UDegree()
     vdeg = bspline_surface.VDegree()
-    u_closed = bspline_surface.IsUClosed()
-    v_closed = bspline_surface.IsVClosed()
+    # u_closed = bspline_surface.IsUClosed()
+    # v_closed = bspline_surface.IsVClosed()
     u_periodic = bspline_surface.IsUPeriodic()
     v_periodic = bspline_surface.IsVPeriodic()
     uv_bounds = bspline_surface.Bounds()
@@ -842,10 +841,10 @@ def build_SP_NURBS_patch(
 
     # Vertex aligned attributes
     # CP Grid
-    vector_pts = np.zeros((v_count + v_closed, u_count + u_closed), dtype=Vector)
+    vector_pts = np.zeros((v_count, u_count), dtype=Vector) #vector_pts = np.zeros((v_count + v_closed, u_count + u_closed), dtype=Vector)
 
     # if bspline_surface.IsRational(): # contour weights are on the same attr so it must be added right ? :/
-    weight = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
+    weight = np.ones((v_count, u_count), dtype=float) #weight = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
 
     for u in range(u_count):
         for v in range(v_count):
@@ -856,12 +855,12 @@ def build_SP_NURBS_patch(
             w = bspline_surface.Weight(u + 1, v + 1)
             weight[v, u] = w
 
-    if u_closed:
-        vector_pts[:, u_count] = vector_pts[:, 0]
-        weight[:, u_count] = weight[:, 0]
-    if v_closed:
-        vector_pts[v_count, :] = vector_pts[0, :]
-        weight[v_count, :] = weight[0, :]
+    # if u_closed:
+    #     vector_pts[:, u_count] = vector_pts[:, 0]
+    #     weight[:, u_count] = weight[:, 0]
+    # if v_closed:
+    #     vector_pts[v_count, :] = vector_pts[0, :]
+    #     weight[v_count, :] = weight[0, :]
 
     # control grid
     CPvert, _, CPfaces = create_grid(vector_pts)

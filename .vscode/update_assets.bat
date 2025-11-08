@@ -14,5 +14,5 @@ set blender_exe=C:\Users\romai\Downloads\TheBlenders\%LAST_blender_zip:~0,-3%\bl
 echo selected Blender :
 echo %blender_exe%
 
-start %blender_exe% --background "C:\Users\romai\Documents\Projets\26 - Bezier Quest\SurfacePsycho\assets\assets.blend" ^
+%blender_exe% --background "C:\Users\romai\Documents\Projets\26 - Bezier Quest\SurfacePsycho\assets\assets.blend" ^
 --python "C:\Users\romai\Documents\Projets\26 - Bezier Quest\SurfacePsycho\assets\Asset Importer.py"
