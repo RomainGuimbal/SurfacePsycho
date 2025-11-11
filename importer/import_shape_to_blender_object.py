@@ -25,7 +25,9 @@ from OCP.TopoDS import (
 from OCP.GeomConvert import GeomConvert_BSplineSurfaceToBezierSurface
 import OCP.GeomAbs as GeomAbs
 import OCP.TopAbs as TopAbs
-
+from OCP.GeomToStep import GeomToStep_MakeSurface, GeomToStep_MakeCurve
+from OCP.Geom import Geom_Surface
+from OCP.StepData import StepData_Factors
 
 ##############################
 ##    Converter classes     ##
@@ -117,6 +119,7 @@ class SP_Curve_no_edge_import:
         first = edge_adaptor.FirstParameter()
         last = edge_adaptor.LastParameter()
         bspline.Segment(first, last)
+        # TODO Handle cyclic
 
         # Get poles
         p_count = bspline.NbPoles()
@@ -137,8 +140,10 @@ class SP_Curve_no_edge_import:
             self.endpoints_att = [True] + [False] * (p_count - 2) + [True]
         self.weight = [bspline.Weight(i + 1) for i in range(p_count)]
 
-        knot = normalize_array(haarray1_of_real_to_list(bspline.Knots()))
-        mult = haarray1_of_int_to_list(bspline.Multiplicities())
+        step_curve = GeomToStep_MakeCurve(bspline, StepData_Factors()).Value()
+
+        knot = normalize_array(haarray1_of_real_to_list(step_curve.Knots()))
+        mult = haarray1_of_int_to_list(step_curve.KnotMultiplicities())
         self.knot = knot + [0.0] * (p_count - len(knot))
         self.mult = mult + [0] * (p_count - len(mult))
 
@@ -823,11 +828,16 @@ def build_SP_NURBS_patch(
     u_periodic = bspline_surface.IsUPeriodic()
     v_periodic = bspline_surface.IsVPeriodic()
     uv_bounds = bspline_surface.Bounds()
-    u_knots = haarray1_of_real_to_list(bspline_surface.UKnots())
-    v_knots = haarray1_of_real_to_list(bspline_surface.VKnots())
-    u_mult = haarray1_of_int_to_list(bspline_surface.UMultiplicities())
-    v_mult = haarray1_of_int_to_list(bspline_surface.VMultiplicities())
 
+    step_surface = GeomToStep_MakeSurface(bspline_surface, StepData_Factors()).Value()
+
+    u_knots = haarray1_of_real_to_list(step_surface.UKnots())
+    v_knots = haarray1_of_real_to_list(step_surface.VKnots())
+    u_mult = haarray1_of_int_to_list(step_surface.UMultiplicities())
+    v_mult = haarray1_of_int_to_list(step_surface.VMultiplicities())
+ 
+    #UKnotDistribution can detect bezier and uniform
+    #VKnotDistribution
     # # Detect Bezier
     if (
         len(u_knots) == 2
