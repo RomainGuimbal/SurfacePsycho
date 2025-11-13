@@ -6,16 +6,37 @@
         {
             "label": "Update assets",
             "type": "shell",
-            "command": ".vscode/update_assets.bat",
-            "args": [],
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--background",
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
+                "--python",
+                ".vscode/asset_importer.py"
+            ],
             "problemMatcher": []
         },
-
         {
-            "label": "Check primitives import",
+            "label": "Update assets FAST",
             "type": "shell",
-            "command": ".vscode/lanch_blender_with_script.bat",
-            "args": [".vscode/importer_test.py"],
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--background",
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
+                "--python",
+                ".vscode/asset_importer.py",
+                "--",
+                "--fast"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Import primitives",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--python",
+                ".vscode/importer_test.py"
+            ],
             "problemMatcher": []
         },
     ]

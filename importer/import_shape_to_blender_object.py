@@ -671,9 +671,9 @@ def build_SP_sphere(
     radius = gp_sphere.Radius() * scale
 
     CPvert = [
-        loc_vec - zaxis_vec * radius,
         loc_vec + zaxis_vec * radius,
-        yaxis_vec * radius + loc_vec,
+        loc_vec - zaxis_vec * radius,
+        xaxis_vec * radius + loc_vec,
     ]
     CP_edges = [(0, 1)]
 

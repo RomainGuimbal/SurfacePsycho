@@ -2,6 +2,8 @@ import bpy
 from pathlib import Path
 import re
 import uuid
+import argparse
+import sys
 
 FILE_PATH = Path(bpy.data.filepath)
 
@@ -424,6 +426,15 @@ coll_preset = {
 ################################
 
 if __name__ == "__main__":
+    isfast = False
+    argv = sys.argv
+    if "--" in argv:
+        argv = argv[argv.index("--") + 1:]
+        isfast = "--fast" in argv
+    else:
+        argv = []
+        print("No command line arguments provided")
+
     #    import cProfile
     #    profiler = cProfile.Profile()
     #    profiler.enable()
@@ -468,21 +479,23 @@ if __name__ == "__main__":
     print("Appending Collections..")
     append_by_name(filepath_preset, coll_preset, "collections")
 
-    print("\n______________________________________________________\n")
-    print("Make Local..\n")
+    if not isfast :
+        print("\n______________________________________________________\n")
+        print("Make Local..\n")
 
-    bpy.ops.object.make_local(type="ALL")
+        bpy.ops.object.make_local(type="ALL")
+        
+        print("\n______________________________________________________\n")
+        print("Replace duplicates..")
+        
 
-    print("\n______________________________________________________\n")
-    print("Replace duplicates..")
-    
-    replace_duplicates()
+        replace_duplicates()
 
-    print("\n______________________________________________________\n")
-    print("Clear unused data..")
+        print("\n______________________________________________________\n")
+        print("Clear unused data..")
 
-    remove_fake_user_node_groups()
-    bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=False, do_recursive=True)
+        remove_fake_user_node_groups()
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=False, do_recursive=True)
 
     #    profiler.disable()
     #    profiler.print_stats()
