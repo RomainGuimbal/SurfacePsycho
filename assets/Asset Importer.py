@@ -341,6 +341,7 @@ gr_nurbs = {
     "SP - Continuity Analysis",
     "SP - Fit Patch",
     "SP - Interpolate Patch",
+    "SP_Curvature",
 }
 
 
@@ -368,6 +369,7 @@ gr_compound = {
     "SP - Set Patch Intance Type",
     "SP - Split to Patches",
     "SP - Intersect Bezier Patches",
+    "SP - Extrude FlatPatch",
 
 }
 
@@ -427,11 +429,11 @@ if __name__ == "__main__":
     #    profiler.enable()
 
     print("\n\n______________________________________________________")
-    print("______________________________________________________\n\n")
+    print("______________________________________________________\n")
+    print("Deleting Data..")
 
-    print("Deleting Data..\n")
     print("\n______________________________________________________\n")
-    print("Create Catalogs..\n")
+    print("Create Catalogs..")
     delete_all_data()
     clear_and_create_catalogs(
         [
@@ -447,7 +449,7 @@ if __name__ == "__main__":
         ]
     )
     print("\n______________________________________________________\n")
-    print("Appending Groups..\n")
+    print("Appending Groups..")
     append_by_name(filepath_curve_flat, gr_curve_flat, "node_groups")
     append_by_name(filepath_surf, gr_surf, "node_groups")
     append_by_name(filepath_nurbs, gr_nurbs, "node_groups")
@@ -455,7 +457,7 @@ if __name__ == "__main__":
     append_by_name(filepath_compound, gr_compound, "node_groups")
 
     print("\n______________________________________________________\n")
-    print("Appending Objects..\n")
+    print("Appending Objects..")
     append_by_name(filepath_probe, obj_probe, "objects")
     append_by_name(filepath_curve_flat, obj_curve_flat, "objects")
     append_by_name(filepath_surf, obj_surf, "objects")
@@ -463,7 +465,7 @@ if __name__ == "__main__":
     append_by_name(filepath_preset, obj_preset, "objects")
 
     print("\n______________________________________________________\n")
-    print("Appending Collections..\n")
+    print("Appending Collections..")
     append_by_name(filepath_preset, coll_preset, "collections")
 
     print("\n______________________________________________________\n")
@@ -472,12 +474,12 @@ if __name__ == "__main__":
     bpy.ops.object.make_local(type="ALL")
 
     print("\n______________________________________________________\n")
-    print("Replace duplicates..\n")
+    print("Replace duplicates..")
     
     replace_duplicates()
 
     print("\n______________________________________________________\n")
-    print("Clear unused data..\n")
+    print("Clear unused data..")
 
     remove_fake_user_node_groups()
     bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=False, do_recursive=True)
