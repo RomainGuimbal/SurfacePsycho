@@ -10,5 +10,13 @@
             "args": [],
             "problemMatcher": []
         },
+
+        {
+            "label": "Check primitives import",
+            "type": "shell",
+            "command": ".vscode/lanch_blender_with_script.bat",
+            "args": [".vscode/importer_test.py"],
+            "problemMatcher": []
+        },
     ]
 }

@@ -16,36 +16,7 @@ from bpy_extras.io_utils import (
 )
 
 
-def process_batch(self, context):
-    """Function called regularly to update Blender scene from main process"""
 
-    # Create the object
-    if self.created_object_count < self.total_count:
-        for i in range(self.batch_size):
-            create_blender_object(self.object_data[self.created_object_count])
-            self.created_object_count += 1
-            if self.created_object_count >= self.total_count:
-                context.window_manager.progress_end()
-                self.object_data.clear()
-                return {"FINISHED"}
-    else:
-        context.window_manager.progress_end()
-        self.object_data.clear()
-        return {"FINISHED"}
-
-    # Report progress
-    wm = context.window_manager
-    wm.progress_update(self.created_object_count)
-
-    # # Force UI update
-    for area in self.context.screen.areas:
-        if area.type in {"VIEW_3D", "OUTLINER"}:
-            area.tag_redraw()
-
-    # Update status text
-    self.status = f"{self.created_object_count}/{self.total_count} shapes imported"
-
-    return {"PASS_THROUGH"}
 
 
 class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
@@ -67,12 +38,12 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     scale: FloatProperty(name="Scale", default=0.001, precision=3)
     resolution: IntProperty(name="Resolution", default=16, soft_min=6, soft_max=256)
 
-    batch_size = 300
-    created_object_count = 0
-    total_count = 0
-    object_data = []
-
     def execute(self, context):
+        self.batch_size = 300
+        self.created_object_count = 0
+        self.total_count = 0
+        self.object_data = []
+
         self.context = context
         self.status = "Gathering shape data..."
 
@@ -148,11 +119,38 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
     def modal(self, context, event):
         if event.type == "TIMER":
-            return process_batch(self, context)
+            return self.process_batch(context)
         elif event.type == "ESC":
             context.window_manager.progress_end()
-            self.object_data.clear()
             return {"CANCELLED"}
+        return {"PASS_THROUGH"}
+    
+    def process_batch(self, context):
+
+        # Create the object
+        if self.created_object_count < self.total_count:
+            for i in range(self.batch_size):
+                create_blender_object(self.object_data[self.created_object_count])
+                self.created_object_count += 1
+                if self.created_object_count >= self.total_count:
+                    context.window_manager.progress_end()
+                    return {"FINISHED"}
+        else:
+            context.window_manager.progress_end()
+            return {"FINISHED"}
+
+        # Report progress
+        wm = context.window_manager
+        wm.progress_update(self.created_object_count)
+
+        # # Force UI update
+        for area in self.context.screen.areas:
+            if area.type in {"VIEW_3D", "OUTLINER"}:
+                area.tag_redraw()
+
+        # Update status text
+        self.status = f"{self.created_object_count}/{self.total_count} shapes imported"
+
         return {"PASS_THROUGH"}
 
 
