@@ -39,5 +39,18 @@
             ],
             "problemMatcher": []
         },
+        {
+            "label": "Import complexe",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--python",
+                ".vscode/test_import_complexe.py"
+            ],
+            "problemMatcher": []
+        },
+        // {
+        //     c:\Users\romai\Downloads\TheBlenders\blender-5.0.0-beta+v50.1f5254094830-windows.amd64-release\blender.exe --python c:\Users\romai\.vscode\extensions\jacqueslucke.blender-development-0.0.26\pythonFiles\launch.py 
+        // }
     ]
 }

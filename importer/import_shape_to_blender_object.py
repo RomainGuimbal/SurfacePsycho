@@ -243,9 +243,9 @@ class SP_Curve_no_edge_import:
 
 class SP_Edge_import:
     def __init__(self, topods_edge: TopoDS_Edge, topods_face=None, scale=None):
-        
+
         # Edge adaptor
-        
+
         # 3D
         if topods_face is None:
             edge_adaptor = BRepAdaptor_Curve(topods_edge)
@@ -265,9 +265,9 @@ class SP_Edge_import:
         self.knot = sp_curve_no_edge.knot
 
         # Reverse
-        if (
-            topods_edge.Orientation() == TopAbs_REVERSED
-            and (self.type_att[0] != EDGES_TYPES["circle"] or self.type_att[0] != EDGES_TYPES["ellipse"])
+        if topods_edge.Orientation() == TopAbs_REVERSED and (
+            self.type_att[0] != EDGES_TYPES["circle"]
+            or self.type_att[0] != EDGES_TYPES["ellipse"]
         ):
             self.verts.reverse()
             self.weight.reverse()
@@ -377,7 +377,7 @@ class SP_Contour_import:
     def is_trivial(self):
         is_trivial_trim = False
         if len(self.verts) == 4:
-            
+
             t1 = self.verts == [
                 Vector((0.0, 0.0, 0.0)),
                 Vector((0.0, 1.0, 0.0)),
@@ -473,7 +473,7 @@ def generic_import_surface(
     CPfaces,
     modifier,
     attrs={},
-    ob_name="STEP Patch",
+    ob_name="STEP Surface",
     scale=0.001,
     curr_uv_bounds=None,
     new_uv_bounds=(0.0, 1.0, 0.0, 1.0),
@@ -498,6 +498,7 @@ def generic_import_surface(
         mesh_data = join_mesh_entities(
             CPvert, CPedges, CPfaces, contour.verts, contour.edges, []
         )
+        
         trim_attrs = {
             "Weight": weight + contour.weight,
             "Knot": [0.0] * len(CPvert) + contour.knot,
@@ -719,9 +720,9 @@ def build_SP_cone(
 
     gpaxis = gp_cone.Axis()
     axis = gpaxis.Direction()
-    yaxis = gp_cone.YAxis().Direction()
+    xaxis = gp_cone.XAxis().Direction()
     axis_vec = Vector([axis.X(), axis.Y(), axis.Z()])
-    yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
+    xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
 
     location = gp_cone.Location()
     loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
@@ -729,11 +730,14 @@ def build_SP_cone(
 
     CPvert = [
         loc_vec,
-        loc_vec + yaxis_vec * radius * scale,
-        axis_vec * math.cos(gp_cone.SemiAngle()) * scale
-        + loc_vec
-        + yaxis_vec * (math.sin(gp_cone.SemiAngle()) + radius) * scale,
-        axis_vec * math.cos(gp_cone.SemiAngle()) * scale + loc_vec,
+        loc_vec + xaxis_vec * radius * scale,
+        loc_vec
+        + (
+            axis_vec * math.cos(gp_cone.SemiAngle())
+            + xaxis_vec * (math.sin(gp_cone.SemiAngle()) + radius)
+        )
+        * scale,
+        loc_vec + axis_vec * math.cos(gp_cone.SemiAngle()) * scale,
     ]
     CP_edges = [(0, 1), (1, 2), (2, 3)]
 
@@ -835,9 +839,9 @@ def build_SP_NURBS_patch(
     v_knots = haarray1_of_real_to_list(step_surface.VKnots())
     u_mult = haarray1_of_int_to_list(step_surface.UMultiplicities())
     v_mult = haarray1_of_int_to_list(step_surface.VMultiplicities())
- 
-    #UKnotDistribution can detect bezier and uniform
-    #VKnotDistribution
+
+    # UKnotDistribution can detect bezier and uniform
+    # VKnotDistribution
     # # Detect Bezier
     if (
         len(u_knots) == 2
@@ -851,10 +855,14 @@ def build_SP_NURBS_patch(
 
     # Vertex aligned attributes
     # CP Grid
-    vector_pts = np.zeros((v_count, u_count), dtype=Vector) #vector_pts = np.zeros((v_count + v_closed, u_count + u_closed), dtype=Vector)
+    vector_pts = np.zeros(
+        (v_count, u_count), dtype=Vector
+    )  # vector_pts = np.zeros((v_count + v_closed, u_count + u_closed), dtype=Vector)
 
     # if bspline_surface.IsRational(): # contour weights are on the same attr so it must be added right ? :/
-    weight = np.ones((v_count, u_count), dtype=float) #weight = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
+    weight = np.ones(
+        (v_count, u_count), dtype=float
+    )  # weight = np.ones((v_count + v_closed, u_count + u_closed), dtype=float)
 
     for u in range(u_count):
         for v in range(v_count):
