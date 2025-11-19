@@ -213,24 +213,19 @@ class SP_Edge_export:
         knot, mult = auto_knot_and_mult(
             self.p_count, degree, isclamped, is_unclamped_periodic
         )
+
+        bspline_args = (
+            segment_point_array,
+            tcol_weights,
+            knot,
+            mult,
+            degree,
+            is_unclamped_periodic,
+        )
         if self.is2D:
-            self.geom = Geom2d_BSplineCurve(
-                segment_point_array,
-                tcol_weights,
-                knot,
-                mult,
-                degree,
-                is_unclamped_periodic,
-            )
+            self.geom = Geom2d_BSplineCurve(*bspline_args)
         else:
-            self.geom = Geom_BSplineCurve(
-                segment_point_array,
-                tcol_weights,
-                knot,
-                mult,
-                degree,
-                is_unclamped_periodic,
-            )
+            self.geom = Geom_BSplineCurve(*bspline_args)
 
     def circle_arc(self):
         if self.is2D:
@@ -535,7 +530,7 @@ class SP_Contour_export:
             self.has_wire = True
         except Exception:  # No trim
             self.has_wire = False
-        
+
         # Make wire
         if self.has_wire:
             # Get total_p_count
@@ -1347,6 +1342,8 @@ class ShapeHierarchy_export:
         for i, o in enumerate(objs):
             self.obj_shapes[o] = shapes[i]
 
+        self.depsgraph = context.evaluated_depsgraph_get()
+
     def create_shape_hierarchy(self, parent):
         objs, shapes, empties, instances, compounds = [], [], [], [], []
 
@@ -1379,21 +1376,25 @@ class ShapeHierarchy_export:
                         )
                         comp_shapes = []
 
-                        from line_profiler import LineProfiler
-                        lp = LineProfiler()
-                        lp.add_function(blender_object_to_topods_shapes)
-                        lp.enable()
+                        # from line_profiler import LineProfiler
+                        # lp = LineProfiler()
+                        # lp.add_function(SP_Contour_export.__init__)
+                        # lp.enable()
 
                         for o_new in new_objects:
-
                             # Temporarily link
                             self.context.view_layer.active_layer_collection.collection.objects.link(
                                 o_new
                             )
+                        
+                        # bpy.context.view_layer.update()
+                        depsgraph = self.context.evaluated_depsgraph_get()
+
+                        for o_new in new_objects:
                             type = sp_type_of_object(o_new)
 
                             sh = blender_object_to_topods_shapes(
-                                bpy.context,
+                                depsgraph,
                                 o_new,
                                 type,
                                 scale=self.scale,
@@ -1408,14 +1409,15 @@ class ShapeHierarchy_export:
                         del new_objects[:]
                         shapes.append(shape_list_to_compound(comp_shapes))
                         objs.append(o)
-                        
-                        lp.disable()
-                        lp.print_stats()
+
+                        # lp.disable()
+                        # lp.print_stats()
 
                     # Standard shape
                     case _:
+                        
                         s = blender_object_to_topods_shapes(
-                            self.context,
+                            self.depsgraph,
                             o,
                             sp_type,
                             self.scale,
@@ -1429,18 +1431,9 @@ class ShapeHierarchy_export:
 
 
 def blender_object_to_topods_shapes(
-    context, object, sp_type, scale=1000, sew=True, sew_tolerance=1e-1
+    depsgraph, object, sp_type, scale=1000, sew=True, sew_tolerance=1e-1
 ):
-    ob = object.evaluated_get(context.evaluated_depsgraph_get())
-
-    # # eval if not evaluated
-    # if ob is object:
-    #     # Temporarily link
-    #     bpy.context.view_layer.active_layer_collection.collection.objects.link(object)
-    #     # Get eval
-    #     ob = object.evaluated_get(context.evaluated_depsgraph_get())
-    #     # Unlink
-    #     bpy.context.collection.objects.unlink(object)
+    ob = object.evaluated_get(depsgraph)
 
     match sp_type:
         case SP_obj_type.CONE:
@@ -1515,6 +1508,8 @@ def blender_instance_to_topods_instance(
     # builder.MakeCompound(comp)
     # is_nested = False
 
+    depsgraph = context.evaluated_depsgraph_get()
+
     # add obj of child collections (doesn't support nested instances)
     for col in ins.instance_collection.children_recursive:
         for o in col.objects:
@@ -1527,7 +1522,7 @@ def blender_instance_to_topods_instance(
                 shape = hierarchy.obj_shapes[o]
             elif not o.hide_viewport:
                 shape = blender_object_to_topods_shapes(
-                    context, o, sp_type, scale, sew, sew_tolerance
+                    depsgraph, o, sp_type, scale, sew, sew_tolerance
                 )
 
             if ins.scale == Vector((1.0, 1.0, 1.0)):

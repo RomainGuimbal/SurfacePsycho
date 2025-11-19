@@ -143,20 +143,23 @@ def copy_mesh_attributes(source_mesh, target_mesh):
 
 
 def convert_compound_to_patches(o, context, objects_suffix = ""):
+    # Find compound meshing modifier
     mod = None
     for m in reversed(o.modifiers) :
         if m.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
             mod = m
             break
-
+    
     if mod == None :
         return None
     
+    # Create objects
     # Disable modifier to access non meshed data
     mod.show_viewport = False
     created_objects = create_objects_from_instances(o, context, objects_suffix)
     mod.show_viewport = True
 
+    # Get types
     types = np.zeros(len(created_objects), dtype=np.int32)
 
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
@@ -170,11 +173,14 @@ def convert_compound_to_patches(o, context, objects_suffix = ""):
             att.data.foreach_get("value", types)
             break
 
+    # Add modifiers
     for i, obj in enumerate(created_objects):
+        settings_dict = {}
         if SP_obj_type(types[i]) in [SP_obj_type.BEZIER_SURFACE, SP_obj_type.BSPLINE_SURFACE]:
             add_sp_modifier(obj, "SP - Reorder Grid Index", append=False)
+            settings_dict = {"Resolution U": 1, "Resolution V": 1} # "Evaluate": False
         add_sp_modifier(
-            obj, MESHER_NAMES[SP_obj_type(types[i])], pin=True, append=False
+            obj, MESHER_NAMES[SP_obj_type(types[i])], settings_dict, pin=True, append=False
         )
     
     return created_objects

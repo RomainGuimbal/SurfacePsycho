@@ -273,7 +273,6 @@ gr_curve_flat = {
     "SP - Intervale Curve",
     "SP - Make SVG Ready",
     "SP - Mirror Curve Control Points",
-    "SP - Mirror Curve Locally",
     "SP - Mirror FlatPatch or Curve",
     "SP - Multi Split Curve",
     "SP - NURBS to Bezier Curve or FlatPatch",
@@ -501,3 +500,5 @@ if __name__ == "__main__":
     #    profiler.print_stats()
 
     bpy.ops.wm.save_mainfile()
+
+    print("\nAssets successfully updated !")
