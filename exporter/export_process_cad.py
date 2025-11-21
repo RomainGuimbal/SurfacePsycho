@@ -521,6 +521,8 @@ class SP_Contour_export:
         is2D=False,
         geom_surf=None,
         geom_plane=None,
+        curr_bounds=None,
+        new_bounds=None,
     ):
         # Check if trimmed
         try:
@@ -528,7 +530,8 @@ class SP_Contour_export:
             self.wire_index = read_attribute_by_name(ob, "Wire")
             self.seg_count_per_wire = read_attribute_by_name(ob, "seg_count_per_wire")
             self.has_wire = True
-        except Exception:  # No trim
+        # No trim
+        except Exception:
             self.has_wire = False
 
         # Make wire
@@ -572,8 +575,11 @@ class SP_Contour_export:
             else:
                 points *= scale
 
+            if curr_bounds is not None and new_bounds is not None:
+                points = rebound(points, curr_bounds, new_bounds)
+
             if is2D:
-                points = [Vector((p[0], p[1], 0.0)) for p in points]  # Inverted UV
+                points = [Vector((p[0], p[1], 0.0)) for p in points]
             points_per_wire = self.split_cp_attr_per_wire(points[: self.total_p_count])
 
             ## Weight
@@ -684,6 +690,16 @@ class SP_Contour_export:
 
         return attr_dict_per_wire
 
+    def get_topods_wires(self):
+        wires = self.wires_dict
+        outer_wire = wires[-1].get_topods_wire()
+        inner_wires = []
+        for k in wires.keys():
+            if k != -1:
+                inner_wires.append(wires[k].get_topods_wire())
+
+        return outer_wire, inner_wires
+
 
 ##############################
 ##  Brep from SP entities   ##
@@ -746,16 +762,8 @@ def bezier_face_to_topods(ob, scale=1000):
     if not contour.has_wire:
         return geom_to_topods_face(geom_surf)
     else:
-        wires = contour.wires_dict
-
-    # Get topods wires
-    outer_wire = wires[-1].get_topods_wire()
-    inner_wires = []
-    for k in wires.keys():
-        if k != -1:
-            inner_wires.append(wires[k].get_topods_wire())
-
-    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+        outer_wire, inner_wires = contour.get_topods_wires()
+        face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
     return face
 
 
@@ -807,19 +815,11 @@ def NURBS_face_to_topods(ob, scale=1000):
         geom_surf=geom_surf,
     )
     if not contour.has_wire:
-        return geom_to_topods_face(geom_surf)
+        face = geom_to_topods_face(geom_surf)
     else:
-        wires = contour.wires_dict
-
-        # Get topods wires
-        outer_wire = wires[-1].get_topods_wire()
-        inner_wires = []
-        for k in wires.keys():
-            if k != -1:
-                inner_wires.append(wires[k].get_topods_wire())
-
+        outer_wire, inner_wires = contour.get_topods_wires()
         face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
-        return face
+    return face
 
 
 def cone_face_to_topods(ob, scale=1000):
@@ -846,23 +846,15 @@ def cone_face_to_topods(ob, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
-        scale=(radius / math.sin(semi_angle), 1),
+        scale=(1, 2),
     )
 
     # Create topods face
     if not contour.has_wire:
-        return geom_to_topods_face(geom_surf)
+        face = geom_to_topods_face(geom_surf)
     else:
-        wires = contour.wires_dict
-
-    # Get topods wires
-    outer_wire = wires[-1].get_topods_wire()
-    inner_wires = []
-    for k in wires.keys():
-        if k != -1:
-            inner_wires.append(wires[k].get_topods_wire())
-
-    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+        outer_wire, inner_wires = contour.get_topods_wires()
+        face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
     return face
 
 
@@ -873,7 +865,7 @@ def sphere_face_to_topods(ob, scale=1000):
 
     # Create geom
     axis3 = gp_Ax3(
-        gp_Pnt(origin[0] * scale, origin[1] * scale, origin[2] * scale),
+        gp_Pnt(*(origin * scale)),
         gp_Dir(dir1[0], dir1[1], dir1[2]),
         gp_Dir(dir2[0], dir2[1], dir2[2]),
     )
@@ -892,18 +884,10 @@ def sphere_face_to_topods(ob, scale=1000):
 
     # Create topods face
     if not contour.has_wire:
-        return geom_to_topods_face(geom_surf)
+        face = geom_to_topods_face(geom_surf)
     else:
-        wires = contour.wires_dict
-
-    # Get topods wires
-    outer_wire = wires[-1].get_topods_wire()
-    inner_wires = []
-    for k in wires.keys():
-        if k != -1:
-            inner_wires.append(wires[k].get_topods_wire())
-
-    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+        outer_wire, inner_wires = contour.get_topods_wires()
+        face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
     return face
 
 
@@ -933,18 +917,10 @@ def torus_face_to_topods(ob, scale=1000):
 
     # Create topods face
     if not contour.has_wire:
-        return geom_to_topods_face(geom_surf)
+        face = geom_to_topods_face(geom_surf)
     else:
-        wires = contour.wires_dict
-
-    # Get topods wires
-    outer_wire = wires[-1].get_topods_wire()
-    inner_wires = []
-    for k in wires.keys():
-        if k != -1:
-            inner_wires.append(wires[k].get_topods_wire())
-
-    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+        outer_wire, inner_wires = contour.get_topods_wires()
+        face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
     return face
 
 
@@ -975,18 +951,10 @@ def cylinder_face_to_topods(ob, scale=1000):
 
     # Create topods face
     if not contour.has_wire:
-        return geom_to_topods_face(geom_surf)
+        face = geom_to_topods_face(geom_surf)
     else:
-        wires = contour.wires_dict
-
-    # Get topods wires
-    outer_wire = wires[-1].get_topods_wire()
-    inner_wires = []
-    for k in wires.keys():
-        if k != -1:
-            inner_wires.append(wires[k].get_topods_wire())
-
-    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+        outer_wire, inner_wires = contour.get_topods_wires()
+        face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
     return face
 
 
@@ -1035,24 +1003,15 @@ def revolution_face_to_topods(ob, scale=1000):
 
     # Create topods face
     if not contour.has_wire:
-        return geom_to_topods_face(geom_surf)
+        face = geom_to_topods_face(geom_surf)
     else:
-        wires = contour.wires_dict
-
-    # Get topods wires
-    outer_wire = wires[-1].get_topods_wire()
-    inner_wires = []
-    for k in wires.keys():
-        if k != -1:
-            inner_wires.append(wires[k].get_topods_wire())
-
-    face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
+        outer_wire, inner_wires = contour.get_topods_wires()
+        face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
     return face
 
 
-def extrusion_face_to_topods(o, context, scale=1000):
+def extrusion_face_to_topods(ob, scale=1000):
     # Get attr
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
     dir_att = read_attribute_by_name(ob, "dir_extrusion", 1)[0]
     p_count = read_attribute_by_name(ob, "p_count_extrusion", 1)[0]
     segment_CP = read_attribute_by_name(ob, "CP_extrusion", p_count)
@@ -1064,7 +1023,7 @@ def extrusion_face_to_topods(o, context, scale=1000):
         ob, "clamped_periodic_extrusion", 2
     )
 
-    length = Vector(dir_att).length
+    length = Vector(dir_att).length * scale
 
     geom_segment = SP_Edge_export(
         {"CP": segment_CP, "weight": weight},
@@ -1079,7 +1038,7 @@ def extrusion_face_to_topods(o, context, scale=1000):
     ).geom
 
     # Create geom
-    dir = gp_Dir(dir_att[0], dir_att[1], dir_att[2])
+    dir = gp_Dir(*dir_att)
     geom_surf = Geom_SurfaceOfLinearExtrusion(geom_segment, dir)
 
     # Build trim contour
@@ -1091,26 +1050,19 @@ def extrusion_face_to_topods(o, context, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
-        scale=(1, 1),
+        scale=(1, 2),
     )
 
     # Create topods face
     if not contour.has_wire:
         u_min, u_max = geom_segment.FirstParameter(), geom_segment.LastParameter()
-        v_min, v_max = 0.0, length * scale  # Extrusion length
+        v_min, v_max = 0.0, length  # Extrusion length
         face = BRepBuilderAPI_MakeFace(
             geom_surf, u_min, u_max, v_min, v_max, 1e-6
         ).Face()
     else:
-        wires = contour.wires_dict
-        outer_wire = wires[-1].get_topods_wire()
-        inner_wires = []
-        for k in wires.keys():
-            if k != -1:
-                inner_wires.append(wires[k].get_topods_wire())
-
+        outer_wire, inner_wires = contour.get_topods_wires()
         face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
-
     return face
 
 
@@ -1328,6 +1280,7 @@ class ShapeHierarchy_export:
         self.scale = scale
         self.sew = sew
         self.sew_tolerance = sew_tolerance
+        self.depsgraph = context.evaluated_depsgraph_get()
 
         objs, shapes, empties, instances, compounds = self.create_shape_hierarchy(
             context.scene.collection
@@ -1341,8 +1294,6 @@ class ShapeHierarchy_export:
         self.obj_shapes = {}  # {obj: shape}
         for i, o in enumerate(objs):
             self.obj_shapes[o] = shapes[i]
-
-        self.depsgraph = context.evaluated_depsgraph_get()
 
     def create_shape_hierarchy(self, parent):
         objs, shapes, empties, instances, compounds = [], [], [], [], []
@@ -1386,7 +1337,7 @@ class ShapeHierarchy_export:
                             self.context.view_layer.active_layer_collection.collection.objects.link(
                                 o_new
                             )
-                        
+
                         # bpy.context.view_layer.update()
                         depsgraph = self.context.evaluated_depsgraph_get()
 
@@ -1415,7 +1366,7 @@ class ShapeHierarchy_export:
 
                     # Standard shape
                     case _:
-                        
+
                         s = blender_object_to_topods_shapes(
                             self.depsgraph,
                             o,

@@ -1012,7 +1012,7 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
         MESHER_NAMES[SP_obj_type.PLANE],
         {
             "Orient": True,
-            "Flip Normal": topods_face.Orientation() != TopAbs_REVERSED,
+            # "Flip Normal": topods_face.Orientation() == TopAbs_REVERSED, # to investigate further
             "Resolution": resolution * 2,
         },
         True,

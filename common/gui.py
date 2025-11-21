@@ -17,7 +17,7 @@ class SP_PT_MainPanel(bpy.types.Panel):
     bl_label = "Surface Psycho"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Item"
+    bl_category = "Surface Psycho"
 
     def draw(self, context):
         if context.mode == "OBJECT":
@@ -120,10 +120,10 @@ class SP_PT_EditPanel(bpy.types.Panel):
 
             # Exact normals
             row = self.layout.row()
-            row.label(text="Exact Normals")
+            row.label(text="Normals")
             sub = row.row(align=True)
-            sub.operator("object.sp_enable_exact_normals", text="Enable")
-            sub.operator("object.sp_disable_exact_normals", text="Disable")
+            sub.operator("object.sp_enable_exact_normals", text="Exact")
+            sub.operator("object.sp_disable_exact_normals", text="Fast")
 
             # Conversions
             col = self.layout.column()

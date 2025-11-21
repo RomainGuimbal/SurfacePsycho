@@ -2,7 +2,6 @@ import bpy
 from pathlib import Path
 import re
 import uuid
-import argparse
 import sys
 
 FILE_PATH = Path(bpy.data.filepath)
@@ -143,7 +142,7 @@ def replace_all_instances_of_node_group(target_node_group_name, new_node_group_n
         return -1
 
 
-def append_by_name(filepath, asset_names, asset_type="node_groups"):
+def append_by_name(path, asset_names, asset_type="node_groups"):
     # Determine which data block to access
     datablock_path = {
         "node_groups": "node_groups",
@@ -152,7 +151,7 @@ def append_by_name(filepath, asset_names, asset_type="node_groups"):
     }.get(asset_type, "node_groups")
 
     # link = False parce que link = True ne conserve pas les asset_data
-    with bpy.data.libraries.load(filepath, link=False, assets_only=True) as (
+    with bpy.data.libraries.load(path, link=False, assets_only=True) as (
         data_from,
         data_to,
     ):
@@ -225,6 +224,7 @@ def replace_duplicates():
     for ng in bpy.data.node_groups:
         if ng.name[-4] == ".":
             duplicated_list.append(ng.name[:-4])
+            print(ng.name)
     duplicated_groups = set(duplicated_list)
 
     for d in duplicated_groups:
@@ -235,7 +235,8 @@ def remove_fake_user_node_groups():
     for ng in bpy.data.node_groups:
         if ng.use_fake_user:
             ng.use_fake_user = False
-    
+
+
 ############################################################################################
 ############################################################################################
 ############################################################################################
@@ -248,11 +249,11 @@ def remove_fake_user_node_groups():
 ################################
 
 # PROBE
-filepath_probe = "//..\..\Principal curvature.blend"
+path_probe = "//..\..\Principal curvature.blend"
 obj_probe = {"SP - Curvatures Probe"}
 
 # CURVE
-filepath_curve_flat = "//..\..\SP - Curve and FlatPatch.blend"
+path_curve_flat = "//..\..\SP - Curve and FlatPatch.blend"
 obj_curve_flat = {
     "FlatPatch",
     "PsychoCurve",
@@ -296,12 +297,13 @@ gr_curve_flat = {
 }
 
 # BEZIER SURF
-filepath_surf = "//..\..\SP - Bezier surface.blend"
+path_surf = "//..\..\SP - Bezier surface.blend"
 obj_surf = {
     "Bezier Patch",
     "Internal Curve For Patch",
 }
 gr_surf = {
+    # "SP - Bezier Patch Meshing",
     "SP - Auto Midpoints Linear",
     "SP - Blend Surfaces",
     "SP - Connect Bezier Patch",
@@ -329,13 +331,12 @@ gr_surf = {
 
 
 # NURBS
-filepath_nurbs = "//..\..\SP - NURBS.blend"
+path_nurbs = "//..\..\SP - NURBS.blend"
 obj_nurbs = {"NURBS Patch"}
 gr_nurbs = {
     "SP - NURBS Patch Meshing",
     "SP - NURBS Weighting",
     "SP - Set Knot NURBS Patch",
-    "SP - NURBS to Bezier Patch [Naive slow]",
     "SP - Crop or Extend Patch",
     "SP - Insert Knot NURBS Patch",
     "SP - Curvature Analysis",
@@ -347,7 +348,7 @@ gr_nurbs = {
 
 
 # OTHER
-filepath_other = "//..\..\SP - Other Primitives.blend"
+path_other = "//..\..\SP - Other Primitives.blend"
 # obj_other={""}
 gr_other = {
     "SP - Cylindrical Meshing",
@@ -361,31 +362,40 @@ gr_other = {
 }
 
 # COMPOUND
-filepath_compound = "//..\..\SP - Compound.blend"
+path_compound = "//..\..\SP - Compound.blend"
 gr_compound = {
     "SP - Compound Meshing",
-    "SP - SubD to Bezier",
+    "SP - SubD to Compound",
     "SP - Poly to Compound",
     "SP - Text to Compound",
     "SP - Set Patch Intance Type",
     "SP - Split to Patches",
     "SP - Intersect Bezier Patches",
     "SP - Extrude FlatPatch",
-
+    "SP - Interval Curves",
+    "SP - NURBS to Bezier Patches",
 }
 
 # SHAPES
-filepath_preset = "//..\..\SP - Shapes presets.blend"
-obj_preset = {"Quadaratic Dome", "Cubic Dome", "Torus", "Sphere", "Cone", "Cube", "Cylinder"}
-coll_preset = {
+path_preset = "//..\..\SP - Shapes presets.blend"
+obj_preset = {
+    "Quadaratic Dome",
+    "Cubic Dome",
+    "Torus",
+    "Sphere",
+    "Cone",
+    "Cube",
+    "Cylinder",
+    "Tube",
     "Slab",
+    "Frame",
+    "Oblong Tube",
+    "Oblong Slab",
+}
+coll_preset = {
     "Corner",
     "Step",
     "Thick Arch",
-    "Tube",
-    "Frame",
-    "Oblong Extruded",
-    "Oblong Extruded Hollow",
 }
 
 
@@ -428,7 +438,7 @@ if __name__ == "__main__":
     isfast = False
     argv = sys.argv
     if "--" in argv:
-        argv = argv[argv.index("--") + 1:]
+        argv = argv[argv.index("--") + 1 :]
         isfast = "--fast" in argv
     else:
         argv = []
@@ -460,33 +470,32 @@ if __name__ == "__main__":
     )
     print("\n______________________________________________________\n")
     print("Appending Groups..")
-    append_by_name(filepath_curve_flat, gr_curve_flat, "node_groups")
-    append_by_name(filepath_surf, gr_surf, "node_groups")
-    append_by_name(filepath_nurbs, gr_nurbs, "node_groups")
-    append_by_name(filepath_other, gr_other, "node_groups")
-    append_by_name(filepath_compound, gr_compound, "node_groups")
+    append_by_name(path_curve_flat, gr_curve_flat, "node_groups")
+    append_by_name(path_surf, gr_surf, "node_groups")
+    append_by_name(path_nurbs, gr_nurbs, "node_groups")
+    append_by_name(path_other, gr_other, "node_groups")
+    append_by_name(path_compound, gr_compound, "node_groups")
 
     print("\n______________________________________________________\n")
     print("Appending Objects..")
-    append_by_name(filepath_probe, obj_probe, "objects")
-    append_by_name(filepath_curve_flat, obj_curve_flat, "objects")
-    append_by_name(filepath_surf, obj_surf, "objects")
-    append_by_name(filepath_nurbs, obj_nurbs, "objects")
-    append_by_name(filepath_preset, obj_preset, "objects")
+    append_by_name(path_probe, obj_probe, "objects")
+    append_by_name(path_curve_flat, obj_curve_flat, "objects")
+    append_by_name(path_surf, obj_surf, "objects")
+    append_by_name(path_nurbs, obj_nurbs, "objects")
+    append_by_name(path_preset, obj_preset, "objects")
 
     print("\n______________________________________________________\n")
     print("Appending Collections..")
-    append_by_name(filepath_preset, coll_preset, "collections")
+    append_by_name(path_preset, coll_preset, "collections")
 
-    if not isfast :
+    if not isfast:
         print("\n______________________________________________________\n")
         print("Make Local..\n")
 
         bpy.ops.object.make_local(type="ALL")
-        
+
         print("\n______________________________________________________\n")
         print("Replace duplicates..")
-        
 
         replace_duplicates()
 
@@ -494,7 +503,9 @@ if __name__ == "__main__":
         print("Clear unused data..")
 
         remove_fake_user_node_groups()
-        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=False, do_recursive=True)
+        bpy.ops.outliner.orphans_purge(
+            do_local_ids=True, do_linked_ids=False, do_recursive=True
+        )
 
     #    profiler.disable()
     #    profiler.print_stats()

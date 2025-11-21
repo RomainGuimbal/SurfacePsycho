@@ -155,8 +155,8 @@ def sp_type_of_object(o: bpy.types.Object) -> SP_obj_type:
 
     # Standard
     for m in reversed(o.modifiers):
-        if m.type == "NODES" and m.node_group :
-            for k,v in MESHER_NAMES.items() :
+        if m.type == "NODES" and m.node_group:
+            for k, v in MESHER_NAMES.items():
                 if v == m.node_group.name[:-4] or v == m.node_group.name:
                     return k
 
@@ -164,49 +164,37 @@ def sp_type_of_object(o: bpy.types.Object) -> SP_obj_type:
     return None
 
 
-def read_attribute_by_name(object, name, len_attr=None):
+def read_attribute_by_name(object, name, len_attr=None) -> np.array:
     att = object.data.attributes[name]
     type = att.data_type
+    len_raw = len(att.data)
+    if len_attr is None:
+        len_attr = len_raw
     match type:
         case "BOOLEAN":
-            len_raw = len(att.data)
-            if len_attr == None:
-                len_attr = len_raw
-            attribute = np.zeros(len_raw)
+            attribute = np.zeros(len_raw, dtype=bool)
             att.data.foreach_get("value", attribute)
             attribute = attribute[0:len_attr]
-            attribute = [bool(a) for a in attribute]
+            attribute = np.array([bool(a) for a in attribute])
 
         case "INT":
-            len_raw = len(att.data)
-            if len_attr == None:
-                len_attr = len_raw
             attribute = np.zeros(len_raw)
             att.data.foreach_get("value", attribute)
             attribute = attribute[0:len_attr]
-            attribute = [int(a) for a in attribute]
+            attribute = np.array([int(a) for a in attribute])
 
         case "FLOAT":
-            len_raw = len(att.data)
-            if len_attr == None:
-                len_attr = len_raw
-            attribute = np.zeros(len_raw)
+            attribute = np.zeros(len_raw, dtype=float)
             att.data.foreach_get("value", attribute)
             attribute = attribute[0:len_attr]
 
         case "FLOAT_VECTOR":
-            len_raw = len(att.data)
-            if len_attr == None:
-                len_attr = len_raw
-            attribute = np.empty(3 * len_raw)
+            attribute = np.empty(3 * len_raw, dtype=float)
             att.data.foreach_get("vector", attribute)
             attribute = attribute.reshape((-1, 3))[0:len_attr]
 
         case "FLOAT2":
-            len_raw = len(att.data)
-            if len_attr == None:
-                len_attr = len_raw
-            attribute = np.empty(2 * len_raw)
+            attribute = np.empty(2 * len_raw, dtype=float)
             att.data.foreach_get("vector", attribute)
             attribute = attribute.reshape((-1, 2))[0:len_attr]
 
@@ -338,13 +326,15 @@ def change_GN_modifier_settings(modifier, settings_dict):
             item = modifier.node_group.interface.items_tree[key]
             if isinstance(item, bpy.types.NodeTreeInterfaceSocket):
                 id = item.identifier
-                
+
             elif isinstance(item, bpy.types.NodeTreeInterfacePanel):
                 for item in modifier.node_group.interface.items_tree:
-                    if item.name == key and isinstance(item, bpy.types.NodeTreeInterfaceSocket):
+                    if item.name == key and isinstance(
+                        item, bpy.types.NodeTreeInterfaceSocket
+                    ):
                         id = item.identifier
                         break
-                    
+
             modifier[id] = value
         except KeyError:
             raise Exception("Modifier settings failed to apply")
@@ -670,10 +660,10 @@ def append_multiple_node_groups(ng_names: set, remove_asset_data=True):
     with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
         # Filter the node groups that exist in the asset file
         valid_node_groups = [name for name in ng_names if name in data_from.node_groups]
-        
+
         # Append the valid node groups
         data_to.node_groups = valid_node_groups
-        
+
     if remove_asset_data:
         for ng in data_to.node_groups:
             remove_preview_image(ng)
@@ -699,7 +689,7 @@ def add_node_group_modifier_from_asset(
     modifier.node_group = bpy.data.node_groups.get(asset_name)
     modifier.use_pin_to_last = pin
 
-    if modifier.node_group == None :
+    if modifier.node_group == None:
         raise ValueError(f"Node group '{asset_name}' not found")
 
     # Change settings
@@ -1040,8 +1030,8 @@ def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
     # Create vertices
     for i in range(vertex_count_u):
         for j in range(vertex_count_v):
-            x = j * step_x - 1.  # Subtract 1 to center
-            y = i * step_y - 1.  # Subtract 1 to center
+            x = j * step_x - 1.0  # Subtract 1 to center
+            y = i * step_y - 1.0  # Subtract 1 to center
             bm.verts.new((x, y, 0))
 
     bm.verts.ensure_lookup_table()
@@ -1079,11 +1069,11 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
     return split_attr
 
 
-def remove_preview_image(ng : bpy.types.GeometryNodeTree):
+def remove_preview_image(ng: bpy.types.GeometryNodeTree):
     # Somhow broken D:
 
     override = bpy.context.copy()
-    override['id'] = ng
+    override["id"] = ng
 
     # Call the remove preview operator with the override
     with bpy.context.temp_override(**override):
@@ -1091,3 +1081,34 @@ def remove_preview_image(ng : bpy.types.GeometryNodeTree):
             bpy.ops.ed.lib_id_remove_preview()
             return True
     return False
+
+
+def rebound(verts, curr_bounds, new_bounds):
+    curr_min_u, curr_max_u, curr_min_v, curr_max_v = (
+        curr_bounds[0] if curr_bounds[0] != None else 0.0,
+        curr_bounds[1] if curr_bounds[1] != None else 0.0,
+        curr_bounds[2] if curr_bounds[2] != None else 0.0,
+        curr_bounds[3] if curr_bounds[3] != None else 0.0,
+    )
+    # Zero and not 1, because 0 range is ignored (as intended)
+
+    new_min_u, new_max_u, new_min_v, new_max_v = (
+        new_bounds[0] if new_bounds[0] != None else 0.0,
+        new_bounds[1] if new_bounds[1] != None else 1.0,
+        new_bounds[2] if new_bounds[2] != None else 0.0,
+        new_bounds[3] if new_bounds[3] != None else 1.0,
+    )
+
+    curr_range_u = curr_max_u - curr_min_u
+    curr_range_v = curr_max_v - curr_min_v
+
+    new_range_u = new_max_u - new_min_u
+    new_range_v = new_max_v - new_min_v
+
+    for v in verts:
+        if curr_range_u != 0.0:
+            v.x = ((v.x - curr_min_u) / curr_range_u) * new_range_u + new_min_u
+        if curr_range_v != 0.0:
+            v.y = ((v.y - curr_min_v) / curr_range_v) * new_range_v + new_min_v
+
+    return verts
