@@ -931,9 +931,9 @@ def cylinder_face_to_topods(ob, scale=1000):
 
     # Create geom
     axis3 = gp_Ax3(
-        gp_Pnt(origin[0] * scale, origin[1] * scale, origin[2] * scale),
-        gp_Dir(dir1[0], dir1[1], dir1[2]),
-        gp_Dir(dir2[0], dir2[1], dir2[2]),
+        gp_Pnt(*(origin * scale)),
+        gp_Dir(*dir1),
+        gp_Dir(*dir2),
     )
     geom_surf = Geom_CylindricalSurface(axis3, radius * scale)
 
@@ -946,12 +946,14 @@ def cylinder_face_to_topods(ob, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
-        scale=(length * scale, 1),
+        scale=(1, length * scale),
     )
 
     # Create topods face
     if not contour.has_wire:
-        face = geom_to_topods_face(geom_surf)
+        face = BRepBuilderAPI_MakeFace(
+            geom_surf, 0, 2*math.pi, 0, length*scale, 1e-6
+        ).Face()
     else:
         outer_wire, inner_wires = contour.get_topods_wires()
         face = geom_to_topods_face(geom_surf, outer_wire, inner_wires)
