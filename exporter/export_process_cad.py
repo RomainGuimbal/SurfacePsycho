@@ -1436,18 +1436,19 @@ def blender_instances_to_topods_instances(
     context, hierarchy, scale=1000, sew_tolerance=1e-1
 ):
     sewed_shapes_list = []
+    depsgraph = context.evaluated_depsgraph_get()
 
     for ins in hierarchy.instances:
         swd = blender_instance_to_topods_instance(
-            ins, context, hierarchy, scale, sew_tolerance
+            ins, depsgraph, hierarchy, scale, sew_tolerance
         )
+        sewed_shapes_list.append(swd)
 
-    sewed_shapes_list.append(swd)
     return sewed_shapes_list
 
 
 def blender_instance_to_topods_instance(
-    ins, context, hierarchy, scale=1000, sew=True, sew_tolerance=1e-1
+    ins, depsgraph, hierarchy, scale=1000, sew=True, sew_tolerance=1e-1
 ):
     if ins.scale != Vector((1.0, 1.0, 1.0)):
         print(f"Scale not 1, instance is realized (Scale = {ins.scale})")
@@ -1460,8 +1461,6 @@ def blender_instance_to_topods_instance(
     # comp = TopoDS_Compound()
     # builder.MakeCompound(comp)
     # is_nested = False
-
-    depsgraph = context.evaluated_depsgraph_get()
 
     # add obj of child collections (doesn't support nested instances)
     for col in ins.instance_collection.children_recursive:
