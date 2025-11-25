@@ -185,13 +185,21 @@ class SP_Edge_export:
     def bspline(self):
         isclamped = self.seg_attrs["isclamped"][0] if not None else True
         iscyclic = self.seg_attrs["isperiodic"][0] if not None else False
-        is_unclamped_periodic = iscyclic and not isclamped
         degree = self.seg_attrs["degree"]
 
-        if is_unclamped_periodic:
-            self.p_count -= 1
-            self.vec_cp = self.vec_cp[:-1]
-            self.weight = self.weight[:-1]
+        if iscyclic :
+            if isclamped:
+                self.vec_cp = list(self.vec_cp)
+                self.weight = list(self.weight)
+                self.vec_cp.append(self.vec_cp[0])
+                self.weight.append(self.weight[0])
+                # self.vec_cp[-1] = self.vec_cp[0]
+                # self.weight[-1] = self.weight[0]
+            else :
+                self.vec_cp = list(self.vec_cp)
+                self.weight = list(self.weight)
+                self.vec_cp.extend(self.vec_cp[0:degree])
+                self.weight.extend(self.weight[0:degree])
 
         if self.is2D:
             segment_point_array = vec_list_to_step_cartesian2d(self.vec_cp)
@@ -207,10 +215,7 @@ class SP_Edge_export:
             tcol_mult = int_list_to_tcolstd_H(self.mult[:knot_length])
         else:
             raise ValueError("Missing knot on NURBS segment")
-        #     knots, mults = auto_knot_and_mult(
-        #         self.p_count, degree, isclamped, is_unclamped_periodic
-        #     )
-
+        
         # Create the STEP B-spline curve
         name = TCollection_HAsciiString("bspline_segment")
 
@@ -321,32 +326,8 @@ class SP_Edge_export:
             ).Edge()
 
 
-def auto_knot_and_mult(p_count, degree, isclamped=True, is_unclamped_periodic=False):
-    if isclamped:
-        knot_length = p_count - degree + 1
-        knot_att = [r / (knot_length - 1) for r in range(knot_length)]
-        mult_att = [degree + 1] + [1] * (knot_length - 2) + [degree + 1]
-    elif is_unclamped_periodic:
-        knot_length = p_count + 1
-        knot_att = list(range(-degree, p_count + 1 + degree))
-        mult_att = [1] * knot_length
-    else:
-        knot_length = p_count + degree + 1
-        knot_att = list(
-            range(knot_length)
-        )  # [r/(knot_length-1) for r in range(knot_length)]
-        mult_att = [1] * knot_length
-
-    knot = TColStd_Array1OfReal(1, knot_length)
-    mult = TColStd_Array1OfInteger(1, knot_length)
-    for i in range(knot_length):
-        knot.SetValue(i + 1, knot_att[i])
-        mult.SetValue(i + 1, mult_att[i])
-
-    return knot, mult
-
-
 def get_patch_knot_and_mult(
+        
     ob,
 ):
     try:
@@ -415,11 +396,12 @@ class SP_Wire_export:
 
         # Domains :
         ## Is closed : per wire
-        ## Is periodic : per segment
+        ## Is periodic/cyclic : per segment
 
         self.isclosed = sum([s - 1 for s in self.segs_p_counts]) == len(self.CP) or (
             sum(self.isperiodic_per_seg) > 0
         )
+
 
         p_count = 0  # (total)
         p_count_accumulate = self.segs_p_counts[:]
@@ -436,7 +418,8 @@ class SP_Wire_export:
         ]
         # self.p_count_accumulate = p_count_accumulate[:len(self.segs_p_counts)]
 
-    def split_cp_aligned_attr_per_seg(self, attr) -> list[list]:
+    def split_cp_aligned_attr_per_seg(self, attr : list) -> list[list]:
+        attr = list(attr)
         split_attr = []
         inf = 0
         sup = self.segs_p_counts[0]
@@ -468,8 +451,8 @@ class SP_Wire_export:
                     "isclamped": self.isclamped_per_seg,
                     "isperiodic": self.isperiodic_per_seg,
                     "type": self.segs_type_seg_aligned[i],
-                    "knot": self.knot[i],
-                    "mult": self.mult[i],
+                    "knot": self.knot[i] if len(self.knot) > i else None,
+                    "mult": self.mult[i] if len(self.mult) > i else None,
                 },
                 geom_plane=self.geom_plane,
                 geom_surf=self.geom_surf,
@@ -1112,13 +1095,16 @@ def curve_to_topods(ob, scale=1000):
     segs_p_counts = segs_p_counts[:segment_count]
 
     # is closed
-    is_closed = read_attribute_by_name(ob, "IsPeriodic", 1)[0]
+    is_closed = read_attribute_by_name(ob, "closed", 1)[0]
 
     # One point less if closed
     total_p_count -= is_closed and segment_count > 1
 
     # is clamped
     is_clamped = read_attribute_by_name(ob, "IsClamped", 1)[0]
+
+    # is periodic
+    is_periodic = read_attribute_by_name(ob, "IsPeriodic", 1)[0]
 
     # Type
     try:
@@ -1155,7 +1141,7 @@ def curve_to_topods(ob, scale=1000):
         {
             "p_count": segs_p_counts,
             "degree": segs_degrees,
-            "isperiodic": [is_closed] * segment_count,
+            "isperiodic": [is_periodic] * segment_count,
             "isclamped": [is_clamped] * segment_count,
             "type": type_att,
             "knot": knot_per_seg,

@@ -1093,11 +1093,21 @@ def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
 
 
 def split_by_index(index: list[int], attribute: list) -> list[list]:
+    #treat 0 case (not clean :/)
+    last_zero = 0
+    try :
+        last_zero = index.index(1)
+    except ValueError:
+        pass
+        
     split_attr = []
     start = 0
     end = 0
     for i in set(index):
-        end += index.count(i)
+        if i == 0 and last_zero != 0:
+            end = last_zero
+        else:
+            end += index.count(i)
         split_attr.append(attribute[start:end])
         start = end
     return split_attr
