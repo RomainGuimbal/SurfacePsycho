@@ -1103,7 +1103,7 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
     split_attr = []
     start = 0
     end = 0
-    for i in set(index):
+    for i in list(dict.fromkeys(index)):
         if i == 0 and last_zero != 0:
             end = last_zero
         else:
@@ -1111,6 +1111,38 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
         split_attr.append(attribute[start:end])
         start = end
     return split_attr
+
+
+def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
+    #treat 0 case (not clean :/)
+    last_zero = 0
+    try :
+        last_zero = index.index(1)
+    except ValueError:
+        pass
+        
+    split_attr = {}
+    start = 0
+    end = 0
+    for i in list(dict.fromkeys(index)):
+        if i == 0 and last_zero != 0:
+            end = last_zero
+        else:
+            end += index.count(i)
+        split_attr[i] = attribute[start:end]
+        start = end
+    return split_attr
+
+def dict_to_list_missing_index_filled(dict: dict) -> list:
+    min_index = min(dict.keys())
+    max_index = max(dict.keys())
+    list_attr = []
+    for i in range(min_index, max_index + 1):
+        if i in dict:
+            list_attr.append(dict[i])
+        else:
+            list_attr.append([])
+    return list_attr
 
 
 def remove_preview_image(ng: bpy.types.GeometryNodeTree):

@@ -97,7 +97,7 @@ class SP_Edge_export:
     def __init__(
         self,
         cp_aligned_attrs: dict[str:list],
-        seg_attrs: dict[str:float],
+        seg_aligned_attrs: dict[str:float],
         is2D=False,
         geom_surf=None,
         geom_plane=None,
@@ -107,13 +107,13 @@ class SP_Edge_export:
         self.weight = cp_aligned_attrs["weight"]
         self.gp_cp = []
         self.p_count = len(self.vec_cp)
-        self.seg_attrs = seg_attrs
+        self.seg_aligned_attrs = seg_aligned_attrs
         self.cp_aligned_attrs = cp_aligned_attrs
         self.is2D = is2D
         self.geom_plane = geom_plane
         self.single_seg = single_seg
-        self.knot = seg_attrs["knot"]
-        self.mult = seg_attrs["mult"]
+        self.knot = seg_aligned_attrs["knot"]
+        self.mult = seg_aligned_attrs["mult"]
 
         # Generate Geom
         self.format_cp()
@@ -139,8 +139,8 @@ class SP_Edge_export:
                 self.gp_cp = [gp_Pnt(v[0], v[1], v[2]) for v in self.vec_cp]
 
     def get_type(self):
-        if "type" in self.seg_attrs.keys():
-            return SP_segment_type(self.seg_attrs["type"])
+        if "type" in self.seg_aligned_attrs.keys():
+            return SP_segment_type(self.seg_aligned_attrs["type"])
         else:
             raise ValueError("Missing segment type")
 
@@ -183,9 +183,9 @@ class SP_Edge_export:
             self.geom = Geom_BezierCurve(segment_point_array)
 
     def bspline(self):
-        isclamped = self.seg_attrs["isclamped"][0] if not None else True
-        iscyclic = self.seg_attrs["isperiodic"][0] if not None else False
-        degree = self.seg_attrs["degree"]
+        isclamped = self.seg_aligned_attrs["isclamped"][0] if not None else True
+        iscyclic = self.seg_aligned_attrs["isperiodic"][0] if not None else False
+        degree = self.seg_aligned_attrs["degree"]
 
         if iscyclic :
             if isclamped:
@@ -404,7 +404,7 @@ class SP_Wire_export:
 
 
         p_count = 0  # (total)
-        p_count_accumulate = self.segs_p_counts[:]
+        p_count_accumulate = self.segs_p_counts.copy()
         for i, p in enumerate(self.segs_p_counts):
             if p > 0:
                 p_count += p - 1
@@ -545,7 +545,7 @@ class SP_Contour_export:
             self.wir_count = len(self.wire_index_order)
             self.seg_count_per_wire = self.seg_count_per_wire[: self.wir_count]
 
-            # Get segment count
+            # Get segment count (not sum technique because mirrors...)
             self.segment_count = 0
             for p in self.segs_p_counts:
                 if p > 0:
@@ -629,6 +629,15 @@ class SP_Contour_export:
                 isperiodic = [False] * self.segment_count
             isperiodic_per_wire = self.split_seg_attr_per_wire(isperiodic)
 
+            ## Knot
+            knot = read_attribute_by_name(ob, "Knot")
+            mult = read_attribute_by_name(ob, "Multiplicity")
+            knot_segment = list(read_attribute_by_name(ob, "knot_segment"))
+            knot_per_seg = dict_to_list_missing_index_filled(split_by_index_dict(knot_segment, knot))
+            mult_per_seg = dict_to_list_missing_index_filled(split_by_index_dict(knot_segment, mult))
+            knot_per_wire = self.split_seg_attr_per_wire(knot_per_seg)
+            mult_per_wire = self.split_seg_attr_per_wire(mult_per_seg)
+    
             # Build wires
             self.wires_dict = {}
             for w in set(self.wire_index):
@@ -667,21 +676,27 @@ class SP_Contour_export:
 
         # Prepare dict
         attr_dict_per_wire = {}
-        for w in set(self.wire_index):
-            attr_dict_per_wire[w] = []
+        # for w in set(self.wire_index):
+        #     attr_dict_per_wire[w] = []
 
-        # Itterate over segments
-        for i, att_val in enumerate(attr[: self.segment_count]):
-            seg_added += 1
-            attr_dict_per_wire[wir_key].append(att_val)
+        # # Itterate over segments
+        # for i, att_val in enumerate(attr[: self.segment_count]):
+        #     seg_added += 1
+        #     attr_dict_per_wire[wir_key].append(att_val)
 
-            if (
-                seg_added >= self.seg_count_per_wire[wir_i]
-                and wir_i < self.wir_count - 1
-            ):
-                wir_i += 1
-                wir_key = self.wire_index_order[wir_i]
-                seg_added = 0
+        #     if (
+        #         seg_added >= self.seg_count_per_wire[wir_i]
+        #         and wir_i < self.wir_count - 1
+        #     ):
+        #         wir_i += 1
+        #         wir_key = self.wire_index_order[wir_i]
+        #         seg_added = 0
+        start = 0
+        end = 0
+        for i,w in enumerate(self.wire_index_order):
+            end += self.seg_count_per_wire[i]
+            attr_dict_per_wire[w] = attr[start:end]
+            start = end
 
         return attr_dict_per_wire
 
