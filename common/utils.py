@@ -37,7 +37,6 @@ from OCP.TopoDS import (
     TopoDS_Shell,
     TopoDS_Solid,
 )
-from OCP.TColStd import TColStd_Array1OfReal
 from OCP.gp import (
     gp_Pnt,
     gp_Quaternion,
@@ -59,11 +58,13 @@ from OCP.TColStd import (
     TColStd_HArray1OfReal,
     TColStd_HArray1OfInteger,
 )
+from OCP.TCollection import TCollection_HAsciiString
 from OCP.TDataStd import TDataStd_Name
 from OCP.TDF import TDF_Label
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorGen
 from OCP.Quantity import Quantity_Color
 from OCP.BRepCheck import BRepCheck_Analyzer
+from OCP.StepGeom import StepGeom_CartesianPoint, StepGeom_HArray1OfCartesianPoint
 import OCP.TopAbs as TopAbs
 import OCP.GeomAbs as GeomAbs
 
@@ -568,12 +569,29 @@ def gp_list_to_arrayofpnt(array: list):
     return tcol
 
 
-def float_list_to_tcolstd(array: list):
+def float_list_to_tcolstd(array: list[float]):
     tcol = TColStd_Array1OfReal(1, len(array))
     for i in range(len(array)):
         tcol.SetValue(i + 1, array[i])
     return tcol
 
+def int_list_to_tcolstd(array: list[int]):
+    tcol = TColStd_Array1OfInteger(1, len(array))
+    for i in range(len(array)):
+        tcol.SetValue(i + 1, array[i])
+    return tcol
+
+def float_list_to_tcolstd_H(array: list[float]):
+    tcol = TColStd_HArray1OfReal(1, len(array))
+    for i in range(len(array)):
+        tcol.SetValue(i + 1, array[i])
+    return tcol
+
+def int_list_to_tcolstd_H(array: list[int]):
+    tcol = TColStd_HArray1OfInteger(1, len(array))
+    for i in range(len(array)):
+        tcol.SetValue(i + 1, array[i])
+    return tcol
 
 def vec_list_to_gp_pnt2d(array: list):
     tcol = TColgp_Array1OfPnt2d(1, len(array))
@@ -587,6 +605,22 @@ def vec_list_to_gp_pnt(array: list):
     for i in range(len(array)):
         tcol.SetValue(i + 1, gp_Pnt(array[i][0], array[i][1], array[i][2]))
     return tcol
+
+def vec_list_to_step_cartesian2d(array: list):
+    step_array = StepGeom_HArray1OfCartesianPoint(1, len(array))
+    for i in range(len(array)):
+        p = StepGeom_CartesianPoint()
+        p.Init2D(TCollection_HAsciiString("cp"), array[i][0], array[i][1])
+        step_array.SetValue(i + 1, p)
+    return step_array
+
+def vec_list_to_step_cartesian(array: list):
+    step_array = StepGeom_HArray1OfCartesianPoint(1, len(array))
+    for i in range(len(array)):
+        p = StepGeom_CartesianPoint()
+        p.Init3D(TCollection_HAsciiString("cp"), *(array[i]))
+        step_array.SetValue(i + 1, p)
+    return step_array
 
 
 def blender_to_gp_vec(vec: Vector):
@@ -1060,12 +1094,12 @@ def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
 
 def split_by_index(index: list[int], attribute: list) -> list[list]:
     split_attr = []
-    for i, a in enumerate(attribute):
-        if split_attr[index[i]] == None:
-            split_attr[index[i]] = [a]
-        else:
-            split_attr[index[i]].append(a)
-
+    start = 0
+    end = 0
+    for i in set(index):
+        end += index.count(i)
+        split_attr.append(attribute[start:end])
+        start = end
     return split_attr
 
 

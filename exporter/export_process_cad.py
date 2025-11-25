@@ -37,7 +37,6 @@ from OCP.Geom import (
     Geom_BSplineSurface,
     Geom_Plane,
     Geom_BezierCurve,
-    Geom_BSplineCurve,
     Geom_ToroidalSurface,
     Geom_ConicalSurface,
     Geom_CylindricalSurface,
@@ -79,6 +78,15 @@ from OCP.TopoDS import (
     TopoDS_Compound,
 )
 
+from OCP.StepGeom import (
+    StepGeom_BSplineCurveWithKnotsAndRationalBSplineCurve,
+    StepGeom_BSplineCurveForm,
+    StepGeom_KnotType,
+)
+from OCP.StepData import StepData_Logical, StepData_Factors
+from OCP.StepToGeom import StepToGeom
+from OCP.TCollection import TCollection_HAsciiString
+
 
 ##############################
 ##    Converter classes     ##
@@ -96,6 +104,7 @@ class SP_Edge_export:
         single_seg=False,
     ):
         self.vec_cp = cp_aligned_attrs["CP"]
+        self.weight = cp_aligned_attrs["weight"]
         self.gp_cp = []
         self.p_count = len(self.vec_cp)
         self.seg_attrs = seg_attrs
@@ -103,6 +112,8 @@ class SP_Edge_export:
         self.is2D = is2D
         self.geom_plane = geom_plane
         self.single_seg = single_seg
+        self.knot = seg_attrs["knot"]
+        self.mult = seg_attrs["mult"]
 
         # Generate Geom
         self.format_cp()
@@ -173,59 +184,55 @@ class SP_Edge_export:
 
     def bspline(self):
         isclamped = self.seg_attrs["isclamped"][0] if not None else True
-        is_unclamped_periodic = (
-            self.seg_attrs["isperiodic"] if not None else False
-        ) and not isclamped
+        iscyclic = self.seg_attrs["isperiodic"][0] if not None else False
+        is_unclamped_periodic = iscyclic and not isclamped
         degree = self.seg_attrs["degree"]
 
         if is_unclamped_periodic:
             self.p_count -= 1
             self.vec_cp = self.vec_cp[:-1]
-            self.gp_cp = self.gp_cp[:-1]
-            self.cp_aligned_attrs["weight"] = self.cp_aligned_attrs["weight"][:-1]
+            self.weight = self.weight[:-1]
 
         if self.is2D:
-            segment_point_array = vec_list_to_gp_pnt2d(self.vec_cp)
+            segment_point_array = vec_list_to_step_cartesian2d(self.vec_cp)
         else:
-            segment_point_array = gp_list_to_arrayofpnt(self.gp_cp)
+            segment_point_array = vec_list_to_step_cartesian(self.vec_cp)
 
-        tcol_weights = float_list_to_tcolstd(self.cp_aligned_attrs["weight"])
-        # TODO custom knot/mult per edge, no design yet
-        # try :
-        #     if isclamped :
-        #         knot_length = self.p_count - degree + 1
-        #     else :
-        #         knot_length = self.p_count + degree
+        tcol_weights = float_list_to_tcolstd_H(self.weight)
 
-        #     # knot
-        #     knot = float_list_to_tcolstd(read_attribute_by_name(ob, 'Knot', knot_length))
+        # Knot and Multiplicity
+        if self.knot is not None:
+            knot_length = sum(np.asarray(self.mult) > 0)
+            tcol_knot = float_list_to_tcolstd_H(self.knot[:knot_length])
+            tcol_mult = int_list_to_tcolstd_H(self.mult[:knot_length])
+        else:
+            raise ValueError("Missing knot on NURBS segment")
+        #     knots, mults = auto_knot_and_mult(
+        #         self.p_count, degree, isclamped, is_unclamped_periodic
+        #     )
 
-        #     # Multiplicities
-        #     mult = TColStd_Array1OfInteger(1, knot_length)
-        #     for j in range(knot_length):
-        #         if isclamped and (j == 0 or j == knot_length-1):
-        #             mult.SetValue(j+1, degree+1)
-        #         else :
-        #             mult.SetValue(j+1, 1)
-        # except Exception:
-        #    knot, mult = self.auto_knot_and_mult(degree, isclamped, is_unclamped_periodic)
+        # Create the STEP B-spline curve
+        name = TCollection_HAsciiString("bspline_segment")
 
-        knot, mult = auto_knot_and_mult(
-            self.p_count, degree, isclamped, is_unclamped_periodic
-        )
-
-        bspline_args = (
-            segment_point_array,
-            tcol_weights,
-            knot,
-            mult,
+        step_curve = StepGeom_BSplineCurveWithKnotsAndRationalBSplineCurve()
+        step_curve.Init(
+            name,
             degree,
-            is_unclamped_periodic,
+            segment_point_array,
+            StepGeom_BSplineCurveForm(5),
+            StepData_Logical(iscyclic),
+            StepData_Logical(False),
+            tcol_mult,
+            tcol_knot,
+            StepGeom_KnotType(1),
+            tcol_weights,
         )
+
+        # Convert to Geom
         if self.is2D:
-            self.geom = Geom2d_BSplineCurve(*bspline_args)
+            self.geom = StepToGeom.MakeBSplineCurve2d_s(step_curve, StepData_Factors())
         else:
-            self.geom = Geom_BSplineCurve(*bspline_args)
+            self.geom = StepToGeom.MakeBSplineCurve_s(step_curve, StepData_Factors())
 
     def circle_arc(self):
         if self.is2D:
@@ -342,7 +349,6 @@ def auto_knot_and_mult(p_count, degree, isclamped=True, is_unclamped_periodic=Fa
 def get_patch_knot_and_mult(
     ob,
 ):
-    # try:
     try:
         umult_att = read_attribute_by_name(ob, "Multiplicity U")
         u_length = sum(np.asarray(umult_att) > 0)
@@ -404,6 +410,8 @@ class SP_Wire_export:
         self.segs_degrees = seg_aligned_attrs["degree"]
         self.isclamped_per_seg = seg_aligned_attrs["isclamped"]
         self.isperiodic_per_seg = seg_aligned_attrs["isperiodic"]
+        self.knot = seg_aligned_attrs["knot"]
+        self.mult = seg_aligned_attrs["mult"]
 
         # Domains :
         ## Is closed : per wire
@@ -460,6 +468,8 @@ class SP_Wire_export:
                     "isclamped": self.isclamped_per_seg,
                     "isperiodic": self.isperiodic_per_seg,
                     "type": self.segs_type_seg_aligned[i],
+                    "knot": self.knot[i],
+                    "mult": self.mult[i],
                 },
                 geom_plane=self.geom_plane,
                 geom_surf=self.geom_surf,
@@ -647,6 +657,8 @@ class SP_Contour_export:
                         "isclamped": isclamped_per_wire[w],
                         "isperiodic": isperiodic_per_wire[w],
                         "type": type_att_per_wire[w],
+                        "knot": knot_per_wire[w],
+                        "mult": mult_per_wire[w],
                     },
                     geom_surf=geom_surf,
                     geom_plane=geom_plane,
@@ -952,7 +964,7 @@ def cylinder_face_to_topods(ob, scale=1000):
     # Create topods face
     if not contour.has_wire:
         face = BRepBuilderAPI_MakeFace(
-            geom_surf, 0, 2*math.pi, 0, length*scale, 1e-6
+            geom_surf, 0, 2 * math.pi, 0, length * scale, 1e-6
         ).Face()
     else:
         outer_wire, inner_wires = contour.get_topods_wires()
@@ -973,6 +985,12 @@ def revolution_face_to_topods(ob, scale=1000):
         ob, "clamped_periodic_revolution", 2
     )
 
+    # Get knot
+    mult = read_attribute_by_name(ob, "Multiplicity")
+    knot_length = int(sum(np.asarray(mult) > 0))
+    knot = read_attribute_by_name(ob, "Knot", knot_length)
+    mult = mult[:knot_length]
+
     geom_segment = SP_Edge_export(
         {"CP": segment_CP, "weight": weight},
         {
@@ -980,6 +998,8 @@ def revolution_face_to_topods(ob, scale=1000):
             "isclamped": [is_clamped],
             "isperiodic": [is_periodic],
             "type": type,
+            "knot": knot,
+            "mult": mult,
         },
         single_seg=True,
         is2D=False,
@@ -1027,6 +1047,12 @@ def extrusion_face_to_topods(ob, scale=1000):
 
     length = Vector(dir_att).length * scale
 
+    # Get knot
+    mult = read_attribute_by_name(ob, "Multiplicity")
+    knot_length = int(sum(np.asarray(mult) > 0))
+    knot = read_attribute_by_name(ob, "Knot", knot_length)
+    mult = mult[:knot_length]
+
     geom_segment = SP_Edge_export(
         {"CP": segment_CP, "weight": weight},
         {
@@ -1034,6 +1060,8 @@ def extrusion_face_to_topods(ob, scale=1000):
             "isclamped": [is_clamped],
             "isperiodic": [is_periodic],
             "type": type,
+            "knot": knot,
+            "mult": mult,
         },
         single_seg=True,
         is2D=False,
@@ -1115,10 +1143,11 @@ def curve_to_topods(ob, scale=1000):
         weight_attr = [1.0] * total_p_count
 
     # Knots
-    # TODO
-    # knots_segment = read_attribute_by_name(ob, "knot_segment")
-    knots = read_attribute_by_name(ob, "Knot")
-    # knot_per_seg = split_by_index(knots_segment, knots)
+    mult = read_attribute_by_name(ob, "Multiplicity")
+    knot = read_attribute_by_name(ob, "Knot")
+    knot_segment = list(read_attribute_by_name(ob, "knot_segment"))
+    knot_per_seg = split_by_index(knot_segment, knot)
+    mult_per_seg = split_by_index(knot_segment, mult)
 
     # Build wire
     wire = SP_Wire_export(
@@ -1129,7 +1158,8 @@ def curve_to_topods(ob, scale=1000):
             "isperiodic": [is_closed] * segment_count,
             "isclamped": [is_clamped] * segment_count,
             "type": type_att,
-            # TODO add knots
+            "knot": knot_per_seg,
+            "mult": mult_per_seg,
         },
         is2D=False,
     )

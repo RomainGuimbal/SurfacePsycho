@@ -4,7 +4,7 @@ from mathutils import Matrix, Vector
 for o in bpy.data.objects:
     bpy.data.objects.remove(o)
 
-bpy.context.preferences.view.show_splash = False
+# bpy.context.preferences.view.show_splash = False
 
 # Set view
 for area in bpy.context.screen.areas:
@@ -49,7 +49,7 @@ names =  [
 for n in names : 
     bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\" + n)
 
-
+# bpy.context.preferences.view.show_splash = True
 
 
 
