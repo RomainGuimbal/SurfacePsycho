@@ -52,5 +52,22 @@
         // {
         //     c:\Users\romai\Downloads\TheBlenders\blender-5.0.0-beta+v50.1f5254094830-windows.amd64-release\blender.exe --python c:\Users\romai\.vscode\extensions\jacqueslucke.blender-development-0.0.26\pythonFiles\launch.py 
         // }
+        {
+            "label": "BUILD",
+            "type": "shell",
+            "command": "blender",
+            "args": [
+                "--command",
+                "extension",
+                "build",
+                "--source-dir",
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho",
+                "--output-dir",
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest",
+                "--split-platforms",
+                "--verbose"
+            ],
+            "problemMatcher": []
+        }
     ]
 }

@@ -142,8 +142,8 @@ class SP_Curve_no_edge_import:
 
         step_curve = GeomToStep_MakeCurve(bspline, StepData_Factors()).Value()
 
-        knot = normalize_array(haarray1_of_real_to_list(step_curve.Knots()))
-        mult = haarray1_of_int_to_list(step_curve.KnotMultiplicities())
+        knot = normalize_array(harray1_of_real_to_list(step_curve.Knots()))
+        mult = harray1_of_int_to_list(step_curve.KnotMultiplicities())
         self.knot = knot + [0.0] * (p_count - len(knot))
         self.mult = mult + [0] * (p_count - len(mult))
 
@@ -160,9 +160,9 @@ class SP_Curve_no_edge_import:
             end_point = edge_adaptor.Value(min_t + math.pi / 2)
             center = edge_adaptor.Circle().Location()
             gp_pnt_poles = [
-                end_point,
-                center,
                 start_point,
+                center,
+                end_point,
             ]  # Invert because of parametrisation
             self.type = EDGES_TYPES["circle"]
             self.type_att = [EDGES_TYPES["circle"]] * 3
@@ -374,93 +374,11 @@ class SP_Contour_import:
             self.mult.extend(sp_wire.mult_att)
 
     # For square contour following the patch bounds
-    def is_trivial(self):
-        is_trivial_trim = False
-        if len(self.verts) == 4:
+    def is_natural_bounds(self):
+        return is_natural_bounds(self.verts, self.edges)
 
-            t1 = self.verts == [
-                Vector((0.0, 0.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-            ]
-            t2 = self.verts == [
-                Vector((0.0, 1.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-            ]
-            t3 = self.verts == [
-                Vector((1.0, 1.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-            ]
-            t4 = self.verts == [
-                Vector((1.0, 0.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-            ]
-
-            t5 = self.verts == [
-                Vector((1.0, 0.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-            ]
-            t6 = self.verts == [
-                Vector((1.0, 1.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-            ]
-            t7 = self.verts == [
-                Vector((0.0, 1.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-            ]
-            t8 = self.verts == [
-                Vector((0.0, 0.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-            ]
-
-            t9 = set(self.edges) == {(0, 1), (1, 2), (2, 3), (3, 0)}
-
-            is_trivial_trim = (t1 or t2 or t3 or t4 or t5 or t6 or t7 or t8) and t9
-
-        return is_trivial_trim
-
-    def rebound(self, curr_bounds, new_bounds):
-        curr_min_u, curr_max_u, curr_min_v, curr_max_v = (
-            curr_bounds[0] if curr_bounds[0] != None else 0.0,
-            curr_bounds[1] if curr_bounds[1] != None else 0.0,
-            curr_bounds[2] if curr_bounds[2] != None else 0.0,
-            curr_bounds[3] if curr_bounds[3] != None else 0.0,
-        )
-
-        new_min_u, new_max_u, new_min_v, new_max_v = (
-            new_bounds[0] if new_bounds[0] != None else 0.0,
-            new_bounds[1] if new_bounds[1] != None else 0.0,
-            new_bounds[2] if new_bounds[2] != None else 0.0,
-            new_bounds[3] if new_bounds[3] != None else 0.0,
-        )
-
-        curr_range_u, curr_range_v = curr_max_u - curr_min_u, curr_max_v - curr_min_v
-        new_range_u, new_range_v = new_max_u - new_min_u, new_max_v - new_min_v
-
-        for i, v in enumerate(self.verts):
-            if curr_range_u != 0.0:
-                v.x = ((v.x - curr_min_u) / curr_range_u) * new_range_u + new_min_u
-            if curr_range_v != 0.0:
-                v.y = ((v.y - curr_min_v) / curr_range_v) * new_range_v + new_min_v
-
-    # def switch_u_and_v(self):
-    #     self.verts = [Vector((v.y, v.x, v.z)) for v in self.verts]
-
+    def rebound_UV(self, curr_bounds, new_bounds):
+        rebound_UV(self.verts, curr_bounds, new_bounds)
 
 def generic_import_surface(
     face: TopoDS_Face,
@@ -487,9 +405,9 @@ def generic_import_surface(
     if trims_enabled:
         contour = SP_Contour_import(face)
         if curr_uv_bounds != None:
-            contour.rebound(curr_uv_bounds, new_uv_bounds)
+            contour.rebound_UV(curr_uv_bounds, new_uv_bounds)
 
-        istrivial = contour.is_trivial()
+        istrivial = contour.is_natural_bounds()
 
         if istrivial:
             del contour
@@ -827,18 +745,16 @@ def build_SP_NURBS_patch(
     v_count = bspline_surface.NbVPoles()
     udeg = bspline_surface.UDegree()
     vdeg = bspline_surface.VDegree()
-    # u_closed = bspline_surface.IsUClosed()
-    # v_closed = bspline_surface.IsVClosed()
     u_periodic = bspline_surface.IsUPeriodic()
     v_periodic = bspline_surface.IsVPeriodic()
     uv_bounds = bspline_surface.Bounds()
 
     step_surface = GeomToStep_MakeSurface(bspline_surface, StepData_Factors()).Value()
 
-    u_knots = haarray1_of_real_to_list(step_surface.UKnots())
-    v_knots = haarray1_of_real_to_list(step_surface.VKnots())
-    u_mult = haarray1_of_int_to_list(step_surface.UMultiplicities())
-    v_mult = haarray1_of_int_to_list(step_surface.VMultiplicities())
+    u_knots = harray1_of_real_to_list(step_surface.UKnots())
+    v_knots = harray1_of_real_to_list(step_surface.VKnots())
+    u_mult = harray1_of_int_to_list(step_surface.UMultiplicities())
+    v_mult = harray1_of_int_to_list(step_surface.VMultiplicities())
 
     # UKnotDistribution can detect bezier and uniform
     # VKnotDistribution

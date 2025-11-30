@@ -224,16 +224,18 @@ def replace_duplicates():
     for ng in bpy.data.node_groups:
         if ng.name[-4] == ".":
             duplicated_list.append(ng.name[:-4])
-            print(ng.name)
+            # print(ng.name)
     duplicated_groups = set(duplicated_list)
 
     for d in duplicated_groups:
-        replace_all_instances_of_node_group(d + ".*", d)
+        replaced = replace_all_instances_of_node_group(d + ".*", d)
+        if replaced <= 0:
+            print(f"No instances of {d}.* found")
 
 
 def remove_fake_user_node_groups():
     for ng in bpy.data.node_groups:
-        if ng.use_fake_user:
+        if ng.use_fake_user and ng.asset_data is None:
             ng.use_fake_user = False
 
 
@@ -265,7 +267,7 @@ gr_curve_flat = {
     "SP - Continuities between Segments",
     "SP - Convert Circles and Ellipses to Splines",
     "SP - Copy Mesh Face",
-    "SP - Curve on Surface from UV",
+    # "SP - Curve on Surface from UV",
     "SP - Distance Between Curves",
     "SP - Fillet Curve or FlatPatch",
     "SP - Fillet Polyline with Circles",
@@ -290,10 +292,11 @@ gr_curve_flat = {
     "SP - Switch Curve Direction",
     "SP - Interpolate Curve or FlatPatch",
     "SP - Crown Curve",
-    # "SP - Connect Curve",
-    # "SP - Curve Meshing",
-    # "SP - Crop or Extend Curve",
-    # "SP - Offset Curve",
+    "SP - Connect Curve",
+    "SP - Curve Meshing",
+    "SP - Crop or Extend Curve",
+    "SP - Offset Curve",
+    "SP - FlatPatch Meshing",
 }
 
 # BEZIER SURF
@@ -303,7 +306,7 @@ obj_surf = {
     "Internal Curve For Patch",
 }
 gr_surf = {
-    # "SP - Bezier Patch Meshing",
+    "SP - Bezier Patch Meshing",
     "SP - Auto Midpoints Linear",
     "SP - Blend Surfaces",
     "SP - Connect Bezier Patch",
@@ -316,7 +319,7 @@ gr_surf = {
     "SP - Flatten Patch Side",
     "SP - Gradient Map",
     "SP - Loft",
-    #    "SP - Loft from Internal Curves",
+    "SP - Loft from Internal Curves",
     "SP - Mirror Patch Control Points",
     "SP - Nearest Curve on Bezier Patch",
     "SP - Patch Exact Normals",
@@ -378,6 +381,12 @@ gr_compound = {
 
 # SHAPES
 path_preset = "//..\..\SP - Shapes presets.blend"
+gr_preset = {"SP - Cylinder Compound",
+             "SP - Disc CP",
+             "SP - Frame Coumpound",
+             "SP - Oblong Extrusion Compound",
+             "SP - Slab Coumpound",
+             "SP - Tubes Compound"}
 obj_preset = {
     "Quadaratic Dome",
     "Cubic Dome",
@@ -397,36 +406,6 @@ coll_preset = {
     "Step",
     "Thick Arch",
 }
-
-
-################################
-#                              #
-#        CATALOGS SETS         #
-#                              #
-################################
-
-# full_set = (
-#     gr_surf
-#     | gr_curve_flat
-#     | gr_nurbs
-#     | gr_surf
-#     | gr_other
-#     | coll_preset
-#     | obj_probe
-#     | obj_curve_flat
-#     | obj_surf
-#     | obj_nurbs
-#     | obj_preset
-#     | {
-#         "SP - Connect Bezier Patch",
-#         "SP - Bezier Patch Meshing",
-#         "SP - SP - Connect Curve",
-#         "SP - Curve Meshing",
-#         "SP - Crop or Extend Curve",
-#         "SP - FlatPatch Meshing",
-#         "SP - Loft from Internal Curves",
-#     }
-# )
 
 ################################
 #                              #
@@ -475,7 +454,8 @@ if __name__ == "__main__":
     append_by_name(path_nurbs, gr_nurbs, "node_groups")
     append_by_name(path_other, gr_other, "node_groups")
     append_by_name(path_compound, gr_compound, "node_groups")
-
+    append_by_name(path_preset, gr_preset, "node_groups")
+    
     print("\n______________________________________________________\n")
     print("Appending Objects..")
     append_by_name(path_probe, obj_probe, "objects")

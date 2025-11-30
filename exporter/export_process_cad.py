@@ -43,6 +43,7 @@ from OCP.Geom import (
     Geom_SphericalSurface,
     Geom_SurfaceOfLinearExtrusion,
     Geom_SurfaceOfRevolution,
+    Geom_TrimmedCurve,
 )
 from OCP.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
 from OCP.GeomAdaptor import GeomAdaptor_Surface
@@ -82,6 +83,8 @@ from OCP.StepGeom import (
     StepGeom_BSplineCurveWithKnotsAndRationalBSplineCurve,
     StepGeom_BSplineCurveForm,
     StepGeom_KnotType,
+    StepGeom_BSplineSurfaceForm,
+    StepGeom_BSplineSurfaceWithKnotsAndRationalBSplineSurface,
 )
 from OCP.StepData import StepData_Logical, StepData_Factors
 from OCP.StepToGeom import StepToGeom
@@ -117,6 +120,7 @@ class SP_Edge_export:
 
         # Generate Geom
         self.format_cp()
+
         self.type = self.get_type()
         self.generate_geom()
 
@@ -187,7 +191,7 @@ class SP_Edge_export:
         iscyclic = self.seg_aligned_attrs["isperiodic"][0] if not None else False
         degree = self.seg_aligned_attrs["degree"]
 
-        if iscyclic :
+        if iscyclic:
             if isclamped:
                 self.vec_cp = list(self.vec_cp)
                 self.weight = list(self.weight)
@@ -195,7 +199,7 @@ class SP_Edge_export:
                 self.weight.append(self.weight[0])
                 # self.vec_cp[-1] = self.vec_cp[0]
                 # self.weight[-1] = self.weight[0]
-            else :
+            else:
                 self.vec_cp = list(self.vec_cp)
                 self.weight = list(self.weight)
                 self.vec_cp.extend(self.vec_cp[0:degree])
@@ -215,7 +219,7 @@ class SP_Edge_export:
             tcol_mult = int_list_to_tcolstd_H(self.mult[:knot_length])
         else:
             raise ValueError("Missing knot on NURBS segment")
-        
+
         # Create the STEP B-spline curve
         name = TCollection_HAsciiString("bspline_segment")
 
@@ -274,14 +278,18 @@ class SP_Edge_export:
             radius_vec = p1_vec - center_vec
             other_dir_vec = p3_vec - center_vec
 
+            radius = radius_vec.Magnitude()
+
             # Circle on plane
             if self.geom_plane != None:
                 normal_dir = self.geom_plane.Pln().Axis().Direction()
+                makesegment = GC_MakeCircle(gp_Ax2(center, normal_dir), radius)
             else:
                 normal_dir = gp_Dir(radius_vec.Crossed(other_dir_vec))
+                makesegment = GC_MakeCircle(
+                    gp_Ax2(center, normal_dir, gp_Dir(radius_vec)), radius
+                )
 
-            radius = radius_vec.Magnitude()
-            makesegment = GC_MakeCircle(gp_Ax1(center, normal_dir), radius)
             self.geom = makesegment.Value()
 
     def ellipse_arc(self):
@@ -299,7 +307,9 @@ class SP_Edge_export:
             p_center = self.gp_cp[2]
             gp_ellipse = gp_Elips_from_3_points(p_center, self.gp_cp[1], self.gp_cp[3])
 
-            makesegment = GC_MakeArcOfEllipse(gp_ellipse, self.gp_cp[0], self.gp_cp[4])
+            makesegment = GC_MakeArcOfEllipse(
+                gp_ellipse, self.gp_cp[0], self.gp_cp[4], True
+            )
             self.geom = makesegment.Value()
 
     def ellipse(self):
@@ -326,34 +336,29 @@ class SP_Edge_export:
             ).Edge()
 
 
-def get_patch_knot_and_mult(
-        
-    ob,
-):
+def get_patch_knot_and_mult(ob):
+    umult_att = read_attribute_by_name(ob, "Multiplicity U")
     try:
-        umult_att = read_attribute_by_name(ob, "Multiplicity U")
-        u_length = sum(np.asarray(umult_att) > 0)
+        u_length = sum(np.asarray(umult_att) > 0)  # uncompatible with mirror
     except KeyError:
-        umult_att = read_attribute_by_name(ob, "Multiplicity U")
         u_length = int(sum(np.asarray(umult_att) > 0))
     uknots_att = read_attribute_by_name(ob, "Knot U", u_length)
 
+    vmult_att = read_attribute_by_name(ob, "Multiplicity V")
     try:
-        vmult_att = read_attribute_by_name(ob, "Multiplicity V")
         v_length = sum(np.asarray(vmult_att) > 0)
     except Exception:
-        vmult_att = read_attribute_by_name(ob, "Multiplicity V")
         v_length = int(sum(np.asarray(vmult_att) > 0))
     vknots_att = read_attribute_by_name(ob, "Knot V", v_length)
 
-    uknot = TColStd_Array1OfReal(1, u_length)
-    umult = TColStd_Array1OfInteger(1, u_length)
+    uknot = TColStd_HArray1OfReal(1, u_length)
+    umult = TColStd_HArray1OfInteger(1, u_length)
     for i in range(u_length):
         uknot.SetValue(i + 1, uknots_att[i])
         umult.SetValue(i + 1, umult_att[i])
 
-    vknot = TColStd_Array1OfReal(1, v_length)
-    vmult = TColStd_Array1OfInteger(1, v_length)
+    vknot = TColStd_HArray1OfReal(1, v_length)
+    vmult = TColStd_HArray1OfInteger(1, v_length)
     for i in range(v_length):
         vknot.SetValue(i + 1, vknots_att[i])
         vmult.SetValue(i + 1, vmult_att[i])
@@ -402,7 +407,6 @@ class SP_Wire_export:
             sum(self.isperiodic_per_seg) > 0
         )
 
-
         p_count = 0  # (total)
         p_count_accumulate = self.segs_p_counts.copy()
         for i, p in enumerate(self.segs_p_counts):
@@ -418,7 +422,7 @@ class SP_Wire_export:
         ]
         # self.p_count_accumulate = p_count_accumulate[:len(self.segs_p_counts)]
 
-    def split_cp_aligned_attr_per_seg(self, attr : list) -> list[list]:
+    def split_cp_aligned_attr_per_seg(self, attr: list) -> list[list]:
         attr = list(attr)
         split_attr = []
         inf = 0
@@ -569,7 +573,7 @@ class SP_Contour_export:
                 points *= scale
 
             if curr_bounds is not None and new_bounds is not None:
-                points = rebound(points, curr_bounds, new_bounds)
+                points = rebound_UV(points, curr_bounds, new_bounds)
 
             if is2D:
                 points = [Vector((p[0], p[1], 0.0)) for p in points]
@@ -633,11 +637,15 @@ class SP_Contour_export:
             knot = read_attribute_by_name(ob, "Knot")
             mult = read_attribute_by_name(ob, "Multiplicity")
             knot_segment = list(read_attribute_by_name(ob, "knot_segment"))
-            knot_per_seg = dict_to_list_missing_index_filled(split_by_index_dict(knot_segment, knot))
-            mult_per_seg = dict_to_list_missing_index_filled(split_by_index_dict(knot_segment, mult))
+            knot_per_seg = dict_to_list_missing_index_filled(
+                split_by_index_dict(knot_segment, knot)
+            )
+            mult_per_seg = dict_to_list_missing_index_filled(
+                split_by_index_dict(knot_segment, mult)
+            )
             knot_per_wire = self.split_seg_attr_per_wire(knot_per_seg)
             mult_per_wire = self.split_seg_attr_per_wire(mult_per_seg)
-    
+
             # Build wires
             self.wires_dict = {}
             for w in set(self.wire_index):
@@ -670,30 +678,10 @@ class SP_Contour_export:
         return attr_dict_per_wire
 
     def split_seg_attr_per_wire(self, attr):
-        wir_i = 0
-        wir_key = self.wire_index_order[wir_i]
-        seg_added = 0
-
-        # Prepare dict
         attr_dict_per_wire = {}
-        # for w in set(self.wire_index):
-        #     attr_dict_per_wire[w] = []
-
-        # # Itterate over segments
-        # for i, att_val in enumerate(attr[: self.segment_count]):
-        #     seg_added += 1
-        #     attr_dict_per_wire[wir_key].append(att_val)
-
-        #     if (
-        #         seg_added >= self.seg_count_per_wire[wir_i]
-        #         and wir_i < self.wir_count - 1
-        #     ):
-        #         wir_i += 1
-        #         wir_key = self.wire_index_order[wir_i]
-        #         seg_added = 0
         start = 0
         end = 0
-        for i,w in enumerate(self.wire_index_order):
+        for i, w in enumerate(self.wire_index_order):
             end += self.seg_count_per_wire[i]
             attr_dict_per_wire[w] = attr[start:end]
             start = end
@@ -779,8 +767,7 @@ def bezier_face_to_topods(ob, scale=1000):
 
 def NURBS_face_to_topods(ob, scale=1000):
     # Get attributes
-    u_count = int(ob.data.attributes["CP_count"].data[0].value)
-    v_count = int(ob.data.attributes["CP_count"].data[1].value)
+    u_count, v_count = read_attribute_by_name(ob, "CP_count", 2)
     points = read_attribute_by_name(ob, "CP_NURBS_surf", u_count * v_count)
     points *= scale
     degree_u, degree_v = read_attribute_by_name(ob, "Degrees", 2)
@@ -789,30 +776,53 @@ def NURBS_face_to_topods(ob, scale=1000):
     except KeyError:
         isperiodic_u, isperiodic_v = False, False
 
+    try:
+        weigths_att = read_attribute_by_name(ob, "Weights", u_count * v_count)
+    except KeyError:
+        weigths_att = np.ones(u_count * v_count, dtype=float)
+
+    points = points.reshape(v_count, u_count, 3).transpose(1, 0, 2)
+    weigths_att = weigths_att.reshape(v_count, u_count).transpose()
+
+    # Wrap control points
+    if isperiodic_u:
+        points = np.append(points, points[0:1, :, :], axis=0)
+        weigths_att = np.append(weigths_att, weigths_att[0:1, :], axis=0)
+        u_count += 1
+    if isperiodic_v:
+        points = np.append(points, points[:, 0:1, :], axis=1)
+        weigths_att = np.append(weigths_att, weigths_att[:, 0:1], axis=1)
+        v_count += 1
+
     # Knots and Multiplicities
     uknots, vknots, umult, vmult = get_patch_knot_and_mult(ob)
 
     # Poles grid
-    poles = TColgp_Array2OfPnt(1, u_count, 1, v_count)
-    for i in range(v_count):
-        for j in range(u_count):
-            id = u_count * i + j
-            poles.SetValue(
-                j + 1, i + 1, gp_Pnt(points[id][0], points[id][1], points[id][2])
-            )
+    poles = vec_grid_to_step_cartesian(list(points))
 
-    # Create Geom
-    geom_surf = Geom_BSplineSurface(
-        poles,
-        uknots,
-        vknots,
-        umult,
-        vmult,
+    # Weigths
+    weigths = float_list_to_tcolstd_H_2d(list(weigths_att))
+
+    name = TCollection_HAsciiString("bspline_surface")
+    step_surf = StepGeom_BSplineSurfaceWithKnotsAndRationalBSplineSurface()
+    step_surf.Init(
+        name,
         degree_u,
         degree_v,
-        isperiodic_u,
-        isperiodic_v,
+        poles,
+        StepGeom_BSplineSurfaceForm(10),
+        StepData_Logical(isperiodic_u),
+        StepData_Logical(isperiodic_v),
+        StepData_Logical(False),
+        umult,
+        vmult,
+        uknots,
+        vknots,
+        StepGeom_KnotType(1),
+        weigths,
     )
+
+    geom_surf = StepToGeom.MakeBSplineSurface_s(step_surf, StepData_Factors())
 
     # Build trim contour
     contour = SP_Contour_export(
@@ -976,7 +986,10 @@ def revolution_face_to_topods(ob, scale=1000):
     p_count = read_attribute_by_name(ob, "p_count_revolution", 1)[0]
     segment_CP = read_attribute_by_name(ob, "CP_revolution", p_count)
     segment_CP *= scale
-    weight = read_attribute_by_name(ob, "weight_revolution", p_count)
+    try:
+        weight = read_attribute_by_name(ob, "weight_revolution", p_count)
+    except KeyError:
+        weight = [1.0] * p_count
     type = read_attribute_by_name(ob, "type_revolution", 1)[0]
     degree = read_attribute_by_name(ob, "degree_revolution", 1)[0]
     is_clamped, is_periodic = read_attribute_by_name(
@@ -984,11 +997,16 @@ def revolution_face_to_topods(ob, scale=1000):
     )
 
     # Get knot
-    mult = read_attribute_by_name(ob, "Multiplicity")
-    knot_length = int(sum(np.asarray(mult) > 0))
-    knot = read_attribute_by_name(ob, "Knot", knot_length)
-    mult = mult[:knot_length]
+    try:
+        mult = read_attribute_by_name(ob, "Multiplicity")
+        knot_length = int(sum(np.asarray(mult) > 0))
+        knot = read_attribute_by_name(ob, "Knot", knot_length)
+        mult = mult[:knot_length]
+    except KeyError:
+        knot = []
+        mult = []
 
+    # Create geom
     geom_segment = SP_Edge_export(
         {"CP": segment_CP, "weight": weight},
         {
@@ -1010,6 +1028,11 @@ def revolution_face_to_topods(ob, scale=1000):
     )
     geom_surf = Geom_SurfaceOfRevolution(geom_segment, axis1)
 
+    v_max = 1.0
+    if isinstance(geom_segment, Geom_TrimmedCurve):
+        # v_max_2 = (segment_CP[1] - segment_CP[0]).length * scale  # Line length
+        v_max = geom_segment.LastParameter() - geom_segment.FirstParameter()
+        
     # Build trim contour
     contour = SP_Contour_export(
         ob,
@@ -1019,6 +1042,8 @@ def revolution_face_to_topods(ob, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
+        curr_bounds=(None, None,0.0, 1.0),
+        new_bounds=(None, None, 0.0, v_max),
     )
 
     # Create topods face
@@ -1045,11 +1070,15 @@ def extrusion_face_to_topods(ob, scale=1000):
 
     length = Vector(dir_att).length * scale
 
-    # Get knot
-    mult = read_attribute_by_name(ob, "Multiplicity")
-    knot_length = int(sum(np.asarray(mult) > 0))
-    knot = read_attribute_by_name(ob, "Knot", knot_length)
-    mult = mult[:knot_length]
+    try:
+        # Get knot
+        mult = read_attribute_by_name(ob, "Multiplicity")
+        knot_length = int(sum(np.asarray(mult) > 0))
+        knot = read_attribute_by_name(ob, "Knot", knot_length)
+        mult = mult[:knot_length]
+    except KeyError:
+        knot = []
+        mult = []
 
     geom_segment = SP_Edge_export(
         {"CP": segment_CP, "weight": weight},
@@ -1078,7 +1107,8 @@ def extrusion_face_to_topods(ob, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
-        scale=(1, 2),
+        curr_bounds=(None, None, 0.0, 1.0),
+        new_bounds=(None, None, 0.0, length),
     )
 
     # Create topods face

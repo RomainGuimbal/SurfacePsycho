@@ -42,8 +42,8 @@ names =  [
     # "Audi_R8_Wheel.stp",
     # "plancher G5.step",
     # "Darts_tip_remover_ASM.stp",
-    # "Assy meca standard.stp",
-    "Taycan.igs",
+    "Assy meca standard.stp",
+    # "Taycan.igs",
 ]
 
 for n in names : 

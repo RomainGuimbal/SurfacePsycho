@@ -57,6 +57,7 @@ from OCP.TColStd import (
     TColStd_Array1OfReal,
     TColStd_HArray1OfReal,
     TColStd_HArray1OfInteger,
+    TColStd_HArray2OfReal,
 )
 from OCP.TCollection import TCollection_HAsciiString
 from OCP.TDataStd import TDataStd_Name
@@ -64,7 +65,7 @@ from OCP.TDF import TDF_Label
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorGen
 from OCP.Quantity import Quantity_Color
 from OCP.BRepCheck import BRepCheck_Analyzer
-from OCP.StepGeom import StepGeom_CartesianPoint, StepGeom_HArray1OfCartesianPoint
+from OCP.StepGeom import StepGeom_CartesianPoint, StepGeom_HArray1OfCartesianPoint, StepGeom_HArray2OfCartesianPoint
 import OCP.TopAbs as TopAbs
 import OCP.GeomAbs as GeomAbs
 
@@ -553,14 +554,12 @@ def tcolstd_array1_to_list(array):
     else:
         return [array(i) for i in range(array.Lower(), array.Upper() + 1)]
 
-
-def haarray1_of_real_to_list(harray):
+def harray1_of_real_to_list(harray):
     return [harray(i) for i in range(harray.Lower(), harray.Upper() + 1)]
 
 
-def haarray1_of_int_to_list(harray):
+def harray1_of_int_to_list(harray):
     return [harray(i) for i in range(harray.Lower(), harray.Upper() + 1)]
-
 
 def gp_list_to_arrayofpnt(array: list):
     tcol = TColgp_Array1OfPnt(1, len(array))
@@ -593,6 +592,15 @@ def int_list_to_tcolstd_H(array: list[int]):
         tcol.SetValue(i + 1, array[i])
     return tcol
 
+def float_list_to_tcolstd_H_2d(array: list[list[float]]):
+    rows = len(array)
+    cols = len(array[0]) if rows > 0 else 0
+    tcol = TColStd_HArray2OfReal(1, rows, 1, cols)
+    for i in range(rows):
+        for j in range(cols):
+            tcol.SetValue(i + 1, j + 1, array[i][j])
+    return tcol
+
 def vec_list_to_gp_pnt2d(array: list):
     tcol = TColgp_Array1OfPnt2d(1, len(array))
     for i in range(len(array)):
@@ -622,9 +630,20 @@ def vec_list_to_step_cartesian(array: list):
         step_array.SetValue(i + 1, p)
     return step_array
 
+def vec_grid_to_step_cartesian(array: list):
+    rows = len(array)
+    cols = len(array[0]) if rows > 0 else 0
+    step_array = StepGeom_HArray2OfCartesianPoint(1, rows, 1, cols)
+    for i in range(rows):
+        for j in range(cols):
+            p = StepGeom_CartesianPoint()
+            p.Init3D(TCollection_HAsciiString("cp"), *(array[i][j]))
+            step_array.SetValue(i + 1, j + 1, p)
+    return step_array
+
 
 def blender_to_gp_vec(vec: Vector):
-    return gp_Vec(vec.x, vec.y, vec.z)
+    return gp_Vec(*vec)
 
 
 def gp_pnt_to_blender_vec(vec: gp_Pnt):
@@ -632,7 +651,7 @@ def gp_pnt_to_blender_vec(vec: gp_Pnt):
 
 
 def gp_pnt2d_to_blender_vec(vec: gp_Pnt2d):
-    return Vector((vec.X(), vec.Y(), 0))
+    return Vector((vec.X(), vec.Y(), 0.0))
 
 
 def gp_pnt_to_blender_vec_list(vecs: list[gp_Pnt]) -> list[Vector]:
@@ -640,11 +659,11 @@ def gp_pnt_to_blender_vec_list(vecs: list[gp_Pnt]) -> list[Vector]:
 
 
 def gp_pnt_to_blender_vec_list_2d(vecs: list[gp_Pnt2d]) -> list[Vector]:
-    return [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
+    return [Vector((vec.X(), vec.Y(), 0.0)) for vec in vecs]
 
 
 # def gp_pnt2d_to_blender_vec_list(vecs: list):
-#     return [Vector((vec.X(), vec.Y(), 0)) for vec in vecs]
+#     return [Vector((vec.X(), vec.Y(), 0.0)) for vec in vecs]
 
 
 def normalize_array(array):
@@ -999,15 +1018,15 @@ def get_geom_adapt_curve_type(adaptor_curve: GeomAdaptor_Curve):
 def curve_range_from_type(curve_type):
     match curve_type:
         case GeomAbs.GeomAbs_Line:
-            min_u, max_u = 0, 1
+            min_u, max_u = 0.0, 1.0
         case GeomAbs.GeomAbs_BezierCurve:
-            min_u, max_u = 0, 1
+            min_u, max_u = 0.0, 1.0
         case GeomAbs.GeomAbs_BSplineCurve:
-            min_u, max_u = 0, 1
+            min_u, max_u = 0.0, 1.0
         case GeomAbs.GeomAbs_Circle:
-            min_u, max_u = -math.pi, math.pi
+            min_u, max_u = 0.0, 2 * math.pi
         case GeomAbs.GeomAbs_Ellipse:
-            min_u, max_u = -math.pi, math.pi
+            min_u, max_u = 0.0, 2 * math.pi
 
     return min_u, max_u
 
@@ -1159,7 +1178,7 @@ def remove_preview_image(ng: bpy.types.GeometryNodeTree):
     return False
 
 
-def rebound(verts, curr_bounds, new_bounds):
+def rebound_UV(verts, curr_bounds, new_bounds):
     curr_min_u, curr_max_u, curr_min_v, curr_max_v = (
         curr_bounds[0] if curr_bounds[0] != None else 0.0,
         curr_bounds[1] if curr_bounds[1] != None else 0.0,
@@ -1183,8 +1202,69 @@ def rebound(verts, curr_bounds, new_bounds):
 
     for v in verts:
         if curr_range_u != 0.0:
-            v.x = ((v.x - curr_min_u) / curr_range_u) * new_range_u + new_min_u
+            v[0] = ((v[0] - curr_min_u) / curr_range_u) * new_range_u + new_min_u
         if curr_range_v != 0.0:
-            v.y = ((v.y - curr_min_v) / curr_range_v) * new_range_v + new_min_v
+            v[1] = ((v[1] - curr_min_v) / curr_range_v) * new_range_v + new_min_v
 
     return verts
+
+
+def is_natural_bounds(verts, edges):
+        is_natural_bounds_trim = False
+        if len(verts) == 4:
+
+            t1 = verts == [
+                Vector((0.0, 0.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+            ]
+            t2 = verts == [
+                Vector((0.0, 1.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+            ]
+            t3 = verts == [
+                Vector((1.0, 1.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+            ]
+            t4 = verts == [
+                Vector((1.0, 0.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+            ]
+
+            t5 = verts == [
+                Vector((1.0, 0.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+            ]
+            t6 = verts == [
+                Vector((1.0, 1.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+            ]
+            t7 = verts == [
+                Vector((0.0, 1.0, 0.0)),
+                Vector((0.0, 0.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+            ]
+            t8 = verts == [
+                Vector((0.0, 0.0, 0.0)),
+                Vector((1.0, 0.0, 0.0)),
+                Vector((1.0, 1.0, 0.0)),
+                Vector((0.0, 1.0, 0.0)),
+            ]
+
+            t9 = set(edges) == {(0, 1), (1, 2), (2, 3), (3, 0)}
+
+            is_natural_bounds_trim = (t1 or t2 or t3 or t4 or t5 or t6 or t7 or t8) and t9
+
+        return is_natural_bounds_trim
