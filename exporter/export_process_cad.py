@@ -1330,9 +1330,9 @@ def mirror_topods_shape(o, shape, scale=1000):
                             gp_Pnt(mirror_offset[0], mirror_offset[1], mirror_offset[2])
                         )
 
-                    for s in shape_list:
-                        s = BRepBuilderAPI_Transform(shape, atrsf).Shape()
-                        shape_list.append(s)
+                    for s in range(len(shape_list)):
+                        sh = BRepBuilderAPI_Transform(shape_list[s], atrsf).Shape()
+                        shape_list.append(sh)
 
     return shape_list
 
