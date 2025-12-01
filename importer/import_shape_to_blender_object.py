@@ -1118,6 +1118,12 @@ def build_SP_revolution(
         # "Clamped": curve_no_edge.isclamped,
     }
 
+    v_min = 0.0
+    v_max = 1.0
+    if curve_type == GeomAbs.GeomAbs_Line:
+        v_min = adapt_curve.FirstParameter()
+        v_max = adapt_curve.LastParameter()
+
     object_data = generic_import_surface(
         topods_face,
         name,
@@ -1130,13 +1136,13 @@ def build_SP_revolution(
         modifier,
         attrs,
         ob_name="STEP Revolution",
-        # curr_uv_bounds=(
-        #     None,
-        #     None,
-        #     adapt_curve.FirstParameter(),
-        #     adapt_curve.LastParameter(),
-        # ),
-        # new_uv_bounds=(None, None, min_v, max_v),
+        curr_uv_bounds=(
+            None,
+            None,
+            v_min,
+            v_max,
+        ),
+        new_uv_bounds=(None, None, 0.0, 1.0),
     )
     return object_data
 
