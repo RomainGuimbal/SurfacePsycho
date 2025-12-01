@@ -156,12 +156,22 @@ class SP_OT_add_curve(bpy.types.Operator):
         append_object_by_name("PsychoCurve", context)
         return {"FINISHED"}
 
+class SP_OT_add_compound(bpy.types.Operator):
+    bl_idname = "object.sp_add_compound"
+    bl_label = "SP - Add PsychoCompound"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        append_object_by_name("Compound", context)
+        return {"FINISHED"}
+
 
 classes = [
     SP_OT_add_bezier_patch,
     SP_OT_add_curve,
     SP_OT_add_flat_patch,
     SP_OT_add_NURBS_patch,
+    SP_OT_add_compound,
 ]
 
 def register():

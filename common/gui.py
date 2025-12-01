@@ -236,6 +236,8 @@ def menu_surface(self, context):
         self.layout.operator(
             "object.sp_add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE"
         )
+        self.layout.operator(
+            "object.sp_add_compound", text="Compound", icon="MOD_BUILD")
         # self.layout.operator("object.sp_add_cylinder", text="Cylinder", icon="SURFACE_NCYLINDER")
 
 

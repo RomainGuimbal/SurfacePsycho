@@ -44,7 +44,10 @@ class SP_Curve_no_edge_import:
         self.endpoints_att = []
         self.weight = []
         self.mult = []
+        self.mult_extension = []
         self.knot = []
+        self.knot_extension = []
+
 
         curve_type = get_geom_adapt_curve_type(adaptor_curve)
         self.isclosed = adaptor_curve.IsClosed()
@@ -84,6 +87,8 @@ class SP_Curve_no_edge_import:
         self.weight = [0.0, 0.0]
         self.knot = [0.0, 0.0]
         self.mult = [0, 0]
+        self.knot_extension = [0.0, 0.0]
+        self.mult_extension = [0, 0]
 
     def bezier(self, edge_adaptor):
         # Get geom curve
@@ -110,6 +115,8 @@ class SP_Curve_no_edge_import:
         self.weight = [bezier.Weight(i + 1) for i in range(p_count)]
         self.knot = [0.0] * p_count
         self.mult = [0] * p_count
+        self.knot_extension = [0.0] * p_count
+        self.mult_extension = [0] * p_count
 
     def bspline(self, edge_adaptor):
         # Get geom curve
@@ -142,10 +149,18 @@ class SP_Curve_no_edge_import:
 
         step_curve = GeomToStep_MakeCurve(bspline, StepData_Factors()).Value()
 
-        knot = normalize_array(harray1_of_real_to_list(step_curve.Knots()))
+        knot = harray1_of_real_to_list(step_curve.Knots())
         mult = harray1_of_int_to_list(step_curve.KnotMultiplicities())
-        self.knot = knot + [0.0] * (p_count - len(knot))
-        self.mult = mult + [0] * (p_count - len(mult))
+        knot_len = len(knot)
+        
+        if knot_len < p_count:
+            self.knot = knot + [0.0] * (p_count - knot_len)
+            self.mult = mult + [0] * (p_count - knot_len)
+        else :
+            self.knot = knot[:knot_len-1]
+            self.knot_extension = knot[knot_len-1:] + [0.0] * (knot_len - p_count -1)
+            self.mult = mult[:knot_len-1]
+            self.mult_extension = mult[knot_len-1:] + [0] * (knot_len - p_count -1)
 
     def circle(self, edge_adaptor):
         min_t = edge_adaptor.FirstParameter()
@@ -180,6 +195,8 @@ class SP_Curve_no_edge_import:
         self.weight = [0.0] * 3
         self.knot = [0.0] * 3
         self.mult = [0] * 3
+        self.knot_extension = [0.0] * 3
+        self.mult_extension = [0] * 3
         if isinstance(gp_pnt_poles[0], gp_Pnt2d):
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
         else:
@@ -208,6 +225,8 @@ class SP_Curve_no_edge_import:
             self.weight = [0.0, 0.0, 0.0]
             self.knot = [0.0, 0.0, 0.0]
             self.mult = [0, 0, 0]
+            self.knot_extension = [0.0, 0.0, 0.0]
+            self.mult_extension = [0, 0, 0]
         # arc
         else:
             gp_pnt_poles = [start_point, axis_point_1, center, axis_point_2, end_point]
@@ -218,6 +237,8 @@ class SP_Curve_no_edge_import:
             self.weight = [0.0, 0.0, 0.0, 0.0, 0.0]
             self.knot = [0.0, 0.0, 0.0, 0.0, 0.0]
             self.mult = [0, 0, 0, 0, 0]
+            self.knot_extension = [0.0, 0.0, 0.0, 0.0, 0.0]
+            self.mult_extension = [0, 0, 0, 0, 0]
 
         if isinstance(gp_pnt_poles[0], gp_Pnt2d):
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
@@ -239,6 +260,8 @@ class SP_Curve_no_edge_import:
         self.weight = [0.0, 0.0]
         self.knot = [0.0, 0.0]
         self.mult = [0, 0]
+        self.knot_extension = [0.0, 0.0]
+        self.mult_extension = [0, 0]
 
 
 class SP_Edge_import:
@@ -263,6 +286,8 @@ class SP_Edge_import:
         self.weight = sp_curve_no_edge.weight
         self.mult = sp_curve_no_edge.mult
         self.knot = sp_curve_no_edge.knot
+        self.knot_extension = sp_curve_no_edge.knot_extension
+        self.mult_extension = sp_curve_no_edge.mult_extension
 
         # Reverse
         if topods_edge.Orientation() == TopAbs_REVERSED and (
@@ -290,6 +315,8 @@ class SP_Wire_import:
             self.knot_att = []
             self.mult_att = []
             self.type_att = []
+            self.knot_extension_att = []
+            self.mult_extension_att = []
 
         topods_edges = get_edges_from_wire(topods_wire)
         is_wire_forward = topods_wire.Orientation() == TopAbs_FORWARD
@@ -312,6 +339,8 @@ class SP_Wire_import:
             self.type_att.extend(sp_edge.type_att[:-1])
             self.knot_att.extend(sp_edge.knot[:-1])
             self.mult_att.extend(sp_edge.mult[:-1])
+            self.knot_extension_att.extend(sp_edge.knot_extension[:-1])
+            self.mult_extension_att.extend(sp_edge.mult_extension[:-1])
 
         # Add last point
         if (
@@ -327,6 +356,8 @@ class SP_Wire_import:
             self.weight_att.append(sp_edge.weight[-1])
             self.knot_att.append(sp_edge.knot[-1])
             self.mult_att.append(sp_edge.mult[-1])
+            self.knot_extension_att.append(sp_edge.knot_extension[-1])
+            self.mult_extension_att.append(sp_edge.mult_extension[-1])
 
         # Open control mesh structure
         if (
@@ -354,7 +385,9 @@ class SP_Contour_import:
             self.weight,
             self.knot,
             self.mult,
-        ) = ([], [], [], [], [], [], [], [])
+            self.knot_extension,
+            self.mult_extension,
+        ) = ([], [], [], [], [], [], [], [], [], [])
 
         for w in self.wires:
             if scale != None:
@@ -372,6 +405,8 @@ class SP_Contour_import:
             self.weight.extend(sp_wire.weight_att)
             self.knot.extend(sp_wire.knot_att)
             self.mult.extend(sp_wire.mult_att)
+            self.knot_extension.extend(sp_wire.knot_extension_att)
+            self.mult_extension.extend(sp_wire.mult_extension_att)
 
     # For square contour following the patch bounds
     def is_natural_bounds(self):
@@ -420,7 +455,9 @@ def generic_import_surface(
         trim_attrs = {
             "Weight": weight + contour.weight,
             "Knot": [0.0] * len(CPvert) + contour.knot,
+            "Knot_extension": [0.0] * len(CPvert) + contour.knot_extension, 
             "Multiplicity": [0] * len(CPvert) + contour.mult,
+            "Multiplicity_extension": [0] * len(CPvert) + contour.mult_extension,
             "Trim Contour": [False] * len(CPvert) + [True] * len(contour.verts),
             "Endpoints": [False] * len(CPvert) + contour.endpoints,
             "Degree": [0] * len(CPvert) + contour.degrees,
@@ -856,7 +893,9 @@ def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
         type_att = sp_wire.type_att
         weight_att = sp_wire.weight_att
         knot_att = sp_wire.knot_att
+        knot_extension_att = sp_wire.knot_extension_att
         mult_att = sp_wire.mult_att
+        mult_extension_att = sp_wire.mult_extension_att
     else:
         sp_edge = SP_Edge_import(shape, scale=scale)
         verts = sp_edge.verts
@@ -864,7 +903,9 @@ def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
         weight_att = sp_edge.weight
         type_att = sp_edge.type_att
         knot_att = sp_edge.knot
+        knot_extension_att = sp_edge.knot_extension
         mult_att = sp_edge.mult
+        mult_extension_att = sp_edge.mult_extension
 
         endpoints = [True] + [False] * (len(verts) - 2) + [True]
         if edge_degree != None:
@@ -886,7 +927,9 @@ def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
     attrs = {
         "Weight": weight_att,
         "Knot": knot_att,
+        "Knot_extension": knot_extension_att,
         "Multiplicity": mult_att,
+        "Multiplicity_extension": mult_extension_att,
         "Endpoints": endpoints,
         "Degree": degree_att,
         "Type": type_att,
@@ -916,7 +959,9 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
     type_att = contour.type_att
     weight_att = contour.weight
     knot_att = contour.knot
+    knot_extension_att = contour.knot_extension
     mult_att = contour.mult
+    mult_extension_att = contour.mult_extension
 
     if name == None:
         name = "STEP FlatPatch"
@@ -937,7 +982,9 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
     attrs = {
         "Weight": weight_att,
         "Knot": knot_att,
+        "Knot_extension": knot_extension_att,
         "Multiplicity": mult_att,
+        "Multiplicity_extension": mult_extension_att,
         "Endpoints": endpoints,
         "Degree": degree_att,
         "Type": type_att,
@@ -991,7 +1038,10 @@ def build_SP_extrusion(
         "Degree": [0] + curve_no_edge.degree_att,
         "Type": [0] + curve_no_edge.type_att,
         "Knot": [0.0] + curve_no_edge.knot,
+        "Knot_extension": [0.0] + curve_no_edge.knot_extension,
         "Multiplicity": [0] + curve_no_edge.mult,
+        "Multiplicity_extension": [0] + curve_no_edge.mult_extension,
+        "Weight": [0.0] + curve_no_edge.weight,
         # TODO
         # "Cyclic": curve_no_edge.isclosed,
         # "Clamped": curve_no_edge.isclamped,
@@ -1037,7 +1087,7 @@ def build_SP_revolution(
     p2 = (
         p1 + Vector((gpdir.X(), gpdir.Y(), gpdir.Z())) * scale
     )  # ideally max of CPvert projected instead
-    CPvert = [p1, p2] + CPvert
+    CPvert = [p2, p1] + CPvert
     CPedges = [(0, 1)] + [(i, i + 1) for i in range(2, len(CPvert) - 1)]
 
     modifier = (
@@ -1059,7 +1109,10 @@ def build_SP_revolution(
         "Degree": [0] * 2 + curve_no_edge.degree_att,
         "Type": [0] * 2 + curve_no_edge.type_att,
         "Knot": [0.0] * 2 + curve_no_edge.knot,
+        "Knot_extension": [0.0] * 2 + curve_no_edge.knot_extension,
         "Multiplicity": [0] * 2 + curve_no_edge.mult,
+        "Multiplicity_extension": [0] * 2 + curve_no_edge.mult_extension,
+        "Weight": [0.0] * 2 + curve_no_edge.weight,
         # TODO
         # "Cyclic": curve_no_edge.isclosed,
         # "Clamped": curve_no_edge.isclamped,
@@ -1077,13 +1130,13 @@ def build_SP_revolution(
         modifier,
         attrs,
         ob_name="STEP Revolution",
-        curr_uv_bounds=(
-            None,
-            None,
-            adapt_curve.FirstParameter(),
-            adapt_curve.LastParameter(),
-        ),
-        new_uv_bounds=(None, None, min_v, max_v),
+        # curr_uv_bounds=(
+        #     None,
+        #     None,
+        #     adapt_curve.FirstParameter(),
+        #     adapt_curve.LastParameter(),
+        # ),
+        # new_uv_bounds=(None, None, min_v, max_v),
     )
     return object_data
 

@@ -1030,9 +1030,8 @@ def revolution_face_to_topods(ob, scale=1000):
 
     v_max = 1.0
     if isinstance(geom_segment, Geom_TrimmedCurve):
-        # v_max_2 = (segment_CP[1] - segment_CP[0]).length * scale  # Line length
         v_max = geom_segment.LastParameter() - geom_segment.FirstParameter()
-        
+
     # Build trim contour
     contour = SP_Contour_export(
         ob,
