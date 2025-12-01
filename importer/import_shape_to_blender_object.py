@@ -73,6 +73,10 @@ class SP_Curve_no_edge_import:
         self.verts = [v * scale_factor for v in self.verts]
 
     def line(self, edge_adaptor):
+        # if abs(edge_adaptor.FirstParameter()) >= math.inf or abs(edge_adaptor.LastParameter()) >= math.inf :FAILS
+        #     start_point = edge_adaptor.Value(0.0) FAILS
+        #     end_point = edge_adaptor.Value(1.0)FAILS
+        # else :
         start_point = edge_adaptor.Value(edge_adaptor.FirstParameter())
         end_point = edge_adaptor.Value(edge_adaptor.LastParameter())
         gp_pnt_poles = [start_point, end_point]
@@ -82,6 +86,7 @@ class SP_Curve_no_edge_import:
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
         else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+        
         self.degree_att = [0, 0]
         self.endpoints_att = [True] * 2
         self.weight = [0.0, 0.0]
@@ -101,6 +106,9 @@ class SP_Curve_no_edge_import:
 
         # Get poles
         p_count = bezier.NbPoles()
+        if p_count <= 2:
+            self.line(edge_adaptor)
+            return
         gp_pnt_poles = [bezier.Pole(i + 1) for i in range(p_count)]
 
         # Set attributes
@@ -110,6 +118,7 @@ class SP_Curve_no_edge_import:
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
         else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
+
         self.degree_att = [0] * p_count
         self.endpoints_att = [True] + [False] * (p_count - 2) + [True]
         self.weight = [bezier.Weight(i + 1) for i in range(p_count)]
@@ -130,6 +139,10 @@ class SP_Curve_no_edge_import:
 
         # Get poles
         p_count = bspline.NbPoles()
+        if p_count <= 2:
+            self.line(edge_adaptor)
+            return
+
         gp_pnt_poles = [bspline.Pole(i + 1) for i in range(p_count)]
 
         # Set attributes
@@ -156,6 +169,8 @@ class SP_Curve_no_edge_import:
         if knot_len < p_count:
             self.knot = knot + [0.0] * (p_count - knot_len)
             self.mult = mult + [0] * (p_count - knot_len)
+            self.knot_extension = [0.0] * p_count
+            self.mult_extension = [0] * p_count
         else :
             self.knot = knot[:knot_len-1]
             self.knot_extension = knot[knot_len-1:] + [0.0] * (knot_len - p_count -1)
@@ -1078,7 +1093,6 @@ def build_SP_revolution(
     geom_surf = adapt_surf.Surface()
 
     curve_no_edge = SP_Curve_no_edge_import(adapt_curve, scale)
-    # The knot is normalized
 
     gpdir = geom_surf.Direction()
     gploc = geom_surf.Location()
@@ -1103,7 +1117,7 @@ def build_SP_revolution(
     )
 
     curve_type = get_geom_adapt_curve_type(adapt_curve)
-    min_v, max_v = curve_range_from_type(curve_type)
+    # min_v, max_v = curve_range_from_type(curve_type)
 
     attrs = {
         "Degree": [0] * 2 + curve_no_edge.degree_att,

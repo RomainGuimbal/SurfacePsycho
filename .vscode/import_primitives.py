@@ -4,15 +4,13 @@ from mathutils import Matrix, Vector
 for o in bpy.data.objects:
     bpy.data.objects.remove(o)
 
-# bpy.context.preferences.view.show_splash = False
-
 # Set view
 for area in bpy.context.screen.areas:
     if area.type == "VIEW_3D":
         for space in area.spaces:
             if space.type == "VIEW_3D":
                 region_3d = space.region_3d
-                
+
                 region_3d.view_matrix = Matrix(
                     (
                         (0.3132, 0.9497, 0.0000, 0.0000),
@@ -37,11 +35,21 @@ for area in bpy.context.screen.areas:
 #                 print(region_3d.view_location)
 #                 break
 
+names = [
+    "Torus.step",
+    "Cylinder.step",
+    "cone.step",
+    "sphere.step",
+    "extrusion calibration1.step",
+    "revolution.step",
+    "revolution lines from sp.step"
+]
 
-bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\Torus.step")
-bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\Cylinder.step")
-bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\cone.step")
-bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\sphere.step")
-bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\extrusion calibration1.step")
-bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\revolution.step")
+for n in names:
+    bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\" + n)
 
+for area in bpy.context.screen.areas:
+    if area.type == 'VIEW_3D':
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.view3d.view_selected()
+        bpy.ops.mesh.select_all(action='DESELECT')

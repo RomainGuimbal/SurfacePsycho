@@ -1028,9 +1028,12 @@ def revolution_face_to_topods(ob, scale=1000):
     )
     geom_surf = Geom_SurfaceOfRevolution(geom_segment, axis1)
 
+    # Get bounds
+    v_min = 0.0
     v_max = 1.0
     if isinstance(geom_segment, Geom_TrimmedCurve):
-        v_max = geom_segment.LastParameter() - geom_segment.FirstParameter()
+        v_min = geom_segment.FirstParameter()
+        v_max = geom_segment.LastParameter()
 
     # Build trim contour
     contour = SP_Contour_export(
@@ -1042,7 +1045,7 @@ def revolution_face_to_topods(ob, scale=1000):
         is2D=True,
         geom_surf=geom_surf,
         curr_bounds=(None, None,0.0, 1.0),
-        new_bounds=(None, None, 0.0, v_max),
+        new_bounds=(None, None, v_min, v_max),
     )
 
     # Create topods face
@@ -1385,7 +1388,7 @@ class ShapeHierarchy_export:
                     # empty_to_topods(object, context, scale)
                     case SP_obj_type.COMPOUND:
                         new_objects = convert_compound_to_patches(
-                            o, self.context, objects_suffix="_export"
+                            o, self.context, objects_suffix="_export", resolution=1
                         )
                         comp_shapes = []
 

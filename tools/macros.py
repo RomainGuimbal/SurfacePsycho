@@ -1012,12 +1012,12 @@ class SP_OT_explode_compound(bpy.types.Operator):
     def execute(self, context):
         for o in context.selected_objects:
             if sp_type_of_object(o) == SP_obj_type.COMPOUND:
-                new_objects = convert_compound_to_patches(o, context)
+                new_objects = convert_compound_to_patches(o, context, resolution=16)
 
                 # Create collection
                 collection = bpy.data.collections.new(f"{o.name} Exploded")
                 context.scene.collection.children.link(collection)
-
+                
                 # Create objects from extracted data
                 for o_new in new_objects:
                     collection.objects.link(o_new)

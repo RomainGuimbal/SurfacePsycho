@@ -35,7 +35,7 @@
             "command": ".vscode/launch_blender_with_script.bat",
             "args": [
                 "--python",
-                ".vscode/importer_test.py"
+                ".vscode/import_primitives.py"
             ],
             "problemMatcher": []
         },
@@ -45,7 +45,7 @@
             "command": ".vscode/launch_blender_with_script.bat",
             "args": [
                 "--python",
-                ".vscode/test_import_complexe.py"
+                ".vscode/import_complexe.py"
             ],
             "problemMatcher": []
         },
