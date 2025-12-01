@@ -16,9 +16,6 @@ from bpy_extras.io_utils import (
 )
 
 
-
-
-
 class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     bl_idname = "object.sp_cad_import"
     bl_label = "Import CAD"
@@ -79,26 +76,27 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
                 ]
             )
 
-        self.total_count = len(shapes_args)
-        if self.total_count == 0:
+        if len(shapes_args) == 0:
             self.report({"WARNING"}, "No shapes to import")
             return {"CANCELLED"}
 
         # Create object data
         for s in shapes_args:
             shape, name, color, collection, iscurve = s
-            self.object_data.append(
-                process_object_data_of_shape(
-                    shape,
-                    name,
-                    color,
-                    collection,
-                    self.trims_on,
-                    self.scale,
-                    self.resolution,
-                    iscurve,
-                )
+            ob_data = process_object_data_of_shape(
+                shape,
+                name,
+                color,
+                collection,
+                self.trims_on,
+                self.scale,
+                self.resolution,
+                iscurve,
             )
+            if ob_data != {}:
+                self.object_data.append(ob_data)
+        
+        self.total_count = len(self.object_data)
 
         # profiler.disable()
         # profiler.print_stats()
@@ -124,7 +122,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             context.window_manager.progress_end()
             return {"CANCELLED"}
         return {"PASS_THROUGH"}
-    
+
     def process_batch(self, context):
 
         # Create the object

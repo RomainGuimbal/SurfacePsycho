@@ -1261,7 +1261,10 @@ def import_face_nodegroups(shape_hierarchy):
         ft = adapt_surf.GetType()
         if ft not in face_encountered:
             face_encountered.add(ft)
-            to_import_ng_names.append(MESHER_NAMES[geom_to_sp_type[ft]])
+            try: # just to skip offset surfaces
+                to_import_ng_names.append(MESHER_NAMES[geom_to_sp_type[ft]])
+            except KeyError:
+                pass
 
     # Bezier imported directly because it is not detected
     if MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE] in to_import_ng_names:

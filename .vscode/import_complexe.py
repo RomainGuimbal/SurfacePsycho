@@ -40,15 +40,30 @@ names =  [
     # "Audi_R8_Wheel.stp",
     # "plancher G5.step",
     # "Darts_tip_remover_ASM.stp",
-    # "Assy meca standard.stp",
     "Taycan.igs",
+    # "Assy meca standard.stp",
 ]
 
 for n in names : 
     bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\" + n)
 
-for area in bpy.context.screen.areas:
-    if area.type == 'VIEW_3D':
-        bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.view3d.view_selected()
-        bpy.ops.mesh.select_all(action='DESELECT')
+# bpy.context.view_layer.update()
+# for area in bpy.context.screen.areas:
+#     if area.type == 'VIEW_3D':
+#         # Find the 3D view region within this area
+#         for region in area.regions:
+#             if region.type == 'WINDOW':
+#                 # Create an override context
+#                 override = bpy.context.copy()
+#                 override['area'] = area
+#                 override['region'] = region
+                
+#                 bpy.ops.object.select_all(action='SELECT')
+                
+#                 # Use the override context
+#                 with bpy.context.temp_override(**override):
+#                     bpy.ops.view3d.view_selected()
+                
+#                 bpy.ops.object.select_all(action='DESELECT')
+#                 break
+#         break
