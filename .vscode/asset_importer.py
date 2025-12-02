@@ -362,6 +362,7 @@ gr_other = {
     "SP - Surface of Revolution Meshing",
     "SP - Plot Distance from Mesh",
     "SP - Copy Geometry",
+    "SP - Adjust Revolution Sweep Angle",
 }
 
 # COMPOUND

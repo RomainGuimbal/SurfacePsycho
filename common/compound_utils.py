@@ -179,6 +179,9 @@ def convert_compound_to_patches(o, context, objects_suffix = "", resolution = 16
         if SP_obj_type(types[i]) in [SP_obj_type.BEZIER_SURFACE, SP_obj_type.BSPLINE_SURFACE]:
             add_sp_modifier(obj, "SP - Reorder Grid Index", append=False)
             settings_dict = {"Resolution U": resolution, "Resolution V": resolution} # TODO "Evaluate": False
+        if SP_obj_type(types[i]) == SP_obj_type.PLANE :
+            settings_dict = {"Orient": True}
+        
         add_sp_modifier(
             obj, MESHER_NAMES[SP_obj_type(types[i])], settings_dict, pin=True, append=False
         )
