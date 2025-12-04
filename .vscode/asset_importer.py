@@ -273,7 +273,7 @@ gr_curve_flat = {
     "SP - Fillet Polyline with Circles",
     "SP - Fit Curve",
     "SP - Inset FlatPatch",
-    "SP - Intervale Curve",
+    "SP - Interval Curve",
     "SP - Make SVG Ready",
     "SP - Mirror Curve Control Points",
     "SP - Mirror FlatPatch or Curve",
@@ -372,7 +372,7 @@ gr_compound = {
     "SP - SubD to Compound",
     "SP - Poly to Compound",
     "SP - Text to Compound",
-    "SP - Set Patch Intance Type",
+    "SP - Set Patch Instance Type",
     "SP - Split to Patches",
     "SP - Intersect Bezier Patches",
     "SP - Extrude FlatPatch",
@@ -385,12 +385,12 @@ obj_compound = {"Compound", "Text Compound"}
 path_preset = "//..\..\SP - Shapes presets.blend"
 gr_preset = {"SP - Cylinder Compound",
              "SP - Disc CP",
-             "SP - Frame Coumpound",
+             "SP - Frame Compound",
              "SP - Oblong Extrusion Compound",
-             "SP - Slab Coumpound",
+             "SP - Slab Compound",
              "SP - Tubes Compound"}
 obj_preset = {
-    "Quadaratic Dome",
+    "Quadratic Dome",
     "Cubic Dome",
     "Torus",
     "Sphere",

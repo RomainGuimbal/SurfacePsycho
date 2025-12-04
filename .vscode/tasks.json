@@ -68,6 +68,19 @@
                 "--verbose"
             ],
             "problemMatcher": []
+        },
+        
+        {
+            "label": "Print assets",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--background",
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
+                "--python",
+                ".vscode/print_assets.py"
+            ],
+            "problemMatcher": []
         }
     ]
 }
