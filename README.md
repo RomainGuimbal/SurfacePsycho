@@ -1,7 +1,7 @@
 # SurfacePsycho
 Blender addon for product design surfacing. 
 Actively devlopped since may 2023, currently in a alpha state, it brings **.STEP import and export** as well as a **non-destructive NURBS workflow** to Blender. 
-The long term goal is a full class A surfacing tool accessible by anyone.
+The long term goal is a full class A surface modeling tool accessible by anyone.
 
 More info [>>> HERE <<<](https://romainguimbal.github.io/sp-donation/sp-donation.html) 
 
