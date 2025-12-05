@@ -60,7 +60,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
         )
         add_sp_modifier(
             self.obj,
-            "SP - NURBS Patch Meshing",
+            MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE],
             {"Control Polygon": self.show_control_geom,
              "Degree U": self.degree_u,
              "Degree V": self.degree_v},
@@ -120,7 +120,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         )
         add_sp_modifier(
             self.obj,
-            "SP - Bezier Patch Meshing",
+            MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
             {"Control Polygon": self.show_control_geom},
             pin=True,
             append=True,

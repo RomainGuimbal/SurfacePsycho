@@ -1058,7 +1058,52 @@ class SP_OT_mesh_to_compound(bpy.types.Operator):
         layout.label(text="More than 5000 polygons will each become an SP patch.") 
         layout.label(text="Proceed anyway ?")
 
+
+class SP_OT_add_curvature_analysis(bpy.types.Operator):
+    bl_idname = "object.sp_add_curvature_analysis"
+    bl_label = "SP - Add Curvature Analysis"
+    bl_description = "Add curvature analysis modifier to selected surfaces"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        for o in context.selected_objects:
+            if o.type == 'MESH':
+                sp_surf = False
+                for m in o.modifiers:
+                    if m.node_group.name in [MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE], MESHER_NAMES[SP_obj_type.BEZIER_SURFACE]]:
+                        sp_surf = True
+                        break
+
+                if not sp_surf:
+                    continue
+
+                pinned_mods = []
+                for m in o.modifiers:
+                    if m.use_pin_to_last :
+                        m.use_pin_to_last = False
+                        pinned_mods.append(m)
+
+
+                add_sp_modifier(o, "SP - Curvature Analysis", append=True, pin=True)
+
+                for m in pinned_mods:
+                    m.use_pin_to_last = True
+                
+                if "Color" not in o.data.color_attributes:
+                    o.data.color_attributes.new(
+                        name="Color",
+                        type='BYTE_COLOR',  # or 'FLOAT_COLOR'
+                        domain='POINT'      # or 'CORNER'
+                    )
+            
+        bpy.context.space_data.shading.color_type = 'VERTEX'
+
+
+        return {"FINISHED"}
+
+
 classes = [
+    SP_OT_add_curvature_analysis,
     SP_OT_add_library,
     SP_OT_add_oriented_empty,
     SP_OT_add_trim_contour,

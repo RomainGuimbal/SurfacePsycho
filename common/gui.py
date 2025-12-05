@@ -56,6 +56,9 @@ class SP_PT_ViewPanel(bpy.types.Panel):
         sub.active = context.scene.sp_properties.combs_on
         sub.prop(context.scene.sp_properties, "combs_scale", text="")
 
+        # Curvature Analysis
+        self.layout.operator("object.sp_add_curvature_analysis", text="Curvature Analysis", icon="RNDCURVE")
+
 
 class SP_PT_SelectPanel(bpy.types.Panel):
     bl_idname = "SP_PT_SelectPanel"
