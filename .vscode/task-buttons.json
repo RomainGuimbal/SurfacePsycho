@@ -1,0 +1,16 @@
+{
+  "buttons": [
+    {
+      "name": "",
+      "task": "Update assets",
+      "icon": "💎",
+      "tooltip": "Update Assets"
+    },
+    {
+      "name": "",
+      "task": "Import primitives",
+      "icon": "🐪",
+      "tooltip": "Import primitives"
+    }
+  ]
+}

@@ -717,8 +717,8 @@ def build_SP_cone(
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Scaling Method": 1,
-            "Resolution U": resolution,
-            "Resolution V": resolution * 2,
+            "Resolution U": resolution*2,
+            "Resolution V": resolution,
         },
         True,
     )

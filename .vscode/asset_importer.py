@@ -263,7 +263,7 @@ obj_curve_flat = {
 gr_curve_flat = {
     # "SP - Bezier Circlular Arc",
     "SP - Blend Curve",
-    #    "SP - Compose FlatPatch From Sides",
+    # "SP - Compose FlatPatch From Sides",
     "SP - Continuities between Segments",
     "SP - Convert Circles and Ellipses to Splines",
     "SP - Copy Mesh Face",
@@ -363,6 +363,7 @@ gr_other = {
     "SP - Plot Distance from Mesh",
     "SP - Copy Geometry",
     "SP - Adjust Revolution Sweep Angle",
+    "SP - Transform UVMap",
 }
 
 # COMPOUND
@@ -401,7 +402,8 @@ obj_preset = {
     "Slab",
     "Frame",
     "Oblong Tube",
-    "Oblong Slab",
+    "Oblong Slab"
+    "Revolution",
 }
 coll_preset = {
     "Corner",
