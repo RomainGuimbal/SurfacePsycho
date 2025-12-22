@@ -1112,11 +1112,13 @@ def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
 
 
 def split_by_index(index: list[int], attribute: list) -> list[list]:
-    #treat 0 case (not clean :/)
+    # KNOWN TO FAIL ON SEVERAL CASES
+    #treat 0 case
     last_zero = 0
     try :
         last_zero = index.index(1)
     except ValueError:
+        # All zeros
         pass
         
     split_attr = []
@@ -1133,11 +1135,13 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
 
 
 def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
-    #treat 0 case (not clean :/)
+    # KNOWN TO FAIL ON SEVERAL CASES
+    #treat 0 case
     last_zero = 0
     try :
         last_zero = index.index(1)
     except ValueError:
+        # All zeros
         pass
         
     split_attr = {}

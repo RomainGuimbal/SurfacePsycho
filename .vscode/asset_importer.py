@@ -379,6 +379,7 @@ gr_compound = {
     "SP - Extrude FlatPatch",
     "SP - Interval Curves",
     "SP - NURBS to Bezier Patches",
+    "SP - Profile Revolution Compound",
 }
 obj_compound = {"Compound", "Text Compound"}
 

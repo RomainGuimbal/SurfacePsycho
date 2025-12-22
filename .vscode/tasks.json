@@ -49,9 +49,6 @@
             ],
             "problemMatcher": []
         },
-        // {
-        //     c:\Users\romai\Downloads\TheBlenders\blender-5.0.0-beta+v50.1f5254094830-windows.amd64-release\blender.exe --python c:\Users\romai\.vscode\extensions\jacqueslucke.blender-development-0.0.26\pythonFiles\launch.py 
-        // }
         {
             "label": "BUILD",
             "type": "shell",
@@ -69,7 +66,6 @@
             ],
             "problemMatcher": []
         },
-        
         {
             "label": "Print assets",
             "type": "shell",
@@ -81,6 +77,15 @@
                 ".vscode/print_assets.py"
             ],
             "problemMatcher": []
-        }
+        },
+        // {
+        //     "type": "process",
+        //     "label": "Start Blender",
+        //     "command": "${command:extension.blender.start}",
+        //     "args": [
+        //         "--blenderExecutable C:/Program Files/Blender Foundation/Blender 5.0/blender.exe"
+        //     ],
+        //     "problemMatcher": []
+        // }
     ]
 }

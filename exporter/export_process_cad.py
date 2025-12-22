@@ -1185,7 +1185,7 @@ def curve_to_topods(ob, scale=1000):
     knot_segment = list(read_attribute_by_name(ob, "knot_segment"))
     knot_per_seg = split_by_index(knot_segment, knot)
     mult_per_seg = split_by_index(knot_segment, mult)
-
+    
     # Build wire
     wire = SP_Wire_export(
         {"CP": points, "weight": weight_attr},

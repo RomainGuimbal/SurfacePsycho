@@ -2,6 +2,12 @@
   "buttons": [
     {
       "name": "",
+      "task": "Start Blender",
+      "icon": "🍊",
+      "tooltip": "Start Blender"
+    },
+    {
+      "name": "",
       "task": "Update assets",
       "icon": "💎",
       "tooltip": "Update Assets"
@@ -9,7 +15,7 @@
     {
       "name": "",
       "task": "Import primitives",
-      "icon": "🐪",
+      "icon": "🍩",
       "tooltip": "Import primitives"
     }
   ]
