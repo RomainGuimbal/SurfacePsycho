@@ -690,11 +690,15 @@ class SP_Contour_export:
 
     def get_topods_wires(self):
         wires = self.wires_dict
-        outer_wire = wires[-1].get_topods_wire()
+        outer_wire = None
         inner_wires = []
         for k in wires.keys():
-            if k != -1:
+            if k > 0:
                 inner_wires.append(wires[k].get_topods_wire())
+            elif k < 0:
+                outer_wire = wires[k].get_topods_wire()
+        if outer_wire == None:
+            raise Exception("No outer wire found")
 
         return outer_wire, inner_wires
 
@@ -1231,12 +1235,15 @@ def flat_patch_to_topods(ob, scale=1000):
     ).wires_dict
 
     # Get occ wires
-    outer_wire = wires[-1].get_topods_wire()
+    outer_wire = None
     inner_wires = []
     for k in wires.keys():
-        if k != -1:
+        if k > 0:
             inner_wires.append(wires[k].get_topods_wire())
-
+        elif k < 0:
+            outer_wire = wires[k].get_topods_wire()
+    if outer_wire == None:
+        raise Exception("No outer wire found")
     face = geom_to_topods_face(None, outer_wire, inner_wires)
     return face
 
