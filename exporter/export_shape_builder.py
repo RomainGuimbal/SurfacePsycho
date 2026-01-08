@@ -823,6 +823,8 @@ def NURBS_face_to_topods(ob, scale=1000):
     )
 
     geom_surf = StepToGeom.MakeBSplineSurface_s(step_surf, StepData_Factors())
+    if geom_surf == None:
+        raise ValueError("Failed to create BSpline surface geometry")
 
     # Build trim contour
     contour = SP_Contour_export(
