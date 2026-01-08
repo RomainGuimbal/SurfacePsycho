@@ -1,12 +1,13 @@
 from os.path import splitext, split, isfile
-from ..common.utils import *
+from ..common.utils import list_of_shapes_to_compound
 import unicodedata
 
+from OCP.TDataStd import TDataStd_Name
 from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
 from OCP.IGESControl import IGESControl_Controller, IGESControl_Reader
-from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB, Quantity_ColorRGBA
+from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB #, Quantity_ColorRGBA
 from OCP.STEPCAFControl import STEPCAFControl_Reader
 from OCP.STEPControl import STEPControl_Reader
 from OCP.TCollection import TCollection_ExtendedString, TCollection_AsciiString
@@ -17,7 +18,7 @@ from OCP.TopoDS import TopoDS_Compound
 from OCP.XCAFDoc import (
     XCAFDoc_DocumentTool,
     XCAFDoc_ColorTool,
-    XCAFDoc_ShapeTool,
+    # XCAFDoc_ShapeTool,
     XCAFDoc_ColorCurv,
     XCAFDoc_ColorSurf,
     XCAFDoc_ColorGen,

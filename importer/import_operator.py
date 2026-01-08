@@ -1,9 +1,13 @@
 import bpy
-import platform
 
-os = platform.system()
-
-from .import_shape_to_blender_object import *
+from ..common.enums import SP_obj_type, MESHER_NAMES
+from ..common.utils import append_node_group
+from .import_shape_to_blender_object import (
+    ShapeHierarchy,
+    create_blender_object,
+    import_face_nodegroups,
+    process_object_data_of_shape,
+)
 from .import_reader import read_cad
 from bpy.props import (
     StringProperty,
@@ -95,7 +99,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             )
             if ob_data != {}:
                 self.object_data.append(ob_data)
-        
+
         self.total_count = len(self.object_data)
 
         # profiler.disable()

@@ -1,9 +1,9 @@
 import bpy
 import numpy as np
-from .utils import *
+from .enums import SP_obj_type, MESHER_NAMES
+from .utils import add_sp_modifier
 
-
-def create_objects_from_instances(source_obj, depsgraph, suffix = ""):
+def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     """
     Create individual mesh objects from Geometry Nodes instances
     """
@@ -141,17 +141,17 @@ def copy_mesh_attributes(source_mesh, target_mesh):
 #     return data
 
 
-def convert_compound_to_patches(o, context, objects_suffix = "", resolution = 16):
+def convert_compound_to_patches(o, context, objects_suffix="", resolution=16):
     # Find compound meshing modifier
     mod = None
-    for m in reversed(o.modifiers) :
+    for m in reversed(o.modifiers):
         if m.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
             mod = m
             break
-    
-    if mod == None :
+
+    if mod == None:
         return None
-    
+
     # Create objects
     # Disable modifier to access non meshed data
     mod.show_viewport = False
@@ -164,11 +164,7 @@ def convert_compound_to_patches(o, context, objects_suffix = "", resolution = 16
 
     ob = o.evaluated_get(context.evaluated_depsgraph_get())
     for att in ob.data.attributes:
-        if (
-            att.domain == "POINT"
-            and att.name == "SP_type"
-            and att.data_type == "INT"
-        ):
+        if att.domain == "POINT" and att.name == "SP_type" and att.data_type == "INT":
             types = np.zeros(len(att.data), dtype=np.int32)
             att.data.foreach_get("value", types)
             break
@@ -176,15 +172,24 @@ def convert_compound_to_patches(o, context, objects_suffix = "", resolution = 16
     # Add modifiers
     for i, obj in enumerate(created_objects):
         settings_dict = {}
-        if SP_obj_type(types[i]) in [SP_obj_type.BEZIER_SURFACE, SP_obj_type.BSPLINE_SURFACE]:
+        if SP_obj_type(types[i]) in [
+            SP_obj_type.BEZIER_SURFACE,
+            SP_obj_type.BSPLINE_SURFACE,
+        ]:
             add_sp_modifier(obj, "SP - Reorder Grid Index", append=False)
-            settings_dict = {"Resolution U": resolution, "Resolution V": resolution} # TODO "Evaluate": False
-        if SP_obj_type(types[i]) == SP_obj_type.PLANE :
+            settings_dict = {
+                "Resolution U": resolution,
+                "Resolution V": resolution,
+            }  # TODO "Evaluate": False
+        if SP_obj_type(types[i]) == SP_obj_type.PLANE:
             settings_dict = {"Orient": True}
-        
-        add_sp_modifier(
-            obj, MESHER_NAMES[SP_obj_type(types[i])], settings_dict, pin=True, append=False
-        )
-    
-    return created_objects
 
+        add_sp_modifier(
+            obj,
+            MESHER_NAMES[SP_obj_type(types[i])],
+            settings_dict,
+            pin=True,
+            append=False,
+        )
+
+    return created_objects

@@ -1,8 +1,31 @@
 import bpy
+import math
 import numpy as np
-from mathutils import Vector
-from os.path import abspath, splitext, split, isfile
-from ..common.utils import *
+from mathutils import Vector, Matrix
+from ..common.enums import SP_obj_type, MESHER_NAMES, geom_to_sp_type
+from ..common.utils import (
+    get_geom_adapt_curve_type,
+    gp_pnt_to_blender_vec_list,
+    gp_pnt_to_blender_vec_list_2d,
+    harray1_of_real_to_list,
+    harray1_of_int_to_list,
+    get_edges_from_wire,
+    get_wires_from_face,
+    join_mesh_entities,
+    is_natural_bounds,
+    rebound_UV,
+    get_shape_transform,
+    override_attribute_dictionary,
+    create_grid,
+    curve_range_from_type,
+    get_shape_name_and_color,
+    get_face_sp_type,
+    add_bool_attribute,
+    add_int_attribute,
+    add_float_attribute,
+    add_sp_modifier,
+    append_multiple_node_groups,
+)
 from math import isclose
 
 from OCP.BRepAdaptor import (
@@ -48,7 +71,6 @@ class SP_Curve_no_edge_import:
         self.knot = []
         self.knot_extension = []
 
-
         curve_type = get_geom_adapt_curve_type(adaptor_curve)
         self.isclosed = adaptor_curve.IsClosed()
 
@@ -86,7 +108,7 @@ class SP_Curve_no_edge_import:
             self.verts = gp_pnt_to_blender_vec_list_2d(gp_pnt_poles)
         else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
-        
+
         self.degree_att = [0, 0]
         self.endpoints_att = [True] * 2
         self.weight = [0.0, 0.0]
@@ -165,17 +187,19 @@ class SP_Curve_no_edge_import:
         knot = harray1_of_real_to_list(step_curve.Knots())
         mult = harray1_of_int_to_list(step_curve.KnotMultiplicities())
         knot_len = len(knot)
-        
+
         if knot_len < p_count:
             self.knot = knot + [0.0] * (p_count - knot_len)
             self.mult = mult + [0] * (p_count - knot_len)
             self.knot_extension = [0.0] * p_count
             self.mult_extension = [0] * p_count
-        else :
-            self.knot = knot[:knot_len-1]
-            self.knot_extension = knot[knot_len-1:] + [0.0] * (knot_len - p_count -1)
-            self.mult = mult[:knot_len-1]
-            self.mult_extension = mult[knot_len-1:] + [0] * (knot_len - p_count -1)
+        else:
+            self.knot = knot[: knot_len - 1]
+            self.knot_extension = knot[knot_len - 1 :] + [0.0] * (
+                knot_len - p_count - 1
+            )
+            self.mult = mult[: knot_len - 1]
+            self.mult_extension = mult[knot_len - 1 :] + [0] * (knot_len - p_count - 1)
 
     def circle(self, edge_adaptor):
         min_t = edge_adaptor.FirstParameter()
@@ -430,6 +454,7 @@ class SP_Contour_import:
     def rebound_UV(self, curr_bounds, new_bounds):
         rebound_UV(self.verts, curr_bounds, new_bounds)
 
+
 def generic_import_surface(
     face: TopoDS_Face,
     name,
@@ -466,11 +491,11 @@ def generic_import_surface(
         mesh_data = join_mesh_entities(
             CPvert, CPedges, CPfaces, contour.verts, contour.edges, []
         )
-        
+
         trim_attrs = {
             "Weight": weight + contour.weight,
             "Knot": [0.0] * len(CPvert) + contour.knot,
-            "Knot_extension": [0.0] * len(CPvert) + contour.knot_extension, 
+            "Knot_extension": [0.0] * len(CPvert) + contour.knot_extension,
             "Multiplicity": [0] * len(CPvert) + contour.mult,
             "Multiplicity_extension": [0] * len(CPvert) + contour.mult_extension,
             "Trim Contour": [False] * len(CPvert) + [True] * len(contour.verts),
@@ -717,7 +742,7 @@ def build_SP_cone(
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
             "Scaling Method": 1,
-            "Resolution U": resolution*2,
+            "Resolution U": resolution * 2,
             "Resolution V": resolution,
         },
         True,
@@ -1261,7 +1286,7 @@ def import_face_nodegroups(shape_hierarchy):
         ft = adapt_surf.GetType()
         if ft not in face_encountered:
             face_encountered.add(ft)
-            try: # just to skip offset surfaces
+            try:  # just to skip offset surfaces
                 to_import_ng_names.append(MESHER_NAMES[geom_to_sp_type[ft]])
             except KeyError:
                 pass

@@ -1,21 +1,47 @@
+import bpy
 import numpy as np
-from mathutils import Vector
-from os.path import dirname, abspath, isfile
-from ..common.utils import *
+import math
+from mathutils import Vector, Matrix
 from collections import Counter
-from .export_ellipse import *
-from ..common.compound_utils import *
 
+from ..common.enums import SP_obj_type, SP_segment_type
+from ..common.utils import (
+    read_attribute_by_name,
+    dict_to_list_missing_index_filled,
+    split_by_index_dict,
+    gp_list_to_arrayofpnt,
+    vec_list_to_gp_pnt2d,
+    vec_list_to_step_cartesian2d,
+    vec_list_to_step_cartesian,
+    float_list_to_tcolstd_H,
+    int_list_to_tcolstd_H,
+    rebound_UV,
+    vec_grid_to_step_cartesian,
+    float_list_to_tcolstd_H_2d,
+    sp_type_of_object,
+    split_by_index,
+    blender_matrix_to_gp_trsf,
+    shape_list_to_compound,
+    shells_to_solids,
+)
+from ..common.compound_utils import (
+    convert_compound_to_patches,
+)
+from .export_ellipse import gp_Elips_from_3_points, gp_Elips2d_from_3_points
+
+from OCP.TColgp import TColgp_Array2OfPnt
+from OCP.TColStd import (
+    TColStd_HArray1OfReal,
+    TColStd_HArray1OfInteger,
+)
 
 from OCP.BRepBuilderAPI import (
-    BRepBuilderAPI_Copy,
     BRepBuilderAPI_GTransform,
     BRepBuilderAPI_MakeFace,
     BRepBuilderAPI_Sewing,
     BRepBuilderAPI_Transform,
     BRepBuilderAPI_MakeWire,
     BRepBuilderAPI_MakeEdge,
-    BRepBuilderAPI_MakeSolid,
 )
 from OCP.GC import (
     GC_MakeArcOfCircle,
@@ -33,7 +59,6 @@ from OCP.GCE2d import (
 )
 from OCP.Geom import (
     Geom_BezierSurface,
-    Geom_BSplineSurface,
     Geom_Plane,
     Geom_BezierCurve,
     Geom_ToroidalSurface,
@@ -44,7 +69,7 @@ from OCP.Geom import (
     Geom_SurfaceOfRevolution,
     Geom_TrimmedCurve,
 )
-from OCP.Geom2d import Geom2d_BezierCurve, Geom2d_BSplineCurve
+from OCP.Geom2d import Geom2d_BezierCurve
 from OCP.GeomAdaptor import GeomAdaptor_Surface
 from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCP.gp import (
@@ -55,13 +80,8 @@ from OCP.gp import (
     gp_Ax1,
     gp_Ax2,
     gp_Ax3,
-    gp_Circ,
-    gp_Ax2d,
     gp_Pnt2d,
-    gp_Circ2d,
-    gp_Dir2d,
     gp_Vec,
-    gp_Vec2d,
     gp_GTrsf,
     gp_Mat,
 )
@@ -1596,7 +1616,7 @@ def sew_shapes(shape_list, tolerance=1e-1):
 def prepare_export(
     context, use_selection: bool, scale=1000, sew: bool = True, sew_tolerance=1e-1
 ) -> TopoDS_Compound:
-    
+
     separated_shapes_list = []
     hierarchy = ShapeHierarchy_export(context, use_selection, scale, sew, sew_tolerance)
 

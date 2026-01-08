@@ -5,26 +5,14 @@ from mathutils import Vector, Matrix, Quaternion
 import math
 from typing import List, Tuple
 from os.path import dirname, abspath
-from enum import Enum
 import re
 
+from .enums import SP_obj_type, MESHER_NAMES, geom_to_sp_type
 from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import (
-    GeomAbs_Plane,
-    GeomAbs_Cylinder,
-    GeomAbs_Cone,
-    GeomAbs_Sphere,
-    GeomAbs_Torus,
-    GeomAbs_BezierSurface,
-    GeomAbs_BSplineSurface,
-    GeomAbs_SurfaceOfRevolution,
-    GeomAbs_SurfaceOfExtrusion,
-    GeomAbs_OtherSurface,
-)
 from OCP.GeomAdaptor import GeomAdaptor_Curve
-from OCP.TopAbs import TopAbs_FORWARD, TopAbs_EDGE, TopAbs_WIRE
+from OCP.TopAbs import TopAbs_EDGE, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
 from OCP.TopoDS import (
     TopoDS,
@@ -34,21 +22,13 @@ from OCP.TopoDS import (
     TopoDS_Shape,
     TopoDS_Compound,
     TopoDS_Iterator,
-    TopoDS_Shell,
-    TopoDS_Solid,
 )
 from OCP.gp import (
     gp_Pnt,
     gp_Quaternion,
-    gp_Dir,
-    gp_Pln,
     gp_Trsf,
-    gp_Ax1,
-    gp_Ax2,
-    gp_Ax2d,
     gp_Pnt2d,
     gp_Trsf,
-    gp_Dir2d,
     gp_Vec,
 )
 from OCP.TColgp import TColgp_Array1OfPnt, TColgp_Array1OfPnt2d, TColgp_Array2OfPnt
@@ -65,80 +45,16 @@ from OCP.TDF import TDF_Label
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ColorGen
 from OCP.Quantity import Quantity_Color
 from OCP.BRepCheck import BRepCheck_Analyzer
-from OCP.StepGeom import StepGeom_CartesianPoint, StepGeom_HArray1OfCartesianPoint, StepGeom_HArray2OfCartesianPoint
+from OCP.StepGeom import (
+    StepGeom_CartesianPoint,
+    StepGeom_HArray1OfCartesianPoint,
+    StepGeom_HArray2OfCartesianPoint,
+)
 import OCP.TopAbs as TopAbs
 import OCP.GeomAbs as GeomAbs
 
 addonpath = dirname(dirname(abspath(__file__)))  # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
-
-
-class SP_obj_type(Enum):
-    PLANE = 0
-    CYLINDER = 1
-    CONE = 2
-    SPHERE = 3
-    TORUS = 4
-    BEZIER_SURFACE = 5
-    BSPLINE_SURFACE = 6
-    SURFACE_OF_REVOLUTION = 7
-    SURFACE_OF_EXTRUSION = 8
-    OTHER_SURFACE = 9
-    INSTANCE = 10
-    EMPTY = 11
-    CURVE = 12
-    COMPOUND = 13
-
-
-# TYPES_FROM_CP_ATTR = {
-#     "CP_any_order_surf": SP_obj_type.BEZIER_SURFACE,
-#     "CP_NURBS_surf": SP_obj_type.BSPLINE_SURFACE,
-#     "CP_planar": SP_obj_type.PLANE,
-#     "CP_curve": SP_obj_type.CURVE,
-#     "axis3_cylinder": SP_obj_type.CYLINDER,
-#     "axis3_torus": SP_obj_type.TORUS,
-#     "axis3_cone": SP_obj_type.CONE,
-#     "axis3_sphere": SP_obj_type.SPHERE,
-#     "CP_extrusion": SP_obj_type.SURFACE_OF_EXTRUSION,
-#     "CP_revolution": SP_obj_type.SURFACE_OF_REVOLUTION,
-# }
-
-geom_to_sp_type = {
-    GeomAbs_Plane: SP_obj_type.PLANE,
-    GeomAbs_Cylinder: SP_obj_type.CYLINDER,
-    GeomAbs_Cone: SP_obj_type.CONE,
-    GeomAbs_Sphere: SP_obj_type.SPHERE,
-    GeomAbs_Torus: SP_obj_type.TORUS,
-    GeomAbs_BezierSurface: SP_obj_type.BEZIER_SURFACE,
-    GeomAbs_BSplineSurface: SP_obj_type.BSPLINE_SURFACE,
-    GeomAbs_SurfaceOfRevolution: SP_obj_type.SURFACE_OF_REVOLUTION,
-    GeomAbs_SurfaceOfExtrusion: SP_obj_type.SURFACE_OF_EXTRUSION,
-    GeomAbs_OtherSurface: SP_obj_type.OTHER_SURFACE,
-}
-
-MESHER_NAMES = {
-    SP_obj_type.PLANE: "SP - FlatPatch Meshing",
-    SP_obj_type.CYLINDER: "SP - Cylindrical Meshing",
-    SP_obj_type.CONE: "SP - Conical Meshing",
-    SP_obj_type.SPHERE: "SP - Spherical Meshing",
-    SP_obj_type.TORUS: "SP - Toroidal Meshing",
-    SP_obj_type.BEZIER_SURFACE: "SP - Bezier Patch Meshing",
-    SP_obj_type.BSPLINE_SURFACE: "SP - NURBS Patch Meshing",
-    SP_obj_type.SURFACE_OF_REVOLUTION: "SP - Surface of Revolution Meshing",
-    SP_obj_type.SURFACE_OF_EXTRUSION: "SP - Surface of Extrusion Meshing",
-    SP_obj_type.CURVE: "SP - Curve Meshing",
-    SP_obj_type.COMPOUND: "SP - Compound Meshing",
-}
-
-
-# to replace with official index
-class SP_segment_type(Enum):
-    BEZIER = 0
-    NURBS = 1
-    CIRCLE_ARC = 2
-    CIRCLE = 3
-    ELLIPSE_ARC = 4
-    ELLIPSE = 5
 
 
 def get_face_sp_type(TopoDSface: TopoDS_Face):
@@ -554,12 +470,14 @@ def tcolstd_array1_to_list(array):
     else:
         return [array(i) for i in range(array.Lower(), array.Upper() + 1)]
 
+
 def harray1_of_real_to_list(harray):
     return [harray(i) for i in range(harray.Lower(), harray.Upper() + 1)]
 
 
 def harray1_of_int_to_list(harray):
     return [harray(i) for i in range(harray.Lower(), harray.Upper() + 1)]
+
 
 def gp_list_to_arrayofpnt(array: list):
     tcol = TColgp_Array1OfPnt(1, len(array))
@@ -574,11 +492,13 @@ def float_list_to_tcolstd(array: list[float]):
         tcol.SetValue(i + 1, array[i])
     return tcol
 
+
 def int_list_to_tcolstd(array: list[int]):
     tcol = TColStd_Array1OfInteger(1, len(array))
     for i in range(len(array)):
         tcol.SetValue(i + 1, array[i])
     return tcol
+
 
 def float_list_to_tcolstd_H(array: list[float]):
     tcol = TColStd_HArray1OfReal(1, len(array))
@@ -586,11 +506,13 @@ def float_list_to_tcolstd_H(array: list[float]):
         tcol.SetValue(i + 1, array[i])
     return tcol
 
+
 def int_list_to_tcolstd_H(array: list[int]):
     tcol = TColStd_HArray1OfInteger(1, len(array))
     for i in range(len(array)):
         tcol.SetValue(i + 1, array[i])
     return tcol
+
 
 def float_list_to_tcolstd_H_2d(array: list[list[float]]):
     rows = len(array)
@@ -600,6 +522,7 @@ def float_list_to_tcolstd_H_2d(array: list[list[float]]):
         for j in range(cols):
             tcol.SetValue(i + 1, j + 1, array[i][j])
     return tcol
+
 
 def vec_list_to_gp_pnt2d(array: list):
     tcol = TColgp_Array1OfPnt2d(1, len(array))
@@ -614,6 +537,7 @@ def vec_list_to_gp_pnt(array: list):
         tcol.SetValue(i + 1, gp_Pnt(array[i][0], array[i][1], array[i][2]))
     return tcol
 
+
 def vec_list_to_step_cartesian2d(array: list):
     step_array = StepGeom_HArray1OfCartesianPoint(1, len(array))
     for i in range(len(array)):
@@ -622,6 +546,7 @@ def vec_list_to_step_cartesian2d(array: list):
         step_array.SetValue(i + 1, p)
     return step_array
 
+
 def vec_list_to_step_cartesian(array: list):
     step_array = StepGeom_HArray1OfCartesianPoint(1, len(array))
     for i in range(len(array)):
@@ -629,6 +554,7 @@ def vec_list_to_step_cartesian(array: list):
         p.Init3D(TCollection_HAsciiString("cp"), *(array[i]))
         step_array.SetValue(i + 1, p)
     return step_array
+
 
 def vec_grid_to_step_cartesian(array: list):
     rows = len(array)
@@ -1113,14 +1039,14 @@ def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
 
 def split_by_index(index: list[int], attribute: list) -> list[list]:
     # KNOWN TO FAIL ON SEVERAL CASES
-    #treat 0 case
+    # treat 0 case
     last_zero = 0
-    try :
+    try:
         last_zero = index.index(1)
     except ValueError:
         # All zeros
         pass
-        
+
     split_attr = []
     start = 0
     end = 0
@@ -1136,14 +1062,14 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
 
 def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
     # KNOWN TO FAIL ON SEVERAL CASES
-    #treat 0 case
+    # treat 0 case
     last_zero = 0
-    try :
+    try:
         last_zero = index.index(1)
     except ValueError:
         # All zeros
         pass
-        
+
     split_attr = {}
     start = 0
     end = 0
@@ -1155,6 +1081,7 @@ def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
         split_attr[i] = attribute[start:end]
         start = end
     return split_attr
+
 
 def dict_to_list_missing_index_filled(dict: dict) -> list:
     min_index = min(dict.keys())
@@ -1214,61 +1141,61 @@ def rebound_UV(verts, curr_bounds, new_bounds):
 
 
 def is_natural_bounds(verts, edges):
-        is_natural_bounds_trim = False
-        if len(verts) == 4:
+    is_natural_bounds_trim = False
+    if len(verts) == 4:
 
-            t1 = verts == [
-                Vector((0.0, 0.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-            ]
-            t2 = verts == [
-                Vector((0.0, 1.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-            ]
-            t3 = verts == [
-                Vector((1.0, 1.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-            ]
-            t4 = verts == [
-                Vector((1.0, 0.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-            ]
+        t1 = verts == [
+            Vector((0.0, 0.0, 0.0)),
+            Vector((0.0, 1.0, 0.0)),
+            Vector((1.0, 1.0, 0.0)),
+            Vector((1.0, 0.0, 0.0)),
+        ]
+        t2 = verts == [
+            Vector((0.0, 1.0, 0.0)),
+            Vector((1.0, 1.0, 0.0)),
+            Vector((1.0, 0.0, 0.0)),
+            Vector((0.0, 0.0, 0.0)),
+        ]
+        t3 = verts == [
+            Vector((1.0, 1.0, 0.0)),
+            Vector((1.0, 0.0, 0.0)),
+            Vector((0.0, 0.0, 0.0)),
+            Vector((0.0, 1.0, 0.0)),
+        ]
+        t4 = verts == [
+            Vector((1.0, 0.0, 0.0)),
+            Vector((0.0, 0.0, 0.0)),
+            Vector((0.0, 1.0, 0.0)),
+            Vector((1.0, 1.0, 0.0)),
+        ]
 
-            t5 = verts == [
-                Vector((1.0, 0.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-            ]
-            t6 = verts == [
-                Vector((1.0, 1.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-            ]
-            t7 = verts == [
-                Vector((0.0, 1.0, 0.0)),
-                Vector((0.0, 0.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-            ]
-            t8 = verts == [
-                Vector((0.0, 0.0, 0.0)),
-                Vector((1.0, 0.0, 0.0)),
-                Vector((1.0, 1.0, 0.0)),
-                Vector((0.0, 1.0, 0.0)),
-            ]
+        t5 = verts == [
+            Vector((1.0, 0.0, 0.0)),
+            Vector((1.0, 1.0, 0.0)),
+            Vector((0.0, 1.0, 0.0)),
+            Vector((0.0, 0.0, 0.0)),
+        ]
+        t6 = verts == [
+            Vector((1.0, 1.0, 0.0)),
+            Vector((0.0, 1.0, 0.0)),
+            Vector((0.0, 0.0, 0.0)),
+            Vector((1.0, 0.0, 0.0)),
+        ]
+        t7 = verts == [
+            Vector((0.0, 1.0, 0.0)),
+            Vector((0.0, 0.0, 0.0)),
+            Vector((1.0, 0.0, 0.0)),
+            Vector((1.0, 1.0, 0.0)),
+        ]
+        t8 = verts == [
+            Vector((0.0, 0.0, 0.0)),
+            Vector((1.0, 0.0, 0.0)),
+            Vector((1.0, 1.0, 0.0)),
+            Vector((0.0, 1.0, 0.0)),
+        ]
 
-            t9 = set(edges) == {(0, 1), (1, 2), (2, 3), (3, 0)}
+        t9 = set(edges) == {(0, 1), (1, 2), (2, 3), (3, 0)}
 
-            is_natural_bounds_trim = (t1 or t2 or t3 or t4 or t5 or t6 or t7 or t8) and t9
+        is_natural_bounds_trim = (t1 or t2 or t3 or t4 or t5 or t6 or t7 or t8) and t9
 
-        return is_natural_bounds_trim
+    return is_natural_bounds_trim

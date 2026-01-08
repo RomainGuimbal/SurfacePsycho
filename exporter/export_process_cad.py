@@ -1,8 +1,4 @@
 from os.path import isfile
-from ..common.utils import *
-from .export_ellipse import *
-from ..common.compound_utils import *
-
 from OCP.IFSelect import IFSelect_RetDone
 from OCP.IGESControl import IGESControl_Writer
 from OCP.Interface import Interface_Static
@@ -43,10 +39,10 @@ def export_iges(
         return False
 
 
-
 #####################################
 # STEP export (copy of OCC Extends) #
 #####################################
+
 
 def write_step_file(a_shape, filename, application_protocol="AP203"):
     """exports a shape to a STEP file
@@ -80,6 +76,7 @@ def write_step_file(a_shape, filename, application_protocol="AP203"):
 #####################################
 # IGES export (copy of OCC Extends) #
 #####################################
+
 
 def write_iges_file(a_shape, filename):
     """exports a shape to a STEP file

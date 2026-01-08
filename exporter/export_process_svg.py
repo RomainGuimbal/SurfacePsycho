@@ -1,7 +1,8 @@
 import bpy
 import numpy as np
 from mathutils import Vector
-from ..common.utils import *
+from ..common.enums import SP_obj_type
+from ..common.utils import to_hex, sp_type_of_object
 import copy
 from typing import List, Dict
 from .export_shape_builder import SP_Contour_export

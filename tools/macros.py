@@ -1,13 +1,31 @@
 import bpy
+from mathutils import Vector, Matrix
 import bmesh
-from ..common.utils import *
-from ..common.compound_utils import *
+from ..common.enums import SP_obj_type, MESHER_NAMES
+from ..common.utils import (
+    sp_type_of_object,
+    append_object_by_name,
+    append_multiple_node_groups,
+    replace_all_instances_of_node_group,
+    read_attribute_by_name,
+    toggle_bool_attribute,
+    toggle_pseudo_bool_attribute,
+    toggle_pseudo_bool_vertex_group,
+    select_by_attriute,
+    set_segment_type,
+    add_bool_attribute,
+    add_sp_modifier,
+    flip_node_socket_bool,
+    change_node_socket_value,
+)
+from ..common.compound_utils import convert_compound_to_patches
 from mathutils import Vector
 
 from os.path import dirname, abspath, join
 import platform
 
 os = platform.system()
+
 
 class SP_OT_add_library(bpy.types.Operator):
     bl_idname = "object.sp_add_library"
@@ -1012,7 +1030,7 @@ class SP_OT_explode_compound(bpy.types.Operator):
                 # Create collection
                 collection = bpy.data.collections.new(f"{o.name} Exploded")
                 context.scene.collection.children.link(collection)
-                
+
                 # Create objects from extracted data
                 for o_new in new_objects:
                     collection.objects.link(o_new)
@@ -1050,7 +1068,7 @@ class SP_OT_mesh_to_compound(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text="More than 5000 polygons will each become an SP patch.") 
+        layout.label(text="More than 5000 polygons will each become an SP patch.")
         layout.label(text="Proceed anyway ?")
 
 
@@ -1062,10 +1080,13 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
 
     def execute(self, context):
         for o in context.selected_objects:
-            if o.type == 'MESH':
+            if o.type == "MESH":
                 sp_surf = False
                 for m in o.modifiers:
-                    if m.node_group.name in [MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE], MESHER_NAMES[SP_obj_type.BEZIER_SURFACE]]:
+                    if m.node_group.name in [
+                        MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE],
+                        MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
+                    ]:
                         sp_surf = True
                         break
 
@@ -1074,25 +1095,23 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
 
                 pinned_mods = []
                 for m in o.modifiers:
-                    if m.use_pin_to_last :
+                    if m.use_pin_to_last:
                         m.use_pin_to_last = False
                         pinned_mods.append(m)
-
 
                 add_sp_modifier(o, "SP - Curvature Analysis", append=True, pin=True)
 
                 for m in pinned_mods:
                     m.use_pin_to_last = True
-                
+
                 if "Color" not in o.data.color_attributes:
                     o.data.color_attributes.new(
                         name="Color",
-                        type='BYTE_COLOR',  # or 'FLOAT_COLOR'
-                        domain='POINT'      # or 'CORNER'
+                        type="BYTE_COLOR",  # or 'FLOAT_COLOR'
+                        domain="POINT",  # or 'CORNER'
                     )
-            
-        bpy.context.space_data.shading.color_type = 'VERTEX'
 
+        bpy.context.space_data.shading.color_type = "VERTEX"
 
         return {"FINISHED"}
 

@@ -2,11 +2,6 @@
 ##            GUI           ##
 ##############################
 import bpy
-import platform
-from ..tools import macros, add_objects
-
-os = platform.system()
-
 
 class SP_PT_MainPanel(bpy.types.Panel):
     bl_idname = "SP_PT_MainPanel"
@@ -337,6 +332,7 @@ classes = [
 def register():
     from ..importer import import_operator
     from ..exporter import export_operator
+    from ..tools import macros, add_objects
 
     macros.register()
     add_objects.register()
@@ -360,6 +356,7 @@ def register():
 def unregister():
     from ..importer import import_operator
     from ..exporter import export_operator
+    from ..tools import macros, add_objects
 
     hotkeys_remove(addon_keymaps)
 

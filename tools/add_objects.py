@@ -1,8 +1,10 @@
 import bpy
-from ..common.utils import *
-from ..exporter.export_process_svg import *
-from ..importer.import_shape_to_blender_object import *
-from ..exporter.export_shape_builder import *
+from ..common.enums import SP_obj_type, MESHER_NAMES
+from ..common.utils import (
+    create_grid_mesh,
+    add_sp_modifier,
+    append_object_by_name,
+)
 
 
 class SP_OT_add_NURBS_patch(bpy.types.Operator):
@@ -30,14 +32,14 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
         name="U Count",
         description="Number of control points in U direction",
         default=2,
-        min=2
+        min=2,
     )
 
     v_count: bpy.props.IntProperty(
         name="V Count",
         description="Number of control points in V direction",
         default=2,
-        min=2
+        min=2,
     )
 
     show_control_geom: bpy.props.BoolProperty(
@@ -61,9 +63,11 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
         add_sp_modifier(
             self.obj,
             MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE],
-            {"Control Polygon": self.show_control_geom,
-             "Degree U": self.degree_u,
-             "Degree V": self.degree_v},
+            {
+                "Control Polygon": self.show_control_geom,
+                "Degree U": self.degree_u,
+                "Degree V": self.degree_v,
+            },
             pin=True,
             append=True,
         )
@@ -77,7 +81,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
         context.view_layer.objects.active = self.obj
 
         return {"FINISHED"}
-    
+
 
 class SP_OT_add_bezier_patch(bpy.types.Operator):
     bl_idname = "object.sp_add_bezier_patch"
@@ -156,6 +160,7 @@ class SP_OT_add_curve(bpy.types.Operator):
         append_object_by_name("PsychoCurve", context)
         return {"FINISHED"}
 
+
 class SP_OT_add_compound(bpy.types.Operator):
     bl_idname = "object.sp_add_compound"
     bl_label = "SP - Add PsychoCompound"
@@ -174,9 +179,11 @@ classes = [
     SP_OT_add_compound,
 ]
 
+
 def register():
     for c in classes:
         bpy.utils.register_class(c)
+
 
 def unregister():
     for c in classes[::-1]:
