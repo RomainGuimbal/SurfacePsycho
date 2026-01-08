@@ -3,13 +3,9 @@
 ##############################
 import bpy
 import platform
+from ..tools import macros, add_objects
 
 os = platform.system()
-from ..tools import macros, add_objects
-from ..importer import import_operator
-from ..exporter import export_operator
-from ..importer.import_operator import *
-from ..exporter.export_operator import *
 
 
 class SP_PT_MainPanel(bpy.types.Panel):
@@ -20,6 +16,8 @@ class SP_PT_MainPanel(bpy.types.Panel):
     bl_category = "Surface Psycho"
 
     def draw(self, context):
+        from ..exporter.export_operator import SP_OT_QuickExport
+
         if context.mode == "OBJECT":
             row = self.layout.row()
             row.scale_y = 2.0
@@ -57,7 +55,11 @@ class SP_PT_ViewPanel(bpy.types.Panel):
         sub.prop(context.scene.sp_properties, "combs_scale", text="")
 
         # Curvature Analysis
-        self.layout.operator("object.sp_add_curvature_analysis", text="Curvature Analysis", icon="RNDCURVE")
+        self.layout.operator(
+            "object.sp_add_curvature_analysis",
+            text="Curvature Analysis",
+            icon="RNDCURVE",
+        )
 
 
 class SP_PT_SelectPanel(bpy.types.Panel):
@@ -131,7 +133,9 @@ class SP_PT_EditPanel(bpy.types.Panel):
             # Conversions
             col = self.layout.column()
             col.operator(
-                "object.sp_mesh_to_compound", text="Mesh to SP Compound", icon="SHADING_BBOX"
+                "object.sp_mesh_to_compound",
+                text="Mesh to SP Compound",
+                icon="SHADING_BBOX",
             )
             col.operator(
                 "object.sp_explode_compound",
@@ -240,7 +244,8 @@ def menu_surface(self, context):
             "object.sp_add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE"
         )
         self.layout.operator(
-            "object.sp_add_compound", text="Compound", icon="MOD_BUILD")
+            "object.sp_add_compound", text="Compound", icon="MOD_BUILD"
+        )
         # self.layout.operator("object.sp_add_cylinder", text="Cylinder", icon="SURFACE_NCYLINDER")
 
 
@@ -252,7 +257,7 @@ def menu_curve(self, context):
         )
 
 
-def menu_convert(self, context):
+def menu_convert(self):
     self.layout.separator()
     self.layout.label(text="SurfacePsycho")
     # if context.mode == "OBJECT":
@@ -270,26 +275,34 @@ def menu_convert(self, context):
     )
 
 
-def menu_export_step(self, context):
+def menu_export_step(self):
+    from ..exporter.export_operator import SP_OT_ExportStep
+
     self.layout.operator(SP_OT_ExportStep.bl_idname, text="SurfacePsycho STEP (.step)")
 
 
-def menu_export_iges(self, context):
+def menu_export_iges(self):
+    from ..exporter.export_operator import SP_OT_ExportIges
+
     self.layout.operator(SP_OT_ExportIges.bl_idname, text="SurfacePsycho IGES (.iges)")
 
 
-def menu_export_svg(self, context):
+def menu_export_svg(self):
+    from ..exporter.export_operator import SP_OT_ExportSvg
+
     self.layout.operator(SP_OT_ExportSvg.bl_idname, text="SurfacePsycho SVG (.svg)")
 
 
-def menu_func_import(self, context):
+def menu_func_import(self):
+    from ..importer.import_operator import SP_OT_ImportCAD
+
     self.layout.operator(
         SP_OT_ImportCAD.bl_idname, text="SurfacePsycho CAD (.step, .iges)"
     )
 
 
 # topbar menu (fails)
-def menu_segment_edit(self, context):
+def menu_segment_edit(self):
     self.layout.menu("SP_MT_SegmentEdit")
 
 
@@ -322,6 +335,9 @@ classes = [
 
 
 def register():
+    from ..importer import import_operator
+    from ..exporter import export_operator
+
     macros.register()
     add_objects.register()
     import_operator.register()
@@ -342,6 +358,9 @@ def register():
 
 
 def unregister():
+    from ..importer import import_operator
+    from ..exporter import export_operator
+
     hotkeys_remove(addon_keymaps)
 
     # bpy.types.TOPBAR_MT_editor_menus.remove(menu_segment_edit)

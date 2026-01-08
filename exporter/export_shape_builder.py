@@ -236,6 +236,8 @@ class SP_Edge_export:
             self.geom = StepToGeom.MakeBSplineCurve2d_s(step_curve, StepData_Factors())
         else:
             self.geom = StepToGeom.MakeBSplineCurve_s(step_curve, StepData_Factors())
+        if self.geom == None:
+            raise ValueError("Failed to create BSpline geometry")
 
     def circle_arc(self):
         if self.is2D:
@@ -1592,6 +1594,7 @@ def sew_shapes(shape_list, tolerance=1e-1):
 def prepare_export(
     context, use_selection: bool, scale=1000, sew: bool = True, sew_tolerance=1e-1
 ) -> TopoDS_Compound:
+    
     separated_shapes_list = []
     hierarchy = ShapeHierarchy_export(context, use_selection, scale, sew, sew_tolerance)
 
