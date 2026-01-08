@@ -2,7 +2,7 @@ import bpy
 from ..common.utils import *
 from ..exporter.export_process_svg import *
 from ..importer.import_shape_to_blender_object import *
-from ..exporter.export_process_cad import *
+from ..exporter.export_shape_builder import *
 
 
 class SP_OT_add_NURBS_patch(bpy.types.Operator):
