@@ -270,25 +270,25 @@ def menu_convert(self):
     )
 
 
-def menu_export_step(self):
+def menu_export_step(self, context):
     from ..exporter.export_operator import SP_OT_ExportStep
 
     self.layout.operator(SP_OT_ExportStep.bl_idname, text="SurfacePsycho STEP (.step)")
 
 
-def menu_export_iges(self):
+def menu_export_iges(self, context):
     from ..exporter.export_operator import SP_OT_ExportIges
 
     self.layout.operator(SP_OT_ExportIges.bl_idname, text="SurfacePsycho IGES (.iges)")
 
 
-def menu_export_svg(self):
+def menu_export_svg(self, context):
     from ..exporter.export_operator import SP_OT_ExportSvg
 
     self.layout.operator(SP_OT_ExportSvg.bl_idname, text="SurfacePsycho SVG (.svg)")
 
 
-def menu_func_import(self):
+def menu_func_import(self, context):
     from ..importer.import_operator import SP_OT_ImportCAD
 
     self.layout.operator(
