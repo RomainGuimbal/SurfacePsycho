@@ -78,3 +78,14 @@ class SP_segment_type(Enum):
     CIRCLE = 3
     ELLIPSE_ARC = 4
     ELLIPSE = 5
+
+
+EDGES_TYPES = {
+    "line": 0,  # Not absurd
+    "bezier": 0,
+    "nurbs": 1,
+    "circle_arc": 2,
+    "circle": 3,
+    "ellipse_arc": 4,
+    "ellipse": 5,
+}

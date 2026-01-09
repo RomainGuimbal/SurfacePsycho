@@ -2,7 +2,7 @@ import bpy
 import math
 import numpy as np
 from mathutils import Vector, Matrix
-from ..common.enums import SP_obj_type, MESHER_NAMES, geom_to_sp_type
+from ..common.enums import SP_obj_type, MESHER_NAMES, EDGES_TYPES, geom_to_sp_type
 from ..common.utils import (
     get_geom_adapt_curve_type,
     gp_pnt_to_blender_vec_list,
@@ -23,7 +23,6 @@ from ..common.utils import (
     add_bool_attribute,
     add_int_attribute,
     add_float_attribute,
-    add_sp_modifier,
     append_multiple_node_groups,
 )
 from math import isclose
@@ -1358,6 +1357,8 @@ def process_object_data_of_shape(
 def create_blender_object(object_data):
     if object_data == {}:
         return False
+    
+    from ..common.utils import add_sp_modifier
 
     mesh = bpy.data.meshes.new(object_data["name"])
     mesh.from_pydata(*object_data["mesh_data"], False)

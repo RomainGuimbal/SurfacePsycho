@@ -790,17 +790,6 @@ def get_shape_name_and_color(shape, doc):
     return name, color
 
 
-EDGES_TYPES = {
-    "line": 0,  # Not absurd
-    "bezier": 0,
-    "nurbs": 1,
-    "circle_arc": 2,
-    "circle": 3,
-    "ellipse_arc": 4,
-    "ellipse": 5,
-}
-
-
 def replace_all_instances_of_node_group(target_node_group_name, new_node_group_name):
     # Get the target node group
     prefix, suffix = target_node_group_name[:-2], target_node_group_name[-2:]
