@@ -26,7 +26,7 @@ bl_info = {
 import bpy
 from .common import gui
 import time
-start_time = time.time()
+# start_time = time.time()
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
@@ -39,7 +39,7 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
 def register():
     gui.register()
     bpy.utils.register_class(SP_AddonPreferences)
-    print("--- %s seconds ---" % (time.time() - start_time))
+    # print("--- %s seconds ---" % (time.time() - start_time))
 
 
 def unregister():

@@ -935,11 +935,36 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
     bl_description = "Add a blend surface between the selected surfaces"
     bl_options = {"REGISTER", "UNDO"}
 
+    invert : bpy.props.BoolProperty(
+        name="Invert",
+        default=False,
+    )
+
+    continuity: bpy.props.EnumProperty(
+        name="Continuity",
+        default=3,
+        items=[
+            ("0", "G0", "Positional Continuity", 0),
+            ("1", "G1", "Tangential Continuity", 1),
+            ("2", "G2", "Curvature Continuity", 2),
+            ("3", "G3", "Higher Order Continuity", 3),
+            ("4", "G4", "Maximum Continuity", 4),
+        ],
+    )
+
+    tension: bpy.props.FloatProperty(
+        name="Tension",
+        default=1.0,
+        soft_min=0.0,
+        soft_max=10.0,
+        
+    )
+
     def execute(self, context):
         # Add a check if SP surfaces ?
 
         if len(context.selected_objects) < 2:
-            self.report({"INFO"}, "Select 2 surfaces")
+            self.report({"WARNING"}, "Select 2 surfaces")
             return {"CANCELLED"}
         else:
             surf1 = context.selected_objects[0]
@@ -947,6 +972,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
             loc = surf1.location / 2 + surf2.location / 2
 
             mesh = bpy.data.meshes.new("Blend Patch")
+            mesh.from_pydata([Vector((0, 0, 0))], [], [])
             blend_surf = bpy.data.objects.new("Blend Patch", mesh)
             blend_surf.location = loc
             context.collection.objects.link(blend_surf)
@@ -959,7 +985,9 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
                     "Target 1": surf1,
                     "Target 2": surf2,
                     "Auto": True,
-                    "Continuity": 3,
+                    "Invert": self.invert,
+                    "Continuity": int(self.continuity),
+                    "Tension": self.tension,
                 },
                 append=True,
             )
@@ -972,6 +1000,17 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
             )
 
         return {"FINISHED"}
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        col = layout.column()
+        col.prop(self, "invert")
+        row = col.row()
+        row.prop(self, "continuity", expand=True)
+        col.prop(self, "tension", text="Tension")
 
 
 class SP_OT_flip_normals(bpy.types.Operator):
