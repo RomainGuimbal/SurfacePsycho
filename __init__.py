@@ -25,7 +25,7 @@ bl_info = {
 
 import bpy
 from .common import gui
-import time
+# import time
 # start_time = time.time()
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):

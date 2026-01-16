@@ -19,7 +19,6 @@ copyright = ["2025 Romain Guimbal"]
 
 platforms = ["windows-x64", "macos-x64", "macos-arm64", "linux-x64"]
 wheels = [
-  "./wheels/six-1.16.0-py2.py3-none-any.whl",
   "./wheels/cadquery_ocp_novtk-7.8.1.1.post1-cp311-cp311-win_amd64.whl",
   "./wheels/cadquery_ocp_novtk-7.8.1.1.post1-cp311-cp311-macosx_11_0_x86_64.whl",
   "./wheels/cadquery_ocp_novtk-7.8.1.1.post1-cp311-cp311-macosx_11_0_arm64.whl",
