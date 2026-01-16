@@ -25,18 +25,35 @@ bl_info = {
 
 import bpy
 from .common import gui
+from .tools import macros
 # import time
 # start_time = time.time()
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
+    asset_path : bpy.props.BoolProperty(
+        name = "assets path registered",
+        default= False
+    )
+
+    matcaps : bpy.props.BoolProperty(
+        name = "matcaps installed",
+        default= False,
+    )
+
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.operator("object.sp_add_library", text="Add Assets Path")
+        col.operator("wm.sp_add_library", text="Add Assets Path")
+        row = col.row(align=True)
+        row.label(text="Psycho Matcaps")
+        row.operator("wm.sp_add_matcaps", text="Add")
+        row.operator("wm.sp_remove_matcaps", text="Remove")
+
 
 def register():
+    macros.register()
     gui.register()
     bpy.utils.register_class(SP_AddonPreferences)
     # print("--- %s seconds ---" % (time.time() - start_time))
@@ -45,6 +62,7 @@ def register():
 def unregister():
     bpy.utils.unregister_class(SP_AddonPreferences)
     gui.unregister()
+    macros.unregister()
 
 
 if __package__ == "__main__":

@@ -4,7 +4,7 @@ import numpy as np
 from mathutils import Vector, Matrix, Quaternion
 import math
 from typing import List, Tuple
-from os.path import dirname, abspath
+from os.path import dirname, abspath, basename
 import re
 
 from .enums import SP_obj_type, MESHER_NAMES, geom_to_sp_type
@@ -55,7 +55,7 @@ import OCP.GeomAbs as GeomAbs
 
 addonpath = dirname(dirname(abspath(__file__)))  # The PsychoPath ;)
 ASSETSPATH = addonpath + "/assets/assets.blend"
-
+ADDON_PREF_KEY = "bl_ext." + basename(dirname(dirname(dirname(abspath(__file__))))) + ".SurfacePsycho"
 
 def get_face_sp_type(TopoDSface: TopoDS_Face):
     adapt_surf = BRepAdaptor_Surface(TopoDSface)

@@ -332,9 +332,8 @@ classes = [
 def register():
     from ..importer import import_operator
     from ..exporter import export_operator
-    from ..tools import macros, add_objects
+    from ..tools import add_objects
 
-    macros.register()
     add_objects.register()
     import_operator.register()
     export_operator.register()
@@ -356,7 +355,7 @@ def register():
 def unregister():
     from ..importer import import_operator
     from ..exporter import export_operator
-    from ..tools import macros, add_objects
+    from ..tools import add_objects
 
     hotkeys_remove(addon_keymaps)
 
@@ -375,4 +374,3 @@ def unregister():
     export_operator.unregister()
     import_operator.unregister()
     add_objects.unregister()
-    macros.unregister()

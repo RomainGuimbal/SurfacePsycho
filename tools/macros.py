@@ -17,18 +17,16 @@ from ..common.utils import (
     add_sp_modifier,
     flip_node_socket_bool,
     change_node_socket_value,
+    ADDON_PREF_KEY,
 )
 from ..common.compound_utils import convert_compound_to_patches
 from mathutils import Vector
 
 from os.path import dirname, abspath, join
-import platform
-
-os = platform.system()
 
 
 class SP_OT_add_library(bpy.types.Operator):
-    bl_idname = "object.sp_add_library"
+    bl_idname = "wm.sp_add_library"
     bl_label = "SP - Add Library"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -935,7 +933,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
     bl_description = "Add a blend surface between the selected surfaces"
     bl_options = {"REGISTER", "UNDO"}
 
-    invert : bpy.props.BoolProperty(
+    invert: bpy.props.BoolProperty(
         name="Invert",
         default=False,
     )
@@ -957,7 +955,6 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         default=1.0,
         soft_min=0.0,
         soft_max=10.0,
-        
     )
 
     def execute(self, context):
@@ -1000,7 +997,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
             )
 
         return {"FINISHED"}
-    
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
@@ -1134,7 +1131,14 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
                     continue
 
                 # Add modifier
-                add_sp_modifier(o, "SP - Curvature Analysis", append=True, pin=True, render=False, force_last=True)
+                add_sp_modifier(
+                    o,
+                    "SP - Curvature Analysis",
+                    append=True,
+                    pin=True,
+                    render=False,
+                    force_last=True,
+                )
 
                 # Add color attribute
                 if "Color" not in o.data.color_attributes:
@@ -1149,9 +1153,68 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_add_matcaps(bpy.types.Operator):
+    bl_idname = "wm.sp_add_matcaps"
+    bl_label = "SP - Add Matcaps"
+    bl_description = "Add Psycho Matcaps"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return not context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps 
+
+    def execute(self, context):
+        from os.path import dirname, abspath, join
+
+        path = join(dirname(dirname(abspath(__file__))), "assets")
+
+        # Call the operator with proper parameters
+        bpy.ops.preferences.studiolight_install(
+            files=[
+                {"name": "SP matcap horizontal pixel-perfect-lines-3.png"},
+                {"name": "SP matcap horizontal shinny3.png"},
+            ],
+            directory=path,
+            type="MATCAP",
+        )
+
+        context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps = True
+        return {"FINISHED"}
+
+
+class SP_OT_remove_matcaps(bpy.types.Operator):
+    bl_idname = "wm.sp_remove_matcaps"
+    bl_label = "SP - Remove Matcaps"
+    bl_description = "Remove Psycho Matcaps"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps 
+
+    def execute(self, context):
+        matcap_names = [
+            "SP matcap horizontal pixel-perfect-lines-3.png",
+            "SP matcap horizontal shinny3.png",
+        ]
+
+        # indices to remove
+        indices_to_remove = [
+            m.index for m in context.preferences.studio_lights if m.name in matcap_names
+        ]
+
+        # Remove
+        for index in indices_to_remove:
+            bpy.ops.preferences.studiolight_uninstall(index=index)
+
+        context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps = False
+        return {"FINISHED"}
+
+
 classes = [
     SP_OT_add_curvature_analysis,
     SP_OT_add_library,
+    SP_OT_add_matcaps,
     SP_OT_add_oriented_empty,
     SP_OT_add_trim_contour,
     SP_OT_assign_as_ellipse,
@@ -1161,6 +1224,7 @@ classes = [
     SP_OT_flip_normals,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_from_ellipses,
+    SP_OT_remove_matcaps,
     SP_OT_replace_node_group,
     SP_OT_select_all,
     SP_OT_select_endpoints,
