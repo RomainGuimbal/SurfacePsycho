@@ -123,7 +123,7 @@ def read_attribute_by_name(object, name, len_attr=None) -> np.array:
 
 
 def append_object_by_name(obj_name, context):  # for importing from the asset file
-    with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
+    with bpy.data.libraries.load(ASSETSPATH, link=False, assets_only=True) as (data_from, data_to):
         data_to.objects = [name for name in data_from.objects if name == obj_name]
 
     cursor_loc = context.scene.cursor.location
@@ -615,7 +615,7 @@ def append_node_group(asset_name, force=False, remove_asset_data=True):
     # if not, import
     if not asset_already:
         # Load the asset file
-        with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
+        with bpy.data.libraries.load(ASSETSPATH, link=False, assets_only=True) as (data_from, data_to):
             # Find the node group in the file
             if asset_name not in data_from.node_groups:
                 print(f"Asset '{asset_name}' not found")
@@ -634,7 +634,7 @@ def append_multiple_node_groups(ng_names: set, remove_asset_data=True):
     existing_node_groups = set(bpy.data.node_groups.keys())
 
     # Append the new node groups
-    with bpy.data.libraries.load(ASSETSPATH, link=False) as (data_from, data_to):
+    with bpy.data.libraries.load(ASSETSPATH, link=False, assets_only=True) as (data_from, data_to):
         # Filter the node groups that exist in the asset file
         valid_node_groups = [name for name in ng_names if name in data_from.node_groups]
 
@@ -1000,42 +1000,20 @@ def override_attribute_dictionary(dict1, dict2):
 
 def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
 
-    # bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1)
-
-    mesh = bpy.data.meshes.new(name="Grid")
     bm = bmesh.new()
 
-    # divide grid
-    step_x = 2 / (vertex_count_v - 1)
-    step_y = 2 / (vertex_count_u - 1)
-
-    # Create vertices
-    for i in range(vertex_count_u):
-        for j in range(vertex_count_v):
-            x = j * step_x - 1.0  # Subtract 1 to center
-            y = i * step_y - 1.0  # Subtract 1 to center
-            bm.verts.new((x, y, 0))
-
-    bm.verts.ensure_lookup_table()
-
-    # Create faces
-    for i in range(vertex_count_u - 1):
-        for j in range(vertex_count_v - 1):
-            v1 = bm.verts[i * vertex_count_v + j]
-            v2 = bm.verts[i * vertex_count_v + j + 1]
-            v3 = bm.verts[(i + 1) * vertex_count_v + j + 1]
-            v4 = bm.verts[(i + 1) * vertex_count_v + j]
-            bm.faces.new((v1, v2, v3, v4))
-
-    # Update bmesh
-    bm.to_mesh(mesh)
-    bm.free()
+    bmesh.ops.create_grid(
+        bm, x_segments=vertex_count_u - 1, y_segments=vertex_count_v - 1, size=1
+    )
 
     # Set smooth
     if smooth:
-        values = [True] * len(mesh.polygons)
-        mesh.polygons.foreach_set("use_smooth", values)
-        mesh.update()
+        for face in bm.faces:
+            face.smooth = True
+
+    mesh = bpy.data.meshes.new("Grid")
+    bm.to_mesh(mesh)
+    bm.free()
 
     return mesh
 

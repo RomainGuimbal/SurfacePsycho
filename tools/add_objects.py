@@ -4,6 +4,7 @@ from ..common.utils import (
     create_grid_mesh,
     add_sp_modifier,
     append_object_by_name,
+    append_multiple_node_groups,
 )
 
 
@@ -33,6 +34,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
         description="Number of control points in U direction",
         default=2,
         min=2,
+        soft_max=16,
     )
 
     v_count: bpy.props.IntProperty(
@@ -40,6 +42,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
         description="Number of control points in V direction",
         default=2,
         min=2,
+        soft_max=16,
     )
 
     show_control_geom: bpy.props.BoolProperty(
@@ -47,21 +50,17 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
     )
 
     def execute(self, context):
-        mesh = create_grid_mesh(self.u_count, self.v_count)
-
-        # Create and link the object
-        self.obj = bpy.data.objects.new("Bezier Patch", mesh)
-        context.collection.objects.link(self.obj)
-
-        add_sp_modifier(self.obj, "SP - Reorder Grid Index", append=True)
-        add_sp_modifier(
-            self.obj,
-            "SP - Connect Bezier Patch",
-            {"Continuity": 3},
-            append=True,
+        append_multiple_node_groups(
+            {"SP - Reorder Grid Index", MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE]}
         )
+        # Create and link the object
+        mesh = create_grid_mesh(self.u_count, self.v_count)
+        obj = bpy.data.objects.new("Nurbs Patch", mesh)
+        context.collection.objects.link(obj)
+
+        add_sp_modifier(obj, "SP - Reorder Grid Index")
         add_sp_modifier(
-            self.obj,
+            obj,
             MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE],
             {
                 "Control Polygon": self.show_control_geom,
@@ -69,16 +68,15 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
                 "Degree V": self.degree_v,
             },
             pin=True,
-            append=True,
         )
 
         # Set object location to 3D cursor
-        self.obj.location = context.scene.cursor.location
+        obj.location = context.scene.cursor.location
 
         # Select the new object and make it active
         bpy.ops.object.select_all(action="DESELECT")
-        self.obj.select_set(True)
-        context.view_layer.objects.active = self.obj
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
 
         return {"FINISHED"}
 
@@ -93,7 +91,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         description="Number of control points in U direction -1",
         default=1,
         min=1,
-        max=16,
+        soft_max=16,
     )
 
     degree_v: bpy.props.IntProperty(
@@ -101,7 +99,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         description="Number of control points in V direction -1",
         default=1,
         min=1,
-        max=16,
+        soft_max=16,
     )
 
     show_control_geom: bpy.props.BoolProperty(
@@ -109,34 +107,39 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
     )
 
     def execute(self, context):
-        mesh = create_grid_mesh(self.degree_u + 1, self.degree_v + 1)
+        append_multiple_node_groups(
+            {
+                "SP - Reorder Grid Index",
+                "SP - Connect Bezier Patch",
+                MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
+            }
+        )
 
         # Create and link the object
-        self.obj = bpy.data.objects.new("Bezier Patch", mesh)
-        context.collection.objects.link(self.obj)
+        mesh = create_grid_mesh(self.degree_u + 1, self.degree_v + 1)
+        obj = bpy.data.objects.new("Bezier Patch", mesh)
+        context.collection.objects.link(obj)
 
-        add_sp_modifier(self.obj, "SP - Reorder Grid Index", append=True)
+        add_sp_modifier(obj, "SP - Reorder Grid Index")
         add_sp_modifier(
-            self.obj,
+            obj,
             "SP - Connect Bezier Patch",
             {"Continuity": 3},
-            append=True,
         )
         add_sp_modifier(
-            self.obj,
+            obj,
             MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
             {"Control Polygon": self.show_control_geom},
             pin=True,
-            append=True,
         )
 
         # Set object location to 3D cursor
-        self.obj.location = context.scene.cursor.location
+        obj.location = context.scene.cursor.location
 
         # Select the new object and make it active
         bpy.ops.object.select_all(action="DESELECT")
-        self.obj.select_set(True)
-        context.view_layer.objects.active = self.obj
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
 
         return {"FINISHED"}
 
