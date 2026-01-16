@@ -18,6 +18,7 @@ from ..common.utils import (
     flip_node_socket_bool,
     change_node_socket_value,
     ADDON_PREF_KEY,
+    ASSETS_PATH,
 )
 from ..common.compound_utils import convert_compound_to_patches
 from mathutils import Vector
@@ -30,9 +31,13 @@ class SP_OT_add_library(bpy.types.Operator):
     bl_label = "SP - Add Library"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return ASSETS_PATH not in [a.path for a in context.preferences.filepaths.asset_libraries]
+
     def execute(self, context):
         # create lib
-        asset_lib_path = join(dirname(dirname(abspath(__file__))), "assets")
+        asset_lib_path = ASSETS_PATH
         paths = [a.path for a in context.preferences.filepaths.asset_libraries]
         if asset_lib_path not in paths:
             bpy.ops.preferences.asset_library_add(directory=asset_lib_path)
@@ -1164,17 +1169,13 @@ class SP_OT_add_matcaps(bpy.types.Operator):
         return not context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps 
 
     def execute(self, context):
-        from os.path import dirname, abspath, join
-
-        path = join(dirname(dirname(abspath(__file__))), "assets")
-
         # Call the operator with proper parameters
         bpy.ops.preferences.studiolight_install(
             files=[
                 {"name": "SP matcap horizontal pixel-perfect-lines-3.png"},
                 {"name": "SP matcap horizontal shinny3.png"},
             ],
-            directory=path,
+            directory=ASSETS_PATH,
             type="MATCAP",
         )
 

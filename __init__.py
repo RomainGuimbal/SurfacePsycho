@@ -32,11 +32,6 @@ from .tools import macros
 class SP_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    asset_path : bpy.props.BoolProperty(
-        name = "assets path registered",
-        default= False
-    )
-
     matcaps : bpy.props.BoolProperty(
         name = "matcaps installed",
         default= False,
