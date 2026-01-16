@@ -255,6 +255,7 @@ def change_GN_modifier_settings(modifier, settings_dict):
 
             modifier[id] = settings_dict[k]
 
+
 def add_vertex_group(object: bpy.types.Object, name, values):
     if name not in object.vertex_groups:
         object.vertex_groups.new(name=name)
@@ -654,26 +655,42 @@ def append_multiple_node_groups(ng_names: set, remove_asset_data=True):
     # return new_node_groups
 
 
-def add_node_group_modifier_from_asset(
-    obj, asset_name, settings_dict={}, pin=False, append=False
+def add_sp_modifier(
+    obj,
+    asset_name: str,
+    settings_dict={},
+    pin=False,
+    append=False,
+    render=True,
+    force_last=False,
 ):
     if append:
         append_node_group(asset_name)
+
+    if force_last:
+        # Unpin modifiers
+        pinned_mods = []
+        for m in obj.modifiers:
+            if m.use_pin_to_last:
+                m.use_pin_to_last = False
+                pinned_mods.append(m)
 
     # Create the modifier and assign the loaded node group
     modifier = obj.modifiers.new(name=asset_name, type="NODES")
     modifier.node_group = bpy.data.node_groups.get(asset_name)
     modifier.use_pin_to_last = pin
+    modifier.show_render = render
+
+    if force_last:
+        # Re-pin modifiers
+        for m in pinned_mods:
+            m.use_pin_to_last = True
 
     if modifier.node_group == None:
         raise ValueError(f"Node group '{asset_name}' not found")
 
     # Change settings
     change_GN_modifier_settings(modifier, settings_dict)
-
-
-def add_sp_modifier(ob, name: str, settings_dict={}, pin=False, append=False):
-    add_node_group_modifier_from_asset(ob, name, settings_dict, pin=pin, append=append)
 
 
 def join_mesh_entities(verts1, edges1, faces1, verts2, edges2, faces2):

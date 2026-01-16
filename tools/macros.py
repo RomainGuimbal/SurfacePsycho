@@ -1120,6 +1120,8 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
     def execute(self, context):
         for o in context.selected_objects:
             if o.type == "MESH":
+
+                # Check if SP surface
                 sp_surf = False
                 for m in o.modifiers:
                     if m.node_group.name in [
@@ -1128,21 +1130,13 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
                     ]:
                         sp_surf = True
                         break
-
                 if not sp_surf:
                     continue
 
-                pinned_mods = []
-                for m in o.modifiers:
-                    if m.use_pin_to_last:
-                        m.use_pin_to_last = False
-                        pinned_mods.append(m)
+                # Add modifier
+                add_sp_modifier(o, "SP - Curvature Analysis", append=True, pin=True, render=False, force_last=True)
 
-                add_sp_modifier(o, "SP - Curvature Analysis", append=True, pin=True)
-
-                for m in pinned_mods:
-                    m.use_pin_to_last = True
-
+                # Add color attribute
                 if "Color" not in o.data.color_attributes:
                     o.data.color_attributes.new(
                         name="Color",
