@@ -184,7 +184,7 @@ def create_grid(vertices):
 
 
 def change_node_socket_value(
-    ob: bpy.types.Object, value, potential_names, socket_type, context
+    ob: bpy.types.Object, value, socket_potential_names, socket_type, context
 ):
     for m in ob.modifiers:
         if m.type == "NODES" and m.node_group and m.node_group.name.startswith("SP - "):
@@ -195,7 +195,7 @@ def change_node_socket_value(
                 if (
                     it.item_type == "SOCKET"
                     and it.socket_type == socket_type
-                    and it.name in potential_names
+                    and it.name in socket_potential_names
                 ):
                     items_to_process.append(it)
 

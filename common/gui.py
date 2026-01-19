@@ -50,11 +50,13 @@ class SP_PT_ViewPanel(bpy.types.Panel):
         sub.prop(context.scene.sp_properties, "combs_scale", text="")
 
         # Curvature Analysis
-        self.layout.operator(
+        col = self.layout.column()
+        col.operator(
             "object.sp_add_curvature_analysis",
             text="Curvature Analysis",
             icon="RNDCURVE",
         )
+        col.prop(context.scene.sp_properties, "analysis_scale", text="")
 
 
 class SP_PT_SelectPanel(bpy.types.Panel):

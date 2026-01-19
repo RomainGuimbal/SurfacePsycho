@@ -17,13 +17,12 @@ from ..common.utils import (
     add_sp_modifier,
     flip_node_socket_bool,
     change_node_socket_value,
+    change_GN_modifier_settings,
     ADDON_PREF_KEY,
     ASSETS_PATH,
 )
 from ..common.compound_utils import convert_compound_to_patches
 from mathutils import Vector
-
-from os.path import dirname, abspath, join
 
 
 class SP_OT_add_library(bpy.types.Operator):
@@ -33,7 +32,9 @@ class SP_OT_add_library(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return ASSETS_PATH not in [a.path for a in context.preferences.filepaths.asset_libraries]
+        return ASSETS_PATH not in [
+            a.path for a in context.preferences.filepaths.asset_libraries
+        ]
 
     def execute(self, context):
         # create lib
@@ -724,6 +725,16 @@ def set_vert_weight(weight: float, context):
         bpy.ops.object.mode_set(mode="EDIT")
 
 
+def scale_analysis(self, context):
+    for o in reversed(context.visible_objects):
+        if o.type == "MESH":
+            for m in o.modifiers:
+                if m.node_group.name == "SP - Curvature Analysis":
+                    change_GN_modifier_settings(m, {"Scale": self.analysis_scale})
+                    break
+            o.update_tag()
+
+
 class SP_Props_Group(bpy.types.PropertyGroup):
 
     combs_scale: bpy.props.FloatProperty(
@@ -757,6 +768,14 @@ class SP_Props_Group(bpy.types.PropertyGroup):
         default=1.0,
         min=0,
         update=set_vert_weight_from_active_prop,
+    )
+
+    analysis_scale: bpy.props.FloatProperty(
+        name="Scale",
+        description="Scale of curvature analysis color range",
+        default=1.0,
+        min=0,
+        update=scale_analysis,
     )
 
 
@@ -1034,7 +1053,7 @@ class SP_OT_enable_exact_normals(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        for o in context.selected_objects:
+        for o in reversed(context.selected_objects):
             change_node_socket_value(
                 o, True, ["Exact Normals", "Exact Normal"], "NodeSocketBool", context
             )
@@ -1048,7 +1067,7 @@ class SP_OT_disable_exact_normals(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        for o in context.selected_objects:
+        for o in reversed(context.selected_objects):
             change_node_socket_value(
                 o, False, ["Exact Normals", "Exact Normal"], "NodeSocketBool", context
             )
@@ -1158,6 +1177,19 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_scale_analysis(bpy.types.Operator):
+    bl_idname = "object.sp_scale_analysis"
+    bl_label = "SP - Scale Curvature Analysis"
+    bl_description = "Scale curvature analysis color range of visible surfaces"
+    bl_options = {"REGISTER", "UNDO"}
+
+    scale: bpy.props.FloatProperty(name="Scale", default=1.0)
+
+    def execute(self, context):
+        scale_analysis(self, context)
+        return {"FINISHED"}
+
+
 class SP_OT_add_matcaps(bpy.types.Operator):
     bl_idname = "wm.sp_add_matcaps"
     bl_label = "SP - Add Matcaps"
@@ -1166,7 +1198,7 @@ class SP_OT_add_matcaps(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return not context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps 
+        return not context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps
 
     def execute(self, context):
         # Call the operator with proper parameters
@@ -1191,7 +1223,7 @@ class SP_OT_remove_matcaps(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps 
+        return context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps
 
     def execute(self, context):
         matcap_names = [
@@ -1227,6 +1259,7 @@ classes = [
     SP_OT_remove_from_ellipses,
     SP_OT_remove_matcaps,
     SP_OT_replace_node_group,
+    SP_OT_scale_analysis,
     SP_OT_select_all,
     SP_OT_select_endpoints,
     SP_OT_select_trim_contour,
