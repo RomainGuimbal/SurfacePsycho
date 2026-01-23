@@ -307,7 +307,7 @@ obj_surf = {
 }
 gr_surf = {
     "SP - Bezier Patch Meshing",
-    "SP - Auto Midpoints Linear",
+    "SP - Coon Patch",
     "SP - Blend Surfaces",
     "SP - Connect Bezier Patch",
     "SP - Convert Contour",
@@ -347,6 +347,7 @@ gr_nurbs = {
     "SP - Fit Patch",
     "SP - Interpolate Patch",
     "SP_Curvature",
+    "SP - Normalize NURBS Patch Knots"
 }
 
 
@@ -364,6 +365,7 @@ gr_other = {
     "SP - Copy Geometry",
     "SP - Adjust Revolution Sweep Angle",
     "SP - Transform UVMap",
+    "SP - Isoparametric Curve",
 }
 
 # COMPOUND

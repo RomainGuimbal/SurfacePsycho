@@ -1065,11 +1065,10 @@ def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
     return split_attr
 
 
-def dict_to_list_missing_index_filled(dict: dict) -> list:
-    min_index = min(dict.keys())
-    max_index = max(dict.keys())
+def dict_to_list_missing_index_filled(dict: dict, segment_count: int) -> list:
+    # Make a list of list from a dictionary of lists, filling indices not in the dict with empty lists (hack befor lists)
     list_attr = []
-    for i in range(min_index, max_index + 1):
+    for i in range(segment_count):
         if i in dict:
             list_attr.append(dict[i])
         else:

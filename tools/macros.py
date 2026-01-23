@@ -729,9 +729,10 @@ def scale_analysis(self, context):
     for o in reversed(context.visible_objects):
         if o.type == "MESH":
             for m in o.modifiers:
-                if m.node_group.name == "SP - Curvature Analysis":
-                    change_GN_modifier_settings(m, {"Scale": self.analysis_scale})
-                    break
+                if m.type == "NODES" :
+                    if m.node_group.name == "SP - Curvature Analysis":
+                        change_GN_modifier_settings(m, {"Scale": self.analysis_scale})
+                        break
             o.update_tag()
 
 

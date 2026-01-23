@@ -228,9 +228,9 @@ class SP_Edge_export:
 
         # Knot and Multiplicity
         if self.knot is not None:
-            knot_length = sum(np.asarray(self.mult) > 0)
-            tcol_knot = float_list_to_tcolstd_H(self.knot[:knot_length])
-            tcol_mult = int_list_to_tcolstd_H(self.mult[:knot_length])
+            unique_knot_length = sum(np.asarray(self.mult) > 0)
+            tcol_knot = float_list_to_tcolstd_H(self.knot[:unique_knot_length])
+            tcol_mult = int_list_to_tcolstd_H(self.mult[:unique_knot_length])
         else:
             raise ValueError("Missing knot on NURBS segment")
 
@@ -549,12 +549,8 @@ class SP_Contour_export:
 
         # Make wire
         if self.has_wire:
-            # Get total_p_count
-            self.total_p_count = 0
-            for i, wi in enumerate(self.wire_index):
-                if wi == 0:
-                    break
-                self.total_p_count += 1
+            self.compute_total_p_count()
+            self.compute_segment_count()
 
             # crop wire_index
             self.wire_index = self.wire_index[: self.total_p_count]
@@ -564,14 +560,6 @@ class SP_Contour_export:
             self.wire_index_order = list(dict.fromkeys(self.wire_index))
             self.wir_count = len(self.wire_index_order)
             self.seg_count_per_wire = self.seg_count_per_wire[: self.wir_count]
-
-            # Get segment count (not sum technique because mirrors...)
-            self.segment_count = 0
-            for p in self.segs_p_counts:
-                if p > 0:
-                    self.segment_count += 1
-                else:
-                    break
 
             # crop segs_p_counts
             self.segs_p_counts = self.segs_p_counts[: self.segment_count]
@@ -654,10 +642,10 @@ class SP_Contour_export:
             mult = read_attribute_by_name(ob, "Multiplicity")
             knot_segment = list(read_attribute_by_name(ob, "knot_segment"))
             knot_per_seg = dict_to_list_missing_index_filled(
-                split_by_index_dict(knot_segment, knot)
+                split_by_index_dict(knot_segment, knot), self.segment_count
             )
             mult_per_seg = dict_to_list_missing_index_filled(
-                split_by_index_dict(knot_segment, mult)
+                split_by_index_dict(knot_segment, mult), self.segment_count
             )
             knot_per_wire = self.split_seg_attr_per_wire(knot_per_seg)
             mult_per_wire = self.split_seg_attr_per_wire(mult_per_seg)
@@ -717,6 +705,23 @@ class SP_Contour_export:
             raise Exception("No outer wire found")
 
         return outer_wire, inner_wires
+
+    def compute_total_p_count(self):
+        # not sum because mirrors...
+        self.total_p_count = 0
+        for i, wi in enumerate(self.wire_index):
+            if wi == 0:
+                break
+            self.total_p_count += 1
+
+    def compute_segment_count(self):
+        # not sum because mirrors...
+        self.segment_count = 0
+        for p in self.segs_p_counts:
+            if p > 0:
+                self.segment_count += 1
+            else:
+                break
 
 
 ##############################
@@ -1241,7 +1246,7 @@ def flat_patch_to_topods(ob, scale=1000):
     geom_pl = Geom_Plane(pl)
 
     # Build Contour
-    wires = SP_Contour_export(
+    contour = SP_Contour_export(
         ob,
         "CP_planar",
         "CP_count",
@@ -1250,18 +1255,11 @@ def flat_patch_to_topods(ob, scale=1000):
         scale,
         geom_plane=geom_pl,
         is2D=False,
-    ).wires_dict
+    )
 
     # Get occ wires
-    outer_wire = None
-    inner_wires = []
-    for k in wires.keys():
-        if k > 0:
-            inner_wires.append(wires[k].get_topods_wire())
-        elif k < 0:
-            outer_wire = wires[k].get_topods_wire()
-    if outer_wire == None:
-        raise Exception("No outer wire found")
+    outer_wire, inner_wires = contour.get_topods_wires()
+
     face = geom_to_topods_face(None, outer_wire, inner_wires)
     return face
 
