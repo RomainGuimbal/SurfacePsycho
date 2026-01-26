@@ -109,6 +109,19 @@ from OCP.TCollection import TCollection_HAsciiString
 ##    Converter classes     ##
 ##############################
 
+def knot_tcol_from_att(knots, mults, degree, isclamped, iscyclic):
+    unique_knot_length = sum(np.asarray(mults) > 0) # uncompatible with mirror
+    k = knots[:unique_knot_length]
+    m = mults[:unique_knot_length]
+    if iscyclic and not isclamped:
+        dk = np.array([k[i + 1] - k[0] for i in range(degree)])
+        k_end = dk + k[-1]
+        k = np.append(k, k_end)
+        m = np.append(m, m[:degree])
+
+    tcol_knot = float_list_to_tcolstd_H(k)
+    tcol_mult = int_list_to_tcolstd_H(m)
+    return tcol_knot, tcol_mult
 
 class SP_Edge_export:
     def __init__(
@@ -228,9 +241,7 @@ class SP_Edge_export:
 
         # Knot and Multiplicity
         if self.knot is not None:
-            unique_knot_length = sum(np.asarray(self.mult) > 0)
-            tcol_knot = float_list_to_tcolstd_H(self.knot[:unique_knot_length])
-            tcol_mult = int_list_to_tcolstd_H(self.mult[:unique_knot_length])
+            tcol_knot, tcol_mult = knot_tcol_from_att(self.knot, self.mult, degree, isclamped, iscyclic)
         else:
             raise ValueError("Missing knot on NURBS segment")
 
@@ -352,32 +363,24 @@ class SP_Edge_export:
             ).Edge()
 
 
-def get_patch_knot_and_mult(ob):
+def get_patch_knot_and_mult(ob,  degree_u, degree_v, isclamped_u, isclamped_v, iscyclic_u, iscyclic_v):
+    # U
     umult_att = read_attribute_by_name(ob, "Multiplicity U")
     try:
         u_length = sum(np.asarray(umult_att) > 0)  # uncompatible with mirror
-    except KeyError:
+    except KeyError: # weird
         u_length = int(sum(np.asarray(umult_att) > 0))
-    uknots_att = read_attribute_by_name(ob, "Knot U", u_length)
-
+    uknots_att = list(read_attribute_by_name(ob, "Knot U", u_length))
+    uknot, umult = knot_tcol_from_att(uknots_att, umult_att, degree_u, isclamped_u, iscyclic_u)
+    
+    # V
     vmult_att = read_attribute_by_name(ob, "Multiplicity V")
     try:
         v_length = sum(np.asarray(vmult_att) > 0)
     except Exception:
         v_length = int(sum(np.asarray(vmult_att) > 0))
-    vknots_att = read_attribute_by_name(ob, "Knot V", v_length)
-
-    uknot = TColStd_HArray1OfReal(1, u_length)
-    umult = TColStd_HArray1OfInteger(1, u_length)
-    for i in range(u_length):
-        uknot.SetValue(i + 1, uknots_att[i])
-        umult.SetValue(i + 1, umult_att[i])
-
-    vknot = TColStd_HArray1OfReal(1, v_length)
-    vmult = TColStd_HArray1OfInteger(1, v_length)
-    for i in range(v_length):
-        vknot.SetValue(i + 1, vknots_att[i])
-        vmult.SetValue(i + 1, vmult_att[i])
+    vknots_att = list(read_attribute_by_name(ob, "Knot V", v_length))
+    vknot, vmult = knot_tcol_from_att(vknots_att, vmult_att, degree_v, isclamped_v, iscyclic_v)
 
     return uknot, vknot, umult, vmult
 
@@ -419,24 +422,10 @@ class SP_Wire_export:
         ## Is closed : per wire
         ## Is periodic/cyclic : per segment
 
+        # Is closed
         self.isclosed = sum([s - 1 for s in self.segs_p_counts]) == len(self.CP) or (
             sum(self.isperiodic_per_seg) > 0
         )
-
-        p_count = 0  # (total)
-        p_count_accumulate = self.segs_p_counts.copy()
-        for i, p in enumerate(self.segs_p_counts):
-            if p > 0:
-                p_count += p - 1
-            elif p == 0:
-                break
-            if i > 0:
-                p_count_accumulate[i] += p_count_accumulate[i - 1] - 1
-
-        self.seg_first_P_id = [0] + [
-            p - 1 for p in p_count_accumulate[: self.seg_count - 1]
-        ]
-        # self.p_count_accumulate = p_count_accumulate[:len(self.segs_p_counts)]
 
     def split_cp_aligned_attr_per_seg(self, attr: list) -> list[list]:
         attr = list(attr)
@@ -455,7 +444,7 @@ class SP_Wire_export:
         return split_attr
 
     def get_topods_wire(self):
-        # split because not needed with svg. Can be judged unnecessary
+        # Split because not needed with svg. Can be judged unnecessary
 
         # Split attrs per segment
         vec_cp_per_seg = self.split_cp_aligned_attr_per_seg(self.CP)
@@ -796,6 +785,12 @@ def NURBS_face_to_topods(ob, scale=1000):
     points = read_attribute_by_name(ob, "CP_NURBS_surf", u_count * v_count)
     points *= scale
     degree_u, degree_v = read_attribute_by_name(ob, "Degrees", 2)
+    
+    try:
+        isclamped_u, isclamped_v = read_attribute_by_name(ob, "IsClamped", 2)
+    except KeyError:
+        isclamped_u, isclamped_v = True, True
+
     try:
         isperiodic_u, isperiodic_v = read_attribute_by_name(ob, "IsPeriodic", 2)
     except KeyError:
@@ -811,16 +806,26 @@ def NURBS_face_to_topods(ob, scale=1000):
 
     # Wrap control points
     if isperiodic_u:
-        points = np.append(points, points[0:1, :, :], axis=0)
-        weigths_att = np.append(weigths_att, weigths_att[0:1, :], axis=0)
-        u_count += 1
+        if isclamped_u:
+            points = np.append(points, points[0:1, :, :], axis=0)
+            weigths_att = np.append(weigths_att, weigths_att[0:1, :], axis=0)
+            u_count += 1
+        else:
+            points = np.append(points, points[0:degree_u, :, :], axis=0)
+            weigths_att = np.append(weigths_att, weigths_att[0:degree_u, :], axis=0)
+            u_count += degree_u
     if isperiodic_v:
-        points = np.append(points, points[:, 0:1, :], axis=1)
-        weigths_att = np.append(weigths_att, weigths_att[:, 0:1], axis=1)
-        v_count += 1
+        if isclamped_v:
+            points = np.append(points, points[:, 0:1, :], axis=1)
+            weigths_att = np.append(weigths_att, weigths_att[:, 0:1], axis=1)
+            v_count += 1
+        else:
+            points = np.append(points, points[:, 0:degree_v, :], axis=1)
+            weigths_att = np.append(weigths_att, weigths_att[:, 0:degree_v], axis=1)
+            v_count += degree_v
 
     # Knots and Multiplicities
-    uknots, vknots, umult, vmult = get_patch_knot_and_mult(ob)
+    uknots, vknots, umult, vmult = get_patch_knot_and_mult(ob, degree_u, degree_v, isclamped_u, isclamped_v, isperiodic_u, isperiodic_v)
 
     # Poles grid
     poles = vec_grid_to_step_cartesian(list(points))
@@ -828,6 +833,7 @@ def NURBS_face_to_topods(ob, scale=1000):
     # Weigths
     weigths = float_list_to_tcolstd_H_2d(list(weigths_att))
 
+    # Create STEP B-spline surface
     name = TCollection_HAsciiString("bspline_surface")
     step_surf = StepGeom_BSplineSurfaceWithKnotsAndRationalBSplineSurface()
     step_surf.Init(
