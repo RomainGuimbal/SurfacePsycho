@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "surfacepsycho"
-version = "0.9.2"
+version = "0.9.3"
 name = "Surface Psycho"
 tagline = "Precision Surface Design"
 maintainer = "Romain Guimbal"

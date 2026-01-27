@@ -17,6 +17,12 @@
       "task": "Import primitives",
       "icon": "🍩",
       "tooltip": "Import primitives"
+    },
+    {
+      "name": "",
+      "task": "Build",
+      "icon": "🚧",
+      "tooltip": "Build a release"
     }
   ]
 }

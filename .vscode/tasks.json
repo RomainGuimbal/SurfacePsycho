@@ -49,23 +49,15 @@
             ],
             "problemMatcher": []
         },
-        {
-            "label": "BUILD",
-            "type": "shell",
-            "command": "blender",
-            "args": [
-                "--command",
-                "extension",
-                "build",
-                "--source-dir",
-                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho",
-                "--output-dir",
-                "C:/Users/romai/Documents/Projets/26 - Bezier Quest",
-                "--split-platforms",
-                "--verbose"
-            ],
-            "problemMatcher": []
-        },
+        // {
+        //     "label": "BUILD",
+        //     "type": "shell",
+        //     "command": "powershell",
+        //     "args": [
+        //         "$blenderPath = Get-ChildItem 'C:\\Program Files\\Blender Foundation' -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1 -ExpandProperty FullName; if ($blenderPath) { $blenderExe = Join-Path $blenderPath 'blender.exe'; Write-Host \"Using Blender at: $blenderExe\"; & $blenderExe --command extension build --source-dir ${workspaceFolder} --output-dir ${workspaceFolder}/.. --split-platforms --verbose } else { Write-Error 'Blender_not_found'}"
+        //         ],
+        //     "problemMatcher": []
+        // },
         {
             "label": "Print assets",
             "type": "shell",
