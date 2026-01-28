@@ -1,3 +1,4 @@
+import warnings
 import bpy
 from datetime import datetime
 import re
@@ -40,20 +41,24 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
     )
 
     def execute(self, context):
-        export_isdone = export_step(
-            context,
-            self.filepath,
-            self.use_selection,
-            self.scale,
-            self.sew,
-            10**self.sew_tolerance_exponent,
-        )
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            export_isdone = export_step(
+                context,
+                self.filepath,
+                self.use_selection,
+                self.scale,
+                self.sew,
+                10**self.sew_tolerance_exponent,
+            )
 
-        if export_isdone:
-            pass
-            # self.report({'INFO'}, f"Step file exported as {self.filepath}.step")
-        else:
-            self.report({"INFO"}, "No SurfacePsycho Objects selected")
+            if export_isdone:
+                if len(w) > 0:
+                    for warning in w:
+                        self.report({"WARNING"}, str(warning.message))
+                pass
+            else:
+                self.report({"INFO"}, "No SurfacePsycho Objects selected")
         return {"FINISHED"}
 
 
@@ -78,14 +83,18 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
     )
 
     def execute(self, context):
-        export_iges(
-            context,
-            self.filepath,
-            self.use_selection,
-            self.scale,
-            self.sew,
-            10**self.sew_tolerance_exponent,
-        )
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            export_iges(
+                context,
+                self.filepath,
+                self.use_selection,
+                self.scale,
+                self.sew,
+                10**self.sew_tolerance_exponent,
+            )
+            for warning in w:
+                self.report({"WARNING"}, str(warning.message))
         return {"FINISHED"}
 
 
@@ -204,12 +213,18 @@ class SP_OT_QuickExport(bpy.types.Operator):
         pathstr = join(dir, filename)
         
         # Export
-        export_isdone = export_step(context, pathstr, True, 1000, True, 1e-1)
-
-        if export_isdone:
-            self.report({"INFO"}, f"Step file exported at {pathstr}")
-        else:
-            self.report({"INFO"}, "No SurfacePsycho Objects selected")
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            export_isdone = export_step(context, pathstr, True, 1000, True, 1e-1)
+            
+            if export_isdone:
+                if len(w) > 0:
+                    for warning in w:
+                        self.report({"WARNING"}, str(warning.message) + ". " + f"Exported at {pathstr}")
+                else:
+                    self.report({"INFO"}, f"Step file exported at {pathstr}")
+            else:
+                self.report({"INFO"}, "No SurfacePsycho Objects selected")
         return {"FINISHED"}
 
 

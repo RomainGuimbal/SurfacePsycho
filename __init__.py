@@ -14,7 +14,7 @@
 bl_info = {
     "name": "Surface Psycho",
     "author": "Romain Guimbal",
-    "version": (0, 9, 3),
+    "version": (0, 9, 4),
     "blender": (5, 0, 0),
     "description": "Precision Surface Design",
     "warning": "Alpha",

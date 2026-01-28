@@ -1,8 +1,10 @@
 import bpy
 import numpy as np
 import math
+import warnings
 from mathutils import Vector, Matrix
 from collections import Counter
+
 
 from ..common.enums import SP_obj_type, SP_segment_type
 from ..common.utils import (
@@ -1529,8 +1531,11 @@ def blender_instances_to_topods_instances(
 ):
     sewed_shapes_list = []
     depsgraph = context.evaluated_depsgraph_get()
-
+    
     for ins in hierarchy.instances:
+        if ins.scale.x<0 or ins.scale.y<0 or ins.scale.z<0:
+            warnings.warn("Negative instance scale not supported")
+
         swd = blender_instance_to_topods_instance(
             ins, depsgraph, hierarchy, scale, sew_tolerance
         )
@@ -1643,6 +1648,7 @@ def prepare_export(
         sewed_instances_list = blender_instances_to_topods_instances(
             context, hierarchy, scale
         )
+
         for s in sewed_instances_list:
             separated_shapes_list.extend(shells_to_solids(s))
 
