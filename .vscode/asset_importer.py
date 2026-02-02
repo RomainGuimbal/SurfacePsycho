@@ -297,6 +297,8 @@ gr_curve_flat = {
     "SP - Crop or Extend Curve",
     "SP - Offset Curve",
     "SP - FlatPatch Meshing",
+    "SP - Resample Selection",
+    "SP - Set Edge Length",
 }
 
 # BEZIER SURF

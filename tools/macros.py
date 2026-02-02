@@ -398,6 +398,7 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
                             name=att_name, type="BOOLEAN", domain="POINT"
                         )
                         o.data.update()
+                        toggle_bool_attribute(o, att_name)
 
             # Vertex group (LEGACY)
             elif att_name in o.vertex_groups:
@@ -405,6 +406,8 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
             else:
                 o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                 o.data.update()
+                toggle_bool_attribute(o, att_name)
+                
 
         bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
