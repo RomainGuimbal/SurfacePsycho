@@ -188,6 +188,16 @@ class SP_PT_EditPanel(bpy.types.Panel):
                 "active_segment_degree",
                 text="NURBS Degree",
             )
+            
+            # Segment Resolution
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col = self.layout.column()
+            col.prop(
+                context.scene.sp_properties,
+                "active_segment_resolution",
+                text="Segment Resolution",
+            )
 
             # Weight
             self.layout.use_property_split = True

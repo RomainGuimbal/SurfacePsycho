@@ -1,3 +1,4 @@
+import math
 import bpy
 from mathutils import Vector, Matrix
 import bmesh
@@ -677,7 +678,6 @@ def scale_combs(self, context):
 def set_seg_degree_from_active_prop(self, context):
     set_seg_degree(min(self.active_segment_degree, 20), context)
 
-
 def set_seg_degree(degree: int, context):
     objs = context.objects_in_mode
     for o in objs:
@@ -703,6 +703,48 @@ def set_seg_degree(degree: int, context):
         att.data.foreach_set("value", values)
         bpy.ops.object.mode_set(mode="EDIT")
 
+
+def set_seg_resolution_from_active_prop(self, context):
+    set_seg_resolution(max(self.active_segment_resolution, 1), context)
+
+def set_seg_resolution(resolution: int, context):
+    objs = context.objects_in_mode
+    for o in objs:
+        # Switch to object mode to modify vertex groups
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        # Get global resolution
+        o_resolution = 16
+        for m in reversed(o.modifiers):
+            if m.type == "NODES" and  m.node_group.name in MESHER_NAMES:
+                try :
+                    o_resolution = math.ceil(math.sqrt(m["Resolution U"]**2 + m["Resolution V"]**2))
+                except KeyError:
+                    try :
+                        o_resolution = m["Resolution"]
+                    except KeyError:
+                        print("Resolution not found")
+                break
+
+        # Ensure "Resolution" exists
+        if "segment_resolution" not in o.data.attributes:
+            att = o.data.attributes.new(name="segment_resolution", type="INT", domain="POINT")
+            att.data.foreach_set('value', [o_resolution]*len(att.data))
+        else :
+            att = o.data.attributes["segment_resolution"]
+
+        # Get existing values
+        values = [0] * len(o.data.vertices)
+        att.data.foreach_get("value", values)
+
+        # Update values
+        for i, v in enumerate(o.data.vertices):
+            if v.select:
+                values[i] = max(resolution, 1)
+
+        # Set new
+        att.data.foreach_set("value", values)
+        bpy.ops.object.mode_set(mode="EDIT")
 
 def set_vert_weight_from_active_prop(self, context):
     set_vert_weight(self.active_vert_weight, context)
@@ -764,6 +806,15 @@ class SP_Props_Group(bpy.types.PropertyGroup):
         min=0,
         max=10,
         update=set_seg_degree_from_active_prop,
+    )
+
+    active_segment_resolution: bpy.props.IntProperty(
+        name="Resolution",
+        description="Segment Resolution",
+        default=16,
+        min=1,
+        max=2048,
+        update=set_seg_resolution_from_active_prop,
     )
 
     active_vert_weight: bpy.props.FloatProperty(
