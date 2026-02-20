@@ -112,11 +112,11 @@ from OCP.TCollection import TCollection_HAsciiString
 ##############################
 
 def knot_tcol_from_att(knots, mults, degree, isclamped, iscyclic):
-    unique_knot_length = sum(np.asarray(mults) > 0) # uncompatible with mirror
+    unique_knot_length = int(sum(np.asarray(mults) > 0)) # uncompatible with mirror
     k = knots[:unique_knot_length]
     m = mults[:unique_knot_length]
     if iscyclic and not isclamped:
-        dk = np.array([k[i + 1] - k[0] for i in range(degree)])
+        dk = np.array([k[i + 1] - k[0] for i in range(int(degree))])
         k_end = dk + k[-1]
         k = np.append(k, k_end)
         m = np.append(m, m[:degree])
@@ -357,19 +357,25 @@ class SP_Edge_export:
 
     def make_edge(self, geom_surf):
         if geom_surf == None:
-            self.topods_edge = BRepBuilderAPI_MakeEdge(self.geom).Edge()
-        else:  # 2D
+            builder = BRepBuilderAPI_MakeEdge(self.geom)
+            if not builder.IsDone():
+                raise RuntimeError(f"Edge creation failed with error: {builder.Error()}")
+            self.topods_edge = builder.Edge()
+        else: # UV space
             adapt = GeomAdaptor_Surface(geom_surf)
-            self.topods_edge = BRepBuilderAPI_MakeEdge(
+            builder = BRepBuilderAPI_MakeEdge(
                 self.geom, adapt.Surface()
-            ).Edge()
+            )
+            if not builder.IsDone():
+                raise RuntimeError(f"Edge creation failed with error: {builder.Error()}")
+            self.topods_edge = builder.Edge()
 
 
 def get_patch_knot_and_mult(ob,  degree_u, degree_v, isclamped_u, isclamped_v, iscyclic_u, iscyclic_v):
     # U
     umult_att = read_attribute_by_name(ob, "Multiplicity U")
     try:
-        u_length = sum(np.asarray(umult_att) > 0)  # uncompatible with mirror
+        u_length = int(sum(np.asarray(umult_att) > 0))  # uncompatible with mirror
     except KeyError: # weird
         u_length = int(sum(np.asarray(umult_att) > 0))
     uknots_att = list(read_attribute_by_name(ob, "Knot U", u_length))
@@ -378,7 +384,7 @@ def get_patch_knot_and_mult(ob,  degree_u, degree_v, isclamped_u, isclamped_v, i
     # V
     vmult_att = read_attribute_by_name(ob, "Multiplicity V")
     try:
-        v_length = sum(np.asarray(vmult_att) > 0)
+        v_length = int(sum(np.asarray(vmult_att) > 0))
     except Exception:
         v_length = int(sum(np.asarray(vmult_att) > 0))
     vknots_att = list(read_attribute_by_name(ob, "Knot V", v_length))
@@ -1018,15 +1024,15 @@ def cylinder_face_to_topods(ob, scale=1000):
 def revolution_face_to_topods(ob, scale=1000):
     # Get attr
     origin, dir1 = read_attribute_by_name(ob, "axis1_revolution", 2)
-    p_count = read_attribute_by_name(ob, "p_count_revolution", 1)[0]
+    p_count = int(read_attribute_by_name(ob, "p_count_revolution", 1)[0])
     segment_CP = read_attribute_by_name(ob, "CP_revolution", p_count)
     segment_CP *= scale
     try:
         weight = read_attribute_by_name(ob, "weight_revolution", p_count)
     except KeyError:
         weight = [1.0] * p_count
-    type = read_attribute_by_name(ob, "type_revolution", 1)[0]
-    degree = read_attribute_by_name(ob, "degree_revolution", 1)[0]
+    type = int(read_attribute_by_name(ob, "type_revolution", 1)[0])
+    degree = int(read_attribute_by_name(ob, "degree_revolution", 1)[0])
     is_clamped, is_periodic = read_attribute_by_name(
         ob, "clamped_periodic_revolution", 2
     )
@@ -1095,12 +1101,12 @@ def revolution_face_to_topods(ob, scale=1000):
 def extrusion_face_to_topods(ob, scale=1000):
     # Get attr
     dir_att = read_attribute_by_name(ob, "dir_extrusion", 1)[0]
-    p_count = read_attribute_by_name(ob, "p_count_extrusion", 1)[0]
+    p_count = int(read_attribute_by_name(ob, "p_count_extrusion", 1)[0])
     segment_CP = read_attribute_by_name(ob, "CP_extrusion", p_count)
     segment_CP *= scale
     weight = read_attribute_by_name(ob, "weight_extrusion", p_count)
-    type = read_attribute_by_name(ob, "type_extrusion", 1)[0]
-    degree = read_attribute_by_name(ob, "degree_extrusion", 1)[0]
+    type = int(read_attribute_by_name(ob, "type_extrusion", 1)[0])
+    degree = int(read_attribute_by_name(ob, "degree_extrusion", 1)[0])
     is_clamped, is_periodic = read_attribute_by_name(
         ob, "clamped_periodic_extrusion", 2
     )
@@ -1177,16 +1183,16 @@ def curve_to_topods(ob, scale=1000):
     segs_p_counts = segs_p_counts[:segment_count]
 
     # is closed
-    is_closed = read_attribute_by_name(ob, "closed", 1)[0]
+    is_closed = bool(read_attribute_by_name(ob, "closed", 1)[0])
 
     # One point less if closed
     total_p_count -= is_closed and segment_count > 1
 
     # is clamped
-    is_clamped = read_attribute_by_name(ob, "IsClamped", 1)[0]
+    is_clamped = bool(read_attribute_by_name(ob, "IsClamped", 1)[0])
 
     # is periodic
-    is_periodic = read_attribute_by_name(ob, "IsPeriodic", 1)[0]
+    is_periodic = bool(read_attribute_by_name(ob, "IsPeriodic", 1)[0])
 
     # Type
     try:
