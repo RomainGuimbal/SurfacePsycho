@@ -1491,7 +1491,7 @@ def blender_object_to_topods_shapes(
 
         case SP_obj_type.CYLINDER:
             shape = cylinder_face_to_topods(ob, scale)
-
+ 
         case SP_obj_type.TORUS:
             shape = torus_face_to_topods(ob, scale)
 
@@ -1516,8 +1516,10 @@ def blender_object_to_topods_shapes(
         case _:
             raise Exception(f"Invalid shape of type {sp_type}")
 
+    # Mirror
     shape_list_mirrored = mirror_topods_shape(object, shape, scale)
 
+    # Sew
     if sew:
         compound = sew_shapes(shape_list_mirrored, sew_tolerance)
     else:
@@ -1622,7 +1624,7 @@ def sew_shapes(shape_list, tolerance=1e-1):
     return aSew.SewedShape()
 
 
-def prepare_export(
+def gather_export_shapes(
     context, use_selection: bool, scale=1000, sew: bool = True, sew_tolerance=1e-1
 ) -> TopoDS_Compound:
 

@@ -5,7 +5,6 @@ from mathutils import Vector, Matrix, Quaternion
 import math
 from typing import List, Tuple
 from os.path import dirname, abspath, basename, join
-import re
 
 from .enums import SP_obj_type, MESHER_NAMES, geom_to_sp_type
 from OCP.BRep import BRep_Builder
@@ -803,37 +802,6 @@ def get_shape_name_and_color(shape, doc):
             if color_tool.GetColor(shape, XCAFDoc_ColorGen, color):
                 color = (color.Red(), color.Green(), color.Blue())
     return name, color
-
-
-def replace_all_instances_of_node_group(target_node_group_name, new_node_group_name):
-    # Get the target node group
-    prefix, suffix = target_node_group_name[:-2], target_node_group_name[-2:]
-
-    if suffix == ".*":
-        pattern = rf"^{re.escape(prefix)}\.(\d{{3}}|\d{{3}}\.\d{{3}})$"
-        target_node_groups = [
-            ng for ng in bpy.data.node_groups if re.match(pattern, ng.name)
-        ]
-    else:
-        target_node_groups = [bpy.data.node_groups.get(target_node_group_name)]
-
-    # Get the new node group
-    new_node_group = bpy.data.node_groups.get(new_node_group_name)
-    if not new_node_group:
-        return 0  # New node group not found
-
-    if len(target_node_groups) > 0:
-        for t in target_node_groups:
-            if t and t != new_node_group:
-                # Replace the node group data
-                t.user_remap(new_node_group)
-
-                # Remove the old node group
-                bpy.data.node_groups.remove(t)
-
-        return len(target_node_groups)
-    else:
-        return -1
 
 
 def to_hex(color):

@@ -11,19 +11,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-bl_info = {
-    "name": "Surface Psycho",
-    "author": "Romain Guimbal",
-    "version": (0, 9, 4),
-    "blender": (5, 0, 0),
-    "description": "Precision Surface Design",
-    "warning": "Alpha",
-    "doc_url": "https://github.com/RomainGuimbal/SurfacePsycho/wiki",
-    "category": "3D View",
-    "location": "View3D > Add > Surface/Curve  |  Viewport > N Panel > Tool",
-}
-
 import bpy
+from .config import bl_info
 from .common import gui
 from .tools import macros
 # import time

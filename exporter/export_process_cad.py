@@ -4,7 +4,7 @@ from OCP.IGESControl import IGESControl_Writer
 from OCP.Interface import Interface_Static
 from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
 
-from .export_shape_builder import prepare_export
+from .export_shape_builder import gather_export_shapes
 
 
 def export_step(
@@ -15,7 +15,7 @@ def export_step(
     sew,
     sew_tolerance,
 ):
-    brep_shapes = prepare_export(context, use_selection, scale, sew, sew_tolerance)
+    brep_shapes = gather_export_shapes(context, use_selection, scale, sew, sew_tolerance)
     if brep_shapes is not None:
         write_step_file(brep_shapes, filepath, application_protocol="AP203")
         return True
@@ -31,7 +31,7 @@ def export_iges(
     sew,
     sew_tolerance,
 ):
-    brep_shapes = prepare_export(context, use_selection, scale, sew, sew_tolerance)
+    brep_shapes = gather_export_shapes(context, use_selection, scale, sew, sew_tolerance)
     if brep_shapes is not None:
         write_iges_file(brep_shapes, filepath)
         return True
@@ -58,7 +58,8 @@ def write_step_file(a_shape, filename, application_protocol="AP203"):
             f"application_protocol must be either AP203 or AP214IS. You passed {application_protocol}."
         )
     if isfile(filename):
-        print(f"Warning: {filename} file already exists and will be replaced")
+        raise AssertionError(f"{filename} already exists.")
+    
     # creates and initialise the step exporter
     step_writer = STEPControl_Writer()
     Interface_Static.SetCVal_s("write.step.schema", application_protocol)

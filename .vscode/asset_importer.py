@@ -6,7 +6,6 @@ import sys
 
 FILE_PATH = Path(bpy.data.filepath)
 
-
 def delete_all_data():
     # Delete all data except scripts
     bpy.data.batch_remove(bpy.data.objects)
@@ -239,9 +238,41 @@ def remove_fake_user_node_groups():
             ng.use_fake_user = False
 
 
+def set_nodes_version():
+    # get version from toml file
+    version = ""
+    path = FILE_PATH.parent.parent / "blender_manifest.toml"
+    with open(path, "r") as f:
+        for line in f:
+            if line.startswith("version"):
+                version = line.split("\"")[1]
+                break
+
+    for ng in bpy.data.node_groups :
+        ng['version'] = version
+
+    print("version set to " + version)
+
+
+
+
+
+
+
+
+
+
 ############################################################################################
 ############################################################################################
 ############################################################################################
+
+
+
+
+
+
+
+
 
 
 ################################
@@ -496,6 +527,8 @@ if __name__ == "__main__":
         bpy.ops.outliner.orphans_purge(
             do_local_ids=True, do_linked_ids=False, do_recursive=True
         )
+
+        set_nodes_version()
 
     #    profiler.disable()
     #    profiler.print_stats()

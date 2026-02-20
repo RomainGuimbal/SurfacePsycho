@@ -7,7 +7,6 @@ from ..common.utils import (
     sp_type_of_object,
     append_object_by_name,
     append_multiple_node_groups,
-    replace_all_instances_of_node_group,
     read_attribute_by_name,
     toggle_bool_attribute,
     toggle_pseudo_bool_attribute,
@@ -23,8 +22,11 @@ from ..common.utils import (
     ASSETS_PATH,
 )
 from ..common.compound_utils import convert_compound_to_patches
-from mathutils import Vector
-
+from ..common.versioning import (
+    replace_all_instances_of_node_group,
+    report_outdated_node_groups,
+)
+from bpy.types import UILayout
 
 class SP_OT_add_library(bpy.types.Operator):
     bl_idname = "wm.sp_add_library"
@@ -173,6 +175,34 @@ class SP_OT_replace_node_group(bpy.types.Operator):
 
     target_name: bpy.props.StringProperty(name="Target", description="", default="")
     new_name: bpy.props.StringProperty(name="New", description="", default="")
+
+    def invoke(self, context, event):
+        # Populate the filtered node groups before opening the dialog
+        self.nodegroup_items.clear()
+        for ng in bpy.data.node_groups:
+            if ng.type == 'GEOMETRY':
+                self.nodegroup_items.add().name = ng.name
+
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop_search(
+            self,
+            "target_name",  
+            bpy.data,          
+            "node_groups",     
+            text="Target",
+            icon='NODETREE'
+        )
+        layout.prop_search(
+            self,
+            "new_name",  
+            bpy.data,          
+            "node_groups",
+            text="New",
+            icon='NODETREE'
+        )
 
     def execute(self, context):
         target_node_group_name = self.target_name
@@ -408,7 +438,6 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
                 o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                 o.data.update()
                 toggle_bool_attribute(o, att_name)
-                
 
         bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
@@ -678,6 +707,7 @@ def scale_combs(self, context):
 def set_seg_degree_from_active_prop(self, context):
     set_seg_degree(min(self.active_segment_degree, 20), context)
 
+
 def set_seg_degree(degree: int, context):
     objs = context.objects_in_mode
     for o in objs:
@@ -707,6 +737,7 @@ def set_seg_degree(degree: int, context):
 def set_seg_resolution_from_active_prop(self, context):
     set_seg_resolution(max(self.active_segment_resolution, 1), context)
 
+
 def set_seg_resolution(resolution: int, context):
     objs = context.objects_in_mode
     for o in objs:
@@ -716,11 +747,13 @@ def set_seg_resolution(resolution: int, context):
         # Get global resolution
         o_resolution = 16
         for m in reversed(o.modifiers):
-            if m.type == "NODES" and  m.node_group.name in MESHER_NAMES:
-                try :
-                    o_resolution = math.ceil(math.sqrt(m["Resolution U"]**2 + m["Resolution V"]**2))
+            if m.type == "NODES" and m.node_group.name in MESHER_NAMES:
+                try:
+                    o_resolution = math.ceil(
+                        math.sqrt(m["Resolution U"] ** 2 + m["Resolution V"] ** 2)
+                    )
                 except KeyError:
-                    try :
+                    try:
                         o_resolution = m["Resolution"]
                     except KeyError:
                         print("Resolution not found")
@@ -728,9 +761,11 @@ def set_seg_resolution(resolution: int, context):
 
         # Ensure "Resolution" exists
         if "segment_resolution" not in o.data.attributes:
-            att = o.data.attributes.new(name="segment_resolution", type="INT", domain="POINT")
-            att.data.foreach_set('value', [o_resolution]*len(att.data))
-        else :
+            att = o.data.attributes.new(
+                name="segment_resolution", type="INT", domain="POINT"
+            )
+            att.data.foreach_set("value", [o_resolution] * len(att.data))
+        else:
             att = o.data.attributes["segment_resolution"]
 
         # Get existing values
@@ -745,6 +780,7 @@ def set_seg_resolution(resolution: int, context):
         # Set new
         att.data.foreach_set("value", values)
         bpy.ops.object.mode_set(mode="EDIT")
+
 
 def set_vert_weight_from_active_prop(self, context):
     set_vert_weight(self.active_vert_weight, context)
@@ -774,7 +810,7 @@ def scale_analysis(self, context):
     for o in reversed(context.visible_objects):
         if o.type == "MESH":
             for m in o.modifiers:
-                if m.type == "NODES" :
+                if m.type == "NODES":
                     if m.node_group.name == "SP - Curvature Analysis":
                         change_GN_modifier_settings(m, {"Scale": self.analysis_scale})
                         break
@@ -1299,6 +1335,17 @@ class SP_OT_remove_matcaps(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_report_outdated_nodes(bpy.types.Operator):
+    bl_idname = "object.sp_report_outdated_nodes"
+    bl_label = "SP - Report Outdated Nodes"
+    bl_description = "Report outdated nodes in the console"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        report_outdated_node_groups()
+        return {"FINISHED"}
+
+
 classes = [
     SP_OT_add_curvature_analysis,
     SP_OT_add_library,
@@ -1314,6 +1361,7 @@ classes = [
     SP_OT_remove_from_ellipses,
     SP_OT_remove_matcaps,
     SP_OT_replace_node_group,
+    SP_OT_report_outdated_nodes,
     SP_OT_scale_analysis,
     SP_OT_select_all,
     SP_OT_select_endpoints,
