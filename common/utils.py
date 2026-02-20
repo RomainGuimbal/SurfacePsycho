@@ -54,8 +54,9 @@ import OCP.GeomAbs as GeomAbs
 
 ADDON_PATH = dirname(dirname(abspath(__file__)))  # The PsychoPath ;)
 ASSETS_FILE = ADDON_PATH + "/assets/assets.blend"
-ASSETS_PATH = join(ADDON_PATH ,"assets")
+ASSETS_PATH = join(ADDON_PATH, "assets")
 ADDON_PREF_KEY = "bl_ext." + basename(dirname(ADDON_PATH)) + ".SurfacePsycho"
+
 
 def get_face_sp_type(TopoDSface: TopoDS_Face):
     adapt_surf = BRepAdaptor_Surface(TopoDSface)
@@ -125,7 +126,10 @@ def read_attribute_by_name(object, name, len_attr=None) -> np.array:
 
 
 def append_object_by_name(obj_name, context):  # for importing from the asset file
-    with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (data_from, data_to):
+    with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (
+        data_from,
+        data_to,
+    ):
         data_to.objects = [name for name in data_from.objects if name == obj_name]
 
     cursor_loc = context.scene.cursor.location
@@ -617,7 +621,10 @@ def append_node_group(asset_name, force=False, remove_asset_data=True):
     # if not, import
     if not asset_already:
         # Load the asset file
-        with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (data_from, data_to):
+        with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (
+            data_from,
+            data_to,
+        ):
             # Find the node group in the file
             if asset_name not in data_from.node_groups:
                 print(f"Asset '{asset_name}' not found")
@@ -636,7 +643,10 @@ def append_multiple_node_groups(ng_names: set, remove_asset_data=True):
     existing_node_groups = set(bpy.data.node_groups.keys())
 
     # Append the new node groups
-    with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (data_from, data_to):
+    with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (
+        data_from,
+        data_to,
+    ):
         # Filter the node groups that exist in the asset file
         valid_node_groups = [name for name in ng_names if name in data_from.node_groups]
 
@@ -882,9 +892,6 @@ def shells_to_solids(topods_shape: TopoDS_Shape):
             ):
                 separated_shapes_list.append(sh)
 
-            # Other
-            else:
-                print(f"Unexpected shape of type {sh.ShapeType()}")
             iterator.Next()
 
     # Single shell
@@ -902,7 +909,6 @@ def shells_to_solids(topods_shape: TopoDS_Shape):
     # other
     else:
         separated_shapes_list.append(topods_shape)
-        print(f"Unexpected shape of type {topods_shape.ShapeType()}")
 
     return separated_shapes_list
 
