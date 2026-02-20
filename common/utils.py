@@ -1156,3 +1156,46 @@ def is_natural_bounds(verts, edges):
         is_natural_bounds_trim = (t1 or t2 or t3 or t4 or t5 or t6 or t7 or t8) and t9
 
     return is_natural_bounds_trim
+
+
+def knot_tcol_from_att(knots, mults, degree, isclamped, iscyclic):
+    unique_knot_length = int(sum(np.asarray(mults) > 0))  # uncompatible with mirror
+    k = knots[:unique_knot_length]
+    m = mults[:unique_knot_length]
+    if iscyclic and not isclamped:
+        dk = np.array([k[i + 1] - k[0] for i in range(int(degree))])
+        k_end = dk + k[-1]
+        k = np.append(k, k_end)
+        m = np.append(m, m[:degree])
+
+    tcol_knot = float_list_to_tcolstd_H(k)
+    tcol_mult = int_list_to_tcolstd_H(m)
+    return tcol_knot, tcol_mult
+
+
+def get_patch_knot_and_mult(
+    ob, degree_u, degree_v, isclamped_u, isclamped_v, iscyclic_u, iscyclic_v
+):
+    # U
+    umult_att = read_attribute_by_name(ob, "Multiplicity U")
+    try:
+        u_length = int(sum(np.asarray(umult_att) > 0))  # uncompatible with mirror
+    except KeyError:  # weird
+        u_length = int(sum(np.asarray(umult_att) > 0))
+    uknots_att = list(read_attribute_by_name(ob, "Knot U", u_length))
+    uknot, umult = knot_tcol_from_att(
+        uknots_att, umult_att, degree_u, isclamped_u, iscyclic_u
+    )
+
+    # V
+    vmult_att = read_attribute_by_name(ob, "Multiplicity V")
+    try:
+        v_length = int(sum(np.asarray(vmult_att) > 0))
+    except Exception:
+        v_length = int(sum(np.asarray(vmult_att) > 0))
+    vknots_att = list(read_attribute_by_name(ob, "Knot V", v_length))
+    vknot, vmult = knot_tcol_from_att(
+        vknots_att, vmult_att, degree_v, isclamped_v, iscyclic_v
+    )
+
+    return uknot, vknot, umult, vmult

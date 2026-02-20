@@ -13,6 +13,8 @@ from ..common.utils import (
     blender_matrix_to_gp_trsf,
     shape_list_to_compound,
     shells_to_solids,
+    get_patch_knot_and_mult,
+
 )
 from ..common.compound_utils import (
     convert_compound_to_patches,
@@ -59,37 +61,9 @@ from OCP.StepData import StepData_Logical, StepData_Factors
 from OCP.StepToGeom import StepToGeom
 from OCP.TCollection import TCollection_HAsciiString
 
-from .export_edge import SP_Edge_export, knot_tcol_from_att
+from .export_edge import SP_Edge_export
 from .export_wire import SP_Wire_export
 from .export_contour import SP_Contour_export
-
-
-def get_patch_knot_and_mult(
-    ob, degree_u, degree_v, isclamped_u, isclamped_v, iscyclic_u, iscyclic_v
-):
-    # U
-    umult_att = read_attribute_by_name(ob, "Multiplicity U")
-    try:
-        u_length = int(sum(np.asarray(umult_att) > 0))  # uncompatible with mirror
-    except KeyError:  # weird
-        u_length = int(sum(np.asarray(umult_att) > 0))
-    uknots_att = list(read_attribute_by_name(ob, "Knot U", u_length))
-    uknot, umult = knot_tcol_from_att(
-        uknots_att, umult_att, degree_u, isclamped_u, iscyclic_u
-    )
-
-    # V
-    vmult_att = read_attribute_by_name(ob, "Multiplicity V")
-    try:
-        v_length = int(sum(np.asarray(vmult_att) > 0))
-    except Exception:
-        v_length = int(sum(np.asarray(vmult_att) > 0))
-    vknots_att = list(read_attribute_by_name(ob, "Knot V", v_length))
-    vknot, vmult = knot_tcol_from_att(
-        vknots_att, vmult_att, degree_v, isclamped_v, iscyclic_v
-    )
-
-    return uknot, vknot, umult, vmult
 
 
 ##############################
@@ -97,16 +71,14 @@ def get_patch_knot_and_mult(
 ##############################
 
 
-def geom_to_topods_face(geom_surf=None, outer_wire=None, inner_wires=[]):
+# Generic face builder
+def geom_to_topods_face(geom_surf, outer_wire=None, inner_wires=[]):
     # Make face
-    if geom_surf != None:
-        if outer_wire == None:
-            makeface = BRepBuilderAPI_MakeFace(geom_surf, 1e-6)
-            return makeface.Face()
-        else:
-            makeface = BRepBuilderAPI_MakeFace(geom_surf, outer_wire, False)  # ,1e-6)
-    else:  # Flat face
-        makeface = BRepBuilderAPI_MakeFace(outer_wire, True)
+    if outer_wire == None:
+        makeface = BRepBuilderAPI_MakeFace(geom_surf, 1e-6)
+        return makeface.Face()
+    else:
+        makeface = BRepBuilderAPI_MakeFace(geom_surf, outer_wire, False)  # ,1e-6)
 
     # Add inner wires (holes)
     for inner_wire in inner_wires:
@@ -114,6 +86,9 @@ def geom_to_topods_face(geom_surf=None, outer_wire=None, inner_wires=[]):
 
     # Build the face
     makeface.Build()
+
+    if not makeface.IsDone():
+        raise ValueError(f"Failed to build face {makeface.Error()}")
 
     # makeface.Add(trim_wire)#.Reversed())
     face = makeface.Face()
@@ -123,6 +98,7 @@ def geom_to_topods_face(geom_surf=None, outer_wire=None, inner_wires=[]):
     return fix.Face()
 
 
+# Bezier face
 def bezier_face_to_topods(ob, scale=1000):
     u_count = int(ob.data.attributes["CP_count"].data[0].value)
     v_count = int(ob.data.attributes["CP_count"].data[1].value)
@@ -158,6 +134,7 @@ def bezier_face_to_topods(ob, scale=1000):
     return face
 
 
+# NURBS face
 def NURBS_face_to_topods(ob, scale=1000):
     # Get attributes
     u_count, v_count = read_attribute_by_name(ob, "CP_count", 2)
@@ -256,6 +233,7 @@ def NURBS_face_to_topods(ob, scale=1000):
     return face
 
 
+# Cone
 def cone_face_to_topods(ob, scale=1000):
     # Get attr
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_cone", 3)
@@ -292,6 +270,7 @@ def cone_face_to_topods(ob, scale=1000):
     return face
 
 
+# Sphere
 def sphere_face_to_topods(ob, scale=1000):
     # Get attr
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_sphere", 3)
@@ -325,6 +304,7 @@ def sphere_face_to_topods(ob, scale=1000):
     return face
 
 
+# Torus
 def torus_face_to_topods(ob, scale=1000):
     # Get attr
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_torus", 3)
@@ -358,6 +338,7 @@ def torus_face_to_topods(ob, scale=1000):
     return face
 
 
+# Cylinder
 def cylinder_face_to_topods(ob, scale=1000):
     # Get attr
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_cylinder", 3)
@@ -394,6 +375,7 @@ def cylinder_face_to_topods(ob, scale=1000):
     return face
 
 
+# Revolution
 def revolution_face_to_topods(ob, scale=1000):
     # Get attr
     origin, dir1 = read_attribute_by_name(ob, "axis1_revolution", 2)
@@ -471,6 +453,7 @@ def revolution_face_to_topods(ob, scale=1000):
     return face
 
 
+# Extrusion
 def extrusion_face_to_topods(ob, scale=1000):
     # Get attr
     dir_att = read_attribute_by_name(ob, "dir_extrusion", 1)[0]
@@ -540,6 +523,7 @@ def extrusion_face_to_topods(ob, scale=1000):
     return face
 
 
+# Curve
 def curve_to_topods(ob, scale=1000):
     # Get point count attr
     segs_p_counts = read_attribute_by_name(ob, "CP_count")
@@ -615,6 +599,7 @@ def curve_to_topods(ob, scale=1000):
     return topods_wire
 
 
+# Flat patch
 def flat_patch_to_topods(ob, scale=1000):
     # Get point count attr
     # Orient and offset
@@ -647,7 +632,7 @@ def flat_patch_to_topods(ob, scale=1000):
     # Get occ wires
     outer_wire, inner_wires = contour.get_topods_wires()
 
-    face = geom_to_topods_face(None, outer_wire, inner_wires)
+    face = geom_to_topods_face(geom_pl, outer_wire, inner_wires)
     return face
 
 

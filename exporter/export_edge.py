@@ -1,4 +1,3 @@
-import numpy as np
 from ..common.enums import SP_segment_type
 from ..common.utils import (
     gp_list_to_arrayofpnt,
@@ -6,7 +5,7 @@ from ..common.utils import (
     vec_list_to_step_cartesian2d,
     vec_list_to_step_cartesian,
     float_list_to_tcolstd_H,
-    int_list_to_tcolstd_H,
+    knot_tcol_from_att
 )
 from .export_ellipse import gp_Elips_from_3_points, gp_Elips2d_from_3_points
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
@@ -37,21 +36,6 @@ from OCP.StepGeom import (
 from OCP.StepData import StepData_Logical, StepData_Factors
 from OCP.StepToGeom import StepToGeom
 from OCP.TCollection import TCollection_HAsciiString
-
-
-def knot_tcol_from_att(knots, mults, degree, isclamped, iscyclic):
-    unique_knot_length = int(sum(np.asarray(mults) > 0))  # uncompatible with mirror
-    k = knots[:unique_knot_length]
-    m = mults[:unique_knot_length]
-    if iscyclic and not isclamped:
-        dk = np.array([k[i + 1] - k[0] for i in range(int(degree))])
-        k_end = dk + k[-1]
-        k = np.append(k, k_end)
-        m = np.append(m, m[:degree])
-
-    tcol_knot = float_list_to_tcolstd_H(k)
-    tcol_mult = int_list_to_tcolstd_H(m)
-    return tcol_knot, tcol_mult
 
 
 class SP_Edge_export:
