@@ -59,12 +59,9 @@ from OCP.StepData import StepData_Logical, StepData_Factors
 from OCP.StepToGeom import StepToGeom
 from OCP.TCollection import TCollection_HAsciiString
 
-from .export_shapes_wire import (
-    SP_Wire_export,
-    SP_Edge_export,
-    SP_Contour_export,
-    knot_tcol_from_att,
-)
+from .export_edge import SP_Edge_export, knot_tcol_from_att
+from .export_wire import SP_Wire_export
+from .export_contour import SP_Contour_export
 
 
 def get_patch_knot_and_mult(

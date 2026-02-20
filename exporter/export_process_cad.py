@@ -4,7 +4,7 @@ from OCP.IGESControl import IGESControl_Writer
 from OCP.Interface import Interface_Static
 from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
 
-from .export_shapes_final import gather_export_shapes
+from .export_final_shapes import gather_export_shapes
 
 
 def export_step(
