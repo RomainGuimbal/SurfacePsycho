@@ -12,6 +12,7 @@ from OCP.GeomAbs import (
     GeomAbs_OtherSurface,
 )
 
+
 class SP_obj_type(Enum):
     PLANE = 0
     CYLINDER = 1
@@ -89,3 +90,132 @@ EDGES_TYPES = {
     "ellipse_arc": 4,
     "ellipse": 5,
 }
+
+
+ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
+    "SP - Blend Curve",
+    "SP - Connect Curve",
+    "SP - Continuities between Segments",
+    "SP - Convert Circles and Ellipses to Splines",
+    "SP - Copy Mesh Face",
+    "SP - Crop or Extend Curve",
+    "SP - Crown Curve",
+    "SP - Curve Meshing",
+    "SP - Distance Between Curves",
+    "SP - Fillet Curve or FlatPatch",
+    "SP - Fillet Polyline with Circles",
+    "SP - Fit Curve",
+    "SP - FlatPatch Meshing",
+    "SP - Inset FlatPatch",
+    "SP - Interpolate Curve or FlatPatch",
+    "SP - Interval Curve",
+    "SP - Make SVG Ready",
+    "SP - Mirror Curve Control Points",
+    "SP - Mirror FlatPatch or Curve",
+    "SP - Multi Split Curve",
+    "SP - NURBS to Bezier Curve or FlatPatch",
+    "SP - Oblong Wire",
+    "SP - Offset Curve",
+    "SP - Project on Flat Patch",
+    "SP - Radial Array FlatPatch",
+    "SP - Raise or Lower Curve Degree",
+    "SP - Raise or Lower Order of Selected Segment",
+    "SP - Reorder Curve Index",
+    "SP - Reorder Curve Selection",
+    "SP - Reproject Ellipse Arcs Ends",
+    "SP - Resample Selection",
+    "SP - Sample Curve Per Degree",
+    "SP - Set Edge Length",
+    "SP - Split Curve",
+    "SP - Switch Curve Direction",
+    # "SP - Bezier Circlular Arc",
+    # "SP - Compose FlatPatch From Sides",
+    # "SP - Curve on Surface from UV",
+}
+
+ASSET_NODE_GROUPS_BEZIER_PATCH = {
+    "SP - Bezier Patch Meshing",
+    "SP - Coon Patch",
+    "SP - Blend Surfaces",
+    "SP - Connect Bezier Patch",
+    "SP - Convert Contour",
+    "SP - Crop Patch to Point",
+    "SP - Displace Bezier Patch Control Grid",
+    "SP - Offset Precisely",
+    "SP - Fillet Trim Contour",
+    "SP - Flatten Patch",
+    "SP - Flatten Patch Side",
+    "SP - Gradient Map",
+    "SP - Loft",
+    "SP - Loft from Internal Curves",
+    "SP - Mirror Patch Control Points",
+    "SP - Nearest Curve on Bezier Patch",
+    "SP - Patch Exact Normals",
+    "SP - Project Curve on Bezier Patch",
+    "SP - Raise or Lower Degree Bezier Patch",
+    "SP - Reorder Grid Index",
+    "SP - Ruled Surface from Mesh Loop",
+    "SP - Select Patch Range",
+    "SP - Convert Flat Patch to Bezier Patch",
+    "SP - Trim Bezier Surface from Projected Wires",
+}
+
+ASSET_NODE_GROUPS_NURBS_PATCH = {
+    "SP - NURBS Patch Meshing",
+    "SP - NURBS Weighting",
+    "SP - Set Knot NURBS Patch",
+    "SP - Crop or Extend Patch",
+    "SP - Insert Knot NURBS Patch",
+    "SP - Curvature Analysis",
+    "SP - Continuity Analysis",
+    "SP - Fit Patch",
+    "SP - Interpolate Patch",
+    "SP_Curvature",
+    "SP - Normalize NURBS Patch Knots",
+}
+
+ASSET_NODE_GROUPS_OTHER_SURFACES = {
+    "SP - Cylindrical Meshing",
+    "SP - Toroidal Meshing",
+    "SP - Spherical Meshing",
+    "SP - Conical Meshing",
+    "SP - Surface of Extrusion Meshing",
+    "SP - Surface of Revolution Meshing",
+    "SP - Plot Distance from Mesh",
+    "SP - Copy Geometry",
+    "SP - Adjust Revolution Sweep Angle",
+    "SP - Transform UVMap",
+    "SP - Isoparametric Curve",
+}
+
+ASSET_NODE_GROUPS_COMPOUND = {
+    "SP - Compound Meshing",
+    "SP - SubD to Compound",
+    "SP - Poly to Compound",
+    "SP - Text to Compound",
+    "SP - Set Patch Instance Type",
+    "SP - Split to Patches",
+    "SP - Intersect Bezier Patches",
+    "SP - Extrude FlatPatch",
+    "SP - Interval Curves",
+    "SP - NURBS to Bezier Patches",
+    "SP - Profile Revolution Compound",
+}
+
+ASSET_NODE_GROUPS_SHAPE_PRESETS = {
+    "SP - Cylinder Compound",
+    "SP - Disc CP",
+    "SP - Frame Compound",
+    "SP - Oblong Extrusion Compound",
+    "SP - Slab Compound",
+    "SP - Tubes Compound",
+}
+
+ASSET_NODE_GROUPS = (
+    ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
+    | ASSET_NODE_GROUPS_BEZIER_PATCH
+    | ASSET_NODE_GROUPS_NURBS_PATCH
+    | ASSET_NODE_GROUPS_OTHER_SURFACES
+    | ASSET_NODE_GROUPS_COMPOUND
+    | ASSET_NODE_GROUPS_SHAPE_PRESETS
+)

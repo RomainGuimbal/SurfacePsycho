@@ -1,10 +1,22 @@
 import bpy
 from pathlib import Path
-import re
 import uuid
 import sys
+from ..common.enums import (
+    ASSET_NODE_GROUPS_BEZIER_PATCH,
+    ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH,
+    ASSET_NODE_GROUPS_NURBS_PATCH,
+    ASSET_NODE_GROUPS_OTHER_SURFACES,
+    ASSET_NODE_GROUPS_COMPOUND,
+    ASSET_NODE_GROUPS_SHAPE_PRESETS,
+)
+from ..common.versioning import (
+    set_nodes_version,
+    replace_duplicates,
+)
 
 FILE_PATH = Path(bpy.data.filepath)
+
 
 def delete_all_data():
     # Delete all data except scripts
@@ -110,37 +122,6 @@ def assign_asset_to_catalog(asset_name, catalog_identifier):
         raise ValueError(f"'{asset_name}' is not marked as an asset")
 
 
-def replace_all_instances_of_node_group(target_node_group_name, new_node_group_name):
-    # Get the target node group
-    prefix, suffix = target_node_group_name[:-2], target_node_group_name[-2:]
-
-    if suffix == ".*":
-        pattern = rf"^{re.escape(prefix)}\.(\d{{3}}|\d{{3}}\.\d{{3}})$"
-        target_node_groups = [
-            ng for ng in bpy.data.node_groups if re.match(pattern, ng.name)
-        ]
-    else:
-        target_node_groups = [bpy.data.node_groups.get(target_node_group_name)]
-
-    # Get the new node group
-    new_node_group = bpy.data.node_groups.get(new_node_group_name)
-    if not new_node_group:
-        return 0  # New node group not found
-
-    if len(target_node_groups) > 0:
-        for t in target_node_groups:
-            if t and t != new_node_group:
-                # Replace the node group data
-                t.user_remap(new_node_group)
-
-                # Remove the old node group
-                bpy.data.node_groups.remove(t)
-
-        return len(target_node_groups)
-    else:
-        return -1
-
-
 def append_by_name(path, asset_names, asset_type="node_groups"):
     # Determine which data block to access
     datablock_path = {
@@ -211,68 +192,15 @@ def append_by_name(path, asset_names, asset_type="node_groups"):
     return
 
 
-def replace_duplicates():
-
-    #############################
-    #         DANGER            #
-    # May remove different node #
-    #   groups with same name   #
-    #############################
-
-    duplicated_list = []
-    for ng in bpy.data.node_groups:
-        if ng.name[-4] == ".":
-            duplicated_list.append(ng.name[:-4])
-            # print(ng.name)
-    duplicated_groups = set(duplicated_list)
-
-    for d in duplicated_groups:
-        replaced = replace_all_instances_of_node_group(d + ".*", d)
-        if replaced <= 0:
-            print(f"No instances of {d}.* found")
-
-
 def remove_fake_user_node_groups():
     for ng in bpy.data.node_groups:
         if ng.use_fake_user and ng.asset_data is None:
             ng.use_fake_user = False
 
 
-def set_nodes_version():
-    # get version from toml file
-    version = ""
-    path = FILE_PATH.parent.parent / "blender_manifest.toml"
-    with open(path, "r") as f:
-        for line in f:
-            if line.startswith("version"):
-                version = line.split("\"")[1]
-                break
-
-    for ng in bpy.data.node_groups :
-        ng['version'] = version
-
-    print("version set to " + version)
-
-
-
-
-
-
-
-
-
-
 ############################################################################################
 ############################################################################################
 ############################################################################################
-
-
-
-
-
-
-
-
 
 
 ################################
@@ -291,46 +219,6 @@ obj_curve_flat = {
     "FlatPatch",
     "PsychoCurve",
 }
-gr_curve_flat = {
-    # "SP - Bezier Circlular Arc",
-    "SP - Blend Curve",
-    # "SP - Compose FlatPatch From Sides",
-    "SP - Continuities between Segments",
-    "SP - Convert Circles and Ellipses to Splines",
-    "SP - Copy Mesh Face",
-    # "SP - Curve on Surface from UV",
-    "SP - Distance Between Curves",
-    "SP - Fillet Curve or FlatPatch",
-    "SP - Fillet Polyline with Circles",
-    "SP - Fit Curve",
-    "SP - Inset FlatPatch",
-    "SP - Interval Curve",
-    "SP - Make SVG Ready",
-    "SP - Mirror Curve Control Points",
-    "SP - Mirror FlatPatch or Curve",
-    "SP - Multi Split Curve",
-    "SP - NURBS to Bezier Curve or FlatPatch",
-    "SP - Oblong Wire",
-    "SP - Project on Flat Patch",
-    "SP - Radial Array FlatPatch",
-    "SP - Raise or Lower Curve Degree",
-    "SP - Raise or Lower Order of Selected Segment",
-    "SP - Reorder Curve Index",
-    "SP - Reorder Curve Selection",
-    "SP - Reproject Ellipse Arcs Ends",
-    "SP - Sample Curve Per Degree",
-    "SP - Split Curve",
-    "SP - Switch Curve Direction",
-    "SP - Interpolate Curve or FlatPatch",
-    "SP - Crown Curve",
-    "SP - Connect Curve",
-    "SP - Curve Meshing",
-    "SP - Crop or Extend Curve",
-    "SP - Offset Curve",
-    "SP - FlatPatch Meshing",
-    "SP - Resample Selection",
-    "SP - Set Edge Length",
-}
 
 # BEZIER SURF
 path_surf = "//..\..\SP - Bezier surface.blend"
@@ -338,94 +226,23 @@ obj_surf = {
     "Bezier Patch",
     "Internal Curve For Patch",
 }
-gr_surf = {
-    "SP - Bezier Patch Meshing",
-    "SP - Coon Patch",
-    "SP - Blend Surfaces",
-    "SP - Connect Bezier Patch",
-    "SP - Convert Contour",
-    "SP - Crop Patch to Point",
-    "SP - Displace Bezier Patch Control Grid",
-    "SP - Offset Precisely",
-    "SP - Fillet Trim Contour",
-    "SP - Flatten Patch",
-    "SP - Flatten Patch Side",
-    "SP - Gradient Map",
-    "SP - Loft",
-    "SP - Loft from Internal Curves",
-    "SP - Mirror Patch Control Points",
-    "SP - Nearest Curve on Bezier Patch",
-    "SP - Patch Exact Normals",
-    "SP - Project Curve on Bezier Patch",
-    "SP - Raise or Lower Degree Bezier Patch",
-    "SP - Reorder Grid Index",
-    "SP - Ruled Surface from Mesh Loop",
-    "SP - Select Patch Range",
-    "SP - Convert Flat Patch to Bezier Patch",
-    "SP - Trim Bezier Surface from Projected Wires",
-}
-
 
 # NURBS
 path_nurbs = "//..\..\SP - NURBS.blend"
 obj_nurbs = {"NURBS Patch"}
-gr_nurbs = {
-    "SP - NURBS Patch Meshing",
-    "SP - NURBS Weighting",
-    "SP - Set Knot NURBS Patch",
-    "SP - Crop or Extend Patch",
-    "SP - Insert Knot NURBS Patch",
-    "SP - Curvature Analysis",
-    "SP - Continuity Analysis",
-    "SP - Fit Patch",
-    "SP - Interpolate Patch",
-    "SP_Curvature",
-    "SP - Normalize NURBS Patch Knots"
-}
 
 
 # OTHER
 path_other = "//..\..\SP - Other Primitives.blend"
 # obj_other={""}
-gr_other = {
-    "SP - Cylindrical Meshing",
-    "SP - Toroidal Meshing",
-    "SP - Spherical Meshing",
-    "SP - Conical Meshing",
-    "SP - Surface of Extrusion Meshing",
-    "SP - Surface of Revolution Meshing",
-    "SP - Plot Distance from Mesh",
-    "SP - Copy Geometry",
-    "SP - Adjust Revolution Sweep Angle",
-    "SP - Transform UVMap",
-    "SP - Isoparametric Curve",
-}
 
 # COMPOUND
 path_compound = "//..\..\SP - Compound.blend"
-gr_compound = {
-    "SP - Compound Meshing",
-    "SP - SubD to Compound",
-    "SP - Poly to Compound",
-    "SP - Text to Compound",
-    "SP - Set Patch Instance Type",
-    "SP - Split to Patches",
-    "SP - Intersect Bezier Patches",
-    "SP - Extrude FlatPatch",
-    "SP - Interval Curves",
-    "SP - NURBS to Bezier Patches",
-    "SP - Profile Revolution Compound",
-}
+
 obj_compound = {"Compound", "Text Compound"}
 
 # SHAPES
 path_preset = "//..\..\SP - Shapes presets.blend"
-gr_preset = {"SP - Cylinder Compound",
-             "SP - Disc CP",
-             "SP - Frame Compound",
-             "SP - Oblong Extrusion Compound",
-             "SP - Slab Compound",
-             "SP - Tubes Compound"}
 obj_preset = {
     "Quadratic Dome",
     "Cubic Dome",
@@ -438,8 +255,7 @@ obj_preset = {
     "Slab",
     "Frame",
     "Oblong Tube",
-    "Oblong Slab"
-    "Revolution",
+    "Oblong Slab" "Revolution",
 }
 coll_preset = {
     "Corner",
@@ -489,13 +305,15 @@ if __name__ == "__main__":
     )
     print("\n______________________________________________________\n")
     print("Appending Groups..")
-    append_by_name(path_curve_flat, gr_curve_flat, "node_groups")
-    append_by_name(path_surf, gr_surf, "node_groups")
-    append_by_name(path_nurbs, gr_nurbs, "node_groups")
-    append_by_name(path_other, gr_other, "node_groups")
-    append_by_name(path_compound, gr_compound, "node_groups")
-    append_by_name(path_preset, gr_preset, "node_groups")
-    
+    append_by_name(
+        path_curve_flat, ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH, "node_groups"
+    )
+    append_by_name(path_surf, ASSET_NODE_GROUPS_BEZIER_PATCH, "node_groups")
+    append_by_name(path_nurbs, ASSET_NODE_GROUPS_NURBS_PATCH, "node_groups")
+    append_by_name(path_other, ASSET_NODE_GROUPS_OTHER_SURFACES, "node_groups")
+    append_by_name(path_compound, ASSET_NODE_GROUPS_COMPOUND, "node_groups")
+    append_by_name(path_preset, ASSET_NODE_GROUPS_SHAPE_PRESETS, "node_groups")
+
     print("\n______________________________________________________\n")
     print("Appending Objects..")
     append_by_name(path_probe, obj_probe, "objects")

@@ -152,32 +152,6 @@ def append_object_by_name(obj_name, context):  # for importing from the asset fi
                 mod.node_group.asset_clear()
 
 
-def classify_strings_by_prefix(strings):
-    import re
-
-    strings.sort()
-    object_dict = {}
-    for string in strings:
-        # Use regex to extract the common prefix
-        match = re.match(r"(\D+)(\d*.*)", string)
-        if match:
-            prefix = match.group(1)
-            if prefix not in object_dict:
-                object_dict[prefix] = [string]
-            else:
-                object_dict[prefix].append(string)
-    return object_dict
-
-
-def highest_suffix_of_each_object_name(names):
-    classified_objects = classify_strings_by_prefix(names)
-    last_string = []
-    for key, value in classified_objects.items():
-        if value:
-            last_string += [value[-1]]
-    return last_string
-
-
 def create_grid(vertices):
     n, m = np.shape(vertices)
     vertices_flat = vertices.reshape(-1)
@@ -610,32 +584,24 @@ def list_geometry_node_groups():
     return geometry_node_groups
 
 
-def append_node_group(asset_name, force=False, remove_asset_data=True):
-    # check if asset is already imported
-    if force:
-        asset_already = False
-    else:
-        groups_list = list_geometry_node_groups()
-        asset_already = asset_name in groups_list
+def append_node_group(asset_name, link=False, remove_asset_data=True):
+    # Load the asset file
+    with bpy.data.libraries.load(ASSETS_FILE, link=link, assets_only=True) as (
+        data_from,
+        data_to,
+    ):
+        # Find the node group in the file
+        if asset_name not in data_from.node_groups:
+            raise ValueError(f"Asset '{asset_name}' not found")
+        else:
+            data_to.node_groups = [asset_name]
 
-    # if not, import
-    if not asset_already:
-        # Load the asset file
-        with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (
-            data_from,
-            data_to,
-        ):
-            # Find the node group in the file
-            if asset_name not in data_from.node_groups:
-                print(f"Asset '{asset_name}' not found")
-                return False
-            else:
-                data_to.node_groups = [asset_name]
-        if remove_asset_data:
-            for ng in data_to.node_groups:
-                remove_preview_image(ng)
-                ng.asset_clear()
-        return True
+    ng = data_to.node_groups[0]
+    if remove_asset_data:
+        remove_preview_image(ng)
+        ng.asset_clear()
+
+    return ng
 
 
 def append_multiple_node_groups(ng_names: set, remove_asset_data=True):

@@ -23,10 +23,15 @@ from ..common.utils import (
 )
 from ..common.compound_utils import convert_compound_to_patches
 from ..common.versioning import (
-    replace_all_instances_of_node_group,
+    replace_all_instances_of_node_group_by_name,
     report_outdated_node_groups,
+    update_all_node_groups,
+    update_node_group,
+    ALL_SP_ASSET_NODE_GROUPS_EVER,
+    remove_suffix,
 )
 from bpy.types import UILayout
+
 
 class SP_OT_add_library(bpy.types.Operator):
     bl_idname = "wm.sp_add_library"
@@ -180,7 +185,7 @@ class SP_OT_replace_node_group(bpy.types.Operator):
         # Populate the filtered node groups before opening the dialog
         self.nodegroup_items.clear()
         for ng in bpy.data.node_groups:
-            if ng.type == 'GEOMETRY':
+            if ng.type == "GEOMETRY":
                 self.nodegroup_items.add().name = ng.name
 
         return context.window_manager.invoke_props_dialog(self)
@@ -188,27 +193,17 @@ class SP_OT_replace_node_group(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         layout.prop_search(
-            self,
-            "target_name",  
-            bpy.data,          
-            "node_groups",     
-            text="Target",
-            icon='NODETREE'
+            self, "target_name", bpy.data, "node_groups", text="Target", icon="NODETREE"
         )
         layout.prop_search(
-            self,
-            "new_name",  
-            bpy.data,          
-            "node_groups",
-            text="New",
-            icon='NODETREE'
+            self, "new_name", bpy.data, "node_groups", text="New", icon="NODETREE"
         )
 
     def execute(self, context):
         target_node_group_name = self.target_name
         new_node_group_name = self.new_name
 
-        r = replace_all_instances_of_node_group(
+        r = replace_all_instances_of_node_group_by_name(
             target_node_group_name, new_node_group_name
         )
         if r >= 1:
@@ -1346,6 +1341,64 @@ class SP_OT_report_outdated_nodes(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_update_node_group(bpy.types.Operator):
+    bl_idname = "object.sp_update_node_group"
+    bl_label = "SP - Update Node Group"
+    bl_description = (
+        "Make sure specified node group is the same as in current addon version"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    name: bpy.props.StringProperty(name="Node Group", description="", default="")
+
+    def invoke(self, context, event):
+        # Populate the filtered node groups before opening the dialog
+        self.nodegroup_items.clear()
+        for ng in bpy.data.node_groups:
+            if (
+                ng.type == "GEOMETRY"
+                and remove_suffix(ng.name) in ALL_SP_ASSET_NODE_GROUPS_EVER
+            ):
+                self.nodegroup_items.add().name = ng.name
+
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop_search(
+            self,
+            "name",
+            bpy.data,
+            "node_groups",
+            text="Node Group",
+            icon="NODETREE",
+        )
+
+    def execute(self, context):
+        replaced = update_node_group(self.name)
+        self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        # call itself and run
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+
+class SP_OT_update_all_node_groups(bpy.types.Operator):
+    bl_idname = "object.sp_update_all_node_groups"
+    bl_label = "SP - Update All Node Groups"
+    bl_description = (
+        "Make sure each SP node group is the same as assets in current addon version"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        replaced = update_all_node_groups()
+        self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
+        return {"FINISHED"}
+
+
 classes = [
     SP_OT_add_curvature_analysis,
     SP_OT_add_library,
@@ -1379,6 +1432,8 @@ classes = [
     SP_OT_disable_exact_normals,
     SP_OT_enable_exact_normals,
     SP_OT_mesh_to_compound,
+    SP_OT_update_all_node_groups,
+    SP_OT_update_node_group,
 ]
 
 

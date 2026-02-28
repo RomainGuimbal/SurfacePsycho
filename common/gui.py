@@ -3,6 +3,7 @@
 ##############################
 import bpy
 
+
 class SP_PT_MainPanel(bpy.types.Panel):
     bl_idname = "SP_PT_MainPanel"
     bl_label = "Surface Psycho"
@@ -188,7 +189,7 @@ class SP_PT_EditPanel(bpy.types.Panel):
                 "active_segment_degree",
                 text="NURBS Degree",
             )
-            
+
             # Segment Resolution
             self.layout.use_property_split = True
             self.layout.use_property_decorate = False
@@ -264,7 +265,7 @@ def menu_curve(self, context):
         )
 
 
-def menu_convert(self):
+def menu_convert(self, context):
     self.layout.separator()
     self.layout.label(text="SurfacePsycho")
     # if context.mode == "OBJECT":

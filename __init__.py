@@ -15,15 +15,14 @@ import bpy
 from .config import bl_info
 from .common import gui
 from .tools import macros
-# import time
-# start_time = time.time()
+
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    matcaps : bpy.props.BoolProperty(
-        name = "matcaps installed",
-        default= False,
+    matcaps: bpy.props.BoolProperty(
+        name="matcaps installed",
+        default=False,
     )
 
     def draw(self, context):
