@@ -18,6 +18,7 @@ old_node_mapping = {
     "SP - Trim Range Any Order Curve": "SP - Crop or Extend Curve",
     "SP - AOP Continuities": "SP - Connect Bezier Patch",
     "SP - Fillet Flat Patch": "SP - Fillet Curve or FlatPatch",
+    "SP - Raise or Lower Curve Order": "SP - Raise or Lower Curve Degree",
     # TODO FILL
 }
 
@@ -96,7 +97,7 @@ def report_outdated_node_groups():
 def set_nodes_version():
     # get version from toml file
     version = ""
-    path = ADDON_PATH / "blender_manifest.toml"
+    path = ADDON_PATH + "/blender_manifest.toml"
     with open(path, "r") as f:
         for line in f:
             if line.startswith("version"):

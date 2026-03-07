@@ -2,18 +2,69 @@ import bpy
 from pathlib import Path
 import uuid
 import sys
-from ..common.enums import (
-    ASSET_NODE_GROUPS_BEZIER_PATCH,
-    ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH,
-    ASSET_NODE_GROUPS_NURBS_PATCH,
-    ASSET_NODE_GROUPS_OTHER_SURFACES,
-    ASSET_NODE_GROUPS_COMPOUND,
-    ASSET_NODE_GROUPS_SHAPE_PRESETS,
+import types
+import importlib.util
+
+# Add parent directory to path for imports to work when run directly by Blender
+workspace_root = Path(__file__).parent.parent
+sys.path.insert(0, str(workspace_root))
+
+# Register the workspace root as the package in sys.modules
+workspace_package_name = workspace_root.name  # "SurfacePsycho"
+workspace_module = types.ModuleType(workspace_package_name)
+workspace_module.__path__ = [str(workspace_root)]
+workspace_module.__file__ = str(workspace_root)
+workspace_module.__package__ = workspace_package_name
+sys.modules[workspace_package_name] = workspace_module
+
+# Register 'common' as a subpackage of the workspace
+common_module = types.ModuleType(f"{workspace_package_name}.common")
+common_module.__path__ = [str(workspace_root / "common")]
+common_module.__file__ = str(workspace_root / "common")
+common_module.__package__ = f"{workspace_package_name}.common"
+sys.modules[f"{workspace_package_name}.common"] = common_module
+
+# Load config module with proper package context
+config_spec = importlib.util.spec_from_file_location(
+    f"{workspace_package_name}.config", str(workspace_root / "config.py")
 )
-from ..common.versioning import (
-    set_nodes_version,
-    replace_duplicates,
+config_module = importlib.util.module_from_spec(config_spec)
+config_module.__package__ = workspace_package_name
+sys.modules[f"{workspace_package_name}.config"] = config_module
+config_spec.loader.exec_module(config_module)
+
+# Load enums module with proper package context
+enums_spec = importlib.util.spec_from_file_location(
+    f"{workspace_package_name}.common.enums",
+    str(workspace_root / "common" / "enums.py"),
 )
+enums_module = importlib.util.module_from_spec(enums_spec)
+enums_module.__package__ = f"{workspace_package_name}.common"
+sys.modules[f"{workspace_package_name}.common.enums"] = enums_module
+enums_spec.loader.exec_module(enums_module)
+
+# Load versioning module with proper package context
+versioning_spec = importlib.util.spec_from_file_location(
+    f"{workspace_package_name}.common.versioning",
+    str(workspace_root / "common" / "versioning.py"),
+)
+versioning_module = importlib.util.module_from_spec(versioning_spec)
+versioning_module.__package__ = f"{workspace_package_name}.common"
+sys.modules[f"{workspace_package_name}.common.versioning"] = versioning_module
+versioning_spec.loader.exec_module(versioning_module)
+
+# Extract what we need
+VERSION = config_module.VERSION
+ASSET_NODE_GROUPS_BEZIER_PATCH = enums_module.ASSET_NODE_GROUPS_BEZIER_PATCH
+ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = (
+    enums_module.ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
+)
+ASSET_NODE_GROUPS_NURBS_PATCH = enums_module.ASSET_NODE_GROUPS_NURBS_PATCH
+ASSET_NODE_GROUPS_OTHER_SURFACES = enums_module.ASSET_NODE_GROUPS_OTHER_SURFACES
+ASSET_NODE_GROUPS_COMPOUND = enums_module.ASSET_NODE_GROUPS_COMPOUND
+ASSET_NODE_GROUPS_SHAPE_PRESETS = enums_module.ASSET_NODE_GROUPS_SHAPE_PRESETS
+set_nodes_version = versioning_module.set_nodes_version
+replace_duplicates = versioning_module.replace_duplicates
 
 FILE_PATH = Path(bpy.data.filepath)
 
