@@ -22,6 +22,7 @@ from OCP.TopoDS import (
     TopoDS_Compound,
     TopoDS_Iterator,
 )
+from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCP.gp import (
     gp_Pnt,
     gp_Quaternion,
@@ -56,6 +57,18 @@ ADDON_PATH = dirname(dirname(abspath(__file__)))  # The PsychoPath ;)
 ASSETS_FILE = ADDON_PATH + "/assets/assets.blend"
 ASSETS_PATH = join(ADDON_PATH, "assets")
 ADDON_PREF_KEY = "bl_ext." + basename(dirname(ADDON_PATH)) + ".SurfacePsycho"
+
+
+def vec_to_gp_pnt(vec):
+    return gp_Pnt(*vec)
+
+
+def vec_to_gp_pnt2d(vec):
+    return gp_Pnt2d(vec[0], vec[1])
+
+
+def vec_to_gp_pnt_on_plane(vec, geom_plane):
+    return GeomAPI_ProjectPointOnSurf(gp_Pnt(*vec), geom_plane).Point(1)
 
 
 def get_face_sp_type(TopoDSface: TopoDS_Face):

@@ -1,7 +1,16 @@
+from ..common.enums import SP_segment_type
 from mathutils import Vector, Matrix
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeWire
 from OCP.TopoDS import TopoDS
-from .export_edge import SP_Edge_export
+from .export_edge import (
+    SP_Segment,
+    SP_Segment_on_plane,
+    SP_Segment_2d,
+    geom_curve_to_edge_on_surface,
+    geom_curve_to_topods_edge,
+    sp_segment_to_geom_curve,
+)
+
 
 class SP_Wire_export:
     def __init__(
@@ -70,24 +79,40 @@ class SP_Wire_export:
         edges_degrees = self.segs_degrees
 
         # Make Edges
-        edges_list = [
-            SP_Edge_export(
-                {"CP": vec_cp_per_seg[i], "weight": weight[i]},
-                {
-                    "degree": edges_degrees[i],
-                    "isclamped": self.isclamped_per_seg,
-                    "isperiodic": self.isperiodic_per_seg,
-                    "type": self.segs_type_seg_aligned[i],
-                    "knot": self.knot[i] if len(self.knot) > i else None,
-                    "mult": self.mult[i] if len(self.mult) > i else None,
-                },
-                geom_plane=self.geom_plane,
-                geom_surf=self.geom_surf,
-                single_seg=self.seg_count == 1,
-                is2D=self.is2D,
-            ).topods_edge
+        segment_list = [
+            SP_Segment(
+                type=SP_segment_type(self.segs_type_seg_aligned[i]),
+                vec_cp=vec_cp_per_seg[i],
+                weight=weight[i],
+                degree=edges_degrees[i],
+                is_clamped=self.isclamped_per_seg[i],
+                is_periodic=self.isperiodic_per_seg[i],
+                knot=self.knot[i] if len(self.knot) > 1 else None,
+                mult=self.mult[i] if len(self.mult) > 1 else None,
+            )
             for i in range(self.seg_count)
         ]
+
+        if self.geom_plane:
+            segment_list = map(
+                lambda segment: SP_Segment_on_plane(
+                    plane=self.geom_plane, **segment.__dict__
+                ),
+                segment_list,
+            )
+
+        if self.geom_surf:
+            segment_list = map(
+                lambda segment: SP_Segment_2d(**segment.__dict__),
+                segment_list,
+            )
+
+        geom_segment = map(sp_segment_to_geom_curve, segment_list)
+        
+        if self.geom_surf:
+            edges_list = map(lambda segment : geom_curve_to_edge_on_surface(segment, self.geom_surf), geom_segment)
+        else :
+            edges_list = map(geom_curve_to_topods_edge, geom_segment)
 
         # Make contour
         makeWire = BRepBuilderAPI_MakeWire()

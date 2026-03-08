@@ -3,7 +3,7 @@ import numpy as np
 import math
 import warnings
 from mathutils import Vector
-from ..common.enums import SP_obj_type
+from ..common.enums import SP_obj_type, SP_segment_type
 from ..common.utils import (
     read_attribute_by_name,
     vec_grid_to_step_cartesian,
@@ -14,7 +14,6 @@ from ..common.utils import (
     shape_list_to_compound,
     shells_to_solids,
     get_patch_knot_and_mult,
-
 )
 from ..common.compound_utils import (
     convert_compound_to_patches,
@@ -61,7 +60,12 @@ from OCP.StepData import StepData_Logical, StepData_Factors
 from OCP.StepToGeom import StepToGeom
 from OCP.TCollection import TCollection_HAsciiString
 
-from .export_edge import SP_Edge_export
+from .export_edge import (
+    SP_Segment,
+    SP_Segment_2d,
+    SP_Segment_on_plane,
+    sp_segment_to_geom_curve,
+)
 from .export_wire import SP_Wire_export
 from .export_contour import SP_Contour_export
 
@@ -403,19 +407,17 @@ def revolution_face_to_topods(ob, scale=1000):
         mult = []
 
     # Create geom
-    geom_segment = SP_Edge_export(
-        {"CP": segment_CP, "weight": weight},
-        {
-            "degree": degree,
-            "isclamped": [is_clamped],
-            "isperiodic": [is_periodic],
-            "type": type,
-            "knot": knot,
-            "mult": mult,
-        },
-        single_seg=True,
-        is2D=False,
-    ).geom
+    sp_segment = SP_Segment(
+        type=SP_segment_type(type),
+        vec_cp=segment_CP,
+        weight=weight,
+        degree=degree,
+        is_clamped=is_clamped,
+        is_periodic=is_periodic,
+        knot=knot,
+        mult=mult,
+    )
+    geom_segment = sp_segment_to_geom_curve(sp_segment)
 
     # Create geom
     axis1 = gp_Ax1(
@@ -479,19 +481,17 @@ def extrusion_face_to_topods(ob, scale=1000):
         knot = []
         mult = []
 
-    geom_segment = SP_Edge_export(
-        {"CP": segment_CP, "weight": weight},
-        {
-            "degree": degree,
-            "isclamped": [is_clamped],
-            "isperiodic": [is_periodic],
-            "type": type,
-            "knot": knot,
-            "mult": mult,
-        },
-        single_seg=True,
-        is2D=False,
-    ).geom
+    sp_segment = SP_Segment(
+        type=SP_segment_type(type),
+        vec_cp=segment_CP,
+        weight=weight,
+        degree=degree,
+        is_clamped=is_clamped,
+        is_periodic=is_periodic,
+        knot=knot,
+        mult=mult,
+    )
+    geom_segment = sp_segment_to_geom_curve(sp_segment)
 
     # Create geom
     dir = gp_Dir(*dir_att)
