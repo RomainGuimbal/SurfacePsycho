@@ -346,10 +346,12 @@ def register():
     from ..importer import import_operator
     from ..exporter import export_operator
     from ..tools import add_objects
+    from ..tools import toolbar_tools
 
     add_objects.register()
     import_operator.register()
     export_operator.register()
+    toolbar_tools.register()
 
     for c in classes:
         bpy.utils.register_class(c)
@@ -369,6 +371,7 @@ def unregister():
     from ..importer import import_operator
     from ..exporter import export_operator
     from ..tools import add_objects
+    from ..tools import toolbar_tools
 
     hotkeys_remove(addon_keymaps)
 
@@ -384,6 +387,7 @@ def unregister():
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)
 
+    toolbar_tools.unregister()
     export_operator.unregister()
     import_operator.unregister()
     add_objects.unregister()

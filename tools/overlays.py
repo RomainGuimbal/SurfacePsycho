@@ -1,0 +1,130 @@
+import bpy
+import bmesh
+import gpu
+from gpu_extras.batch import batch_for_shader
+from mathutils import Matrix, Vector
+import numpy as np
+
+# Global variables
+draw_handler = None
+shader = None
+batch = None
+active_object = None
+active_group_name = None
+POINT_SIZE = 15.0  # Change this to adjust point size
+
+
+def get_vertex_attribute_positions(o, group_name):
+    """Get world positions of vertices with the specified attribute."""
+    if o.type != 'MESH':
+        return []
+
+    mat = o.matrix_world
+
+    if o.mode == 'EDIT':
+        bm = bmesh.from_edit_mesh(o.data)
+        bm.verts.ensure_lookup_table()
+        layer = (bm.verts.layers.bool.get(group_name) or
+                 bm.verts.layers.int.get(group_name))
+        if layer is None:
+            return []
+        return [mat @ v.co for v in bm.verts if v[layer]]
+
+    # Object mode: attributes are available
+    if group_name not in o.data.attributes:
+        return []
+    pos_att = o.data.attributes["position"]
+    mask_att = o.data.attributes[group_name]
+    len_att = len(mask_att.data)
+    mask = np.zeros(len_att, dtype=bool)
+    mask_att.data.foreach_get("value", mask)
+    pos = np.zeros(len_att * 3, dtype=float)
+    pos_att.data.foreach_get("vector", pos)
+    pos = pos.reshape((-1, 3))
+    return [mat @ Vector(pos[i]) for i in range(len(pos)) if mask[i]]
+
+
+def draw_callback():
+    """Draw function called by Blender."""
+    global shader, batch, active_object, active_group_name
+
+    if shader is None or active_object is None or active_object.mode != 'EDIT':
+        return
+
+    # Rebuild batch every frame so edits are reflected immediately
+    positions = get_vertex_attribute_positions(active_object, active_group_name)
+    if not positions:
+        return
+    batch = batch_for_shader(shader, 'POINTS', {"pos": positions})
+
+    gpu.state.program_point_size_set(True)
+    gpu.state.blend_set('ALPHA')
+
+    shader.bind()
+    shader.uniform_float("size", POINT_SIZE)
+    shader.uniform_float("color", (0.0, 0.0, 0.0, 1.0))  # Black
+    batch.draw(shader)
+
+    gpu.state.blend_set('NONE')
+    gpu.state.program_point_size_set(False)
+
+
+class MESH_OT_vertex_attribute_overlay(bpy.types.Operator):
+    """Toggle vertex attribute overlay visualization"""
+    bl_idname = "mesh.vertex_attribute_overlay"
+    bl_label = "Vertex Attribute Overlay"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and context.active_object.type == 'MESH'
+    
+    def execute(self, context):
+        global draw_handler, shader, batch, active_object, active_group_name
+
+        # If already running, remove the handler
+        if draw_handler is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(draw_handler, 'WINDOW')
+            draw_handler = None
+            shader = None
+            batch = None
+            active_object = None
+            active_group_name = None
+            self.report({'INFO'}, "Overlay disabled")
+            return {'FINISHED'}
+
+        obj = context.active_object
+        group_name = "Endpoints"
+
+        # Validate that the attribute exists before enabling
+        positions = get_vertex_attribute_positions(obj, group_name)
+        if not positions:
+            self.report({'WARNING'}, f"No vertices found in group '{group_name}'")
+            return {'CANCELLED'}
+
+        active_object = obj
+        active_group_name = group_name
+        shader = gpu.shader.from_builtin('POINT_UNIFORM_COLOR')
+
+        draw_handler = bpy.types.SpaceView3D.draw_handler_add(
+            draw_callback, (), 'WINDOW', 'POST_VIEW'
+        )
+
+        context.area.tag_redraw()
+        self.report({'INFO'}, f"Overlay enabled for '{group_name}' ({len(positions)} vertices)")
+        return {'FINISHED'}
+
+
+def register():
+    bpy.utils.register_class(MESH_OT_vertex_attribute_overlay)
+
+
+def unregister():
+    global draw_handler, active_object, active_group_name
+
+    if draw_handler is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(draw_handler, 'WINDOW')
+        active_object = None
+        active_group_name = None
+
+    bpy.utils.unregister_class(MESH_OT_vertex_attribute_overlay)
