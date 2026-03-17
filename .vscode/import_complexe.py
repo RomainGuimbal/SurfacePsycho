@@ -1,4 +1,5 @@
 import bpy
+import time
 from mathutils import Matrix, Vector
 
 for o in bpy.data.objects:
@@ -44,8 +45,13 @@ names =  [
     # "Assy meca standard.stp",
 ]
 
-for n in names : 
+
+
+for n in names :
+    t0 = time.time()
     bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\" + n)
+    elapsed = time.time() - t0
+    print(f"Import '{n}': {elapsed:.3f}s")
 
 # bpy.context.view_layer.update()
 # for area in bpy.context.screen.areas:

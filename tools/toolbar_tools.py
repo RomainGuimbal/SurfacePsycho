@@ -1,9 +1,34 @@
+import os
 import bpy
 import gpu
 from . import overlays
 
 # Store the handle so we can remove it later
 _draw_handler = None
+
+_ICON_NAME = "ops.generic.surface_psycho"
+_custom_icon_value = None
+
+
+def _load_custom_icon():
+    global _custom_icon_value
+    icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "icons", _ICON_NAME + ".dat")
+    try:
+        _custom_icon_value = bpy.app.icons.new_triangles_from_file(icon_path)
+        from bl_ui.space_toolsystem_common import _icon_cache
+        _icon_cache[_ICON_NAME] = _custom_icon_value
+    except Exception as e:
+        print(f"SurfacePsycho: Failed to load custom icon: {e}")
+        _custom_icon_value = 0
+
+
+def _unload_custom_icon():
+    global _custom_icon_value
+    if _custom_icon_value:
+        bpy.app.icons.release(_custom_icon_value)
+        from bl_ui.space_toolsystem_common import _icon_cache
+        _icon_cache.pop(_ICON_NAME, None)
+    _custom_icon_value = None
 
 
 def _tag_redraw():
@@ -52,7 +77,7 @@ def _make_tool_class(mode, id_name):
             "bl_context_mode": mode,
             "bl_idname": id_name,
             "bl_label": "Psycho Mode",
-            "bl_icon": "ops.generic.select_circle",
+            "bl_icon": "ops.generic.surface_psycho",
             "bl_keymap": (
                 ("object.sp_select_all", {"type": "LEFTMOUSE", "value": "CLICK"}, None),
             ),
@@ -85,6 +110,7 @@ def _poll_tool():
 
 def register():
     global _tool_classes
+    _load_custom_icon()
     _tool_classes = [
         _make_tool_class(mode, id_name) for mode, id_name in zip(_MODES, _TOOL_IDNAMES)
     ]
@@ -99,3 +125,4 @@ def unregister():
         bpy.app.timers.unregister(_poll_tool)
     for cls in reversed(_tool_classes):
         bpy.utils.unregister_tool(cls)
+    _unload_custom_icon()

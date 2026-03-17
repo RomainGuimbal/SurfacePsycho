@@ -117,6 +117,7 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Oblong Wire",
     "SP - Offset Curve",
     "SP - Project on Flat Patch",
+    "SP - Plot Curve Torsion",
     "SP - Radial Array FlatPatch",
     "SP - Raise or Lower Curve Degree",
     "SP - Raise or Lower Order of Selected Segment",
