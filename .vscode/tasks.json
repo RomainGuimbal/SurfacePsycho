@@ -78,14 +78,15 @@
             ],
             "problemMatcher": []
         },
-        // {
-        //     "type": "process",
-        //     "label": "Start Blender",
-        //     "command": "${command:extension.blender.start}",
-        //     "args": [
-        //         "--blenderExecutable C:/Program Files/Blender Foundation/Blender 5.0/blender.exe"
-        //     ],
-        //     "problemMatcher": []
-        // }
+        {   
+            "label": "Start Blender",
+            "type": "shell",
+            "command": "${command:blender.start}",
+            // "args": [
+            //     "--blenderExecutable \"C:/Program Files/Blender Foundation/Blender 5.1/blender.exe\""
+            // FAILS : go here instead : C:\Users\romai\AppData\Roaming\Code\User\settings.json
+            // ],
+            "problemMatcher": []
+        }
     ]
 }

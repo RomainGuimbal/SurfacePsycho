@@ -11,6 +11,7 @@ shader = None
 batch = None
 active_object = None
 active_group_name = None
+valid_tool_idnames = set()
 POINT_SIZE = 15.0  # Change this to adjust point size
 
 
@@ -48,25 +49,37 @@ def draw_callback():
     """Draw function called by Blender."""
     global shader, batch, active_object, active_group_name
 
-    if shader is None or active_object is None or active_object.mode != 'EDIT':
+    if not valid_tool_idnames:
         return
+    try:
+        tool = bpy.context.workspace.tools.from_space_view3d_mode(bpy.context.mode)
+        if tool.idname not in valid_tool_idnames:
+            return
+    except Exception:
+        return
+
+    obj = bpy.context.active_object
+    if obj is None or obj.type != 'MESH' or obj.mode != 'EDIT':
+        return
+    active_object = obj
+
+    if shader is None:
+        shader = gpu.shader.from_builtin('POINT_UNIFORM_COLOR')
 
     # Rebuild batch every frame so edits are reflected immediately
     positions = get_vertex_attribute_positions(active_object, active_group_name)
     if not positions:
         return
-    batch = batch_for_shader(shader, 'POINTS', {"pos": positions})
+    batch = batch_for_shader(shader, 'POINTS', {"pos": [p[:] for p in positions]})
 
-    gpu.state.program_point_size_set(True)
+    gpu.state.point_size_set(POINT_SIZE)
     gpu.state.blend_set('ALPHA')
 
     shader.bind()
-    shader.uniform_float("size", POINT_SIZE)
-    shader.uniform_float("color", (0.0, 0.0, 0.0, 1.0))  # Black
+    shader.uniform_float("color", (0.0, 0.0, 0.0, 1.0))
     batch.draw(shader)
 
     gpu.state.blend_set('NONE')
-    gpu.state.program_point_size_set(False)
 
 
 class MESH_OT_vertex_attribute_overlay(bpy.types.Operator):

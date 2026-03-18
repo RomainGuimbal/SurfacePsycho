@@ -3,8 +3,7 @@ import bpy
 import gpu
 from . import overlays
 
-# Store the handle so we can remove it later
-_draw_handler = None
+
 
 _ICON_NAME = "ops.generic.surface_psycho"
 _custom_icon_value = None
@@ -39,29 +38,12 @@ def _tag_redraw():
 
 
 def add_draw_handler():
-    global _draw_handler
-    if _draw_handler is None:
-        obj = bpy.context.active_object
-        if obj and obj.type == "MESH":
-            overlays.active_object = obj
-            overlays.active_group_name = "Endpoints"
-            overlays.shader = gpu.shader.from_builtin("POINT_UNIFORM_COLOR")
-        _draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            overlays.draw_callback, (), "WINDOW", "POST_VIEW"
-        )
-        _tag_redraw()
+    pass  # drawing is now gated by valid_tool_idnames inside draw_callback
 
 
 def remove_draw_handler():
-    global _draw_handler
-    if _draw_handler is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(_draw_handler, "WINDOW")
-        _draw_handler = None
-        overlays.shader = None
-        overlays.batch = None
-        overlays.active_object = None
-        overlays.active_group_name = None
-        _tag_redraw()
+    overlays.active_object = None
+    _tag_redraw()
 
 
 _TOOL_IDNAMES = ["object.sp_mode_tool", "mesh.sp_mode_tool"]
@@ -86,43 +68,65 @@ def _make_tool_class(mode, id_name):
 
 
 _tool_classes = []
+_sp_draw_handler = None
 
-_last_tool_idname = None
+_msgbus_owner = object()
 
 
-def _poll_tool():
-    global _last_tool_idname
+def _on_tool_changed():
     try:
         tool = bpy.context.workspace.tools.from_space_view3d_mode(bpy.context.mode)
     except Exception:
-        return 0.2
+        return
+    if tool.idname in _TOOL_IDNAMES:
+        add_draw_handler()
+    else:
+        remove_draw_handler()
 
-    idname = tool.idname
-    if idname != _last_tool_idname:
-        _last_tool_idname = idname
-        if idname in _TOOL_IDNAMES:
-            add_draw_handler()
-        else:
-            remove_draw_handler()
 
-    return 0.2
+def _subscribe_to_tool():
+    bpy.msgbus.subscribe_rna(
+        key=(bpy.types.WorkSpaceTool, "idname"),
+        owner=_msgbus_owner,
+        args=(),
+        notify=_on_tool_changed,
+    )
+
+
+@bpy.app.handlers.persistent
+def _on_load_post(*_):
+    _subscribe_to_tool()
 
 
 def register():
-    global _tool_classes
+    global _tool_classes, _sp_draw_handler
     _load_custom_icon()
     _tool_classes = [
         _make_tool_class(mode, id_name) for mode, id_name in zip(_MODES, _TOOL_IDNAMES)
     ]
     for i, cls in enumerate(_tool_classes):
         bpy.utils.register_tool(cls, separator=(i == 0))
-    bpy.app.timers.register(_poll_tool, persistent=True)
+    overlays.active_group_name = "Endpoints"
+    overlays.valid_tool_idnames = set(_TOOL_IDNAMES)
+    _sp_draw_handler = bpy.types.SpaceView3D.draw_handler_add(
+        overlays.draw_callback, (), "WINDOW", "POST_VIEW"
+    )
+    _subscribe_to_tool()
+    bpy.app.handlers.load_post.append(_on_load_post)
 
 
 def unregister():
+    global _sp_draw_handler
+    bpy.app.handlers.load_post.remove(_on_load_post)
+    bpy.msgbus.clear_by_owner(_msgbus_owner)
     remove_draw_handler()
-    if bpy.app.timers.is_registered(_poll_tool):
-        bpy.app.timers.unregister(_poll_tool)
+    if _sp_draw_handler is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(_sp_draw_handler, "WINDOW")
+        _sp_draw_handler = None
+        overlays.shader = None
+        overlays.batch = None
+        overlays.active_group_name = None
+        overlays.valid_tool_idnames = set()
     for cls in reversed(_tool_classes):
         bpy.utils.unregister_tool(cls)
     _unload_custom_icon()

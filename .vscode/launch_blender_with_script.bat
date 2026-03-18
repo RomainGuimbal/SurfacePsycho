@@ -15,6 +15,6 @@ Title Update SurfacePsycho asset file
 
 @REM cd %current_dir%
 
-set blender_exe=C:\Program Files\Blender Foundation\Blender 5.0\blender.exe
+set blender_exe=C:\Program Files\Blender Foundation\Blender 5.1\blender.exe
 
 "%blender_exe%" %*

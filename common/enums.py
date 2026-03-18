@@ -120,7 +120,7 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Plot Curve Torsion",
     "SP - Radial Array FlatPatch",
     "SP - Raise or Lower Curve Degree",
-    "SP - Raise or Lower Order of Selected Segment",
+    "SP - Raise or Lower Degree of Selected Segment",
     "SP - Reorder Curve Index",
     "SP - Reorder Curve Selection",
     "SP - Reproject Ellipse Arcs Ends",
@@ -131,7 +131,6 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Switch Curve Direction",
     # "SP - Bezier Circlular Arc",
     # "SP - Compose FlatPatch From Sides",
-    # "SP - Curve on Surface from UV",
 }
 
 ASSET_NODE_GROUPS_BEZIER_PATCH = {
@@ -159,6 +158,7 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Select Patch Range",
     "SP - Convert Flat Patch to Bezier Patch",
     "SP - Trim Bezier Surface from Projected Wires",
+    "SP - Curve on Surface from UV",
 }
 
 ASSET_NODE_GROUPS_NURBS_PATCH = {
