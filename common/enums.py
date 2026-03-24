@@ -158,7 +158,8 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Select Patch Range",
     "SP - Convert Flat Patch to Bezier Patch",
     "SP - Trim Bezier Surface from Projected Wires",
-    "SP - Curve on Surface from UV",
+    "SP - UV Curve on Surface",
+    "SP - Patch Normal to Side",
 }
 
 ASSET_NODE_GROUPS_NURBS_PATCH = {
@@ -187,6 +188,7 @@ ASSET_NODE_GROUPS_OTHER_SURFACES = {
     "SP - Adjust Revolution Sweep Angle",
     "SP - Transform UVMap",
     "SP - Isoparametric Curve",
+    "SP - Fill Patch",
 }
 
 ASSET_NODE_GROUPS_COMPOUND = {

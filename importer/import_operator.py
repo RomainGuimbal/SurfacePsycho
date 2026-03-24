@@ -1,4 +1,5 @@
 import bpy
+import time
 
 from ..common.enums import SP_obj_type, MESHER_NAMES
 from ..common.utils import append_node_group
@@ -40,6 +41,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     resolution: IntProperty(name="Resolution", default=16, soft_min=6, soft_max=256)
 
     def execute(self, context):
+        self.t0 = time.time()
         self.batch_size = 300
         self.created_object_count = 0
         self.total_count = 0
@@ -136,6 +138,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
                 self.created_object_count += 1
                 if self.created_object_count >= self.total_count:
                     context.window_manager.progress_end()
+                    print(f"Import '{self.filepath}': {time.time() - self.t0:.3f}s")
                     return {"FINISHED"}
         else:
             context.window_manager.progress_end()
