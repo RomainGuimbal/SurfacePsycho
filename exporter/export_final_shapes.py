@@ -646,9 +646,9 @@ def empty_to_topods(o, scale=1000):
     return topods_plane
 
 
-def compound_to_topods(o, context, scale=1000, sew=True, sew_tolerance=1e-1):
+def compound_to_topods(o, context, initial_depsgraph, scale=1000, sew=True, sew_tolerance=1e-1):
     new_objects = convert_compound_to_patches(
-        o, context, objects_suffix="_export", resolution=1
+        o, context, initial_depsgraph, objects_suffix="_export", resolution=1
     )
     comp_shapes = []
 
@@ -656,13 +656,13 @@ def compound_to_topods(o, context, scale=1000, sew=True, sew_tolerance=1e-1):
         # Temporarily link
         context.view_layer.active_layer_collection.collection.objects.link(o_new)
 
-    depsgraph = context.evaluated_depsgraph_get()
+    new_depsgraph = context.evaluated_depsgraph_get()
 
     for o_new in new_objects:
         type = sp_type_of_object(o_new)
 
         sh = blender_object_to_topods_shapes(
-            depsgraph,
+            new_depsgraph,
             o_new,
             type,
             scale=scale,
@@ -948,7 +948,7 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
                 empties_obj.append(o)
             case SP_obj_type.COMPOUND:
                 # handled separately to not create multiple times the same instanced shape
-                shape = compound_to_topods(o, context, scale, sew, sew_tolerance)
+                shape = compound_to_topods(o, context, depsgraph, scale, sew, sew_tolerance)
                 compounds.append(shape)
                 object_shapes[o] = shape
             case _:

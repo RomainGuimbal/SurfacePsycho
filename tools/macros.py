@@ -1169,9 +1169,11 @@ class SP_OT_explode_compound(bpy.types.Operator):
     keep_original: bpy.props.BoolProperty(name="Keep Original", default=True)
 
     def execute(self, context):
+        initial_depsgraph = context.evaluated_depsgraph_get()
+
         for o in context.selected_objects:
             if sp_type_of_object(o) == SP_obj_type.COMPOUND:
-                new_objects = convert_compound_to_patches(o, context, resolution=16)
+                new_objects = convert_compound_to_patches(o, context, initial_depsgraph, resolution=16)
 
                 # Create collection
                 collection = bpy.data.collections.new(f"{o.name} Exploded")

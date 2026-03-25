@@ -7,124 +7,30 @@ def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     """
     Create individual mesh objects from Geometry Nodes instances
     """
-
-    # Extract instance data immediately to avoid reference errors
-    instance_data = []
+    created_objects = []
+    i = 0
     for obj_instance in depsgraph.object_instances:
         if obj_instance.parent and obj_instance.parent.original == source_obj:
             if obj_instance.object.type == "MESH":
-                # Extract data immediately
-                data = {
-                    "mesh": obj_instance.object.data,
-                    "matrix": obj_instance.matrix_world.copy(),
-                    "name": obj_instance.object.name,
-                }
-                instance_data.append(data)
+                name = f"{source_obj.name}.{i:03d}{suffix}"
 
-    print(f"Found {len(instance_data)} instances from depsgraph")
+                # C-level copy: copies geometry, attributes and materials at once
+                new_mesh = obj_instance.object.data.copy()
+                new_mesh.name = name
 
-    created_objects = []
+                n_polys = len(new_mesh.polygons)
+                if n_polys > 0:
+                    smooth = np.ones(n_polys, dtype=bool)
+                    new_mesh.polygons.foreach_set("use_smooth", smooth)
+                    new_mesh.update()
 
-    # Create objects from extracted data
-    for i, data in enumerate(instance_data):
-        # Create new mesh and object
-        new_mesh = bpy.data.meshes.new(f"{source_obj.name}.{i:03d}{suffix}")
-        new_obj = bpy.data.objects.new(f"{source_obj.name}.{i:03d}{suffix}", new_mesh)
+                new_obj = bpy.data.objects.new(name, new_mesh)
+                new_obj.matrix_world = obj_instance.matrix_world.copy()
 
-        # Copy mesh data
-        copy_mesh_data(data["mesh"], new_mesh)
+                created_objects.append(new_obj)
+                i += 1
 
-        values = [True] * len(new_mesh.polygons)
-        new_mesh.polygons.foreach_set("use_smooth", values)
-        new_mesh.update()
-
-        # Apply transformation
-        new_obj.matrix_world = data["matrix"]
-
-        # Link to collection
-        created_objects.append(new_obj)
-
-    print(f"{len(created_objects)} objects created")
     return created_objects
-
-
-def copy_mesh_data(source_mesh, target_mesh):
-    """Copy mesh data including vertices, faces, and custom attributes"""
-
-    # Copy basic mesh data
-    vertices = [v.co[:] for v in source_mesh.vertices]
-    edges = [e.vertices[:] for e in source_mesh.edges]
-    faces = [f.vertices[:] for f in source_mesh.polygons]
-
-    target_mesh.from_pydata(vertices, edges, faces)
-    target_mesh.update()
-
-    # Copy custom attributes
-    copy_mesh_attributes(source_mesh, target_mesh)
-
-    # Copy materials
-    for material in source_mesh.materials:
-        target_mesh.materials.append(material)
-
-
-def copy_mesh_attributes(source_mesh, target_mesh):
-    """Copy custom attributes from source to target mesh"""
-
-    for source_attr in source_mesh.attributes:
-        # Skip built-in attributes that are handled elsewhere
-        if source_attr.name in [
-            "position",
-            ".edge_verts",
-            ".corner_vert",
-            ".corner_edge",
-        ]:
-            continue
-
-        try:
-            # Create new attribute
-            target_attr = target_mesh.attributes.new(
-                source_attr.name, source_attr.data_type, source_attr.domain
-            )
-
-            # Copy attribute data based on type
-            n = len(source_attr.data)
-            if source_attr.data_type == "FLOAT":
-                data = np.empty(n, dtype=np.float32)
-                source_attr.data.foreach_get("value", data)
-                target_attr.data.foreach_set("value", data)
-
-            elif source_attr.data_type == "INT":
-                data = np.empty(n, dtype=np.int32)
-                source_attr.data.foreach_get("value", data)
-                target_attr.data.foreach_set("value", data)
-
-            elif source_attr.data_type == "FLOAT_VECTOR":
-                data = np.empty(n * 3, dtype=np.float32)
-                source_attr.data.foreach_get("vector", data)
-                target_attr.data.foreach_set("vector", data)
-
-            elif source_attr.data_type == "FLOAT_COLOR":
-                data = np.empty(n * 4, dtype=np.float32)
-                source_attr.data.foreach_get("color", data)
-                target_attr.data.foreach_set("color", data)
-
-            elif source_attr.data_type == "BOOLEAN":
-                data = np.empty(n, dtype=bool)
-                source_attr.data.foreach_get("value", data)
-                target_attr.data.foreach_set("value", data)
-
-            elif source_attr.data_type == "FLOAT2":
-                data = np.empty(n * 2, dtype=np.float32)
-                source_attr.data.foreach_get("vector", data)
-                target_attr.data.foreach_set("vector", data)
-
-            elif source_attr.data_type == "INT32_2D":
-                data = np.empty(n * 2, dtype=np.int32)
-                source_attr.data.foreach_get("value", data)
-                target_attr.data.foreach_set("value", data)
-
-        except Exception as e:
-            print(f"Failed to copy attribute {source_attr.name}: {e}")
 
 
 # Instance domain fails /!\
@@ -142,7 +48,7 @@ def copy_mesh_attributes(source_mesh, target_mesh):
 #     return data
 
 
-def convert_compound_to_patches(o, context, objects_suffix="", resolution=16):
+def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix="", resolution=16, ):
     # Find compound meshing modifier
     mod = None
     for m in reversed(o.modifiers):
@@ -153,22 +59,21 @@ def convert_compound_to_patches(o, context, objects_suffix="", resolution=16):
     if mod == None:
         return None
 
+    # Get types
+    ob = o.evaluated_get(initial_depsgraph)
+    types = np.zeros(len(o.data.vertices), dtype=np.int32)
+    for att in ob.data.attributes:
+        if att.domain == "POINT" and att.name == "SP_type" and att.data_type == "INT":
+            types = np.zeros(len(att.data), dtype=np.int32)
+            att.data.foreach_get("value", types)
+            break
+
     # Create objects
     # Disable modifier to access non meshed data
     mod.show_viewport = False
     depsgraph = context.evaluated_depsgraph_get()
     created_objects = create_objects_from_instances(o, depsgraph, objects_suffix)
     mod.show_viewport = True
-
-    # Get types
-    types = np.zeros(len(created_objects), dtype=np.int32)
-
-    ob = o.evaluated_get(context.evaluated_depsgraph_get())
-    for att in ob.data.attributes:
-        if att.domain == "POINT" and att.name == "SP_type" and att.data_type == "INT":
-            types = np.zeros(len(att.data), dtype=np.int32)
-            att.data.foreach_get("value", types)
-            break
 
     # Add modifiers
     for i, obj in enumerate(created_objects):
