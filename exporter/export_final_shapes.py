@@ -938,6 +938,23 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
 
         if type is None:
             continue
+        
+        # Check modifiers warnings
+        has_error = False
+        for m in reversed(o.modifiers):
+            for w in m.node_warnings:
+                if w.type == 'ERROR':
+                    warnings.warn(f"\"{o.name}\" skipped due to error on \"{m.name}\" modifier")
+                    has_error = True
+                    break
+                elif w.type == 'WARNING':
+                    warnings.warn(f"\"{o.name}\" has a warning on \"{m.name}\" modifier")
+                    break
+            else: # if no break occurred
+                continue
+            break
+        if has_error:
+            continue
 
         match type:
             case SP_obj_type.INSTANCE:
