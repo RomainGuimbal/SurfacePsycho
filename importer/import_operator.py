@@ -142,6 +142,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
                     return {"FINISHED"}
         else:
             context.window_manager.progress_end()
+            print(f"Import '{self.filepath}': {time.time() - self.t0:.3f}s")
             return {"FINISHED"}
 
         # Report progress

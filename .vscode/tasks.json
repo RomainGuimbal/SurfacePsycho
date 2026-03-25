@@ -87,6 +87,18 @@
             // FAILS : go here instead : C:\Users\romai\AppData\Roaming\Code\User\settings.json
             // ],
             "problemMatcher": []
+        },
+        {
+            "label": "Plot Profile",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m",
+                "snakeviz",
+                "profile_output.prof"
+            ],
+            "problemMatcher": []
         }
+        
     ]
 }

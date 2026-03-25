@@ -23,6 +23,12 @@
       "task": "Build",
       "icon": "🚧",
       "tooltip": "Build a release"
+    },
+    {
+      "name": "",
+      "task": "Plot Profile",
+      "icon": "📊",
+      "tooltip": "Plot Profile"
     }
   ]
 }

@@ -87,38 +87,39 @@ def copy_mesh_attributes(source_mesh, target_mesh):
             )
 
             # Copy attribute data based on type
+            n = len(source_attr.data)
             if source_attr.data_type == "FLOAT":
-                data = [0.0] * len(source_attr.data)
+                data = np.empty(n, dtype=np.float32)
                 source_attr.data.foreach_get("value", data)
                 target_attr.data.foreach_set("value", data)
 
             elif source_attr.data_type == "INT":
-                data = [0] * len(source_attr.data)
+                data = np.empty(n, dtype=np.int32)
                 source_attr.data.foreach_get("value", data)
                 target_attr.data.foreach_set("value", data)
 
             elif source_attr.data_type == "FLOAT_VECTOR":
-                data = [0.0] * (len(source_attr.data) * 3)
+                data = np.empty(n * 3, dtype=np.float32)
                 source_attr.data.foreach_get("vector", data)
                 target_attr.data.foreach_set("vector", data)
 
             elif source_attr.data_type == "FLOAT_COLOR":
-                data = [0.0] * (len(source_attr.data) * 4)
+                data = np.empty(n * 4, dtype=np.float32)
                 source_attr.data.foreach_get("color", data)
                 target_attr.data.foreach_set("color", data)
 
             elif source_attr.data_type == "BOOLEAN":
-                data = [False] * len(source_attr.data)
+                data = np.empty(n, dtype=bool)
                 source_attr.data.foreach_get("value", data)
                 target_attr.data.foreach_set("value", data)
 
             elif source_attr.data_type == "FLOAT2":
-                data = [0.0] * (len(source_attr.data) * 2)
+                data = np.empty(n * 2, dtype=np.float32)
                 source_attr.data.foreach_get("vector", data)
                 target_attr.data.foreach_set("vector", data)
 
             elif source_attr.data_type == "INT32_2D":
-                data = [0] * (len(source_attr.data) * 2)
+                data = np.empty(n * 2, dtype=np.int32)
                 source_attr.data.foreach_get("value", data)
                 target_attr.data.foreach_set("value", data)
 

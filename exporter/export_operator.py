@@ -4,6 +4,7 @@ from datetime import datetime
 import re
 import os
 from os.path import join
+import time
 
 # from .macros import SP_Props_Group
 from .export_process_cad import export_step, export_iges
@@ -172,6 +173,8 @@ class SP_OT_QuickExport(bpy.types.Operator):
     bl_description = "Exports selection as .STEP at current .blend location."
 
     def execute(self, context):
+        self.t0 = time.time()
+
         # Get file name
         blendname = bpy.path.display_name_from_filepath(bpy.data.filepath)
         if blendname == "":
@@ -225,6 +228,8 @@ class SP_OT_QuickExport(bpy.types.Operator):
                     self.report({"INFO"}, f"Step file exported at {pathstr}")
             else:
                 self.report({"INFO"}, "No SurfacePsycho Objects selected")
+        
+        print(f"Export: {time.time() - self.t0:.3f}s")
         return {"FINISHED"}
 
 

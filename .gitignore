@@ -1,6 +1,7 @@
 *.blend1
 *.pyc
 *.whl
+*.prof
 
 __pycache__/
 

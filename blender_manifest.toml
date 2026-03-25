@@ -41,4 +41,5 @@ paths_exclude_pattern = [
   ".gitattributes",
   "README.md",
   "Asset Importer.py",
+  "*.prof"
 ]

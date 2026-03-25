@@ -1,3 +1,5 @@
+import sys
+
 import bpy
 import numpy as np
 import math
@@ -14,7 +16,6 @@ from ..common.utils import (
     shape_list_to_compound,
     shells_to_solids,
     get_patch_knot_and_mult,
-
 )
 from ..common.compound_utils import (
     convert_compound_to_patches,
@@ -645,6 +646,45 @@ def empty_to_topods(o, scale=1000):
     return topods_plane
 
 
+def compound_to_topods(o, context, scale=1000, sew=True, sew_tolerance=1e-1):
+    new_objects = convert_compound_to_patches(
+        o, context, objects_suffix="_export", resolution=1
+    )
+    comp_shapes = []
+
+    for o_new in new_objects:
+        # Temporarily link
+        context.view_layer.active_layer_collection.collection.objects.link(o_new)
+
+    depsgraph = context.evaluated_depsgraph_get()
+
+    for o_new in new_objects:
+        type = sp_type_of_object(o_new)
+
+        sh = blender_object_to_topods_shapes(
+            depsgraph,
+            o_new,
+            type,
+            scale=scale,
+            sew=sew,
+            sew_tolerance=sew_tolerance,
+        )
+        comp_shapes.append(sh)
+
+        # Unlink
+        bpy.context.collection.objects.unlink(o_new)
+
+    new_objects.clear()
+    del new_objects[:]
+
+    if sew:
+        swd = sew_shapes(comp_shapes, sew_tolerance)
+        solids = shells_to_solids(swd)
+        if len(solids) > 1:
+            return shape_list_to_compound(solids)
+    return shape_list_to_compound(comp_shapes)
+
+
 def mirror_topods_shape(o, shape, scale=1000):
     shape_list = [shape]
 
@@ -732,113 +772,32 @@ def mirror_topods_shape(o, shape, scale=1000):
     return shape_list
 
 
-# not a true hierarchy. too complex for now
 class ShapeHierarchy_export:
-    def __init__(self, context, use_selection, scale, sew, sew_tolerance):
+    def __init__(self, context, use_selection, scale, sew, sew_tolerance, depsgraph):
         self.context = context
         self.use_selection = use_selection
         self.scale = scale
         self.sew = sew
         self.sew_tolerance = sew_tolerance
-        self.depsgraph = context.evaluated_depsgraph_get()
+        self.depsgraph = depsgraph
 
-        objs, shapes, empties, instances, compounds = self.create_shape_hierarchy(
-            context.scene.collection
-        )
-        self.shapes = shapes
-        self.instances = instances
-        self.empties = empties
-        self.compounds = compounds
+        self.objects = self.create_shape_hierarchy(context.scene.collection)
 
-        # objs is used only for instancing
-        self.obj_shapes = {}  # {obj: shape}
-        for i, o in enumerate(objs):
-            self.obj_shapes[o] = shapes[i]
+    def create_shape_hierarchy(self, parent_col):
+        objs = []
 
-    def create_shape_hierarchy(self, parent):
-        objs, shapes, empties, instances, compounds = [], [], [], [], []
-
-        for child in parent.children:
-            o, s, e, i, c = self.create_shape_hierarchy(child)
+        for child in parent_col.children:
+            o = self.create_shape_hierarchy(child)
             objs.extend(o)
-            shapes.extend(s)
-            empties.extend(e)
-            instances.extend(i)
-            compounds.extend(c)
 
-        for o in parent.objects:
-            if ((not self.use_selection) or (o in self.context.selected_objects)) and (
-                not o.hide_viewport
-            ):
-                sp_type = sp_type_of_object(o)
-                match sp_type:
-                    case None:
-                        pass
-                    case SP_obj_type.INSTANCE:
-                        instances.append(o)
-                    case SP_obj_type.EMPTY:
-                        empties.append(o)
-                        # treat empties later as they should not be sew (and are instances of the same compound)
+        for o in parent_col.objects:
+            if (
+                not ((not self.use_selection) or (o in self.context.selected_objects))
+            ) or (o.hide_viewport):
+                continue
+            objs.append(o)
 
-                    # empty_to_topods(object, context, scale)
-                    case SP_obj_type.COMPOUND:
-                        new_objects = convert_compound_to_patches(
-                            o, self.context, objects_suffix="_export", resolution=1
-                        )
-                        comp_shapes = []
-
-                        # from line_profiler import LineProfiler
-                        # lp = LineProfiler()
-                        # lp.add_function(SP_Contour_export.__init__)
-                        # lp.enable()
-
-                        for o_new in new_objects:
-                            # Temporarily link
-                            self.context.view_layer.active_layer_collection.collection.objects.link(
-                                o_new
-                            )
-
-                        # bpy.context.view_layer.update()
-                        depsgraph = self.context.evaluated_depsgraph_get()
-
-                        for o_new in new_objects:
-                            type = sp_type_of_object(o_new)
-
-                            sh = blender_object_to_topods_shapes(
-                                depsgraph,
-                                o_new,
-                                type,
-                                scale=self.scale,
-                                sew=self.sew,
-                            )
-                            comp_shapes.append(sh)
-
-                            # Unlink
-                            bpy.context.collection.objects.unlink(o_new)
-
-                        new_objects.clear()
-                        del new_objects[:]
-                        shapes.append(shape_list_to_compound(comp_shapes))
-                        objs.append(o)
-
-                        # lp.disable()
-                        # lp.print_stats()
-
-                    # Standard shape
-                    case _:
-
-                        s = blender_object_to_topods_shapes(
-                            self.depsgraph,
-                            o,
-                            sp_type,
-                            self.scale,
-                            self.sew,
-                            self.sew_tolerance,
-                        )
-                        objs.append(o)
-                        shapes.append(s)
-
-        return objs, shapes, empties, instances, compounds
+        return objs
 
 
 def blender_object_to_topods_shapes(
@@ -847,36 +806,28 @@ def blender_object_to_topods_shapes(
     ob = object.evaluated_get(depsgraph)
 
     match sp_type:
+        case None:
+            pass
         case SP_obj_type.CONE:
             shape = cone_face_to_topods(ob, scale)
-
         case SP_obj_type.SPHERE:
             shape = sphere_face_to_topods(ob, scale)
-
         case SP_obj_type.CYLINDER:
             shape = cylinder_face_to_topods(ob, scale)
-
         case SP_obj_type.TORUS:
             shape = torus_face_to_topods(ob, scale)
-
         case SP_obj_type.BEZIER_SURFACE:
             shape = bezier_face_to_topods(ob, scale)
-
         case SP_obj_type.BSPLINE_SURFACE:
             shape = NURBS_face_to_topods(ob, scale)
-
         case SP_obj_type.PLANE:
             shape = flat_patch_to_topods(ob, scale)
-
         case SP_obj_type.CURVE:
             shape = curve_to_topods(ob, scale)
-
         case SP_obj_type.SURFACE_OF_REVOLUTION:
             shape = revolution_face_to_topods(ob, scale)
-
         case SP_obj_type.SURFACE_OF_EXTRUSION:
             shape = extrusion_face_to_topods(ob, scale)
-
         case _:
             raise Exception(f"Invalid shape of type {sp_type}")
 
@@ -892,32 +843,14 @@ def blender_object_to_topods_shapes(
     return compound
 
 
-def blender_instances_to_topods_instances(
-    context, hierarchy, scale=1000, sew_tolerance=1e-1
+def blender_instance_to_topods_instance(  # Instancing is supported only for compounds in reality
+    instance_ob, obj_shapes, scale, sew, sew_tolerance, depsgraph
 ):
-    sewed_shapes_list = []
-    depsgraph = context.evaluated_depsgraph_get()
-
-    for ins in hierarchy.instances:
-        if ins.scale.x < 0 or ins.scale.y < 0 or ins.scale.z < 0:
-            warnings.warn("Negative instance scale not supported")
-
-        swd = blender_instance_to_topods_instance(
-            ins, depsgraph, hierarchy, scale, sew_tolerance
-        )
-        sewed_shapes_list.append(swd)
-
-    return sewed_shapes_list
-
-
-def blender_instance_to_topods_instance(
-    ins, depsgraph, hierarchy, scale=1000, sew=True, sew_tolerance=1e-1
-):
-    if ins.scale != Vector((1.0, 1.0, 1.0)):
-        print(f"Scale not 1, instance is realized (Scale = {ins.scale})")
+    if instance_ob.scale.x < 0 or instance_ob.scale.y < 0 or instance_ob.scale.z < 0:
+        warnings.warn("Negative scale not supported on instances")
 
     to_sew_shape_list = []
-    ins_obj = list(ins.instance_collection.objects)
+    ins_obj = list(instance_ob.instance_collection.objects)
 
     # # create compound
     # builder = BRep_Builder()
@@ -926,31 +859,33 @@ def blender_instance_to_topods_instance(
     # is_nested = False
 
     # add obj of child collections (doesn't support nested instances)
-    for col in ins.instance_collection.children_recursive:
+    for col in instance_ob.instance_collection.children_recursive:
         for o in col.objects:
             ins_obj.append(o)
 
     for o in ins_obj:
         sp_type = sp_type_of_object(o)
         if sp_type not in (None, SP_obj_type.EMPTY, SP_obj_type.INSTANCE):
-            if o in hierarchy.obj_shapes.keys():
-                shape = hierarchy.obj_shapes[o]
+            if o in obj_shapes.keys():
+                shape = obj_shapes[o]
             elif not o.hide_viewport:
                 shape = blender_object_to_topods_shapes(
                     depsgraph, o, sp_type, scale, sew, sew_tolerance
                 )
 
-            if ins.scale == Vector((1.0, 1.0, 1.0)):
-                trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
+            if instance_ob.scale == Vector((1.0, 1.0, 1.0)):
+                trsf = blender_matrix_to_gp_trsf(instance_ob.matrix_world, scale)
                 trsf.SetScaleFactor(1)
                 location = TopLoc_Location(trsf)
                 instance = shape.Located(location)
                 to_sew_shape_list.append(instance)
             else:
-                trsf = blender_matrix_to_gp_trsf(ins.matrix_world, scale)
+                trsf = blender_matrix_to_gp_trsf(instance_ob.matrix_world, scale)
                 trsf.SetScaleFactor(1)
                 scalingMatrix = gp_Mat()
-                scalingMatrix.SetDiagonal(ins.scale.x, ins.scale.y, ins.scale.z)
+                scalingMatrix.SetDiagonal(
+                    instance_ob.scale.x, instance_ob.scale.y, instance_ob.scale.z
+                )
                 gtrsf = gp_GTrsf()
                 gtrsf.SetVectorialPart(scalingMatrix)
                 shape = BRepBuilderAPI_GTransform(shape, gtrsf, True).Shape()
@@ -972,7 +907,11 @@ def blender_instance_to_topods_instance(
     #     builder.Add(comp, swd)
     #     return comp
     # else :
-    return swd
+
+    solids = shells_to_solids(swd)
+    if len(solids) > 1:
+        return shape_list_to_compound(solids)
+    return 
 
 
 def sew_shapes(shape_list, tolerance=1e-1):
@@ -988,35 +927,92 @@ def sew_shapes(shape_list, tolerance=1e-1):
     return aSew.SewedShape()
 
 
+def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance):
+    shapes, empties_obj, compounds, instances_obj = [], [], [], []
+    object_shapes = {}  # {object: shape} for instances to reuse already created shapes
+    separated_shapes_list = []
+    context = bpy.context
+
+    for o in objects:
+        type = sp_type_of_object(o)
+
+        if type is None:
+            continue
+
+        match type:
+            case SP_obj_type.INSTANCE:
+                # handled separately because doesn't mirrors or sew
+                instances_obj.append(o)
+            case SP_obj_type.EMPTY:
+                # handled separately because compounds don't sew
+                empties_obj.append(o)
+            case SP_obj_type.COMPOUND:
+                # handled separately to not create multiple times the same instanced shape
+                shape = compound_to_topods(o, context, scale, sew, sew_tolerance)
+                compounds.append(shape)
+                object_shapes[o] = shape
+            case _:
+                shape = blender_object_to_topods_shapes(
+                    depsgraph,
+                    o,
+                    type,
+                    scale,
+                    sew,
+                    sew_tolerance,
+                )
+                shapes.append(shape)
+                object_shapes[o] = shape
+
+    # Sew isolated shapes
+    if len(shapes) > 0:
+        if sew:
+            sewed = sew_shapes(shapes, sew_tolerance)
+            separated_shapes_list.extend(shells_to_solids(sewed))
+        else:
+            separated_shapes_list = shapes
+
+    separated_shapes_list.extend(compounds)
+
+    # Make instances
+    instances_shapes = []
+    for ins in instances_obj:
+        ins_shape = blender_instance_to_topods_instance(
+            ins, object_shapes, scale, sew, sew_tolerance, depsgraph
+        )
+        if ins_shape is not None:
+            instances_shapes.append(ins_shape)
+    separated_shapes_list.extend(instances_shapes)
+
+    # Make Empties
+    # TODO
+
+    return separated_shapes_list
+
+
 def gather_export_shapes(
     context, use_selection: bool, scale=1000, sew: bool = True, sew_tolerance=1e-1
 ) -> TopoDS_Compound:
+    depsgraph = context.evaluated_depsgraph_get()
 
-    separated_shapes_list = []
-    hierarchy = ShapeHierarchy_export(context, use_selection, scale, sew, sew_tolerance)
+    import cProfile
+    profiler = cProfile.Profile()
+    profiler.enable()
 
-    # prepare shapes
-    if len(hierarchy.shapes) > 0:
-        if sew:
-            sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
-            separated_shapes_list.extend(shells_to_solids(sewed))
-        else:
-            separated_shapes_list.extend(hierarchy.shapes)
+    # Gather objects
+    objects = ShapeHierarchy_export(
+        context, use_selection, scale, sew, sew_tolerance, depsgraph
+    ).objects
 
-    # TODO prepare sp compound objects
-    # if len(hierarchy.compounds) > 0:
-    #     pass
-    #     sewed = sew_shapes(hierarchy.shapes, sew_tolerance)
-    #     separated_shapes_list.extend(shells_to_solids(sewed))
+    if len(objects) == 0:
+        return None
 
-    # prepare instances
-    if len(hierarchy.instances) > 0:
-        sewed_instances_list = blender_instances_to_topods_instances(
-            context, hierarchy, scale
-        )
+    # Make shapes from objects
+    separated_shapes_list = make_shapes_from_objects(
+        objects, depsgraph, scale, sew, sew_tolerance
+    )
 
-        for s in sewed_instances_list:
-            separated_shapes_list.extend(shells_to_solids(s))
+    profiler.disable()
+    profiler.dump_stats("profile_output.prof")
 
     if len(separated_shapes_list) > 0:
         root_compound = shape_list_to_compound(separated_shapes_list)

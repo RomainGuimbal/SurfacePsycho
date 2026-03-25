@@ -91,18 +91,14 @@ def read_attribute_by_name(object, name, len_attr=None) -> np.array:
         len_attr = len_raw
     match type:
         case "BOOLEAN":
-            attribute = np.zeros(len_raw, dtype=bool)
+            attribute = np.empty(len_raw, dtype=bool)
             att.data.foreach_get("value", attribute)
             attribute = attribute[0:len_attr]
-            # Convert to native Python bools to avoid np.bool_ indexing issues
-            attribute = np.array([bool(a) for a in attribute], dtype=bool)
 
         case "INT":
-            attribute = np.zeros(len_raw, dtype=int)
+            attribute = np.empty(len_raw, dtype=np.int32)
             att.data.foreach_get("value", attribute)
             attribute = attribute[0:len_attr]
-            # Keep dtype=int to avoid float conversion issues
-            attribute = np.array([int(a) for a in attribute], dtype=int)
 
         case "FLOAT":
             attribute = np.zeros(len_raw, dtype=float)
