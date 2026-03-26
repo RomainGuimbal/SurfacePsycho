@@ -2,7 +2,7 @@ import bpy
 import bmesh
 import gpu
 from gpu_extras.batch import batch_for_shader
-from mathutils import Matrix, Vector
+from mathutils import Vector
 import numpy as np
 
 # Global variables
