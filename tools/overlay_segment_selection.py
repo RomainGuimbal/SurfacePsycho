@@ -4,7 +4,6 @@ from gpu_extras.batch import batch_for_shader
 from bpy_extras import view3d_utils
 from mathutils import Vector
 import numpy as np
-import colorsys
 
 shader = None
 active_tool_idname = ""  # set by toolbar_tools
@@ -12,42 +11,39 @@ active_tool_idname = ""  # set by toolbar_tools
 # Absolute mouse coords (window-relative), updated by the MOUSEMOVE keymap operator
 _mouse_abs_x = 0
 _mouse_abs_y = 0
-_mouse_moved = False   # set True by MOUSEMOVE operator, consumed by draw_callback
-_hovered_object = None  # last successfully raycasted object; kept during view rotation
+_mouse_region_x = 0
+_mouse_region_y = 0
+_hovered_object = None  # object under cursor, updated by the MOUSEMOVE operator via view3d.select
 
 LINE_WIDTH = 3.0
-_NUM_COLORS = 32
+_YELLOW = (1.0, 1.0, 0.0, 0.3)
+_WHITE = (1.0, 1.0, 1.0, 1.0)
+
+# Selection: set of (obj_name, segment_id) tuples
+_selected_segments = set()
+# The segment id closest to the cursor on the hovered object, updated each draw
+_hovered_sid = None
 
 _addon_keymaps = []
 
 
-def _generate_colors(n):
-    colors = []
-    golden_ratio = 0.618033988749895
-    h = 0.12
-    for _ in range(n):
-        h = (h + golden_ratio) % 1.0
-        r, g, b = colorsys.hsv_to_rgb(h, 0.9, 1.0)
-        colors.append((r, g, b, 1.0))
-    return colors
-
-
-_SEGMENT_COLORS = _generate_colors(_NUM_COLORS)
-
-
-def get_edges_by_segment(obj, depsgraph):
+def get_boundary_edge_data(obj, depsgraph):
+    """Returns (edges_by_seg, midpoints) for boundary edges.
+    edges_by_seg: {segment_id: [v0, v1, v0, v1, ...]}
+    midpoints: [(mid_3d, segment_id), ...]
+    """
     if obj is None or obj.type != 'MESH':
-        return {}
+        return {}, []
 
     obj_eval = obj.evaluated_get(depsgraph)
     mesh = obj_eval.data
     if "segment_id" not in mesh.attributes:
-        return {}
+        return {}, []
 
     n_verts = len(mesh.vertices)
     n_edges = len(mesh.edges)
     if n_verts == 0 or n_edges == 0:
-        return {}
+        return {}, []
 
     mat = obj.matrix_world
 
@@ -69,19 +65,28 @@ def get_edges_by_segment(obj, depsgraph):
     loop_edge_idx = np.zeros(n_loops, dtype=np.int32)
     mesh.loops.foreach_get("edge_index", loop_edge_idx)
     edge_face_count = np.bincount(loop_edge_idx, minlength=n_edges)
-    boundary_mask = edge_face_count == 1
+    boundary_mask = edge_face_count <= 1
 
-    result = {}
+    edges_by_seg = {}
+    midpoints = []
     for i in range(n_edges):
         if not boundary_mask[i]:
             continue
         sid = int(seg_ids[i])
-        if sid not in result:
-            result[sid] = []
-        result[sid].append(tuple(pos_w[edge_vi[i, 0]]))
-        result[sid].append(tuple(pos_w[edge_vi[i, 1]]))
+        v0 = pos_w[edge_vi[i, 0]]
+        v1 = pos_w[edge_vi[i, 1]]
+        if sid not in edges_by_seg:
+            edges_by_seg[sid] = []
+        edges_by_seg[sid].append(tuple(v0))
+        edges_by_seg[sid].append(tuple(v1))
+        mid = (
+            (float(v0[0]) + float(v1[0])) * 0.5,
+            (float(v0[1]) + float(v1[1])) * 0.5,
+            (float(v0[2]) + float(v1[2])) * 0.5,
+        )
+        midpoints.append((mid, sid))
 
-    return result
+    return edges_by_seg, midpoints
 
 
 class VIEW3D_OT_segment_update_mouse(bpy.types.Operator):
@@ -91,10 +96,82 @@ class VIEW3D_OT_segment_update_mouse(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def invoke(self, context, event):
-        global _mouse_abs_x, _mouse_abs_y, _mouse_moved
+        global _mouse_abs_x, _mouse_abs_y, _mouse_region_x, _mouse_region_y, _hovered_object
         _mouse_abs_x = event.mouse_x
         _mouse_abs_y = event.mouse_y
-        _mouse_moved = True
+
+        region = context.region
+        if region is not None:
+            _mouse_region_x = event.mouse_x - region.x
+            _mouse_region_y = event.mouse_y - region.y
+
+        if context.mode == 'OBJECT':
+            try:
+                tool = context.workspace.tools.from_space_view3d_mode('OBJECT')
+            except Exception:
+                tool = None
+
+            if tool is not None and tool.idname == active_tool_idname:
+                old_active = context.view_layer.objects.active
+                old_selected = list(context.selected_objects)
+
+                try:
+                    bpy.ops.view3d.select('INVOKE_DEFAULT', deselect_all=True)
+                except Exception:
+                    pass
+
+                picked = context.selected_objects[0] if context.selected_objects else None
+                _hovered_object = picked
+
+                # Restore original selection state
+                if picked is not None:
+                    try:
+                        picked.select_set(False)
+                    except ReferenceError:
+                        pass
+                for obj in old_selected:
+                    try:
+                        obj.select_set(True)
+                    except ReferenceError:
+                        pass
+                try:
+                    context.view_layer.objects.active = old_active
+                except ReferenceError:
+                    pass
+            else:
+                _hovered_object = None
+
+        if context.area:
+            context.area.tag_redraw()
+        return {'FINISHED'}
+
+
+class VIEW3D_OT_segment_select_click(bpy.types.Operator):
+    """Internal: toggle segment selection on left click."""
+    bl_idname = "view3d.segment_select_click"
+    bl_label = "Segment Select Click"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        global _selected_segments
+
+        try:
+            tool = context.workspace.tools.from_space_view3d_mode('OBJECT')
+        except Exception:
+            return {'PASS_THROUGH'}
+
+        if tool is None or tool.idname != active_tool_idname:
+            return {'PASS_THROUGH'}
+
+        if _hovered_object is None or _hovered_sid is None:
+            return {'PASS_THROUGH'}
+
+        key = (_hovered_object.name, _hovered_sid)
+        if key in _selected_segments:
+            _selected_segments.discard(key)
+        else:
+            _selected_segments.add(key)
+
         if context.area:
             context.area.tag_redraw()
         return {'FINISHED'}
@@ -102,7 +179,7 @@ class VIEW3D_OT_segment_update_mouse(bpy.types.Operator):
 
 
 def draw_callback():
-    global shader, _mouse_moved, _hovered_object
+    global shader, _hovered_object, _mouse_region_x, _mouse_region_y, _hovered_sid
 
     if bpy.context.mode != 'OBJECT':
         return
@@ -115,40 +192,15 @@ def draw_callback():
     if tool is None or tool.idname != active_tool_idname:
         return
 
-    # Only raycast when mouse actually moved (MOUSEMOVE operator fired)
-    # Otherwise reuse last hovered object so overlay persists during view rotation
-    if _mouse_moved:
-        _mouse_moved = False
-        region = bpy.context.region
-        rv3d = bpy.context.region_data
-        if region is None or rv3d is None:
-            pass
-        else:
-            mouse_region_x = _mouse_abs_x - region.x
-            mouse_region_y = _mouse_abs_y - region.y
-            try:
-                depsgraph = bpy.context.evaluated_depsgraph_get()
-                ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, (mouse_region_x, mouse_region_y))
-                ray_direction = view3d_utils.region_2d_to_vector_3d(region, rv3d, (mouse_region_x, mouse_region_y))
-                hit, _, _, _, obj, _ = bpy.context.scene.ray_cast(
-                    depsgraph, ray_origin, ray_direction
-                )
-                _hovered_object = obj if hit else None
-            except Exception:
-                pass
-
-    hovered = _hovered_object
-    if hovered is None:
+    region = bpy.context.region
+    rv3d = bpy.context.region_data
+    if region is None or rv3d is None:
         return
 
-    try:
-        depsgraph = bpy.context.evaluated_depsgraph_get()
-        edges_by_seg = get_edges_by_segment(hovered, depsgraph)
-    except ReferenceError:
-        _hovered_object = None
-        return
+    depsgraph = bpy.context.evaluated_depsgraph_get()
 
-    if not edges_by_seg:
+    anything_to_draw = _selected_segments or _hovered_object is not None
+    if not anything_to_draw:
         return
 
     if shader is None:
@@ -163,11 +215,56 @@ def draw_callback():
     shader.uniform_float("viewportSize", viewport_size)
     shader.uniform_float("lineWidth", LINE_WIDTH)
 
-    for seg_id, positions in edges_by_seg.items():
-        color = _SEGMENT_COLORS[seg_id % _NUM_COLORS]
-        batch = batch_for_shader(shader, 'LINES', {"pos": positions})
-        shader.uniform_float("color", color)
-        batch.draw(shader)
+    # Draw selected segments in white, grouped by object to minimise get_boundary_edge_data calls
+    if _selected_segments:
+        sids_by_obj_name = {}
+        for obj_name, sid in _selected_segments:
+            sids_by_obj_name.setdefault(obj_name, set()).add(sid)
+
+        scene_objects = {obj.name: obj for obj in bpy.context.scene.objects if obj.type == 'MESH'}
+        for obj_name, sids in sids_by_obj_name.items():
+            obj = scene_objects.get(obj_name)
+            if obj is None:
+                continue
+            try:
+                edges_by_seg, _ = get_boundary_edge_data(obj, depsgraph)
+            except ReferenceError:
+                continue
+            for sid in sids:
+                if sid not in edges_by_seg:
+                    continue
+                batch = batch_for_shader(shader, 'LINES', {"pos": edges_by_seg[sid]})
+                shader.uniform_float("color", _WHITE)
+                batch.draw(shader)
+
+    # Find and draw the hovered segment in yellow
+    _hovered_sid = None
+    hovered = _hovered_object
+    if hovered is not None:
+        try:
+            edges_by_seg, midpoints = get_boundary_edge_data(hovered, depsgraph)
+        except ReferenceError:
+            _hovered_object = None
+            edges_by_seg, midpoints = {}, []
+
+        closest_sid = None
+        min_dist_sq = float('inf')
+        for mid_3d, sid in midpoints:
+            p2d = view3d_utils.location_3d_to_region_2d(region, rv3d, Vector(mid_3d))
+            if p2d is None:
+                continue
+            dx = p2d.x - _mouse_region_x
+            dy = p2d.y - _mouse_region_y
+            dist_sq = dx * dx + dy * dy
+            if dist_sq < min_dist_sq:
+                min_dist_sq = dist_sq
+                closest_sid = sid
+
+        _hovered_sid = closest_sid
+        if closest_sid is not None and closest_sid in edges_by_seg:
+            batch = batch_for_shader(shader, 'LINES', {"pos": edges_by_seg[closest_sid]})
+            shader.uniform_float("color", _YELLOW)
+            batch.draw(shader)
 
     gpu.state.blend_set('NONE')
     gpu.state.depth_test_set('LESS_EQUAL')
@@ -175,6 +272,7 @@ def draw_callback():
 
 def register():
     bpy.utils.register_class(VIEW3D_OT_segment_update_mouse)
+    bpy.utils.register_class(VIEW3D_OT_segment_select_click)
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
@@ -183,12 +281,19 @@ def register():
             VIEW3D_OT_segment_update_mouse.bl_idname, 'MOUSEMOVE', 'ANY'
         )
         _addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new(
+            VIEW3D_OT_segment_select_click.bl_idname, 'LEFTMOUSE', 'PRESS', head=True
+        )
+        _addon_keymaps.append((km, kmi))
 
 
 def unregister():
-    global shader
+    global shader, _selected_segments, _hovered_sid
     shader = None
+    _selected_segments = set()
+    _hovered_sid = None
     for km, kmi in _addon_keymaps:
         km.keymap_items.remove(kmi)
     _addon_keymaps.clear()
+    bpy.utils.unregister_class(VIEW3D_OT_segment_select_click)
     bpy.utils.unregister_class(VIEW3D_OT_segment_update_mouse)
