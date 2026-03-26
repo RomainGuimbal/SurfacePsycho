@@ -164,7 +164,7 @@ class VIEW3D_OT_segment_select_click(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         if _hovered_object is None or _hovered_sid is None:
-            return {'CANCELLED'}
+            return {'PASS_THROUGH'}
 
         key = (_hovered_object.name, _hovered_sid)
         if key in _selected_segments:
