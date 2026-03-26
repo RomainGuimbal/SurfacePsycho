@@ -16,7 +16,7 @@ _mouse_region_y = 0
 _hovered_object = None  # object under cursor, updated by the MOUSEMOVE operator via view3d.select
 
 LINE_WIDTH = 3.0
-_YELLOW = (1.0, 1.0, 0.0, 0.3)
+_HOVER_COLOR = (0.5, 0.5, 1.0, 1.0)
 _WHITE = (1.0, 1.0, 1.0, 1.0)
 
 # Selection: set of (obj_name, segment_id) tuples
@@ -164,7 +164,7 @@ class VIEW3D_OT_segment_select_click(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         if _hovered_object is None or _hovered_sid is None:
-            return {'PASS_THROUGH'}
+            return {'CANCELLED'}
 
         key = (_hovered_object.name, _hovered_sid)
         if key in _selected_segments:
@@ -237,7 +237,7 @@ def draw_callback():
                 shader.uniform_float("color", _WHITE)
                 batch.draw(shader)
 
-    # Find and draw the hovered segment in yellow
+    # Find and draw the hovered segment
     _hovered_sid = None
     hovered = _hovered_object
     if hovered is not None:
@@ -263,7 +263,7 @@ def draw_callback():
         _hovered_sid = closest_sid
         if closest_sid is not None and closest_sid in edges_by_seg:
             batch = batch_for_shader(shader, 'LINES', {"pos": edges_by_seg[closest_sid]})
-            shader.uniform_float("color", _YELLOW)
+            shader.uniform_float("color", _HOVER_COLOR)
             batch.draw(shader)
 
     gpu.state.blend_set('NONE')
