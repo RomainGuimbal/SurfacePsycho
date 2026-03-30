@@ -116,10 +116,17 @@ class VIEW3D_OT_segment_update_mouse(bpy.types.Operator):
                 old_selected = list(context.selected_objects)
 
                 try:
-                    bpy.ops.view3d.select('INVOKE_DEFAULT', deselect_all=True)
+                    bpy.ops.view3d.select(
+                        'EXEC_REGION_WIN',
+                        extend=False, deselect=False, toggle=False,
+                        center=False, enumerate=False, object=False,
+                        location=(_mouse_region_x, _mouse_region_y),
+                    )
                 except Exception:
                     pass
 
+                # Use selected_objects: view3d.select EXEC_REGION_WIN ignores modifier
+                # state and does a plain single-select, so selected_objects reflects the hit.
                 picked = context.selected_objects[0] if context.selected_objects else None
                 _hovered_object = picked
 
@@ -164,13 +171,19 @@ class VIEW3D_OT_segment_select_click(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         if _hovered_object is None or _hovered_sid is None:
-            return {'PASS_THROUGH'}
+            _selected_segments.clear()
+            if context.area:
+                context.area.tag_redraw()
+            return {'FINISHED'}
 
         key = (_hovered_object.name, _hovered_sid)
-        if key in _selected_segments:
-            _selected_segments.discard(key)
+        if event.shift:
+            if key in _selected_segments:
+                _selected_segments.discard(key)
+            else:
+                _selected_segments.add(key)
         else:
-            _selected_segments.add(key)
+            _selected_segments = {key}
 
         if context.area:
             context.area.tag_redraw()
@@ -198,10 +211,6 @@ def draw_callback():
         return
 
     depsgraph = bpy.context.evaluated_depsgraph_get()
-
-    anything_to_draw = _selected_segments or _hovered_object is not None
-    if not anything_to_draw:
-        return
 
     if shader is None:
         shader = gpu.shader.from_builtin('POLYLINE_UNIFORM_COLOR')
@@ -237,7 +246,7 @@ def draw_callback():
                 shader.uniform_float("color", _WHITE)
                 batch.draw(shader)
 
-    # Find and draw the hovered segment
+    # Hover detection: find closest segment on the hovered object only.
     _hovered_sid = None
     hovered = _hovered_object
     if hovered is not None:
@@ -278,11 +287,15 @@ def register():
     if kc:
         km = kc.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new(
-            VIEW3D_OT_segment_update_mouse.bl_idname, 'MOUSEMOVE', 'ANY'
+            VIEW3D_OT_segment_update_mouse.bl_idname, 'MOUSEMOVE', 'ANY', any=True
         )
         _addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new(
             VIEW3D_OT_segment_select_click.bl_idname, 'LEFTMOUSE', 'PRESS', head=True
+        )
+        _addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new(
+            VIEW3D_OT_segment_select_click.bl_idname, 'LEFTMOUSE', 'PRESS', shift=True, head=True
         )
         _addon_keymaps.append((km, kmi))
 

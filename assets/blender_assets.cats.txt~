@@ -1,0 +1,17 @@
+# This is an Asset Catalog Definition file for Blender.
+#
+# Empty lines and lines starting with `#` will be ignored.
+# The first non-ignored line should be the version indicator.
+# Other lines are of the format "UUID:catalog/path/for/assets:simple catalog name"
+
+VERSION 1
+
+d52228a8-a405-4fa4-a2b5-167da88c123a:SurfacePsycho:SurfacePsycho
+adb9d531-028f-4593-b1b8-faf28b580851:SurfacePsycho/Analyse:Analyse
+61eead2b-4e82-4aad-9ce8-017c8f933f59:SurfacePsycho/Convert:Convert
+dee9a07a-f740-4362-b758-dc2be4daef19:SurfacePsycho/Deform:Deform
+eef9730a-b506-4f83-89ae-aa82372b270b:SurfacePsycho/Edit:Edit
+9c5f8c69-643f-4986-a919-ead174025748:SurfacePsycho/Generate:Generate
+a8acb7f4-da97-4771-9433-6c4274688494:SurfacePsycho/Meshing:Meshing
+2e99c8ae-6884-4abf-aa3b-47887ab0815c:SurfacePsycho/Shape:Shape
+03cb79ca-2844-4f26-8bd8-e8d5933301d1:SurfacePsycho/Utility:Utility
