@@ -26,6 +26,13 @@ _hovered_sid = None
 
 _addon_keymaps = []
 
+# Declared here so toolbar_tools.py can assign them to bl_keymap on the tool class.
+# Blender activates these only while the tool is the active workspace tool.
+TOOL_KEYMAP = (
+    ("view3d.segment_select_click", {"type": 'LEFTMOUSE', "value": 'PRESS'}, None),
+    ("view3d.segment_select_click", {"type": 'LEFTMOUSE', "value": 'PRESS', "shift": True}, None),
+)
+
 
 def get_boundary_edge_data(obj, depsgraph):
     """Returns (edges_by_seg, midpoints) for boundary edges.
@@ -115,6 +122,7 @@ class VIEW3D_OT_segment_update_mouse(bpy.types.Operator):
                 old_active = context.view_layer.objects.active
                 old_selected = list(context.selected_objects)
 
+                select_ran = False
                 try:
                     bpy.ops.view3d.select(
                         'EXEC_REGION_WIN',
@@ -122,12 +130,14 @@ class VIEW3D_OT_segment_update_mouse(bpy.types.Operator):
                         center=False, enumerate=False, object=False,
                         location=(_mouse_region_x, _mouse_region_y),
                     )
+                    select_ran = True
                 except Exception:
                     pass
 
-                # Use selected_objects: view3d.select EXEC_REGION_WIN ignores modifier
-                # state and does a plain single-select, so selected_objects reflects the hit.
-                picked = context.selected_objects[0] if context.selected_objects else None
+                if select_ran:
+                    picked = context.selected_objects[0] if context.selected_objects else None
+                else:
+                    picked = None
                 _hovered_object = picked
 
                 # Restore original selection state
@@ -150,7 +160,7 @@ class VIEW3D_OT_segment_update_mouse(bpy.types.Operator):
 
         if context.area:
             context.area.tag_redraw()
-        return {'FINISHED'}
+        return {'PASS_THROUGH'}
 
 
 class VIEW3D_OT_segment_select_click(bpy.types.Operator):
@@ -288,14 +298,6 @@ def register():
         km = kc.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new(
             VIEW3D_OT_segment_update_mouse.bl_idname, 'MOUSEMOVE', 'ANY', any=True
-        )
-        _addon_keymaps.append((km, kmi))
-        kmi = km.keymap_items.new(
-            VIEW3D_OT_segment_select_click.bl_idname, 'LEFTMOUSE', 'PRESS', head=True
-        )
-        _addon_keymaps.append((km, kmi))
-        kmi = km.keymap_items.new(
-            VIEW3D_OT_segment_select_click.bl_idname, 'LEFTMOUSE', 'PRESS', shift=True, head=True
         )
         _addon_keymaps.append((km, kmi))
 

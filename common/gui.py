@@ -321,7 +321,7 @@ def hotkeys_add(addon_keymaps):
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
-        km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
+        km = kc.keymaps.new(name="3D View", space_type="VIEW_3D")
         kmi = km.keymap_items.new("wm.call_menu_pie", "F", "PRESS", shift=True)
         kmi.properties.name = "SP_MT_PIE_SegmentEdit"
         addon_keymaps.append((km, kmi))

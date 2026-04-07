@@ -47,16 +47,19 @@ _MODES = ["OBJECT", "EDIT_MESH"]
 
 
 def _make_tool_class(mode, id_name):
+    attrs = {
+        "bl_space_type": "VIEW_3D",
+        "bl_context_mode": mode,
+        "bl_idname": id_name,
+        "bl_label": "Psycho Mode",
+        "bl_icon": "ops.generic.surface_psycho",
+    }
+    if mode == "OBJECT":
+        attrs["bl_keymap"] = overlay_segment_selection.TOOL_KEYMAP
     return type(
         f"SP_mode_tool_{mode}",
         (bpy.types.WorkSpaceTool,),
-        {
-            "bl_space_type": "VIEW_3D",
-            "bl_context_mode": mode,
-            "bl_idname": id_name,
-            "bl_label": "Psycho Mode",
-            "bl_icon": "ops.generic.surface_psycho",
-        },
+        attrs,
     )
 
 
