@@ -31,6 +31,7 @@ from ..common.versioning import (
     remove_suffix,
 )
 from bpy.types import UILayout
+from .overlay_segment_selection import SELECTED_SEGMENTS
 
 
 class SP_OT_add_library(bpy.types.Operator):
@@ -1068,43 +1069,53 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
     )
 
     def execute(self, context):
-        # Add a check if SP surfaces ?
+        auto = True
+        segment_1 = 0
+        segment_2 = 0
 
-        if len(context.selected_objects) < 2:
-            self.report({"WARNING"}, "Select 2 surfaces")
-            return {"CANCELLED"}
-        else:
-            surf1 = context.selected_objects[0]
-            surf2 = context.selected_objects[1]
-            loc = surf1.location / 2 + surf2.location / 2
+        if len(SELECTED_SEGMENTS) >= 2:
+            auto = False
+            surf1 = SELECTED_SEGMENTS[0][0]
+            surf2 = SELECTED_SEGMENTS[1][0]
+            segment_1 = SELECTED_SEGMENTS[0][1]
+            segment_2 = SELECTED_SEGMENTS[1][1]
+        elif len(context.selected_objects) < 2:
+                self.report({"WARNING"}, "Select 2 surfaces")
+                return {"CANCELLED"}
+        
+        surf1 = context.selected_objects[0]
+        surf2 = context.selected_objects[1]
+        loc = surf1.location / 2 + surf2.location / 2
 
-            mesh = bpy.data.meshes.new("Blend Patch")
-            mesh.from_pydata([Vector((0, 0, 0))], [], [])
-            blend_surf = bpy.data.objects.new("Blend Patch", mesh)
-            blend_surf.location = loc
-            context.collection.objects.link(blend_surf)
+        mesh = bpy.data.meshes.new("Blend Patch")
+        mesh.from_pydata([Vector((0, 0, 0))], [], [])
+        blend_surf = bpy.data.objects.new("Blend Patch", mesh)
+        blend_surf.location = loc
+        context.collection.objects.link(blend_surf)
 
-            # Add blend modifier
-            add_sp_modifier(
-                blend_surf,
-                "SP - Blend Surfaces",
-                {
-                    "Target 1": surf1,
-                    "Target 2": surf2,
-                    "Auto": True,
-                    "Invert": self.invert,
-                    "Continuity": int(self.continuity),
-                    "Tension": self.tension,
-                },
-                append=True,
-            )
+        # Add blend modifier
+        add_sp_modifier(
+            blend_surf,
+            "SP - Blend Surfaces",
+            {
+                "Target 1": surf1,
+                "Target 2": surf2,
+                "Segment 1": segment_1,
+                "Segment 2": segment_2,
+                "Auto": auto,
+                "Invert": self.invert,
+                "Continuity": int(self.continuity),
+                "Tension": self.tension,
+            },
+            append=True,
+        )
 
-            # Add meshing modifier
-            add_sp_modifier(
-                blend_surf,
-                "SP - Bezier Patch Meshing",
-                append=True,
-            )
+        # Add meshing modifier
+        add_sp_modifier(
+            blend_surf,
+            "SP - Bezier Patch Meshing",
+            append=True,
+        )
 
         return {"FINISHED"}
 

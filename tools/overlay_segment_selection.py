@@ -16,11 +16,12 @@ _mouse_region_y = 0
 _hovered_object = None  # object under cursor, updated by the MOUSEMOVE operator via view3d.select
 
 LINE_WIDTH = 3.0
-_HOVER_COLOR = (0.5, 0.5, 1.0, 1.0)
+_HOVER_COLOR = (0.8, 0.5, 0.0, 1.0)
 _WHITE = (1.0, 1.0, 1.0, 1.0)
 
 # Selection: set of (obj_name, segment_id) tuples
-_selected_segments = set()
+SELECTED_SEGMENTS = set()
+
 # The segment id closest to the cursor on the hovered object, updated each draw
 _hovered_sid = None
 
@@ -170,7 +171,7 @@ class VIEW3D_OT_segment_select_click(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def invoke(self, context, event):
-        global _selected_segments
+        global SELECTED_SEGMENTS
 
         try:
             tool = context.workspace.tools.from_space_view3d_mode('OBJECT')
@@ -181,19 +182,19 @@ class VIEW3D_OT_segment_select_click(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         if _hovered_object is None or _hovered_sid is None:
-            _selected_segments.clear()
+            SELECTED_SEGMENTS.clear()
             if context.area:
                 context.area.tag_redraw()
             return {'FINISHED'}
 
         key = (_hovered_object.name, _hovered_sid)
         if event.shift:
-            if key in _selected_segments:
-                _selected_segments.discard(key)
+            if key in SELECTED_SEGMENTS:
+                SELECTED_SEGMENTS.discard(key)
             else:
-                _selected_segments.add(key)
+                SELECTED_SEGMENTS.add(key)
         else:
-            _selected_segments = {key}
+            SELECTED_SEGMENTS = {key}
 
         if context.area:
             context.area.tag_redraw()
@@ -235,9 +236,9 @@ def draw_callback():
     shader.uniform_float("lineWidth", LINE_WIDTH)
 
     # Draw selected segments in white, grouped by object to minimise get_boundary_edge_data calls
-    if _selected_segments:
+    if SELECTED_SEGMENTS:
         sids_by_obj_name = {}
-        for obj_name, sid in _selected_segments:
+        for obj_name, sid in SELECTED_SEGMENTS:
             sids_by_obj_name.setdefault(obj_name, set()).add(sid)
 
         scene_objects = {obj.name: obj for obj in bpy.context.scene.objects if obj.type == 'MESH'}
@@ -303,9 +304,9 @@ def register():
 
 
 def unregister():
-    global shader, _selected_segments, _hovered_sid
+    global shader, SELECTED_SEGMENTS, _hovered_sid
     shader = None
-    _selected_segments = set()
+    SELECTED_SEGMENTS = set()
     _hovered_sid = None
     for km, kmi in _addon_keymaps:
         km.keymap_items.remove(kmi)

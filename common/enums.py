@@ -204,7 +204,7 @@ ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Set Patch Instance Type",
     "SP - Split to Patches",
     "SP - SubD to Compound",
-    "SP - Text to Compound",
+    # "SP - Text to Compound",
 }
 
 ASSET_NODE_GROUPS_SHAPE_PRESETS = {

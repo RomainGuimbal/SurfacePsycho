@@ -261,39 +261,39 @@ def remove_fake_user_node_groups():
 ################################
 
 # PROBE
-path_probe = "//..\..\Principal curvature.blend"
+path_probe = "//../../Principal curvature.blend"
 obj_probe = {"SP - Curvatures Probe"}
 
 # CURVE
-path_curve_flat = "//..\..\SP - Curve and FlatPatch.blend"
+path_curve_flat = "//../../SP - Curve and FlatPatch.blend"
 obj_curve_flat = {
     "FlatPatch",
     "PsychoCurve",
 }
 
 # BEZIER SURF
-path_surf = "//..\..\SP - Bezier surface.blend"
+path_surf = "//../../SP - Bezier surface.blend"
 obj_surf = {
     "Bezier Patch",
     "Internal Curve For Patch",
 }
 
 # NURBS
-path_nurbs = "//..\..\SP - NURBS.blend"
+path_nurbs = "//../../SP - NURBS.blend"
 obj_nurbs = {"NURBS Patch"}
 
 
 # OTHER
-path_other = "//..\..\SP - Other Primitives.blend"
+path_other = "//../../SP - Other Primitives.blend"
 # obj_other={""}
 
 # COMPOUND
-path_compound = "//..\..\SP - Compound.blend"
+path_compound = "//../../SP - Compound.blend"
 
 obj_compound = {"Compound", "Text Compound"}
 
 # SHAPES
-path_preset = "//..\..\SP - Shapes presets.blend"
+path_preset = "//../../SP - Shapes presets.blend"
 obj_preset = {
     "Quadratic Dome",
     "Cubic Dome",
