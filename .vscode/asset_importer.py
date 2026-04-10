@@ -402,6 +402,13 @@ if __name__ == "__main__":
     #    profiler.disable()
     #    profiler.print_stats()
 
-    bpy.ops.wm.save_mainfile()
+    # Blender refuses to overwrite a file that is currently loaded as a library.
+    # Workaround: save to a temp path (copy=True keeps the session filepath unchanged),
+    # then replace the real file with the temp file via Python.
+    import shutil
+
+    tmp_path = str(FILE_PATH) + ".saving_tmp"
+    bpy.ops.wm.save_as_mainfile(filepath=tmp_path, copy=True)
+    shutil.move(tmp_path, str(FILE_PATH))
 
     print("\nAssets successfully updated !")
