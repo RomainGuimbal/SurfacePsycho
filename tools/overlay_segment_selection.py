@@ -171,8 +171,6 @@ class VIEW3D_OT_segment_select_click(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def invoke(self, context, event):
-        global SELECTED_SEGMENTS
-
         try:
             tool = context.workspace.tools.from_space_view3d_mode('OBJECT')
         except Exception:
@@ -194,7 +192,8 @@ class VIEW3D_OT_segment_select_click(bpy.types.Operator):
             else:
                 SELECTED_SEGMENTS.add(key)
         else:
-            SELECTED_SEGMENTS = {key}
+            SELECTED_SEGMENTS.clear()
+            SELECTED_SEGMENTS.add(key)
 
         if context.area:
             context.area.tag_redraw()
@@ -304,9 +303,9 @@ def register():
 
 
 def unregister():
-    global shader, SELECTED_SEGMENTS, _hovered_sid
+    global shader, _hovered_sid
     shader = None
-    SELECTED_SEGMENTS = set()
+    SELECTED_SEGMENTS.clear()
     _hovered_sid = None
     for km, kmi in _addon_keymaps:
         km.keymap_items.remove(kmi)

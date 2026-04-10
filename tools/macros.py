@@ -1075,16 +1075,16 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
 
         if len(SELECTED_SEGMENTS) >= 2:
             auto = False
-            surf1 = SELECTED_SEGMENTS[0][0]
-            surf2 = SELECTED_SEGMENTS[1][0]
-            segment_1 = SELECTED_SEGMENTS[0][1]
-            segment_2 = SELECTED_SEGMENTS[1][1]
-        elif len(context.selected_objects) < 2:
-                self.report({"WARNING"}, "Select 2 surfaces")
-                return {"CANCELLED"}
-        
-        surf1 = context.selected_objects[0]
-        surf2 = context.selected_objects[1]
+            selected_list = list(SELECTED_SEGMENTS)
+            surf1 = context.scene.objects[selected_list[0][0]]
+            surf2 = context.scene.objects[selected_list[1][0]]
+            segment_1 = selected_list[0][1]
+            segment_2 = selected_list[1][1]
+        elif len(context.selected_objects) >= 2:
+            surf1 = context.selected_objects[0]
+            surf2 = context.selected_objects[1]
+        else:
+            return {"CANCELLED"}
         loc = surf1.location / 2 + surf2.location / 2
 
         mesh = bpy.data.meshes.new("Blend Patch")
