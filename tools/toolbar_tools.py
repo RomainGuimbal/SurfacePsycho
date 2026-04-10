@@ -1,7 +1,7 @@
 import os
 import bpy
-import gpu
-from . import overlays
+from . import overlay_endpoints
+from . import overlay_segment_selection
 
 
 
@@ -37,12 +37,8 @@ def _tag_redraw():
                 area.tag_redraw()
 
 
-def add_draw_handler():
-    pass  # drawing is now gated by valid_tool_idnames inside draw_callback
-
-
 def remove_draw_handler():
-    overlays.active_object = None
+    overlay_endpoints.active_object = None
     _tag_redraw()
 
 
@@ -51,37 +47,35 @@ _MODES = ["OBJECT", "EDIT_MESH"]
 
 
 def _make_tool_class(mode, id_name):
+    attrs = {
+        "bl_space_type": "VIEW_3D",
+        "bl_context_mode": mode,
+        "bl_idname": id_name,
+        "bl_label": "Psycho Mode",
+        "bl_icon": "ops.generic.surface_psycho",
+    }
+    if mode == "OBJECT":
+        attrs["bl_keymap"] = overlay_segment_selection.TOOL_KEYMAP
     return type(
         f"SP_mode_tool_{mode}",
         (bpy.types.WorkSpaceTool,),
-        {
-            "bl_space_type": "VIEW_3D",
-            "bl_context_mode": mode,
-            "bl_idname": id_name,
-            "bl_label": "Psycho Mode",
-            "bl_icon": "ops.generic.surface_psycho",
-            "bl_keymap": (
-                ("object.sp_select_all", {"type": "LEFTMOUSE", "value": "CLICK"}, None),
-            ),
-        },
+        attrs,
     )
 
 
 _tool_classes = []
 _sp_draw_handler = None
+_segment_draw_handler = None
 
 _msgbus_owner = object()
 
 
+_OBJECT_TOOL_IDNAME = "object.sp_mode_tool"
+
+
 def _on_tool_changed():
-    try:
-        tool = bpy.context.workspace.tools.from_space_view3d_mode(bpy.context.mode)
-    except Exception:
-        return
-    if tool.idname in _TOOL_IDNAMES:
-        add_draw_handler()
-    else:
-        remove_draw_handler()
+    remove_draw_handler()
+    return None
 
 
 def _subscribe_to_tool():
@@ -99,34 +93,42 @@ def _on_load_post(*_):
 
 
 def register():
-    global _tool_classes, _sp_draw_handler
+    global _tool_classes, _sp_draw_handler, _segment_draw_handler
     _load_custom_icon()
     _tool_classes = [
         _make_tool_class(mode, id_name) for mode, id_name in zip(_MODES, _TOOL_IDNAMES)
     ]
     for i, cls in enumerate(_tool_classes):
         bpy.utils.register_tool(cls, separator=(i == 0))
-    overlays.active_group_name = "Endpoints"
-    overlays.valid_tool_idnames = set(_TOOL_IDNAMES)
+    overlay_endpoints.active_group_name = "Endpoints"
+    overlay_endpoints.valid_tool_idnames = set(_TOOL_IDNAMES)
     _sp_draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-        overlays.draw_callback, (), "WINDOW", "POST_VIEW"
+        overlay_endpoints.draw_callback, (), "WINDOW", "POST_VIEW"
+    )
+    overlay_segment_selection.active_tool_idname = _OBJECT_TOOL_IDNAME
+    overlay_segment_selection.register()
+    _segment_draw_handler = bpy.types.SpaceView3D.draw_handler_add(
+        overlay_segment_selection.draw_callback, (), "WINDOW", "POST_VIEW"
     )
     _subscribe_to_tool()
     bpy.app.handlers.load_post.append(_on_load_post)
 
 
 def unregister():
-    global _sp_draw_handler
+    global _sp_draw_handler, _segment_draw_handler
     bpy.app.handlers.load_post.remove(_on_load_post)
     bpy.msgbus.clear_by_owner(_msgbus_owner)
+    if _segment_draw_handler is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(_segment_draw_handler, "WINDOW")
+    overlay_segment_selection.unregister()
     remove_draw_handler()
     if _sp_draw_handler is not None:
         bpy.types.SpaceView3D.draw_handler_remove(_sp_draw_handler, "WINDOW")
         _sp_draw_handler = None
-        overlays.shader = None
-        overlays.batch = None
-        overlays.active_group_name = None
-        overlays.valid_tool_idnames = set()
+        overlay_endpoints.shader = None
+        overlay_endpoints.batch = None
+        overlay_endpoints.active_group_name = None
+        overlay_endpoints.valid_tool_idnames = set()
     for cls in reversed(_tool_classes):
         bpy.utils.unregister_tool(cls)
     _unload_custom_icon()

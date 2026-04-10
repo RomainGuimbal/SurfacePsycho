@@ -101,7 +101,7 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Crop or Extend Curve",
     "SP - Crown Curve",
     "SP - Curve Meshing",
-    "SP - Distance Between Curves",
+    "SP - Plot Distance Between Curves",
     "SP - Fillet Curve or FlatPatch",
     "SP - Fillet Polyline with Circles",
     "SP - Fit Curve",
@@ -190,6 +190,7 @@ ASSET_NODE_GROUPS_OTHER_SURFACES = {
     "SP - Surface of Revolution Meshing",
     "SP - Toroidal Meshing",
     "SP - Transform UVMap",
+    "SP - Connect Flat Patch",
 }
 
 ASSET_NODE_GROUPS_COMPOUND = {
@@ -203,7 +204,7 @@ ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Set Patch Instance Type",
     "SP - Split to Patches",
     "SP - SubD to Compound",
-    "SP - Text to Compound",
+    # "SP - Text to Compound",
 }
 
 ASSET_NODE_GROUPS_SHAPE_PRESETS = {

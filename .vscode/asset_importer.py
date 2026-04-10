@@ -261,39 +261,39 @@ def remove_fake_user_node_groups():
 ################################
 
 # PROBE
-path_probe = "//..\..\Principal curvature.blend"
+path_probe = "//../../Principal curvature.blend"
 obj_probe = {"SP - Curvatures Probe"}
 
 # CURVE
-path_curve_flat = "//..\..\SP - Curve and FlatPatch.blend"
+path_curve_flat = "//../../SP - Curve and FlatPatch.blend"
 obj_curve_flat = {
     "FlatPatch",
     "PsychoCurve",
 }
 
 # BEZIER SURF
-path_surf = "//..\..\SP - Bezier surface.blend"
+path_surf = "//../../SP - Bezier surface.blend"
 obj_surf = {
     "Bezier Patch",
     "Internal Curve For Patch",
 }
 
 # NURBS
-path_nurbs = "//..\..\SP - NURBS.blend"
+path_nurbs = "//../../SP - NURBS.blend"
 obj_nurbs = {"NURBS Patch"}
 
 
 # OTHER
-path_other = "//..\..\SP - Other Primitives.blend"
+path_other = "//../../SP - Other Primitives.blend"
 # obj_other={""}
 
 # COMPOUND
-path_compound = "//..\..\SP - Compound.blend"
+path_compound = "//../../SP - Compound.blend"
 
 obj_compound = {"Compound", "Text Compound"}
 
 # SHAPES
-path_preset = "//..\..\SP - Shapes presets.blend"
+path_preset = "//../../SP - Shapes presets.blend"
 obj_preset = {
     "Quadratic Dome",
     "Cubic Dome",
@@ -402,6 +402,13 @@ if __name__ == "__main__":
     #    profiler.disable()
     #    profiler.print_stats()
 
-    bpy.ops.wm.save_mainfile()
+    # Blender refuses to overwrite a file that is currently loaded as a library.
+    # Workaround: save to a temp path (copy=True keeps the session filepath unchanged),
+    # then replace the real file with the temp file via Python.
+    import shutil
+
+    tmp_path = str(FILE_PATH) + ".saving_tmp"
+    bpy.ops.wm.save_as_mainfile(filepath=tmp_path, copy=True)
+    shutil.move(tmp_path, str(FILE_PATH))
 
     print("\nAssets successfully updated !")
