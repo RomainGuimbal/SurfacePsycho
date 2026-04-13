@@ -16,7 +16,7 @@ _mouse_region_y = 0
 _hovered_object = None  # object under cursor, updated by the MOUSEMOVE operator via view3d.select
 
 LINE_WIDTH = 4.0
-_HOVER_COLOR = (0.9, 0.7, 0.0, 1.0)
+_HOVER_COLOR = (1.0, 0.7, 0.7, 1.0)
 _WHITE = (1.0, 1.0, 1.0, 1.0)
 
 # Selection: set of (obj_name, segment_id) tuples
@@ -26,13 +26,6 @@ SELECTED_SEGMENTS = set()
 _hovered_sid = None
 
 _addon_keymaps = []
-
-# Declared here so toolbar_tools.py can assign them to bl_keymap on the tool class.
-# Blender activates these only while the tool is the active workspace tool.
-TOOL_KEYMAP = (
-    ("view3d.segment_select_click", {"type": 'LEFTMOUSE', "value": 'PRESS'}, None),
-    ("view3d.segment_select_click", {"type": 'LEFTMOUSE', "value": 'PRESS', "shift": True}, None),
-)
 
 
 def get_boundary_edge_data(obj, depsgraph):

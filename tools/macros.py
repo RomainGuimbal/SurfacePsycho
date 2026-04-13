@@ -1106,6 +1106,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
             surf1 = context.selected_objects[0]
             surf2 = context.selected_objects[1]
         else:
+            profiler.disable()
             return {"CANCELLED"}
         loc = surf1.location / 2 + surf2.location / 2
 
@@ -1140,6 +1141,8 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
             "SP - Bezier Patch Meshing",
             append=True,
         )
+
+        SELECTED_SEGMENTS.clear()
 
         profiler.disable()
         profiler.dump_stats("profile_output.prof")

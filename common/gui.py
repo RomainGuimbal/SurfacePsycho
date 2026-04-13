@@ -309,9 +309,9 @@ def menu_func_import(self, context):
     )
 
 
-# topbar menu (fails)
-def menu_segment_edit(self):
-    self.layout.menu("SP_MT_SegmentEdit")
+# # topbar menu (fails)
+# def menu_segment_edit(self):
+#     self.layout.menu("SP_MT_SegmentEdit")
 
 
 addon_keymaps = []

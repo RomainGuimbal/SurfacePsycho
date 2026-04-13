@@ -1011,9 +1011,9 @@ def gather_export_shapes(
 ) -> TopoDS_Compound:
     depsgraph = context.evaluated_depsgraph_get()
 
-    import cProfile
-    profiler = cProfile.Profile()
-    profiler.enable()
+    # import cProfile
+    # profiler = cProfile.Profile()
+    # profiler.enable()
 
     # Gather objects
     objects = ShapeHierarchy_export(
@@ -1028,8 +1028,8 @@ def gather_export_shapes(
         objects, depsgraph, scale, sew, sew_tolerance
     )
 
-    profiler.disable()
-    profiler.dump_stats("profile_output.prof")
+    # profiler.disable()
+    # profiler.dump_stats("profile_output.prof")
 
     if len(separated_shapes_list) > 0:
         root_compound = shape_list_to_compound(separated_shapes_list)

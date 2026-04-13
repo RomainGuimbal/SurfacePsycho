@@ -3,7 +3,16 @@ import bpy
 from . import overlay_endpoints
 from . import overlay_segment_selection
 
-
+TOOL_KEYMAP = (
+    ("view3d.segment_select_click", {"type": "LEFTMOUSE", "value": "PRESS"}, None),
+    (
+        "view3d.segment_select_click",
+        {"type": "LEFTMOUSE", "value": "PRESS", "shift": True},
+        None,
+    ),
+    ("object.sp_blend_surfaces", {"type": "B", "value": "PRESS"}, None),
+    ("object.sp_toggle_control_geom", {"type": "V", "value": "PRESS"}, None),
+)
 
 _ICON_NAME = "ops.generic.surface_psycho"
 _custom_icon_value = None
@@ -11,10 +20,13 @@ _custom_icon_value = None
 
 def _load_custom_icon():
     global _custom_icon_value
-    icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "icons", _ICON_NAME + ".dat")
+    icon_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "icons", _ICON_NAME + ".dat"
+    )
     try:
         _custom_icon_value = bpy.app.icons.new_triangles_from_file(icon_path)
         from bl_ui.space_toolsystem_common import _icon_cache
+
         _icon_cache[_ICON_NAME] = _custom_icon_value
     except Exception as e:
         print(f"SurfacePsycho: Failed to load custom icon: {e}")
@@ -26,6 +38,7 @@ def _unload_custom_icon():
     if _custom_icon_value:
         bpy.app.icons.release(_custom_icon_value)
         from bl_ui.space_toolsystem_common import _icon_cache
+
         _icon_cache.pop(_ICON_NAME, None)
     _custom_icon_value = None
 
@@ -33,7 +46,7 @@ def _unload_custom_icon():
 def _tag_redraw():
     for window in bpy.context.window_manager.windows:
         for area in window.screen.areas:
-            if area.type == 'VIEW_3D':
+            if area.type == "VIEW_3D":
                 area.tag_redraw()
 
 
@@ -55,7 +68,7 @@ def _make_tool_class(mode, id_name):
         "bl_icon": "ops.generic.surface_psycho",
     }
     if mode == "OBJECT":
-        attrs["bl_keymap"] = overlay_segment_selection.TOOL_KEYMAP
+        attrs["bl_keymap"] = TOOL_KEYMAP
     return type(
         f"SP_mode_tool_{mode}",
         (bpy.types.WorkSpaceTool,),
