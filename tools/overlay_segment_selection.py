@@ -15,8 +15,8 @@ _mouse_region_x = 0
 _mouse_region_y = 0
 _hovered_object = None  # object under cursor, updated by the MOUSEMOVE operator via view3d.select
 
-LINE_WIDTH = 3.0
-_HOVER_COLOR = (0.8, 0.5, 0.0, 1.0)
+LINE_WIDTH = 4.0
+_HOVER_COLOR = (0.9, 0.7, 0.0, 1.0)
 _WHITE = (1.0, 1.0, 1.0, 1.0)
 
 # Selection: set of (obj_name, segment_id) tuples

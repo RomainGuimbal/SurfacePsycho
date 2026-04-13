@@ -1049,8 +1049,8 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         default=False,
     )
 
-    continuity: bpy.props.EnumProperty(
-        name="Continuity",
+    continuity1: bpy.props.EnumProperty(
+        name="Continuity 1",
         default=3,
         items=[
             ("0", "G0", "Positional Continuity", 0),
@@ -1061,14 +1061,36 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         ],
     )
 
-    tension: bpy.props.FloatProperty(
-        name="Tension",
+    continuity2: bpy.props.EnumProperty(
+        name="Continuity 2",
+        default=3,
+        items=[
+            ("0", "G0", "Positional Continuity", 0),
+            ("1", "G1", "Tangential Continuity", 1),
+            ("2", "G2", "Curvature Continuity", 2),
+            ("3", "G3", "Higher Order Continuity", 3),
+            ("4", "G4", "Maximum Continuity", 4),
+        ],
+    )
+
+    tension1: bpy.props.FloatProperty(
+        name="Tension 1",
+        default=1.0,
+        soft_min=0.0,
+        soft_max=10.0,
+    )
+    tension2: bpy.props.FloatProperty(
+        name="Tension 2",
         default=1.0,
         soft_min=0.0,
         soft_max=10.0,
     )
 
     def execute(self, context):
+        import cProfile
+        profiler = cProfile.Profile()
+        profiler.enable()
+
         auto = True
         segment_1 = 0
         segment_2 = 0
@@ -1104,8 +1126,10 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
                 "Segment 2": segment_2,
                 "Auto": auto,
                 "Invert": self.invert,
-                "Continuity": int(self.continuity),
-                "Tension": self.tension,
+                "Continuity 1": int(self.continuity1),
+                "Continuity 2": int(self.continuity2),
+                "Tension 1": self.tension1,
+                "Tension 2": self.tension2,
             },
             append=True,
         )
@@ -1117,6 +1141,8 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
             append=True,
         )
 
+        profiler.disable()
+        profiler.dump_stats("profile_output.prof")
         return {"FINISHED"}
 
     def draw(self, context):
@@ -1127,8 +1153,11 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         col = layout.column()
         col.prop(self, "invert")
         row = col.row()
-        row.prop(self, "continuity", expand=True)
-        col.prop(self, "tension", text="Tension")
+        row.prop(self, "continuity1", expand=True)
+        row = col.row()
+        row.prop(self, "continuity2", expand=True)
+        col.prop(self, "tension1")
+        col.prop(self, "tension2")
 
 
 class SP_OT_flip_normals(bpy.types.Operator):
@@ -1184,7 +1213,9 @@ class SP_OT_explode_compound(bpy.types.Operator):
 
         for o in context.selected_objects:
             if sp_type_of_object(o) == SP_obj_type.COMPOUND:
-                new_objects = convert_compound_to_patches(o, context, initial_depsgraph, resolution=16)
+                new_objects = convert_compound_to_patches(
+                    o, context, initial_depsgraph, resolution=16
+                )
 
                 # Create collection
                 collection = bpy.data.collections.new(f"{o.name} Exploded")

@@ -216,20 +216,13 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
 
 def change_GN_modifier_settings(modifier, settings_dict):
     tree = modifier.node_group.interface.items_tree
-    for i, k in enumerate(tree.keys()):
-        if k in settings_dict.keys():
-            item = tree[i]
-            if isinstance(item, bpy.types.NodeTreeInterfaceSocket):
-                id = item.identifier
-            # elif isinstance(item, bpy.types.NodeTreeInterfacePanel):
-            #     for it in tree:
-            #         if it.name == k and isinstance(
-            #             item, bpy.types.NodeTreeInterfaceSocket
-            #         ):
-            #             id = item.identifier
-            #             break
-
-            modifier[id] = settings_dict[k]
+    remaining = set(settings_dict.keys())
+    for item in tree:
+        if item.name in remaining and isinstance(item, bpy.types.NodeTreeInterfaceSocket):
+            modifier[item.identifier] = settings_dict[item.name]
+            remaining.discard(item.name)
+            if not remaining:
+                break
 
 
 def add_vertex_group(object: bpy.types.Object, name, values):
