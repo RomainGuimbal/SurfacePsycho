@@ -1,7 +1,7 @@
 import bpy
 import numpy as np
 from .enums import SP_obj_type, MESHER_NAMES
-from .utils import add_sp_modifier
+from .asset_append import add_sp_modifier
 
 def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     """

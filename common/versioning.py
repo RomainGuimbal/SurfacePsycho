@@ -1,8 +1,8 @@
 import bpy
 from ..config import VERSION
 import re
-from .enums import ASSET_NODE_GROUPS
-from .utils import ADDON_PATH, ASSETS_FILE, append_node_group
+from .enums import ASSET_NODE_GROUPS, ADDON_PATH, ASSETS_FILE
+from .asset_append import append_node_group
 
 
 #####################

@@ -1,7 +1,7 @@
 import bpy
 from ..common.enums import SP_obj_type, MESHER_NAMES
-from ..common.utils import (
-    create_grid_mesh,
+from ..common.utils import create_grid_mesh
+from ..common.asset_append import (
     add_sp_modifier,
     append_object_by_name,
     append_multiple_node_groups,

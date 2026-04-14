@@ -2,12 +2,9 @@ import math
 import bpy
 from mathutils import Vector, Matrix
 import bmesh
-from ..common.enums import SP_obj_type, MESHER_NAMES
+from ..common.enums import SP_obj_type, MESHER_NAMES, ADDON_PREF_KEY, ASSETS_PATH
 from ..common.utils import (
-    add_sp_modifier_from_node_group,
     sp_type_of_object,
-    append_object_by_name,
-    append_multiple_node_groups,
     read_attribute_by_name,
     toggle_bool_attribute,
     toggle_pseudo_bool_attribute,
@@ -15,12 +12,16 @@ from ..common.utils import (
     select_by_attriute,
     set_segment_type,
     add_bool_attribute,
-    add_sp_modifier,
     flip_node_socket_bool,
     change_node_socket_value,
     change_GN_modifier_settings,
-    ADDON_PREF_KEY,
-    ASSETS_PATH,
+
+)
+from ..common.asset_append import (
+    add_sp_modifier,
+    append_object_by_name,
+    append_multiple_node_groups,
+    add_sp_modifier_from_node_group,
 )
 from ..common.compound_utils import convert_compound_to_patches
 from ..common.versioning import (
@@ -1117,7 +1118,9 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         blend_surf.location = loc
         context.collection.objects.link(blend_surf)
 
-        blend_ng, meshing_ng = append_multiple_node_groups({"SP - Blend Surfaces", "SP - Bezier Patch Meshing"}, True)
+        blend_ng, meshing_ng = append_multiple_node_groups(
+            {"SP - Blend Surfaces", "SP - Bezier Patch Meshing"}, True
+        )
 
         # Add blend modifier
         add_sp_modifier_from_node_group(
@@ -1134,14 +1137,11 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
                 "Continuity 2": int(self.continuity2),
                 "Tension 1": self.tension1,
                 "Tension 2": self.tension2,
-            }
+            },
         )
 
         # Add meshing modifier
-        add_sp_modifier_from_node_group(
-            blend_surf,
-            meshing_ng
-        )
+        add_sp_modifier_from_node_group(blend_surf, meshing_ng)
 
         # SELECTED_SEGMENTS.clear() can't do that otherwise last operator panel fails
 

@@ -2,7 +2,7 @@ import bpy
 import time
 
 from ..common.enums import SP_obj_type, MESHER_NAMES
-from ..common.utils import append_node_group
+from ..common.asset_append import append_node_group
 from .import_shape_to_blender_object import (
     ShapeHierarchy,
     create_blender_object,

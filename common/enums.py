@@ -11,7 +11,12 @@ from OCP.GeomAbs import (
     GeomAbs_SurfaceOfExtrusion,
     GeomAbs_OtherSurface,
 )
+from os.path import dirname, abspath, basename, join
 
+ADDON_PATH = dirname(dirname(abspath(__file__)))  # The PsychoPath ;)
+ASSETS_PATH = join(ADDON_PATH, "assets")
+ASSETS_FILE = join(ASSETS_PATH, "assets.blend")
+ADDON_PREF_KEY = "bl_ext." + basename(dirname(ADDON_PATH)) + ".SurfacePsycho"
 
 class SP_obj_type(Enum):
     PLANE = 0

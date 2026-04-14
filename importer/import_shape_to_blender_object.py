@@ -23,8 +23,8 @@ from ..common.utils import (
     add_bool_attribute,
     add_int_attribute,
     add_float_attribute,
-    append_multiple_node_groups,
 )
+from ..common.asset_append import append_multiple_node_groups
 from math import isclose
 
 from OCP.BRepAdaptor import (
@@ -1358,7 +1358,7 @@ def create_blender_object(object_data):
     if object_data == {}:
         return False
     
-    from ..common.utils import add_sp_modifier
+    from ..common.asset_append import add_sp_modifier
 
     mesh = bpy.data.meshes.new(object_data["name"])
     mesh.from_pydata(*object_data["mesh_data"], False)
