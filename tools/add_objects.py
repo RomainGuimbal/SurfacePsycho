@@ -1,10 +1,12 @@
 import bpy
 from ..common.enums import SP_obj_type, MESHER_NAMES
-from ..common.utils import create_grid_mesh
+from ..common.utils import create_grid_mesh, toggle_bool_attribute
 from ..common.asset_append import (
     add_sp_modifier,
+    add_sp_modifier_from_node_group,
     append_object_by_name,
     append_multiple_node_groups,
+    append_node_group,
 )
 
 
@@ -51,7 +53,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
 
     def execute(self, context):
         append_multiple_node_groups(
-            {"SP - Reorder Grid Index", MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE]}
+            ["SP - Reorder Grid Index", MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE]]
         )
         # Create and link the object
         mesh = create_grid_mesh(self.u_count, self.v_count)
@@ -108,11 +110,11 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
 
     def execute(self, context):
         append_multiple_node_groups(
-            {
+            [
                 "SP - Reorder Grid Index",
                 "SP - Connect Bezier Patch",
                 MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
-            }
+            ]
         )
 
         # Create and link the object
@@ -150,7 +152,30 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        append_object_by_name("FlatPatch", context)
+        ng = append_node_group(MESHER_NAMES[SP_obj_type.PLANE])
+      
+        # Create and link the object
+        mesh = create_grid_mesh(2, 2)
+        mesh.attributes.new(name='Endpoints', type="BOOLEAN", domain="POINT")
+        
+        obj = bpy.data.objects.new("FlatPatch", mesh)
+        obj.data.update()
+        toggle_bool_attribute(obj, 'Endpoints')
+        context.collection.objects.link(obj)
+
+        add_sp_modifier_from_node_group(
+            obj,
+            ng,
+            pin=True,
+        )
+
+        # Set object location to 3D cursor
+        obj.location = context.scene.cursor.location
+
+        # Select the new object and make it active
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
         return {"FINISHED"}
 
 

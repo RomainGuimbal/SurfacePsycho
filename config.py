@@ -11,3 +11,4 @@ bl_info = {
 }
 
 VERSION = bl_info["version"]
+VERSION_STR = ".".join(map(str, VERSION))

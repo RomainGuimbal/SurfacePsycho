@@ -1,8 +1,7 @@
 import bpy
-from ..config import VERSION
+from ..config import VERSION_STR
 import re
-from .enums import ASSET_NODE_GROUPS, ADDON_PATH, ASSETS_FILE
-from .asset_append import append_node_group
+from .enums import ASSET_NODE_GROUPS, ADDON_PATH
 
 
 #####################
@@ -10,7 +9,7 @@ from .asset_append import append_node_group
 #####################
 
 # Old nodes names
-old_node_mapping = {
+OLD_NODE_MAPPING = {
     "SP - Trim 4 Sides": "SP - Crop or Extend Patch",
     "SP - Any Order Patch Meshing": "SP - Bezier Patch Meshing",
     "SP - Combs": "",
@@ -23,12 +22,12 @@ old_node_mapping = {
 }
 
 # Old nodes params
-{
+OLD_NODE_PARAMS = {
     "connect": {"side": ((0, 1, 2, 3), (2, 3, 0, 1))}
     # TODO FILL
 }
 
-ALL_SP_ASSET_NODE_GROUPS_EVER = ASSET_NODE_GROUPS | set(old_node_mapping.keys())
+ALL_SP_ASSET_NODE_GROUPS_EVER = ASSET_NODE_GROUPS | set(OLD_NODE_MAPPING.keys())
 
 
 #####################
@@ -41,7 +40,7 @@ def get_node_version(ng: bpy.types.NodeGroup):
 
 
 def is_latest_version(ng: bpy.types.NodeGroup):
-    return get_node_version(ng) == VERSION
+    return get_node_version(ng) == VERSION_STR
 
 
 def replace_all_instances_of_node_group_by_name(
@@ -161,103 +160,3 @@ def remove_suffix(data_block_name):
         return data_block_name[:-4]
     else:
         return data_block_name
-
-
-def update_node_group(name):
-    # check if name is outdated
-    new_name = name
-    if remove_suffix(name) in old_node_mapping.keys():
-        new_name = old_node_mapping[name]
-
-    # get latest version if it exists
-    latest_node = None
-    for ng in bpy.data.node_groups:
-        # assumes latest version never has suffix
-        if (
-            ng.type == "GEOMETRY"
-            and ng.name == new_name
-            and ng.name in ASSET_NODE_GROUPS
-            and is_latest_version(ng)
-            and ng.library.filepath == ASSETS_FILE
-        ):
-            latest_node = ng
-            break
-
-    # Make a unique id for each current node group
-    snapshot = [
-        (ng.name, ng.library)
-        for ng in bpy.data.node_groups
-        if ng.type == "GEOMETRY" and ng.name in ALL_SP_ASSET_NODE_GROUPS_EVER
-    ]
-
-    # update all non-latest versions
-    replaced = 0
-    for n, lib in snapshot:
-        ng = bpy.data.node_groups.get(n, lib)
-        ng_name = remove_suffix(ng.name)
-        if (
-            ng.type == "GEOMETRY"
-            and ng_name == name
-            and ng != latest_node
-            and (ng_name in ASSET_NODE_GROUPS or ng_name in old_node_mapping.keys())
-        ):
-            if latest_node is None:
-                latest_node = append_node_group(new_name)
-            replace_node_group(ng, latest_node)
-            bpy.data.node_groups.remove(ng)
-            replaced += 1
-
-    for ob in bpy.data.objects:
-        for mod in ob.modifiers:
-            if mod.type == "NODES" and mod.node_group == latest_node:
-                mod.node_group.interface_update(bpy.context)
-
-    return replaced
-
-
-def update_all_node_groups():
-    # get latest version nodes if they exist
-    latest_nodes = {}
-    for ng in bpy.data.node_groups:
-        # assumes latest version never has suffix
-        if (
-            ng.type == "GEOMETRY"
-            and ng.name in ASSET_NODE_GROUPS
-            and is_latest_version(ng)
-            and ng.library.filepath == ASSETS_FILE
-        ):
-            latest_nodes[ng.name] = ng
-
-    # Make a unique id for each current node group
-    snapshot = [
-        (ng.name, ng.library)
-        for ng in bpy.data.node_groups
-        if ng.type == "GEOMETRY" and ng.name in ALL_SP_ASSET_NODE_GROUPS_EVER
-    ]
-
-    # update all non-latest versions
-    replaced = 0
-    for n, lib in snapshot:
-        ng = bpy.data.node_groups.get(n, lib)
-        name = remove_suffix(ng.name)
-
-        if name in ASSET_NODE_GROUPS and ng not in latest_nodes.values():
-            if name not in latest_nodes.keys():
-                latest_nodes[name] = append_node_group(name)
-            replace_node_group(ng, latest_nodes[name])
-            bpy.data.node_groups.remove(ng)
-            replaced += 1
-        elif name in old_node_mapping.keys():
-            new_name = old_node_mapping[name]
-            if new_name not in latest_nodes.keys():
-                latest_nodes[new_name] = append_node_group(new_name)
-            replace_node_group(ng, latest_nodes[new_name])
-            bpy.data.node_groups.remove(ng)
-            replaced += 1
-
-    for ob in bpy.data.objects:
-        for mod in ob.modifiers:
-            if mod.type == "NODES" and mod.node_group in latest_nodes.values():
-                mod.node_group.interface_update(bpy.context)
-
-    return replaced

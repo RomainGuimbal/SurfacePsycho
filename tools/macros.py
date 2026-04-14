@@ -22,15 +22,15 @@ from ..common.asset_append import (
     append_object_by_name,
     append_multiple_node_groups,
     add_sp_modifier_from_node_group,
+    update_all_node_groups,
+    update_node_group,
 )
 from ..common.compound_utils import convert_compound_to_patches
 from ..common.versioning import (
     replace_all_instances_of_node_group_by_name,
     report_outdated_node_groups,
-    update_all_node_groups,
-    update_node_group,
-    ALL_SP_ASSET_NODE_GROUPS_EVER,
     remove_suffix,
+    ALL_SP_ASSET_NODE_GROUPS_EVER,
 )
 from bpy.types import UILayout
 from .overlay_segment_selection import SELECTED_SEGMENTS
@@ -167,9 +167,10 @@ class SP_OT_update_modifiers(bpy.types.Operator):
             print(p.name)
 
         new_ng = append_multiple_node_groups(names)
-
+        
+        # TODO
         self.report({"INFO"}, "Not Implemented")
-
+        
         return {"FINISHED"}
 
 
@@ -1119,7 +1120,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         context.collection.objects.link(blend_surf)
 
         blend_ng, meshing_ng = append_multiple_node_groups(
-            {"SP - Blend Surfaces", "SP - Bezier Patch Meshing"}, True
+            ["SP - Blend Surfaces", "SP - Bezier Patch Meshing"], True
         )
 
         # Add blend modifier
