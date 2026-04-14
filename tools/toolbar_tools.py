@@ -10,7 +10,7 @@ TOOL_KEYMAP = (
         {"type": "LEFTMOUSE", "value": "PRESS", "shift": True},
         None,
     ),
-    ("object.sp_blend_surfaces", {"type": "B", "value": "PRESS"}, None),
+    ("object.sp_blend_surfaces", {"type": "F", "value": "PRESS"}, None),
     ("object.sp_toggle_control_geom", {"type": "V", "value": "PRESS"}, None),
 )
 

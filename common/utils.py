@@ -192,26 +192,6 @@ def change_GN_modifier_settings(modifier, settings_dict):
                 break
 
 
-def add_vertex_group(object: bpy.types.Object, name, values):
-    if name not in object.vertex_groups:
-        object.vertex_groups.new(name=name)
-    vg = object.vertex_groups[name]
-
-    if len(object.data.vertices) < len(values):
-        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
-        return False
-
-    for i, v in enumerate(values):
-        if v > 1.0:
-            v = 1
-            print("Warning : vertex group value clamped to 1")
-        object.data.vertices
-        if v != 0.0:
-            vg.add([i], v, "ADD")
-
-    return True
-
-
 def add_float_attribute(object: bpy.types.Object, name, values, fallback_value=0.0):
     if name not in object.data.attributes:
         object.data.attributes.new(name=name, type="FLOAT", domain="POINT")
@@ -372,26 +352,6 @@ def toggle_pseudo_bool_attribute(o, att_name):
 
     # Set new
     att.data.foreach_set("value", values)
-    return True
-
-
-def toggle_pseudo_bool_vertex_group(o, vg_name):
-    bpy.ops.object.mode_set(mode="OBJECT")
-    vg = o.vertex_groups[vg_name]
-
-    # Toggle selected vertices of the vertex group
-    for v in o.data.vertices:
-        if v.select:
-            try:
-                # keep old behaviour because timesaver
-                if vg.weight(v.index) > 0.6:
-                    vg.remove([v.index])
-                else:
-                    vg.add([v.index], 1.0, "REPLACE")
-            except RuntimeError:
-                vg.add([v.index], 1.0, "REPLACE")
-
-    bpy.ops.object.mode_set(mode="EDIT")
     return True
 
 
@@ -770,26 +730,10 @@ def select_by_attriute(att_name, objects):
         # Attribute
         if att_name in o.data.attributes:
             att_type = o.data.attributes[att_name].data_type
-            if att_type == "FLOAT":
-                weights = read_attribute_by_name(o, att_name)
-                for v in o.data.vertices:
-                    weight = weights[v.index]
-                    v.select = weight > 0.6
-            elif att_type == "BOOLEAN":
+            if att_type == "BOOLEAN":
                 weights = read_attribute_by_name(o, att_name)
                 for v in o.data.vertices:
                     v.select = weights[v.index]
-
-        # Vertex group
-        elif att_name in o.vertex_groups:
-            vertex_group = o.vertex_groups[att_name]
-            for v in o.data.vertices:
-                try:
-                    weight = vertex_group.weight(v.index)
-                    v.select = weight > 0.6
-                except RuntimeError:
-                    # Vertex is not in the group, skip it
-                    pass
 
 
 def override_attribute_dictionary(dict1, dict2):

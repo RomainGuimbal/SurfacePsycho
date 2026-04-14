@@ -9,7 +9,6 @@ from ..common.utils import (
     read_attribute_by_name,
     toggle_bool_attribute,
     toggle_pseudo_bool_attribute,
-    toggle_pseudo_bool_vertex_group,
     select_by_attriute,
     set_segment_type,
     add_bool_attribute,
@@ -430,10 +429,6 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
                         )
                         o.data.update()
                         toggle_bool_attribute(o, att_name)
-
-            # Vertex group (LEGACY)
-            elif att_name in o.vertex_groups:
-                toggle_pseudo_bool_vertex_group(o, att_name)
             else:
                 o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                 o.data.update()
@@ -493,52 +488,6 @@ class SP_OT_set_segment_type(bpy.types.Operator):
                 type_index = 5
 
         set_segment_type(context, type_index)
-        return {"FINISHED"}
-
-
-class SP_OT_assign_as_ellipse(bpy.types.Operator):
-    bl_idname = "object.sp_assign_as_ellipse"
-    bl_label = "SP - Assign as Ellipse"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        objs = context.objects_in_mode
-
-        for o in objs:
-            # Switch to object mode to modify vertex groups
-            bpy.ops.object.mode_set(mode="OBJECT")
-            # Ensure "Ellipses" vertex group exists
-            if "Ellipse" not in o.vertex_groups:
-                o.vertex_groups.new(name="Ellipse")
-
-            vg = o.vertex_groups["Ellipse"]
-
-            # Add selected vertices to the vertex group
-            for v in o.data.vertices:
-                if v.select:
-                    vg.add([v.index], 1.0, "REPLACE")
-            bpy.ops.object.mode_set(mode="EDIT")
-        return {"FINISHED"}
-
-
-class SP_OT_remove_from_ellipses(bpy.types.Operator):
-    bl_idname = "object.sp_remove_from_ellipses"
-    bl_label = "SP - Remove from Ellipses"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        objs = context.objects_in_mode
-        for o in objs:
-            bpy.ops.object.mode_set(mode="OBJECT")
-            # Ensure "Endpoints" vertex group exists
-            if "Ellipse" in o.vertex_groups:
-                vg = o.vertex_groups["Ellipse"]
-
-                # Remove selected vertices to the vertex group
-                for v in o.data.vertices:
-                    if v.select:
-                        vg.remove([v.index])
-            bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}
 
 
@@ -641,10 +590,6 @@ class SP_OT_toggle_trim_contour_belonging(bpy.types.Operator):
                             name=att_name, type="BOOLEAN", domain="POINT"
                         )
                         o.data.update()
-
-            # Vertex group (LEGACY)
-            elif att_name in o.vertex_groups:
-                toggle_pseudo_bool_vertex_group(o, att_name)
             else:
                 o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                 o.data.update()
@@ -1455,13 +1400,11 @@ classes = [
     SP_OT_add_matcaps,
     SP_OT_add_oriented_empty,
     SP_OT_add_trim_contour,
-    SP_OT_assign_as_ellipse,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_blend_surfaces,
     SP_OT_explode_compound,
     SP_OT_flip_normals,
     SP_OT_psychopatch_to_bl_nurbs,
-    SP_OT_remove_from_ellipses,
     SP_OT_remove_matcaps,
     SP_OT_replace_node_group,
     SP_OT_report_outdated_nodes,
