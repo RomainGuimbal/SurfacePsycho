@@ -5,7 +5,7 @@ from mathutils import Vector, Matrix, Quaternion
 import math
 from typing import List, Tuple
 
-from .enums import SP_obj_type, MESHER_NAMES, geom_to_sp_type
+from .enums import SP_obj_type, MESHER_NAMES, GEOM_TO_SP_TYPE
 
 from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
@@ -52,10 +52,11 @@ from OCP.StepGeom import (
 import OCP.TopAbs as TopAbs
 import OCP.GeomAbs as GeomAbs
 
+
 def get_face_sp_type(TopoDSface: TopoDS_Face):
     adapt_surf = BRepAdaptor_Surface(TopoDSface)
     surface_type = adapt_surf.GetType()
-    return geom_to_sp_type.get(surface_type, f"Unknown type: {surface_type}")
+    return GEOM_TO_SP_TYPE.get(surface_type, f"Unknown type: {surface_type}")
 
 
 def sp_type_of_object(o: bpy.types.Object) -> SP_obj_type:
@@ -185,7 +186,9 @@ def change_GN_modifier_settings(modifier, settings_dict):
     tree = modifier.node_group.interface.items_tree
     remaining = set(settings_dict.keys())
     for item in tree:
-        if item.name in remaining and isinstance(item, bpy.types.NodeTreeInterfaceSocket):
+        if item.name in remaining and isinstance(
+            item, bpy.types.NodeTreeInterfaceSocket
+        ):
             modifier[item.identifier] = settings_dict[item.name]
             remaining.discard(item.name)
             if not remaining:
@@ -232,7 +235,9 @@ def add_int_attribute(object: bpy.types.Object, name, values, fallback_value=0):
     return True
 
 
-def add_bool_attribute(object: bpy.types.Object, name, values: np.ndarray, fallback_value=False):
+def add_bool_attribute(
+    object: bpy.types.Object, name, values: np.ndarray, fallback_value=False
+):
     if name not in object.data.attributes:
         object.data.attributes.new(name=name, type="BOOLEAN", domain="POINT")
         object.data.update()
@@ -243,7 +248,9 @@ def add_bool_attribute(object: bpy.types.Object, name, values: np.ndarray, fallb
     if length_diff == 0:
         att.data.foreach_set("value", values)
     elif length_diff > 0:
-        values = np.concatenate([values, np.full(length_diff, fallback_value, dtype=bool)])
+        values = np.concatenate(
+            [values, np.full(length_diff, fallback_value, dtype=bool)]
+        )
         att.data.foreach_set("value", values)
     elif length_diff < 0:
         print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
@@ -317,6 +324,7 @@ def toggle_bool_attribute(o, att_name):
     # Set new
     att.data.foreach_set("value", values)
     return True
+
 
 def tcolstd_array1_to_list(array):
     # Check if it's a handle and extract the array
@@ -452,8 +460,6 @@ def gp_pnt_to_blender_vec_list_2d(vecs: list[gp_Pnt2d]) -> list[Vector]:
 def normalize_array(array):
     mini = min(array)
     return ((np.array(array) - mini) / (max(array) - mini)).tolist()
-
-
 
 
 def join_mesh_entities(verts1, edges1, faces1, verts2, edges2, faces2):

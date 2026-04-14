@@ -2,7 +2,7 @@ import bpy
 import math
 import numpy as np
 from mathutils import Vector, Matrix
-from ..common.enums import SP_obj_type, MESHER_NAMES, EDGES_TYPES, geom_to_sp_type
+from ..common.enums import SP_obj_type, MESHER_NAMES, EDGES_TYPES, GEOM_TO_SP_TYPE
 from ..common.utils import (
     get_geom_adapt_curve_type,
     gp_pnt_to_blender_vec_list,
@@ -1286,7 +1286,7 @@ def import_face_nodegroups(shape_hierarchy):
         if ft not in face_encountered:
             face_encountered.add(ft)
             try:  # just to skip offset surfaces
-                to_import_ng_names.append(MESHER_NAMES[geom_to_sp_type[ft]])
+                to_import_ng_names.append(MESHER_NAMES[GEOM_TO_SP_TYPE[ft]])
             except KeyError:
                 pass
 

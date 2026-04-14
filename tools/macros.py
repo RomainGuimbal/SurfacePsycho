@@ -8,14 +8,12 @@ from ..common.utils import (
     sp_type_of_object,
     read_attribute_by_name,
     toggle_bool_attribute,
-    toggle_pseudo_bool_attribute,
     select_by_attriute,
     set_segment_type,
     add_bool_attribute,
     flip_node_socket_bool,
     change_node_socket_value,
     change_GN_modifier_settings,
-
 )
 from ..common.asset_append import (
     add_sp_modifier,
@@ -167,10 +165,10 @@ class SP_OT_update_modifiers(bpy.types.Operator):
             print(p.name)
 
         new_ng = append_multiple_node_groups(names)
-        
+
         # TODO
         self.report({"INFO"}, "Not Implemented")
-        
+
         return {"FINISHED"}
 
 
@@ -423,12 +421,9 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
         for o in objs:
             if att_name in o.data.attributes:
                 if not toggle_bool_attribute(o, att_name):
-                    if not toggle_pseudo_bool_attribute(o, att_name):
-                        o.data.attributes.new(
-                            name=att_name, type="BOOLEAN", domain="POINT"
-                        )
-                        o.data.update()
-                        toggle_bool_attribute(o, att_name)
+                    o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
+                    o.data.update()
+                    toggle_bool_attribute(o, att_name)
             else:
                 o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                 o.data.update()
@@ -565,10 +560,14 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
 
         # Add attributes
         add_bool_attribute(
-            obj, "Trim Contour", np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool)
+            obj,
+            "Trim Contour",
+            np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
         )
         add_bool_attribute(
-            obj, "Endpoints", np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool)
+            obj,
+            "Endpoints",
+            np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
         )
 
 
@@ -585,11 +584,8 @@ class SP_OT_toggle_trim_contour_belonging(bpy.types.Operator):
         for o in objs:
             if att_name in o.data.attributes:
                 if not toggle_bool_attribute(o, att_name):
-                    if not toggle_pseudo_bool_attribute(o, att_name):
-                        o.data.attributes.new(
-                            name=att_name, type="BOOLEAN", domain="POINT"
-                        )
-                        o.data.update()
+                    o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
+                    o.data.update()
             else:
                 o.data.attributes.new(name=att_name, type="BOOLEAN", domain="POINT")
                 o.data.update()

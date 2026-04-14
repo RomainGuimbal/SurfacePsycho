@@ -48,7 +48,7 @@ class SP_obj_type(Enum):
 #     "CP_revolution": SP_obj_type.SURFACE_OF_REVOLUTION,
 # }
 
-geom_to_sp_type = {
+GEOM_TO_SP_TYPE = {
     GeomAbs_Plane: SP_obj_type.PLANE,
     GeomAbs_Cylinder: SP_obj_type.CYLINDER,
     GeomAbs_Cone: SP_obj_type.CONE,
