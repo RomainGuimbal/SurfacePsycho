@@ -252,7 +252,7 @@ def add_int_attribute(object: bpy.types.Object, name, values, fallback_value=0):
     return True
 
 
-def add_bool_attribute(object: bpy.types.Object, name, values, fallback_value=False):
+def add_bool_attribute(object: bpy.types.Object, name, values: np.ndarray, fallback_value=False):
     if name not in object.data.attributes:
         object.data.attributes.new(name=name, type="BOOLEAN", domain="POINT")
         object.data.update()
@@ -263,7 +263,7 @@ def add_bool_attribute(object: bpy.types.Object, name, values, fallback_value=Fa
     if length_diff == 0:
         att.data.foreach_set("value", values)
     elif length_diff > 0:
-        values.extend([fallback_value] * length_diff)
+        values = np.concatenate([values, np.full(length_diff, fallback_value, dtype=bool)])
         att.data.foreach_set("value", values)
     elif length_diff < 0:
         print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")

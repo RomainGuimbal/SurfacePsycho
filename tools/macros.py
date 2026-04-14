@@ -1,5 +1,6 @@
 import math
 import bpy
+import numpy as np
 from mathutils import Vector, Matrix
 import bmesh
 from ..common.enums import SP_obj_type, MESHER_NAMES, ADDON_PREF_KEY, ASSETS_PATH
@@ -615,10 +616,10 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
 
         # Add attributes
         add_bool_attribute(
-            obj, "Trim Contour", [False] * (len(obj.data.vertices) - 4) + [True] * 4
+            obj, "Trim Contour", np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool)
         )
         add_bool_attribute(
-            obj, "Endpoints", [False] * (len(obj.data.vertices) - 4) + [True] * 4
+            obj, "Endpoints", np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool)
         )
 
 
