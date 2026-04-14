@@ -4,6 +4,7 @@ from mathutils import Vector, Matrix
 import bmesh
 from ..common.enums import SP_obj_type, MESHER_NAMES
 from ..common.utils import (
+    add_sp_modifier_from_node_group,
     sp_type_of_object,
     append_object_by_name,
     append_multiple_node_groups,
@@ -1087,9 +1088,9 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
     )
 
     def execute(self, context):
-        import cProfile
-        profiler = cProfile.Profile()
-        profiler.enable()
+        # import cProfile
+        # profiler = cProfile.Profile()
+        # profiler.enable()
 
         auto = True
         segment_1 = 0
@@ -1106,7 +1107,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
             surf1 = context.selected_objects[0]
             surf2 = context.selected_objects[1]
         else:
-            profiler.disable()
+            # profiler.disable()
             return {"CANCELLED"}
         loc = surf1.location / 2 + surf2.location / 2
 
@@ -1116,10 +1117,12 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         blend_surf.location = loc
         context.collection.objects.link(blend_surf)
 
+        blend_ng, meshing_ng = append_multiple_node_groups({"SP - Blend Surfaces", "SP - Bezier Patch Meshing"}, True)
+
         # Add blend modifier
-        add_sp_modifier(
+        add_sp_modifier_from_node_group(
             blend_surf,
-            "SP - Blend Surfaces",
+            blend_ng,
             {
                 "Target 1": surf1,
                 "Target 2": surf2,
@@ -1131,21 +1134,19 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
                 "Continuity 2": int(self.continuity2),
                 "Tension 1": self.tension1,
                 "Tension 2": self.tension2,
-            },
-            append=True,
+            }
         )
 
         # Add meshing modifier
-        add_sp_modifier(
+        add_sp_modifier_from_node_group(
             blend_surf,
-            "SP - Bezier Patch Meshing",
-            append=True,
+            meshing_ng
         )
 
-        SELECTED_SEGMENTS.clear()
+        # SELECTED_SEGMENTS.clear() can't do that otherwise last operator panel fails
 
-        profiler.disable()
-        profiler.dump_stats("profile_output.prof")
+        # profiler.disable()
+        # profiler.dump_stats("profile_output.prof")
         return {"FINISHED"}
 
     def draw(self, context):

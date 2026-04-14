@@ -594,8 +594,7 @@ def append_node_group(asset_name, link=False, remove_asset_data=True):
 
 
 def append_multiple_node_groups(ng_names: set, remove_asset_data=True):
-    # Get the current node group names
-    existing_node_groups = set(bpy.data.node_groups.keys())
+    # TODO : variant where it append only if there isn't already the current version
 
     # Append the new node groups
     with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (
@@ -613,13 +612,7 @@ def append_multiple_node_groups(ng_names: set, remove_asset_data=True):
             remove_preview_image(ng)
             ng.asset_clear()
 
-    # Find the newly added node groups
-    # new_node_groups = []
-    # new_node_groups_keys = set(bpy.data.node_groups.keys()) - existing_node_groups
-    # for k in new_node_groups_keys:
-    #     new_node_groups.append(bpy.data.node_groups[k])
-
-    # return new_node_groups
+    return data_to.node_groups
 
 
 def add_sp_modifier(
@@ -658,6 +651,39 @@ def add_sp_modifier(
 
     # Change settings
     change_GN_modifier_settings(modifier, settings_dict)
+
+    return modifier
+
+def add_sp_modifier_from_node_group(obj,
+    node_group,
+    settings_dict={},
+    pin=False,
+    render=True,
+    force_last=False,
+):
+    if force_last:
+        # Unpin modifiers
+        pinned_mods = []
+        for m in obj.modifiers:
+            if m.use_pin_to_last:
+                m.use_pin_to_last = False
+                pinned_mods.append(m)
+
+    # Create the modifier and assign the loaded node group
+    modifier = obj.modifiers.new(name=node_group.name, type="NODES")
+    modifier.node_group = node_group
+    modifier.use_pin_to_last = pin
+    modifier.show_render = render
+
+    if force_last:
+        # Re-pin modifiers
+        for m in pinned_mods:
+            m.use_pin_to_last = True
+
+    # Change settings
+    change_GN_modifier_settings(modifier, settings_dict)
+
+    return modifier
 
 
 def join_mesh_entities(verts1, edges1, faces1, verts2, edges2, faces2):
@@ -1008,16 +1034,9 @@ def dict_to_list_missing_index_filled(dict: dict, segment_count: int) -> list:
 
 
 def remove_preview_image(ng: bpy.types.GeometryNodeTree):
-    # Somhow broken D:
-
-    override = bpy.context.copy()
-    override["id"] = ng
-
-    # Call the remove preview operator with the override
-    with bpy.context.temp_override(**override):
-        if bpy.ops.ed.lib_id_remove_preview.poll():
-            bpy.ops.ed.lib_id_remove_preview()
-            return True
+    if ng.preview:
+        ng.preview.image_size = [0, 0]
+        return True
     return False
 
 
