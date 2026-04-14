@@ -318,43 +318,6 @@ def toggle_bool_attribute(o, att_name):
     att.data.foreach_set("value", values)
     return True
 
-
-def toggle_pseudo_bool_attribute(o, att_name):
-    # Must be in object mode
-    # Get attribute
-    att = o.data.attributes[att_name]
-
-    # Init values
-    data_type = att.data_type
-    if data_type not in ["FLOAT", "INT"]:
-        bpy.ops.object.mode_set(mode="EDIT")
-        return False
-
-    if data_type == "FLOAT":
-        values = [0.0] * len(o.data.vertices)
-    elif data_type == "INT":
-        values = [0] * len(o.data.vertices)
-
-    # Fill values with existing values
-    att.data.foreach_get("value", values)
-
-    # Update values
-    value = None
-    for i, v in enumerate(o.data.vertices):
-        if v.select:
-            if value == None:
-                if data_type == "FLOAT":
-                    value = 1.0 if values[i] <= 0.6 else 0.0
-                elif data_type == "INT":
-                    value = 1 if values[i] <= 0.6 else 0
-
-            values[i] = value
-
-    # Set new
-    att.data.foreach_set("value", values)
-    return True
-
-
 def tcolstd_array1_to_list(array):
     # Check if it's a handle and extract the array
     if isinstance(array, TColStd_HArray1OfReal) or isinstance(
