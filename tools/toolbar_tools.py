@@ -12,6 +12,7 @@ TOOL_KEYMAP = (
     ),
     ("object.sp_blend_surfaces", {"type": "F", "value": "PRESS"}, None),
     ("object.sp_toggle_control_geom", {"type": "V", "value": "PRESS"}, None),
+    ("object.sp_extract_segment", {"type": "E", "value": "PRESS"}, None),
 )
 
 _ICON_NAME = "ops.generic.surface_psycho"
