@@ -19,18 +19,19 @@ LINE_WIDTH = 4.0
 _HOVER_COLOR = (1.0, 0.7, 0.7, 1.0)
 _WHITE = (1.0, 1.0, 1.0, 1.0)
 
-# Selection: set of (obj_name, segment_id) tuples
+# Selection: set of (obj_name, segment_id, position) tuples
 SELECTED_SEGMENTS = set()
 
 # The segment id closest to the cursor on the hovered object, updated each draw
 _hovered_sid = None
+_hovered_mid = None  # median vertex of the boundary vertices of the hovered segment
 
 _addon_keymaps = []
 
 
 def get_boundary_edge_data(obj, depsgraph):
-    """Returns (edges_by_seg, midpoints) for boundary edges.
-    edges_by_seg: {segment_id: [v0, v1, v0, v1, ...]}
+    """Returns (boundary_verts_by_seg, midpoints) for boundary edges.
+    boundary_verts_by_seg: {segment_id: [pos0, pos1, pos0, pos1, ...]}  # world-space vertex positions
     midpoints: [(mid_3d, segment_id), ...]
     """
     if obj is None or obj.type != 'MESH':
@@ -68,7 +69,7 @@ def get_boundary_edge_data(obj, depsgraph):
     edge_face_count = np.bincount(loop_edge_idx, minlength=n_edges)
     boundary_mask = edge_face_count <= 1
 
-    edges_by_seg = {}
+    boundary_verts_by_seg = {}
     midpoints = []
     for i in range(n_edges):
         if not boundary_mask[i]:
@@ -76,10 +77,10 @@ def get_boundary_edge_data(obj, depsgraph):
         sid = int(seg_ids[i])
         v0 = pos_w[edge_vi[i, 0]]
         v1 = pos_w[edge_vi[i, 1]]
-        if sid not in edges_by_seg:
-            edges_by_seg[sid] = []
-        edges_by_seg[sid].append(tuple(v0))
-        edges_by_seg[sid].append(tuple(v1))
+        if sid not in boundary_verts_by_seg:
+            boundary_verts_by_seg[sid] = []
+        boundary_verts_by_seg[sid].append(tuple(v0))
+        boundary_verts_by_seg[sid].append(tuple(v1))
         mid = (
             (float(v0[0]) + float(v1[0])) * 0.5,
             (float(v0[1]) + float(v1[1])) * 0.5,
@@ -87,7 +88,7 @@ def get_boundary_edge_data(obj, depsgraph):
         )
         midpoints.append((mid, sid))
 
-    return edges_by_seg, midpoints
+    return boundary_verts_by_seg, midpoints
 
 
 class VIEW3D_OT_segment_update_mouse(bpy.types.Operator):
@@ -178,7 +179,7 @@ class VIEW3D_OT_segment_select_click(bpy.types.Operator):
                 context.area.tag_redraw()
             return {'FINISHED'}
 
-        key = (_hovered_object.name, _hovered_sid)
+        key = (_hovered_object.name, _hovered_sid, _hovered_mid)
         if event.shift:
             if key in SELECTED_SEGMENTS:
                 SELECTED_SEGMENTS.discard(key)
@@ -195,7 +196,7 @@ class VIEW3D_OT_segment_select_click(bpy.types.Operator):
 
 
 def draw_callback():
-    global shader, _hovered_object, _mouse_region_x, _mouse_region_y, _hovered_sid
+    global shader, _hovered_object, _mouse_region_x, _mouse_region_y, _hovered_sid, _hovered_mid
 
     if bpy.context.mode != 'OBJECT':
         return
@@ -230,7 +231,7 @@ def draw_callback():
     # Draw selected segments in white, grouped by object to minimise get_boundary_edge_data calls
     if SELECTED_SEGMENTS:
         sids_by_obj_name = {}
-        for obj_name, sid in SELECTED_SEGMENTS:
+        for obj_name, sid, _mid in SELECTED_SEGMENTS:
             sids_by_obj_name.setdefault(obj_name, set()).add(sid)
 
         scene_objects = {obj.name: obj for obj in bpy.context.scene.objects if obj.type == 'MESH'}
@@ -239,25 +240,26 @@ def draw_callback():
             if obj is None:
                 continue
             try:
-                edges_by_seg, _ = get_boundary_edge_data(obj, depsgraph)
+                boundary_verts_by_seg, _ = get_boundary_edge_data(obj, depsgraph)
             except ReferenceError:
                 continue
             for sid in sids:
-                if sid not in edges_by_seg:
+                if sid not in boundary_verts_by_seg:
                     continue
-                batch = batch_for_shader(shader, 'LINES', {"pos": edges_by_seg[sid]})
+                batch = batch_for_shader(shader, 'LINES', {"pos": boundary_verts_by_seg[sid]})
                 shader.uniform_float("color", _WHITE)
                 batch.draw(shader)
 
     # Hover detection: find closest segment on the hovered object only.
     _hovered_sid = None
+    _hovered_mid = None
     hovered = _hovered_object
     if hovered is not None:
         try:
-            edges_by_seg, midpoints = get_boundary_edge_data(hovered, depsgraph)
+            boundary_verts_by_seg, midpoints = get_boundary_edge_data(hovered, depsgraph)
         except ReferenceError:
             _hovered_object = None
-            edges_by_seg, midpoints = {}, []
+            boundary_verts_by_seg, midpoints = {}, []
 
         closest_sid = None
         min_dist_sq = float('inf')
@@ -273,8 +275,17 @@ def draw_callback():
                 closest_sid = sid
 
         _hovered_sid = closest_sid
-        if closest_sid is not None and closest_sid in edges_by_seg:
-            batch = batch_for_shader(shader, 'LINES', {"pos": edges_by_seg[closest_sid]})
+        if closest_sid is not None and closest_sid in boundary_verts_by_seg:
+            verts = boundary_verts_by_seg[closest_sid]
+            n = len(verts)
+            mid = n // 2
+            if n % 2 == 1:
+                _hovered_mid = verts[mid]
+            else:
+                a, b = verts[mid - 1], verts[mid]
+                _hovered_mid = ((a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5, (a[2] + b[2]) * 0.5)
+        if closest_sid is not None and closest_sid in boundary_verts_by_seg:
+            batch = batch_for_shader(shader, 'LINES', {"pos": boundary_verts_by_seg[closest_sid]})
             shader.uniform_float("color", _HOVER_COLOR)
             batch.draw(shader)
 
@@ -296,10 +307,11 @@ def register():
 
 
 def unregister():
-    global shader, _hovered_sid
+    global shader, _hovered_sid, _hovered_mid
     shader = None
     SELECTED_SEGMENTS.clear()
     _hovered_sid = None
+    _hovered_mid = None
     for km, kmi in _addon_keymaps:
         km.keymap_items.remove(kmi)
     _addon_keymaps.clear()

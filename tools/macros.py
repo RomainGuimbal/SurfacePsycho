@@ -3,7 +3,12 @@ import bpy
 import numpy as np
 from mathutils import Vector, Matrix
 import bmesh
-from ..common.enums import SP_obj_type, MESHER_NAMES, ADDON_PREF_KEY, ASSETS_PATH
+from ..common.enums import (
+    SP_obj_type,
+    MESHER_NAMES,
+    ADDON_PREF_KEY,
+    ASSETS_PATH,
+)
 from ..common.utils import (
     sp_type_of_object,
     read_attribute_by_name,
@@ -1390,6 +1395,48 @@ class SP_OT_update_all_node_groups(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_extract_segment(bpy.types.Operator):
+    bl_idname = "object.sp_extract_segment"
+    bl_label = "SP - Extract Segment"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        copy_ng, meshing_ng = append_multiple_node_groups(
+            ["SP - Copy Geometry", MESHER_NAMES[SP_obj_type.CURVE]], True
+        )
+
+        if len(SELECTED_SEGMENTS) == 0:
+            return {"CANCELLED"}
+        for segment in SELECTED_SEGMENTS:
+             # Get target info
+            target_obj = context.scene.objects[segment[0]]
+            seg_id = segment[1]
+
+            # Create the object
+            mesh = bpy.data.meshes.new("Blend Patch")
+            mesh.from_pydata([Vector((0, 0, 0))], [], [])
+            extracted_segment_object = bpy.data.objects.new("Extracted Segment", mesh)
+            extracted_segment_object.location = Vector(segment[2])
+            context.collection.objects.link(extracted_segment_object)
+            
+            add_sp_modifier_from_node_group(
+                extracted_segment_object,
+                copy_ng,
+                {
+                    "Target": target_obj,
+                    "Geometry": "Segment",
+                    "Target Segment": seg_id,
+                },
+            )
+            add_sp_modifier_from_node_group(
+                extracted_segment_object,
+                meshing_ng,
+                {"Combs": True, "Resolution": 32},
+            )
+
+        return {"FINISHED"}
+
+
 classes = [
     SP_OT_add_curvature_analysis,
     SP_OT_add_library,
@@ -1399,6 +1446,7 @@ classes = [
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_blend_surfaces,
     SP_OT_explode_compound,
+    SP_OT_extract_segment,
     SP_OT_flip_normals,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_matcaps,
