@@ -185,6 +185,22 @@ class SP_Edge_export:
         else:
             self.geom = StepToGeom.MakeBSplineCurve_s(step_curve, StepData_Factors())
         if self.geom == None:
+            import numpy as np
+            print("[SP] BSpline creation failed. Diagnostic info:")
+            print(f"  degree      = {degree}")
+            print(f"  isclamped   = {isclamped}")
+            print(f"  iscyclic    = {iscyclic}")
+            print(f"  p_count     = {self.p_count}")
+            print(f"  knot (raw)  = {self.knot}")
+            print(f"  mult (raw)  = {self.mult}")
+            # Replicate truncation logic from knot_tcol_from_att
+            _m = np.asarray(self.mult)
+            unique_knot_length = int(sum(_m > 0))
+            print(f"  unique_knot_length = {unique_knot_length}")
+            print(f"  knot (trimmed) = {list(self.knot[:unique_knot_length])}")
+            print(f"  mult (trimmed) = {list(self.mult[:unique_knot_length])}")
+            print(f"  sum(mult)   = {int(sum(_m[:unique_knot_length]))}")
+            print(f"  expected CPs (sum(mult)-degree-1 for clamped) = {int(sum(_m[:unique_knot_length])) - degree - 1}")
             raise ValueError("Failed to create BSpline geometry")
 
     def circle_arc(self):

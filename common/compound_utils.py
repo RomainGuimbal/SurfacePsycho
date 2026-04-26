@@ -52,6 +52,8 @@ def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix=""
     # Find compound meshing modifier
     mod = None
     for m in reversed(o.modifiers):
+        if not hasattr(m, 'node_group') or m.node_group is None:
+            continue
         if m.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
             mod = m
             break

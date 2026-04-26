@@ -5,4 +5,7 @@
 
 __pycache__/
 
-TODELETE.py
+surfacepsycho-0.*/
+
+.DS_Store
+**/.DS_Store

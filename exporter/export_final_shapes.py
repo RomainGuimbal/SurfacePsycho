@@ -101,6 +101,13 @@ def geom_to_topods_face(geom_surf, outer_wire=None, inner_wires=[]):
 
 # Bezier face
 def bezier_face_to_topods(ob, scale=1000):
+    if "CP_count" not in ob.data.attributes:
+        avail = list(ob.data.attributes.keys())
+        raise KeyError(
+            f"'CP_count' attribute missing on '{ob.name}'. "
+            f"Available: {avail}. "
+            "The geometry nodes modifier may not have evaluated correctly."
+        )
     u_count = int(ob.data.attributes["CP_count"].data[0].value)
     v_count = int(ob.data.attributes["CP_count"].data[1].value)
     points = read_attribute_by_name(ob, "CP_any_order_surf", u_count * v_count)
@@ -661,15 +668,18 @@ def compound_to_topods(o, context, initial_depsgraph, scale=1000, sew=True, sew_
     for o_new in new_objects:
         type = sp_type_of_object(o_new)
 
-        sh = blender_object_to_topods_shapes(
-            new_depsgraph,
-            o_new,
-            type,
-            scale=scale,
-            sew=sew,
-            sew_tolerance=sew_tolerance,
-        )
-        comp_shapes.append(sh)
+        try:
+            sh = blender_object_to_topods_shapes(
+                new_depsgraph,
+                o_new,
+                type,
+                scale=scale,
+                sew=sew,
+                sew_tolerance=sew_tolerance,
+            )
+            comp_shapes.append(sh)
+        except Exception as e:
+            print(f"[SP] Skipping compound patch '{o_new.name}' (type={type}): {e}")
 
         # Unlink
         bpy.context.collection.objects.unlink(o_new)
@@ -679,9 +689,12 @@ def compound_to_topods(o, context, initial_depsgraph, scale=1000, sew=True, sew_
 
     if sew:
         swd = sew_shapes(comp_shapes, sew_tolerance)
-        solids = shells_to_solids(swd)
-        if len(solids) > 1:
-            return shape_list_to_compound(solids)
+        if swd is not None and not swd.IsNull():
+            solids = shells_to_solids(swd)
+            if len(solids) > 1:
+                return shape_list_to_compound(solids)
+        else:
+            print("[SP] Sewing produced a null shape — falling back to unsewn compound")
     return shape_list_to_compound(comp_shapes)
 
 
@@ -939,9 +952,11 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
         if type is None:
             continue
         
-        # Check modifiers warnings
+        # Check modifiers warnings (node_warnings only exists on geometry nodes modifiers)
         has_error = False
         for m in reversed(o.modifiers):
+            if not hasattr(m, 'node_warnings'):
+                continue
             for w in m.node_warnings:
                 if w.type == 'ERROR':
                     warnings.warn(f"\"{o.name}\" skipped due to error on \"{m.name}\" modifier")
@@ -969,16 +984,19 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
                 compounds.append(shape)
                 object_shapes[o] = shape
             case _:
-                shape = blender_object_to_topods_shapes(
-                    depsgraph,
-                    o,
-                    type,
-                    scale,
-                    sew,
-                    sew_tolerance,
-                )
-                shapes.append(shape)
-                object_shapes[o] = shape
+                try:
+                    shape = blender_object_to_topods_shapes(
+                        depsgraph,
+                        o,
+                        type,
+                        scale,
+                        sew,
+                        sew_tolerance,
+                    )
+                    shapes.append(shape)
+                    object_shapes[o] = shape
+                except Exception as e:
+                    print(f"[SP] Skipping '{o.name}' (type={type}): {e}")
 
     # Sew isolated shapes
     if len(shapes) > 0:

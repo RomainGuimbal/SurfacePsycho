@@ -624,6 +624,11 @@ def shape_list_to_compound(shape_list: list[TopoDS_Shape]) -> TopoDS_Compound:
 def shells_to_solids(topods_shape: TopoDS_Shape):
     separated_shapes_list = []
 
+    # Guard against null shape (e.g. from a failed sewing operation)
+    if topods_shape is None or topods_shape.IsNull():
+        print("[SP] shells_to_solids: received null/empty shape, skipping")
+        return separated_shapes_list
+
     # if compound, decompose
     if topods_shape.ShapeType() == TopAbs.TopAbs_COMPOUND:
 
@@ -737,26 +742,14 @@ def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
 
 
 def split_by_index(index: list[int], attribute: list) -> list[list]:
-    # KNOWN TO FAIL ON SEVERAL CASES
-    # treat 0 case
-    last_zero = 0
-    try:
-        last_zero = index.index(1)
-    except ValueError:
-        # All zeros
-        pass
-
-    split_attr = []
-    start = 0
-    end = 0
-    for i in list(dict.fromkeys(index)):
-        if i == 0 and last_zero != 0:
-            end = last_zero
-        else:
-            end += index.count(i)
-        split_attr.append(attribute[start:end])
-        start = end
-    return split_attr
+    # Group attribute values by their segment index, returning groups in index order.
+    # Handles 0-based or 1-based indexing and non-contiguous segments.
+    groups = {}
+    for idx, val in zip(index, attribute):
+        if idx not in groups:
+            groups[idx] = []
+        groups[idx].append(val)
+    return [groups[k] for k in sorted(groups.keys())]
 
 
 def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
@@ -880,8 +873,17 @@ def is_natural_bounds(verts, edges):
 
 def knot_tcol_from_att(knots, mults, degree, isclamped, iscyclic):
     unique_knot_length = int(sum(np.asarray(mults) > 0))  # uncompatible with mirror
-    k = knots[:unique_knot_length]
-    m = mults[:unique_knot_length]
+    k = list(knots[:unique_knot_length])
+    m = list(mults[:unique_knot_length])
+
+    # Knot vectors must be non-decreasing. If we see a decrease it means two
+    # segments' knot arrays were concatenated (knot_segment attribute assigns all
+    # knots to the same index). Truncate at the first violation.
+    for i in range(1, len(k)):
+        if k[i] < k[i - 1]:
+            k = k[:i]
+            m = m[:i]
+            break
     if iscyclic and not isclamped:
         dk = np.array([k[i + 1] - k[0] for i in range(int(degree))])
         k_end = dk + k[-1]

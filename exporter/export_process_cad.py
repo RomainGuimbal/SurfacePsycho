@@ -1,3 +1,5 @@
+import faulthandler
+import sys
 from os.path import isfile
 from OCP.IFSelect import IFSelect_RetDone
 from OCP.IGESControl import IGESControl_Writer
@@ -15,11 +17,17 @@ def export_step(
     sew,
     sew_tolerance,
 ):
+    # Enable faulthandler so we get a Python stack trace even on a hard crash (SIGSEGV)
+    faulthandler.enable(file=sys.stderr, all_threads=True)
+    print("[SP] faulthandler enabled — stack trace will appear in terminal on crash")
+
     brep_shapes = gather_export_shapes(context, use_selection, scale, sew, sew_tolerance)
     if brep_shapes is not None:
         write_step_file(brep_shapes, filepath, application_protocol="AP203")
+        faulthandler.disable()
         return True
     else:
+        faulthandler.disable()
         return False
 
 
