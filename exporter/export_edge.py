@@ -129,8 +129,8 @@ class SP_Edge_export:
             self.geom = Geom_BezierCurve(segment_point_array)
 
     def bspline(self):
-        isclamped = self.seg_aligned_attrs["isclamped"][0] if not None else True
-        iscyclic = self.seg_aligned_attrs["isperiodic"][0] if not None else False
+        isclamped = bool(self.seg_aligned_attrs["isclamped"]) if self.seg_aligned_attrs["isclamped"] is not None else True
+        iscyclic = bool(self.seg_aligned_attrs["isperiodic"]) if self.seg_aligned_attrs["isperiodic"] is not None else False
         degree = self.seg_aligned_attrs["degree"]
 
         if iscyclic:
@@ -155,12 +155,12 @@ class SP_Edge_export:
         tcol_weights = float_list_to_tcolstd_H(self.weight)
 
         # Knot and Multiplicity
-        if self.knot is not None:
+        if self.knot is not None and len(self.knot) > 0:
             tcol_knot, tcol_mult = knot_tcol_from_att(
                 self.knot, self.mult, degree, isclamped, iscyclic
             )
         else:
-            raise ValueError("Missing knot on NURBS segment")
+            raise ValueError("Missing or empty knot on NURBS segment — check that knot_segment attribute is assigned correctly")
 
         # Create the STEP B-spline curve
         name = TCollection_HAsciiString("bspline_segment")

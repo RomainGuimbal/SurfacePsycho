@@ -75,8 +75,8 @@ class SP_Wire_export:
                 {"CP": vec_cp_per_seg[i], "weight": weight[i]},
                 {
                     "degree": edges_degrees[i],
-                    "isclamped": self.isclamped_per_seg,
-                    "isperiodic": self.isperiodic_per_seg,
+                    "isclamped": self.isclamped_per_seg[i] if i < len(self.isclamped_per_seg) else True,
+                    "isperiodic": self.isperiodic_per_seg[i] if i < len(self.isperiodic_per_seg) else False,
                     "type": self.segs_type_seg_aligned[i],
                     "knot": self.knot[i] if len(self.knot) > i else None,
                     "mult": self.mult[i] if len(self.mult) > i else None,

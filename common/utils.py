@@ -760,34 +760,27 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
 
 
 def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
-    # KNOWN TO FAIL ON SEVERAL CASES
-    # treat 0 case
-    last_zero = 0
-    try:
-        last_zero = index.index(1)
-    except ValueError:
-        # All zeros
-        pass
-
+    # Group attribute values by their segment index.
+    # Handles 0-based or 1-based indexing and non-contiguous segments.
     split_attr = {}
-    start = 0
-    end = 0
-    for i in list(dict.fromkeys(index)):
-        if i == 0 and last_zero != 0:
-            end = last_zero
-        else:
-            end += index.count(i)
-        split_attr[i] = attribute[start:end]
-        start = end
+    for idx, val in zip(index, attribute):
+        if idx not in split_attr:
+            split_attr[idx] = []
+        split_attr[idx].append(val)
     return split_attr
 
 
 def dict_to_list_missing_index_filled(dict: dict, segment_count: int) -> list:
-    # Make a list of list from a dictionary of lists, filling indices not in the dict with empty lists (hack befor lists)
+    # Make a list of list from a dictionary of lists, filling indices not in the dict with empty lists.
+    # Normalizes from the dict's minimum key so 1-based indices work correctly.
+    if not dict:
+        return [[] for _ in range(segment_count)]
+    min_key = min(dict.keys())
     list_attr = []
     for i in range(segment_count):
-        if i in dict:
-            list_attr.append(dict[i])
+        key = min_key + i
+        if key in dict:
+            list_attr.append(dict[key])
         else:
             list_attr.append([])
     return list_attr
