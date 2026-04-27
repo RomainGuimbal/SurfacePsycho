@@ -2,18 +2,7 @@ import os
 import bpy
 from . import overlay_endpoints
 from . import overlay_segment_selection
-
-TOOL_KEYMAP = (
-    ("view3d.segment_select_click", {"type": "LEFTMOUSE", "value": "PRESS"}, None),
-    (
-        "view3d.segment_select_click",
-        {"type": "LEFTMOUSE", "value": "PRESS", "shift": True},
-        None,
-    ),
-    ("object.sp_blend_surfaces", {"type": "F", "value": "PRESS"}, None),
-    ("object.sp_toggle_control_geom", {"type": "V", "value": "PRESS"}, None),
-    ("object.sp_extract_segment", {"type": "E", "value": "PRESS"}, None),
-)
+from .keymap import TOOL_KEYMAP
 
 _ICON_NAME = "ops.generic.surface_psycho"
 _custom_icon_value = None

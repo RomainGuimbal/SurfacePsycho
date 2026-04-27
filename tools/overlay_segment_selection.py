@@ -16,7 +16,7 @@ _mouse_region_y = 0
 _hovered_object = None  # object under cursor, updated by the MOUSEMOVE operator via view3d.select
 
 LINE_WIDTH = 4.0
-_HOVER_COLOR = (0.5, 0.5, 1.0, 1.0)
+_HOVER_COLOR = (0.5, 0.5, 1.0, 0.6)
 _WHITE = (1.0, 1.0, 1.0, 1.0)
 
 # Selection: set of (obj_name, segment_id, position) tuples
@@ -228,28 +228,6 @@ def draw_callback():
     shader.uniform_float("viewportSize", viewport_size)
     shader.uniform_float("lineWidth", LINE_WIDTH)
 
-    # Draw selected segments in white, grouped by object to minimise get_boundary_edge_data calls
-    if SELECTED_SEGMENTS:
-        sids_by_obj_name = {}
-        for obj_name, sid, _mid in SELECTED_SEGMENTS:
-            sids_by_obj_name.setdefault(obj_name, set()).add(sid)
-
-        scene_objects = {obj.name: obj for obj in bpy.context.scene.objects if obj.type == 'MESH'}
-        for obj_name, sids in sids_by_obj_name.items():
-            obj = scene_objects.get(obj_name)
-            if obj is None:
-                continue
-            try:
-                boundary_verts_by_seg, _ = get_boundary_edge_data(obj, depsgraph)
-            except ReferenceError:
-                continue
-            for sid in sids:
-                if sid not in boundary_verts_by_seg:
-                    continue
-                batch = batch_for_shader(shader, 'LINES', {"pos": boundary_verts_by_seg[sid]})
-                shader.uniform_float("color", _WHITE)
-                batch.draw(shader)
-
     # Hover detection: find closest segment on the hovered object only.
     _hovered_sid = None
     _hovered_mid = None
@@ -288,6 +266,28 @@ def draw_callback():
             batch = batch_for_shader(shader, 'LINES', {"pos": boundary_verts_by_seg[closest_sid]})
             shader.uniform_float("color", _HOVER_COLOR)
             batch.draw(shader)
+
+    # Draw selected segments in white on top, grouped by object to minimise get_boundary_edge_data calls
+    if SELECTED_SEGMENTS:
+        sids_by_obj_name = {}
+        for obj_name, sid, _mid in SELECTED_SEGMENTS:
+            sids_by_obj_name.setdefault(obj_name, set()).add(sid)
+
+        scene_objects = {obj.name: obj for obj in bpy.context.scene.objects if obj.type == 'MESH'}
+        for obj_name, sids in sids_by_obj_name.items():
+            obj = scene_objects.get(obj_name)
+            if obj is None:
+                continue
+            try:
+                boundary_verts_by_seg, _ = get_boundary_edge_data(obj, depsgraph)
+            except ReferenceError:
+                continue
+            for sid in sids:
+                if sid not in boundary_verts_by_seg:
+                    continue
+                batch = batch_for_shader(shader, 'LINES', {"pos": boundary_verts_by_seg[sid]})
+                shader.uniform_float("color", _WHITE)
+                batch.draw(shader)
 
     gpu.state.blend_set('NONE')
     gpu.state.depth_test_set('LESS_EQUAL')

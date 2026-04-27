@@ -314,25 +314,6 @@ def menu_func_import(self, context):
 #     self.layout.menu("SP_MT_SegmentEdit")
 
 
-addon_keymaps = []
-
-
-def hotkeys_add(addon_keymaps):
-    wm = bpy.context.window_manager
-    kc = wm.keyconfigs.addon
-    if kc:
-        km = kc.keymaps.new(name="3D View", space_type="VIEW_3D")
-        kmi = km.keymap_items.new("wm.call_menu_pie", "F", "PRESS", shift=True)
-        kmi.properties.name = "SP_MT_PIE_SegmentEdit"
-        addon_keymaps.append((km, kmi))
-
-
-def hotkeys_remove(addon_keymaps):
-    for km, kmi in addon_keymaps:
-        km.keymap_items.remove(kmi)
-    addon_keymaps.clear()
-
-
 classes = [
     SP_PT_MainPanel,
     SP_PT_ViewPanel,
@@ -364,16 +345,12 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_export_svg)
     # bpy.types.TOPBAR_MT_editor_menus.append(menu_segment_edit)
 
-    hotkeys_add(addon_keymaps)
-
 
 def unregister():
     from ..importer import import_operator
     from ..exporter import export_operator
     from ..tools import add_objects
     from ..tools import toolbar_tools
-
-    hotkeys_remove(addon_keymaps)
 
     # bpy.types.TOPBAR_MT_editor_menus.remove(menu_segment_edit)
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_svg)

@@ -1434,6 +1434,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
                 {"Combs": True, "Resolution": 32},
             )
 
+        SELECTED_SEGMENTS.clear()
         return {"FINISHED"}
 
 
