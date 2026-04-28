@@ -208,6 +208,7 @@ class SP_PT_EditPanel(bpy.types.Panel):
 
 
 class SP_MT_PIE_SegmentEdit(bpy.types.Menu):
+    bl_idname = "SP_MT_PIE_SegmentEdit"
     bl_label = "SP Segment Type"
 
     def draw(self, context):
@@ -329,13 +330,9 @@ def register():
     from ..tools import add_objects
     from ..tools import toolbar_tools
 
-    add_objects.register()
-    import_operator.register()
-    export_operator.register()
-    toolbar_tools.register()
-
     for c in classes:
         bpy.utils.register_class(c)
+
     bpy.types.VIEW3D_MT_surface_add.append(menu_surface)
     bpy.types.VIEW3D_MT_curve_add.append(menu_curve)
     bpy.types.VIEW3D_MT_object_convert.append(menu_convert)
@@ -345,12 +342,22 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_export_svg)
     # bpy.types.VIEW3D_MT_editor_menus.append(menu_segment_edit)
 
+    add_objects.register()
+    import_operator.register()
+    export_operator.register()
+    toolbar_tools.register()
+
 
 def unregister():
     from ..importer import import_operator
     from ..exporter import export_operator
     from ..tools import add_objects
     from ..tools import toolbar_tools
+
+    toolbar_tools.unregister()
+    export_operator.unregister()
+    import_operator.unregister()
+    add_objects.unregister()
 
     # bpy.types.VIEW3D_MT_editor_menus.remove(menu_segment_edit)
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_svg)
@@ -364,7 +371,4 @@ def unregister():
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)
 
-    toolbar_tools.unregister()
-    export_operator.unregister()
-    import_operator.unregister()
-    add_objects.unregister()
+    
