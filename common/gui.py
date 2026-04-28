@@ -309,7 +309,7 @@ def menu_func_import(self, context):
     )
 
 
-# # topbar menu (fails)
+# # view 3d topbar menu (fails)
 # def menu_segment_edit(self):
 #     self.layout.menu("SP_MT_SegmentEdit")
 
@@ -343,7 +343,7 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_export_iges)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.append(menu_export_svg)
-    # bpy.types.TOPBAR_MT_editor_menus.append(menu_segment_edit)
+    # bpy.types.VIEW3D_MT_editor_menus.append(menu_segment_edit)
 
 
 def unregister():
@@ -352,7 +352,7 @@ def unregister():
     from ..tools import add_objects
     from ..tools import toolbar_tools
 
-    # bpy.types.TOPBAR_MT_editor_menus.remove(menu_segment_edit)
+    # bpy.types.VIEW3D_MT_editor_menus.remove(menu_segment_edit)
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_svg)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.remove(menu_export_iges)

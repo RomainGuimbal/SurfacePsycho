@@ -702,7 +702,7 @@ def select_by_attriute(att_name, objects):
             if att_type == "BOOLEAN":
                 weights = read_attribute_by_name(o, att_name)
                 for v in o.data.vertices:
-                    v.select = weights[v.index]
+                    v.select = bool(weights[v.index])
 
 
 def override_attribute_dictionary(dict1, dict2):
