@@ -2,7 +2,7 @@ import bpy
 import math
 import numpy as np
 from mathutils import Vector, Matrix
-from ..common.enums import SP_obj_type, MESHER_NAMES, EDGES_TYPES, GEOM_TO_SP_TYPE
+from ..common.enums import SP_obj_type, MesherName, EDGES_TYPES, GEOM_TO_SP_TYPE
 from ..common.utils import (
     get_geom_adapt_curve_type,
     gp_pnt_to_blender_vec_list,
@@ -556,7 +556,7 @@ def build_SP_cylinder(
     CP_edges = [(0, 1)]
 
     modifier = (
-        MESHER_NAMES[SP_obj_type.CYLINDER],
+        MesherName.CYLINDER,
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
@@ -615,7 +615,7 @@ def build_SP_torus(
     CP_edges = [(0, 1), (1, 2)]
 
     modifier = (
-        MESHER_NAMES[SP_obj_type.TORUS],
+        MesherName.TORUS,
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
@@ -673,7 +673,7 @@ def build_SP_sphere(
     CP_edges = [(0, 1)]
 
     modifier = (
-        MESHER_NAMES[SP_obj_type.SPHERE],
+        MesherName.SPHERE,
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
@@ -736,7 +736,7 @@ def build_SP_cone(
     CP_edges = [(0, 1), (1, 2), (2, 3)]
 
     modifier = (
-        MESHER_NAMES[SP_obj_type.CONE],
+        MesherName.CONE,
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
@@ -785,7 +785,7 @@ def build_SP_bezier_patch(
     CPvert, _, CPfaces = create_grid(vector_pts)
 
     modifier = (
-        MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
+        MesherName.BEZIER_SURFACE,
         {
             "Trim Contour": trims_enabled,
             "Resolution U": resolution,
@@ -888,7 +888,7 @@ def build_SP_NURBS_patch(
 
     # Meshing
     modifier = (
-        MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE],
+        MesherName.BSPLINE_SURFACE,
         {
             "Resolution U": resolution,
             "Resolution V": resolution,
@@ -961,7 +961,7 @@ def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
     if len(color) == 3:
         color = list(color) + [1.0]
 
-    modifier = (MESHER_NAMES[SP_obj_type.CURVE], {"Resolution": resolution}, True)
+    modifier = (MesherName.CURVE, {"Resolution": resolution}, True)
 
     attrs = {
         "Weight": weight_att,
@@ -1009,7 +1009,7 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
         color = list(color) + [1.0]
 
     modifier = (
-        MESHER_NAMES[SP_obj_type.PLANE],
+        MesherName.PLANE,
         {
             "Orient": True,
             # "Flip Normal": topods_face.Orientation() == TopAbs_REVERSED, # to investigate further
@@ -1058,7 +1058,7 @@ def build_SP_extrusion(
     CPedges = [(i, i + 1) for i in range(len(CPvert) - 1)]
 
     modifier = (
-        MESHER_NAMES[SP_obj_type.SURFACE_OF_EXTRUSION],
+        MesherName.SURFACE_OF_EXTRUSION,
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
@@ -1129,7 +1129,7 @@ def build_SP_revolution(
     CPedges = [(0, 1)] + [(i, i + 1) for i in range(2, len(CPvert) - 1)]
 
     modifier = (
-        MESHER_NAMES[SP_obj_type.SURFACE_OF_REVOLUTION],
+        MesherName.SURFACE_OF_REVOLUTION,
         {
             "Trim Contour": trims_enabled,
             "Flip Normals": topods_face.Orientation() == TopAbs_REVERSED,
@@ -1286,13 +1286,13 @@ def import_face_nodegroups(shape_hierarchy):
         if ft not in face_encountered:
             face_encountered.add(ft)
             try:  # just to skip offset surfaces
-                to_import_ng_names.append(MESHER_NAMES[GEOM_TO_SP_TYPE[ft]])
+                to_import_ng_names.append(MesherName.GEOM_TO_SP_TYPE[ft])
             except KeyError:
                 pass
 
     # Bezier imported directly because it is not detected
-    if MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE] in to_import_ng_names:
-        to_import_ng_names.append(MESHER_NAMES[SP_obj_type.BEZIER_SURFACE])
+    if MesherName.BSPLINE_SURFACE in to_import_ng_names:
+        to_import_ng_names.append(MesherName.BEZIER_SURFACE)
 
     append_multiple_node_groups(to_import_ng_names)
 

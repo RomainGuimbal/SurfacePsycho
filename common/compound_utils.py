@@ -1,7 +1,7 @@
 import bpy
 import numpy as np
-from .enums import SP_obj_type, MESHER_NAMES
-from .asset_append import add_sp_modifier
+from .enums import SP_obj_type, MesherName
+from .modifier_utils import add_sp_modifier
 
 def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     """
@@ -92,7 +92,7 @@ def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix=""
 
         add_sp_modifier(
             obj,
-            MESHER_NAMES[SP_obj_type(types[i])],
+            MesherName.types[i],
             settings_dict,
             pin=True,
             append=False,

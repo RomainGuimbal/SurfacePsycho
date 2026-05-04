@@ -17,23 +17,26 @@ from ..common.utils import (
     set_segment_type,
     add_bool_attribute,
     flip_node_socket_bool,
+)
+from ..common.modifier_utils import (
+    add_sp_modifier,
     change_node_socket_value,
     change_GN_modifier_settings,
+    add_sp_modifier_from_node_group,
 )
 from ..common.asset_append import (
-    add_sp_modifier,
     append_object_by_name,
     append_multiple_node_groups,
-    add_sp_modifier_from_node_group,
-    update_all_node_groups,
-    update_node_group,
 )
 from ..common.compound_utils import convert_compound_to_patches
 from ..common.versioning import (
     replace_all_instances_of_node_group_by_name,
     report_outdated_node_groups,
     remove_suffix,
+    update_all_node_groups,
+    update_node_group,
     ALL_SP_ASSET_NODE_GROUPS_EVER,
+    update_object,
 )
 from bpy.types import UILayout
 from .overlay_segment_selection import SELECTED_SEGMENTS
@@ -1326,73 +1329,6 @@ class SP_OT_remove_matcaps(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_report_outdated_nodes(bpy.types.Operator):
-    bl_idname = "object.sp_report_outdated_nodes"
-    bl_label = "SP - Report Outdated Nodes"
-    bl_description = "Report outdated nodes in the console"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        report_outdated_node_groups()
-        return {"FINISHED"}
-
-
-class SP_OT_update_node_group(bpy.types.Operator):
-    bl_idname = "object.sp_update_node_group"
-    bl_label = "SP - Update Node Group"
-    bl_description = (
-        "Make sure specified node group is the same as in current addon version"
-    )
-    bl_options = {"REGISTER", "UNDO"}
-
-    name: bpy.props.StringProperty(name="Node Group", description="", default="")
-
-    def invoke(self, context, event):
-        # Populate the filtered node groups before opening the dialog
-        self.nodegroup_items.clear()
-        for ng in bpy.data.node_groups:
-            if (
-                ng.type == "GEOMETRY"
-                and remove_suffix(ng.name) in ALL_SP_ASSET_NODE_GROUPS_EVER
-            ):
-                self.nodegroup_items.add().name = ng.name
-
-        return context.window_manager.invoke_props_dialog(self)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop_search(
-            self,
-            "name",
-            bpy.data,
-            "node_groups",
-            text="Node Group",
-            icon="NODETREE",
-        )
-
-    def execute(self, context):
-        replaced = update_node_group(self.name)
-        self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        # call itself and run
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
-
-class SP_OT_update_all_node_groups(bpy.types.Operator):
-    bl_idname = "object.sp_update_all_node_groups"
-    bl_label = "SP - Update All Node Groups"
-    bl_description = (
-        "Make sure each SP node group is the same as assets in current addon version"
-    )
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        replaced = update_all_node_groups()
-        self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
-        return {"FINISHED"}
 
 
 class SP_OT_extract_segment(bpy.types.Operator):
@@ -1408,7 +1344,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
         if len(SELECTED_SEGMENTS) == 0:
             return {"CANCELLED"}
         for segment in SELECTED_SEGMENTS:
-             # Get target info
+            # Get target info
             target_obj = context.scene.objects[segment[0]]
             seg_id = segment[1]
 
@@ -1418,7 +1354,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
             extracted_segment_object = bpy.data.objects.new("Extracted Segment", mesh)
             extracted_segment_object.location = Vector(segment[2])
             context.collection.objects.link(extracted_segment_object)
-            
+
             add_sp_modifier_from_node_group(
                 extracted_segment_object,
                 copy_ng,
@@ -1452,7 +1388,6 @@ classes = [
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_matcaps,
     SP_OT_replace_node_group,
-    SP_OT_report_outdated_nodes,
     SP_OT_scale_analysis,
     SP_OT_select_all,
     SP_OT_select_endpoints,
@@ -1470,8 +1405,6 @@ classes = [
     SP_OT_disable_exact_normals,
     SP_OT_enable_exact_normals,
     SP_OT_mesh_to_compound,
-    SP_OT_update_all_node_groups,
-    SP_OT_update_node_group,
 ]
 
 

@@ -2,11 +2,14 @@ import bpy
 from ..common.enums import SP_obj_type, MESHER_NAMES
 from ..common.utils import create_grid_mesh, toggle_bool_attribute
 from ..common.asset_append import (
-    add_sp_modifier,
-    add_sp_modifier_from_node_group,
+
     append_object_by_name,
     append_multiple_node_groups,
     append_node_group,
+)
+from ..common.modifier_utils import (
+    add_sp_modifier,
+    add_sp_modifier_from_node_group,
 )
 
 

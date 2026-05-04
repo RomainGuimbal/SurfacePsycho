@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum, IntEnum
 from OCP.GeomAbs import (
     GeomAbs_Plane,
     GeomAbs_Cylinder,
@@ -18,7 +18,7 @@ ASSETS_PATH = join(ADDON_PATH, "assets")
 ASSETS_FILE = join(ASSETS_PATH, "assets.blend")
 ADDON_PREF_KEY = "bl_ext." + basename(dirname(ADDON_PATH)) + ".SurfacePsycho"
 
-class SP_obj_type(Enum):
+class SP_obj_type(IntEnum):
     PLANE = 0
     CYLINDER = 1
     CONE = 2
@@ -76,9 +76,21 @@ MESHER_NAMES = {
     SP_obj_type.COMPOUND: "SP - Compound Meshing",
 }
 
+class MesherName(StrEnum):
+    PLANE = "SP - FlatPatch Meshing"
+    CYLINDER = "SP - Cylindrical Meshing"
+    CONE = "SP - Conical Meshing"
+    SPHERE = "SP - Spherical Meshing"
+    TORUS = "SP - Toroidal Meshing"
+    BEZIER_SURFACE = "SP - Bezier Patch Meshing"
+    BSPLINE_SURFACE = "SP - NURBS Patch Meshing"
+    SURFACE_OF_REVOLUTION = "SP - Surface of Revolution Meshing"
+    SURFACE_OF_EXTRUSION = "SP - Surface of Extrusion Meshing"
+    CURVE = "SP - Curve Meshing"
+    COMPOUND = "SP - Compound Meshing"
 
 # to replace with official index
-class SP_segment_type(Enum):
+class SP_segment_type(IntEnum):
     BEZIER = 0
     NURBS = 1
     CIRCLE_ARC = 2
@@ -104,6 +116,7 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Continuities between Segments",
     "SP - Convert Circles and Ellipses to Splines",
     "SP - Copy Mesh Face",
+    "SP - Copy Internal Curve",
     "SP - Crop or Extend Curve",
     "SP - Crown Curve",
     "SP - Curve Meshing",

@@ -13,8 +13,8 @@
 
 import bpy
 from .config import bl_info
-from .common import gui
 from .tools import macros
+from .common import gui, versioning
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
@@ -38,12 +38,14 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
 def register():
     macros.register()
     gui.register()
+    versioning.register()
     bpy.utils.register_class(SP_AddonPreferences)
     # print("--- %s seconds ---" % (time.time() - start_time))
 
 
 def unregister():
     bpy.utils.unregister_class(SP_AddonPreferences)
+    versioning.unregister()
     gui.unregister()
     macros.unregister()
 
