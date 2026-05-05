@@ -884,3 +884,7 @@ def get_patch_knot_and_mult(
     )
 
     return uknot, vknot, umult, vmult
+
+
+def has_contour(obj): #simple version
+    return "Trim Contour" in obj.data.attributes.keys()

@@ -12,7 +12,7 @@ from .modifier_utils import (
     move_modifier_above_mesher,
 )
 from .version_utils import is_latest_version, get_node_version
-from .utils import sp_type_of_object
+from .utils import sp_type_of_object, has_contour
 
 #####################
 ## VERSIONING DATA ##
@@ -95,7 +95,7 @@ def report_outdated_node_groups():
         print("All node groups are up to date.")
 
 
-def set_nodes_version(version = None):
+def set_nodes_version(version=None):
     # get version from toml file
     if version is None:
         path = ADDON_PATH + "/blender_manifest.toml"
@@ -265,12 +265,16 @@ def update_all_node_groups():
     return replaced
 
 
-def scenario_branching(condition, scenario1, scenario2):
-    if condition:
-        scenario1.run()
-    else:
-        scenario2.run()
+#####################
+#     SCENARIOS     #
+#####################
 
+
+def scenario_branching(obj, condition, scenario1, scenario2=None):
+    if condition(obj):
+        scenario1.run(obj)
+    elif scenario2 != None:
+        scenario2.run(obj)
 
 class ReplaceActionFunc(Enum):
     UPDATE_MOD = None
@@ -318,27 +322,25 @@ class ReplaceScenario:
             a.run(object)
 
 
-#####################
-#     SCENARIOS     #
-#####################
-
 # Deprecate contour fit
 deprecate_contour_fit_option = ReplaceScenario()
 deprecate_contour_fit_option.add(
     ReplaceActionFunc.CHANGE_MOD_VAL, MesherName.BEZIER_SURFACE, {"Scaling Method": 1}
 )
-deprecate_contour_fit_option.add(
-    ReplaceActionFunc.ADD_MOD,
-    "SP - Convert Contour",
-    {},
-    False,
-    True,  # append if not already
+deprecate_contour_fit_option.add(  # only add converter if trim exists
+    ReplaceActionFunc.CONDITION,
+    has_contour,
+    ReplaceScenario()
+    .add(
+        ReplaceActionFunc.ADD_MOD,
+        "SP - Convert Contour",
+        {},
+        False,
+        True,  # append if not already
+    )
+    .add(ReplaceActionFunc.MOVE_ABOVE_MESHER, "SP - Convert Contour")
 )
-deprecate_contour_fit_option.add(
-    ReplaceActionFunc.MOVE_ABOVE_MESHER,
-    "SP - Convert Contour",
-)
-# deprecate_contour_fit_option.add(ReplaceActionFunc.UPDATE_MOD, )
+# deprecate_contour_fit_option.add(ReplaceActionFunc.UPDATE_MOD, MesherName.BEZIER_SURFACE, {}, True)
 
 
 def update_object(obj):
@@ -364,7 +366,7 @@ class SP_OT_report_outdated_nodes(bpy.types.Operator):
     def execute(self, context):
         report_outdated_node_groups()
         return {"FINISHED"}
-    
+
 
 class SP_OT_set_all_nodes_version(bpy.types.Operator):
     bl_idname = "object.sp_set_all_nodes_version"
