@@ -1243,6 +1243,7 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
                 add_sp_modifier(
                     o,
                     "SP - Curvature Analysis",
+                    {"Scale":context.scene.sp_properties.analysis_scale},
                     append=True,
                     pin=True,
                     render=False,

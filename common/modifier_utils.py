@@ -170,3 +170,15 @@ def move_modifier_above_mesher(obj, name):
         return 
     
     obj.modifiers.move(mod_index, index=mesh_mod_index)
+
+
+def has_socket_value(o, mod_name, socket_name, value):
+    for m in o.modifiers:
+        if m.type == "NODES" and m.node_group.name == mod_name:
+            tree = m.node_group.interface.items_tree
+            for item in tree:
+                if item.name == socket_name and isinstance(
+                    item, bpy.types.NodeTreeInterfaceSocket
+                ):
+                    return m[item.identifier] == value
+    return False
