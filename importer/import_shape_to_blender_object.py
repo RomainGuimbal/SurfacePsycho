@@ -1286,7 +1286,7 @@ def import_face_nodegroups(shape_hierarchy):
         if ft not in face_encountered:
             face_encountered.add(ft)
             try:  # just to skip offset surfaces
-                to_import_ng_names.append(MesherName.GEOM_TO_SP_TYPE[ft])
+                to_import_ng_names.append(GEOM_TO_SP_TYPE[ft].mesher_name)
             except KeyError:
                 pass
 
@@ -1358,7 +1358,7 @@ def create_blender_object(object_data):
     if object_data == {}:
         return False
     
-    from ..common.asset_append import add_sp_modifier
+    from ..common.modifier_utils import add_sp_modifier
 
     mesh = bpy.data.meshes.new(object_data["name"])
     mesh.from_pydata(*object_data["mesh_data"], False)

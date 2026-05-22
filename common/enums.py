@@ -37,6 +37,11 @@ class SP_obj_type(IntEnum):
     COMPOUND = 13
     OTHER_SURFACE = 14
 
+    @property
+    def mesher_name(self) -> 'MesherName':
+        """Get corresponding MesherName."""
+        return MesherName[self.name]
+
 
 # TYPES_FROM_CP_ATTR = {
 #     "CP_any_order_surf": SP_obj_type.BEZIER_SURFACE,
