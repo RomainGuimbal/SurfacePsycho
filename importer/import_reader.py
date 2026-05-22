@@ -1,42 +1,40 @@
 from os.path import splitext, split, isfile
-from ..common.utils import list_of_shapes_to_compound
 import unicodedata
 
 from OCP.TDataStd import TDataStd_Name
-from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
-from OCP.IGESControl import IGESControl_Controller, IGESControl_Reader
-from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB  # , Quantity_ColorRGBA
+from OCP.IGESControl import IGESControl_Reader
+from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB
 from OCP.STEPCAFControl import STEPCAFControl_Reader
 from OCP.STEPControl import STEPControl_Reader
 from OCP.TCollection import TCollection_ExtendedString, TCollection_AsciiString
 from OCP.TDF import TDF_LabelSequence, TDF_Label
 from OCP.TDocStd import TDocStd_Document
 from OCP.TopLoc import TopLoc_Location
-from OCP.TopoDS import TopoDS_Compound
 from OCP.XCAFDoc import (
     XCAFDoc_DocumentTool,
     XCAFDoc_ColorTool,
-    # XCAFDoc_ShapeTool,
     XCAFDoc_ColorCurv,
     XCAFDoc_ColorSurf,
     XCAFDoc_ColorGen,
     XCAFDoc_ColorType,
 )
+import OCP.TopAbs as TopAbs
+import OCP.TDF as TDF
+import OCP.Quantity as Quantity
+import warnings
 
-# from OCP.IGESCAFControl import IGESCAFControl_Reader
-# from OCP.TopTools import TopTools_IndexedMapOfShape
-# from OCP.XCAFApp import XCAFApp_Application
 
-
-def read_cad(filepath):
+def read_cad(filepath, import_colors):
     # STEP
     if splitext(split(filepath)[1])[1].lower() in [".step", ".stp"]:
-        shape = read_step_file(filepath)
-        if shape == None:
-            return False
 
+        if import_colors:
+            all_file_shapes_dic = read_step_file_with_names_colors(filepath)
+        else:
+            root_shape = read_step_file(filepath)
+          
     # IGES
     elif splitext(split(filepath)[1])[1] in [".igs", ".iges", ".IGES", ".IGS"]:
         iges_reader = IGESControl_Reader()
@@ -44,19 +42,20 @@ def read_cad(filepath):
         if status != IFSelect_RetDone:
             raise ValueError("Error reading IGES file")
         iges_reader.TransferRoots()
-        shape = iges_reader.OneShape()
-        # shape = read_iges_file(filepath)
+        root_shape = iges_reader.OneShape()
 
-    container_name = splitext(split(filepath)[1])[0]
+    if root_shape == None:
+        warnings.warn("No shape in file")
 
-    return shape, container_name
+    return root_shape
 
 
 ######################################################
 # Step import adapted from python OCC Extends module #
 ######################################################
 
-def read_step_file(filename, verbosity=True):
+
+def read_step_file(filename, verbosity=True) -> TopAbs.TopAbs_SHAPE:
     """read the STEP file and returns a compound
     filename: the file path
     verbosity: optional, False by default.
@@ -86,13 +85,12 @@ def read_step_file(filename, verbosity=True):
     return root_shape
 
 
-def read_step_file_with_names_colors(filename):
-    """Returns list of tuples (topods_shape, label, color)
-    Use OCAF.
-    """
+def read_step_file_with_names_colors(
+    filename,
+) -> dict[TopAbs.TopAbs_SHAPE : tuple[TDF.TDF_Label, Quantity.Quantity_Color]]:
     if not isfile(filename):
         raise FileNotFoundError(f"{filename} not found.")
-    # the list:
+
     output_shapes = {}
 
     # create an handle to a document
@@ -170,7 +168,7 @@ def read_step_file_with_names_colors(filename):
 
         # Moving the shape to its location
         shape_disp = BRepBuilderAPI_Transform(shape, loc.Transformation()).Shape()
-        
+
         # Add shape to output list
         if shape_disp not in output_shapes.keys():
             output_shapes[shape_disp] = [get_name(lab), c]
@@ -267,51 +265,51 @@ def read_step_file_with_names_colors(filename):
     return output_shapes
 
 
-###########################
-# IGES import OCC Extends #
-###########################
-def read_iges_file(
-    filename, return_as_shapes=False, verbosity=False, visible_only=False
-):
-    """read the IGES file and returns a compound
-    filename: the file path
-    return_as_shapes: optional, False by default. If True returns a list of shapes,
-                      else returns a single compound
-    verbosity: optionl, False by default.
-    """
-    if not isfile(filename):
-        raise FileNotFoundError(f"{filename} not found.")
+# ###########################
+# # IGES import OCC Extends #
+# ###########################
+# def read_iges_file(
+#     filename, return_as_shapes=False, verbosity=False, visible_only=False
+# ):
+#     """read the IGES file and returns a compound
+#     filename: the file path
+#     return_as_shapes: optional, False by default. If True returns a list of shapes,
+#                       else returns a single compound
+#     verbosity: optionl, False by default.
+#     """
+#     if not isfile(filename):
+#         raise FileNotFoundError(f"{filename} not found.")
 
-    IGESControl_Controller.Init_s()
+#     IGESControl_Controller.Init_s()
 
-    iges_reader = IGESControl_Reader()
-    iges_reader.SetReadVisible(visible_only)
-    status = iges_reader.ReadFile(filename)
+#     iges_reader = IGESControl_Reader()
+#     iges_reader.SetReadVisible(visible_only)
+#     status = iges_reader.ReadFile(filename)
 
-    if status != IFSelect_RetDone:  # check status
-        raise IOError("Cannot read IGES file")
+#     if status != IFSelect_RetDone:  # check status
+#         raise IOError("Cannot read IGES file")
 
-    if verbosity:
-        failsonly = False
-        iges_reader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity)
-        iges_reader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity)
-    iges_reader.ClearShapes()
-    iges_reader.TransferRoots()
-    nbr = iges_reader.NbShapes()
+#     if verbosity:
+#         failsonly = False
+#         iges_reader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity)
+#         iges_reader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity)
+#     iges_reader.ClearShapes()
+#     iges_reader.TransferRoots()
+#     nbr = iges_reader.NbShapes()
 
-    _shapes = []
-    for i in range(1, nbr + 1):
-        a_shp = iges_reader.Shape(i)
-        if not a_shp.IsNull():
-            _shapes.append(a_shp)
+#     _shapes = []
+#     for i in range(1, nbr + 1):
+#         a_shp = iges_reader.Shape(i)
+#         if not a_shp.IsNull():
+#             _shapes.append(a_shp)
 
-    # create a compound and store all shapes
-    if not return_as_shapes:
-        builder = BRep_Builder()
-        compound = TopoDS_Compound()
-        builder.MakeCompound(compound)
-        for s in _shapes:
-            builder.Add(compound, s)
-        return [compound]
+#     # create a compound and store all shapes
+#     if not return_as_shapes:
+#         builder = BRep_Builder()
+#         compound = TopoDS_Compound()
+#         builder.MakeCompound(compound)
+#         for s in _shapes:
+#             builder.Add(compound, s)
+#         return [compound]
 
-    return _shapes
+#     return _shapes

@@ -1,6 +1,7 @@
 import bpy
 import time
 
+from os.path import splitext, split
 from ..common.enums import SP_obj_type
 from ..common.asset_append import append_node_group
 from .import_shape_to_blender_object import (
@@ -39,6 +40,16 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     curves_on: BoolProperty(name="Curves", description="Import Curves", default=True)
     scale: FloatProperty(name="Scale", default=0.001, precision=3)
     resolution: IntProperty(name="Resolution", default=16, soft_min=6, soft_max=256)
+    trims_on: BoolProperty(
+        name="Trim Contours",
+        description="Import faces with their trim contours",
+        default=True,
+    )
+    materials_on: BoolProperty(
+        name="Materials",
+        description="Set materials according to STEP colors",
+        default=True,
+    )
 
     def execute(self, context):
         self.t0 = time.time()
@@ -51,13 +62,10 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         # Show wait cursor
         context.window.cursor_set("WAIT")
 
-        # import cProfile
-        # profiler = cProfile.Profile()
-        # profiler.enable()
-
         # Initialize your CAD import data
-        shape, container_name = read_cad(self.filepath)
-        shape_hierarchy = ShapeHierarchy(shape, container_name)
+        root_shape = read_cad(self.filepath, self.materials_on)
+        container_name = splitext(split(self.filepath)[1])[0]
+        shape_hierarchy = ShapeHierarchy(root_shape, container_name)
 
         # Collect shapes to process
         shapes_args = []
