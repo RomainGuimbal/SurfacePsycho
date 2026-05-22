@@ -46,8 +46,6 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         self.created_object_count = 0
         self.total_count = 0
         self.object_data = []
-
-        self.context = context
         self.status = "Gathering shape data..."
 
         # Show wait cursor
@@ -150,7 +148,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         wm.progress_update(self.created_object_count)
 
         # # Force UI update
-        for area in self.context.screen.areas:
+        for area in context.screen.areas:
             if area.type in {"VIEW_3D", "OUTLINER"}:
                 area.tag_redraw()
 

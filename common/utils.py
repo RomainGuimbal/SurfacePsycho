@@ -675,6 +675,7 @@ def override_attribute_dictionary(dict1, dict2):
 
 
 def create_grid_mesh(vertex_count_u, vertex_count_v, smooth=True):
+    # probably faster without bmesh -> find how to make the grid without
 
     bm = bmesh.new()
 

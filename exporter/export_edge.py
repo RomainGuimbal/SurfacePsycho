@@ -214,11 +214,11 @@ class SP_Edge_export:
             if self.p_count == 2:
                 p3_vec = gp_Vec(1.0, 0.0, 0.0)
             else:
-                p3_vec = gp_Vec(self.gp_cp[2].X(), self.gp_cp[2].Y(), self.gp_cp[2].Z())
+                p3_vec = gp_Vec(self.gp_cp[2].XYZ())
 
             center = self.gp_cp[1]
-            center_vec = gp_Vec(center.X(), center.Y(), center.Z())
-            p1_vec = gp_Vec(self.gp_cp[0].X(), self.gp_cp[0].Y(), self.gp_cp[0].Z())
+            center_vec = gp_Vec(center.XYZ())
+            p1_vec = gp_Vec(self.gp_cp[0].XYZ())
             radius_vec = p1_vec - center_vec
             other_dir_vec = p3_vec - center_vec
 
