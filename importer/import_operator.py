@@ -32,11 +32,6 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         default="*.step;*.stp;*.iges;*.igs", options={"HIDDEN"}, maxlen=255
     )
     faces_on: BoolProperty(name="Faces", description="Import Faces", default=True)
-    trims_on: BoolProperty(
-        name="Trim Contours",
-        description="Import faces with their trim contours",
-        default=True,
-    )
     curves_on: BoolProperty(name="Curves", description="Import Curves", default=True)
     scale: FloatProperty(name="Scale", default=0.001, precision=3)
     resolution: IntProperty(name="Resolution", default=16, soft_min=6, soft_max=256)
@@ -48,8 +43,12 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     materials_on: BoolProperty(
         name="Materials",
         description="Set materials according to STEP colors",
-        default=True,
+        default=True
     )
+    
+    def is_step_file(self):
+        path = self.filepath.lower() if self.filepath else None
+        return (path.endswith('.step') or path.endswith('.stp')) if path else True
 
     def execute(self, context):
         self.t0 = time.time()
@@ -136,7 +135,6 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         return {"PASS_THROUGH"}
 
     def process_batch(self, context):
-
         # Create the object
         if self.created_object_count < self.total_count:
             for i in range(self.batch_size):
@@ -164,6 +162,20 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         self.status = f"{self.created_object_count}/{self.total_count} shapes imported"
 
         return {"PASS_THROUGH"}
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "faces_on")
+        layout.prop(self, "curves_on")
+        layout.prop(self, "trims_on")
+
+        row = layout.row()
+        row.enabled = self.is_step_file()  # gray out if not .test
+        row.prop(self, "materials_on")
+
+        layout.prop(self, "scale")
+        layout.prop(self, "resolution")
+        
 
 
 classes = [
