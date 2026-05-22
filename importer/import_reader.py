@@ -226,7 +226,7 @@ def read_step_file(filename, as_compound=True, verbosity=True):
         step_reader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity)
         step_reader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity)
         
-    root_shape = get_root_shapes(step_reader, as_compound)
+    root_shape = get_root_shape(step_reader)
     return root_shape
 
 
@@ -443,6 +443,7 @@ def read_step_file_with_names_colors(filename):
     return output_shapes, doc
 
 
+
 ###########################
 # IGES import OCC Extends #
 ###########################
@@ -493,30 +494,9 @@ def read_iges_file(
     return _shapes
 
 
-def get_root_shapes(step_reader, as_compound=True):
+def get_root_shape(step_reader):
+    # Translate step root shapes to occ shapes
     transfer_result = step_reader.TransferRoots()
     if not transfer_result:
         raise AssertionError("Transfer failed.")
-
-    # number of ROOT shapes
-    _nbs = step_reader.NbShapes()
-    if _nbs == 0:
-        raise AssertionError("No shape to transfer.")
-    if _nbs == 1:  # most cases
-        return step_reader.Shape(1)
-    if _nbs > 1:
-        print("Number of shapes:", _nbs)
-        shps = []
-        # loop over root shapes
-        for k in range(1, _nbs + 1):
-            new_shp = step_reader.Shape(k)
-            if not new_shp.IsNull():
-                shps.append(new_shp)
-        if as_compound:
-            compound, result = list_of_shapes_to_compound(shps)
-            if not result:
-                print("Warning: all shapes were not added to the compound")
-            return compound
-        print("Warning, returns a list of shapes.")
-        return shps
-    return None
+    return step_reader.OneShape()
