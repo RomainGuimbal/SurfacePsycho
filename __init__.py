@@ -12,7 +12,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from .config import bl_info
 from .tools import macros
 from .common import gui, versioning
 
@@ -28,7 +27,10 @@ class SP_AddonPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         col = layout.column()
-        col.operator("wm.sp_add_library", text="Add Assets Path")
+        row = col.row(align=True)
+        row.label(text="Asset Path")
+        row.operator("wm.sp_add_library", text="Add")
+        # row.operator("wm.sp_remove_library", text="Remove")
         row = col.row(align=True)
         row.label(text="Psycho Matcaps")
         row.operator("wm.sp_add_matcaps", text="Add")

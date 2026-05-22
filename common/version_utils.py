@@ -1,5 +1,5 @@
 import bpy
-from ..config import VERSION_STR
+from .enums import VERSION_STR
 
 def get_node_version(ng: bpy.types.NodeGroup):
     return ng["version"] if "version" in ng else "0.0.0"

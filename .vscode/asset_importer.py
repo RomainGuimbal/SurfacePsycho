@@ -24,14 +24,14 @@ common_module.__file__ = str(workspace_root / "common")
 common_module.__package__ = f"{workspace_package_name}.common"
 sys.modules[f"{workspace_package_name}.common"] = common_module
 
-# Load config module with proper package context
-config_spec = importlib.util.spec_from_file_location(
-    f"{workspace_package_name}.config", str(workspace_root / "config.py")
+# Load enums module with proper package context
+enums_spec = importlib.util.spec_from_file_location(
+    f"{workspace_package_name}.enums", str(workspace_root / "common" / "enums.py")
 )
-config_module = importlib.util.module_from_spec(config_spec)
-config_module.__package__ = workspace_package_name
-sys.modules[f"{workspace_package_name}.config"] = config_module
-config_spec.loader.exec_module(config_module)
+enums_module = importlib.util.module_from_spec(enums_spec)
+enums_module.__package__ = workspace_package_name
+sys.modules[f"{workspace_package_name}.enums"] = enums_module
+enums_spec.loader.exec_module(enums_module)
 
 # Load enums module with proper package context
 enums_spec = importlib.util.spec_from_file_location(
@@ -54,7 +54,7 @@ sys.modules[f"{workspace_package_name}.common.versioning"] = versioning_module
 versioning_spec.loader.exec_module(versioning_module)
 
 # Extract what we need
-VERSION = config_module.VERSION
+VERSION = enums_module.VERSION
 ASSET_NODE_GROUPS_BEZIER_PATCH = enums_module.ASSET_NODE_GROUPS_BEZIER_PATCH
 ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = (
     enums_module.ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH

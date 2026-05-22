@@ -1,7 +1,6 @@
 import bpy
 from enum import Enum
 import re
-from ..config import VERSION_STR
 from .enums import ASSET_NODE_GROUPS, ADDON_PATH, SP_obj_type, MesherName
 from .asset_append import append_node_group
 from .enums import ASSETS_FILE

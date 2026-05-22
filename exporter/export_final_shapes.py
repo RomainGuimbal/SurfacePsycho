@@ -1,5 +1,3 @@
-import sys
-
 import bpy
 import numpy as np
 import math

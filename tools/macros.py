@@ -1284,7 +1284,10 @@ class SP_OT_add_matcaps(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return not context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps
+        try :
+            return not context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps
+        except KeyError:
+            return False
 
     def execute(self, context):
         # Call the operator with proper parameters
@@ -1296,8 +1299,10 @@ class SP_OT_add_matcaps(bpy.types.Operator):
             directory=ASSETS_PATH,
             type="MATCAP",
         )
-
-        context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps = True
+        try :
+            context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps = True
+        except KeyError:
+            pass
         return {"FINISHED"}
 
 
@@ -1309,7 +1314,10 @@ class SP_OT_remove_matcaps(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps
+        try:
+            return context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps
+        except KeyError:
+            return False
 
     def execute(self, context):
         matcap_names = [
@@ -1326,7 +1334,10 @@ class SP_OT_remove_matcaps(bpy.types.Operator):
         for index in indices_to_remove:
             bpy.ops.preferences.studiolight_uninstall(index=index)
 
-        context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps = False
+        try:
+            context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps = False
+        except KeyError:
+            pass
         return {"FINISHED"}
 
 

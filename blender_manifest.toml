@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 
-id = "surfacepsycho"
+id = "SurfacePsycho"
 version = "0.10.0"
 name = "Surface Psycho"
 tagline = "Precision Surface Design"

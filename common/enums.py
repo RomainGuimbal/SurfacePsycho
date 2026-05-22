@@ -13,6 +13,8 @@ from OCP.GeomAbs import (
 )
 from os.path import dirname, abspath, basename, join
 
+VERSION = (0, 10, 0)
+VERSION_STR = ".".join(map(str, VERSION))
 ADDON_PATH = dirname(dirname(abspath(__file__)))  # The PsychoPath ;)
 ASSETS_PATH = join(ADDON_PATH, "assets")
 ASSETS_FILE = join(ASSETS_PATH, "assets.blend")
@@ -145,6 +147,7 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Reproject Ellipse Arcs Ends",
     "SP - Resample Selection",
     "SP - Sample Curve Per Degree",
+    "SP - Maths Function Segment",
     "SP - Set Edge Length",
     "SP - Split Curve",
     "SP - Switch Curve Direction",
