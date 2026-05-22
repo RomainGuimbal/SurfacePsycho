@@ -1231,8 +1231,8 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
                 sp_surf = False
                 for m in o.modifiers:
                     if m.node_group.name in [
-                        MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE],
-                        MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
+                        SP_obj_type.BSPLINE_SURFACE.mesher_name,
+                        SP_obj_type.BEZIER_SURFACE.mesher_name,
                     ]:
                         sp_surf = True
                         break
@@ -1350,7 +1350,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
 
     def execute(self, context):
         copy_ng, meshing_ng = append_multiple_node_groups(
-            ["SP - Copy Geometry", MESHER_NAMES[SP_obj_type.CURVE]], True
+            ["SP - Copy Geometry", SP_obj_type.CURVE.mesher_name], True
         )
 
         if len(SELECTED_SEGMENTS) == 0:

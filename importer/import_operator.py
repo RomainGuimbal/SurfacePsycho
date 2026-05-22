@@ -1,7 +1,7 @@
 import bpy
 import time
 
-from ..common.enums import SP_obj_type, MESHER_NAMES
+from ..common.enums import SP_obj_type
 from ..common.asset_append import append_node_group
 from .import_shape_to_blender_object import (
     ShapeHierarchy,
@@ -72,7 +72,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             )
 
         if self.curves_on:
-            append_node_group(MESHER_NAMES[SP_obj_type.CURVE])
+            append_node_group(SP_obj_type.CURVE.mesher_name)
             shapes_args.extend(
                 [
                     (shape, name, color, collection, True)

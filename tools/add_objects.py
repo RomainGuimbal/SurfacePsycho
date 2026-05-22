@@ -1,5 +1,5 @@
 import bpy
-from ..common.enums import SP_obj_type, MESHER_NAMES
+from ..common.enums import SP_obj_type
 from ..common.utils import create_grid_mesh, toggle_bool_attribute
 from ..common.asset_append import (
 
@@ -56,7 +56,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
 
     def execute(self, context):
         append_multiple_node_groups(
-            ["SP - Reorder Grid Index", MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE]]
+            ["SP - Reorder Grid Index", SP_obj_type.BSPLINE_SURFACE.mesher_name]
         )
         # Create and link the object
         mesh = create_grid_mesh(self.u_count, self.v_count)
@@ -66,7 +66,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
         add_sp_modifier(obj, "SP - Reorder Grid Index")
         add_sp_modifier(
             obj,
-            MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE],
+            SP_obj_type.BSPLINE_SURFACE.mesher_name,
             {
                 "Control Polygon": self.show_control_geom,
                 "Degree U": self.degree_u,
@@ -116,7 +116,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
             [
                 "SP - Reorder Grid Index",
                 "SP - Connect Bezier Patch",
-                MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
+                SP_obj_type.BEZIER_SURFACE.mesher_name,
             ]
         )
 
@@ -133,7 +133,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         )
         add_sp_modifier(
             obj,
-            MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
+            SP_obj_type.BEZIER_SURFACE.mesher_name,
             {"Control Polygon": self.show_control_geom},
             pin=True,
         )
@@ -155,7 +155,7 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        ng = append_node_group(MESHER_NAMES[SP_obj_type.PLANE])
+        ng = append_node_group(SP_obj_type.PLANE.mesher_name)
       
         # Create and link the object
         mesh = create_grid_mesh(2, 2)
