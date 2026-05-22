@@ -1186,8 +1186,7 @@ def build_SP_revolution(
 
 
 class ShapeHierarchy:
-    def __init__(self, shape, container_name, doc):
-        self.doc = doc
+    def __init__(self, shape, container_name):
         self.faces = []  # tuples (face, name, color, collection)
         self.edges = []  # tuples (edges, collection)
         self.hierarchy = {}

@@ -56,8 +56,8 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         # profiler.enable()
 
         # Initialize your CAD import data
-        shape, doc, container_name = read_cad(self.filepath)
-        shape_hierarchy = ShapeHierarchy(shape, container_name, doc)
+        shape, container_name = read_cad(self.filepath)
+        shape_hierarchy = ShapeHierarchy(shape, container_name)
 
         # Collect shapes to process
         shapes_args = []
