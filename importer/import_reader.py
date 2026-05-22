@@ -150,9 +150,9 @@ def read_step_file_with_names_colors(
             or color_tool.GetInstanceColor(shape, XCAFDoc_ColorSurf, c)
             or color_tool.GetInstanceColor(shape, XCAFDoc_ColorCurv, c)
         ):
-            color_tool.SetInstanceColor(shape, 0, c)
-            color_tool.SetInstanceColor(shape, 1, c)
-            color_tool.SetInstanceColor(shape, 2, c)
+            color_tool.SetInstanceColor(shape, XCAFDoc_ColorGen, c)
+            color_tool.SetInstanceColor(shape, XCAFDoc_ColorSurf, c)
+            color_tool.SetInstanceColor(shape, XCAFDoc_ColorCurv, c)
             color_set = True
 
         # if no color Instance, look for standard color
@@ -162,9 +162,9 @@ def read_step_file_with_names_colors(
                 or color_tool.GetColor(shape, XCAFDoc_ColorSurf, c)
                 or color_tool.GetColor(shape, XCAFDoc_ColorCurv, c)
             ):
-                color_tool.SetInstanceColor(shape, 0, c)
-                color_tool.SetInstanceColor(shape, 1, c)
-                color_tool.SetInstanceColor(shape, 2, c)
+                color_tool.SetInstanceColor(shape, XCAFDoc_ColorGen, c)
+                color_tool.SetInstanceColor(shape, XCAFDoc_ColorSurf, c)
+                color_tool.SetInstanceColor(shape, XCAFDoc_ColorCurv, c)
 
         # Moving the shape to its location
         shape_disp = BRepBuilderAPI_Transform(shape, loc.Transformation()).Shape()
@@ -185,20 +185,20 @@ def read_step_file_with_names_colors(
                 or color_tool.GetInstanceColor(shape_sub, XCAFDoc_ColorSurf, c)
                 or color_tool.GetInstanceColor(shape_sub, XCAFDoc_ColorCurv, c)
             ):
-                color_tool.SetInstanceColor(shape_sub, 0, c)
-                color_tool.SetInstanceColor(shape_sub, 1, c)
-                color_tool.SetInstanceColor(shape_sub, 2, c)
+                color_tool.SetInstanceColor(shape_sub, XCAFDoc_ColorGen, c)
+                color_tool.SetInstanceColor(shape_sub, XCAFDoc_ColorSurf, c)
+                color_tool.SetInstanceColor(shape_sub, XCAFDoc_ColorCurv, c)
                 color_set = True
 
             if not color_set:
                 if (
-                    XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorType(0), c)
-                    or XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorType(1), c)
-                    or XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorType(2), c)
+                    XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorGen, c)
+                    or XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorSurf, c)
+                    or XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorCurv, c)
                 ):
-                    color_tool.SetInstanceColor(shape, 0, c)
-                    color_tool.SetInstanceColor(shape, 1, c)
-                    color_tool.SetInstanceColor(shape, 2, c)
+                    color_tool.SetInstanceColor(shape, XCAFDoc_ColorGen, c)
+                    color_tool.SetInstanceColor(shape, XCAFDoc_ColorSurf, c)
+                    color_tool.SetInstanceColor(shape, XCAFDoc_ColorCurv, c)
 
             shape_to_disp = BRepBuilderAPI_Transform(
                 shape_sub, loc.Transformation()
