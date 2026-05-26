@@ -511,26 +511,6 @@ def blender_to_gp_quaternion(rot: Quaternion):
     return gp_Quaternion(rot[0], rot[1], rot[2], rot[3])
 
 
-def get_shape_name_and_color(shape, doc):
-    name = None
-    color = (0.8, 0.8, 0.8)
-    if doc != None:
-        # Get shape label
-        label = TDF_Label()
-        if XCAFDoc_DocumentTool.ShapeTool_GetID(doc).FindShape(shape, label):
-            # Get name
-            name_attr = TDataStd_Name()
-            if label.FindAttribute(TDataStd_Name.GetID_(), name_attr):
-                name = name_attr.Get().PrintToString()
-
-            # Get color
-            color_tool = XCAFDoc_DocumentTool.ColorTool_(doc.Main())
-            color = Quantity_Color()
-            if color_tool.GetColor(shape, XCAFDoc_ColorGen, color):
-                color = (color.Red(), color.Green(), color.Blue())
-    return name, color
-
-
 def to_hex(color):
     hexcol = ""
     for c in color[0:3]:
@@ -887,5 +867,5 @@ def get_patch_knot_and_mult(
     return uknot, vknot, umult, vmult
 
 
-def has_contour(obj): #simple version
+def has_contour(obj):  # simple version
     return "Trim Contour" in obj.data.attributes.keys()

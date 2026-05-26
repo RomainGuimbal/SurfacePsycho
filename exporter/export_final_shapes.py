@@ -782,6 +782,7 @@ class ShapeHierarchy_export:
         self.objects = self.create_shape_hierarchy(context.scene.collection)
 
     def create_shape_hierarchy(self, parent_col):
+        """Recursive"""
         objs = []
 
         for child in parent_col.children:

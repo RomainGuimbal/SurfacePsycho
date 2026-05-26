@@ -1,6 +1,12 @@
-from os.path import splitext, split, isfile
+import bpy
 import unicodedata
+import OCP.TopAbs as TopAbs
+import OCP.TopAbs as TopAbs
+import OCP.TDF as TDF
+import OCP.Quantity as Quantity
+import warnings
 
+from os.path import splitext, split, isfile
 from OCP.TDataStd import TDataStd_Name
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
@@ -18,12 +24,7 @@ from OCP.XCAFDoc import (
     XCAFDoc_ColorCurv,
     XCAFDoc_ColorSurf,
     XCAFDoc_ColorGen,
-    XCAFDoc_ColorType,
 )
-import OCP.TopAbs as TopAbs
-import OCP.TDF as TDF
-import OCP.Quantity as Quantity
-import warnings
 
 
 def read_cad(filepath, import_colors):
@@ -34,7 +35,7 @@ def read_cad(filepath, import_colors):
             all_file_shapes_dic = read_step_file_with_names_colors(filepath)
         else:
             root_shape = read_step_file(filepath)
-          
+
     # IGES
     elif splitext(split(filepath)[1])[1] in [".igs", ".iges", ".IGES", ".IGS"]:
         iges_reader = IGESControl_Reader()
@@ -263,6 +264,173 @@ def read_step_file_with_names_colors(
 
     _get_shapes()
     return output_shapes
+
+
+class ImportHierarchy:
+    def __init__(self, filename):
+        self.init_reader(filename)
+
+        # Init main data
+        self.faces = []  # tuples (face, name, color, collection)
+        self.edges = []  # tuples (edges, collection)
+        self.hierarchy = {}
+
+        # Create root collection
+        root_name = splitext(split(self.filepath)[1])[0]
+        root_collection = self.create_collection(root_name)
+        self.hierarchy[root_collection] = []
+
+        # Get root labels
+        labels = TDF_LabelSequence()
+        self.shape_tool.GetFreeShapes(labels)
+        print(f"\nNumber of shapes at root :{labels.Length()}\n")
+
+        # Get sub shapes recursively
+        for i in range(labels.Length()):
+            root_item = labels.Value(i + 1)
+            self.hierarchy[root_collection].append(
+                self._get_sub_hierarchy(root_item, root_collection)
+            )
+
+    def init_reader(self, filename):
+        if not isfile(filename):
+            raise FileNotFoundError(f"{filename} not found.")
+
+        # create an handle to a document
+        doc = TDocStd_Document(TCollection_ExtendedString("pythonocc-doc-step-import"))
+
+        # Get root assembly
+        self.shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
+        self.color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
+        # layer_tool = XCAFDoc_DocumentTool_LayerTool(doc.Main())
+        # mat_tool = XCAFDoc_DocumentTool_MaterialTool(doc.Main())
+
+        step_reader = STEPCAFControl_Reader()
+        step_reader.SetColorMode(True)
+        step_reader.SetLayerMode(True)
+        step_reader.SetNameMode(True)
+        step_reader.SetMatMode(True)
+        step_reader.SetGDTMode(True)
+
+        status = step_reader.ReadFile(filename)
+        if status == IFSelect_RetDone:
+            step_reader.Transfer(doc)
+
+        self.locs = []
+
+        self.reader = step_reader
+
+    def create_collection(self, name, parent=None):
+        new_collection = bpy.data.collections.new(name)
+
+        # If no parent, link to scene collection
+        if parent is None:
+            bpy.context.scene.collection.children.link(new_collection)
+        else:
+            parent.children.link(new_collection)
+
+        return new_collection
+
+    def _get_sub_hierarchy(self, lab, parent_col):
+        """
+        Recursive
+        Args:
+           lab (TDF_Label): label of parent shape
+        """
+
+        hierarchy = {}
+    
+        # "l" means TDF_Label
+        # "ls" means TDF_LabelSequence
+        # "subss" means sub shape
+        ls_subss = TDF_LabelSequence()
+        self.shape_tool.GetSubShapes_s(lab, ls_subss)
+        ls_comps = TDF_LabelSequence()
+        self.shape_tool.GetComponents_s(lab, ls_comps)
+
+        # Several sub shapes -> Recurse
+        if self.shape_tool.IsAssembly_s(lab):
+            ls_components = TDF_LabelSequence()
+            self.shape_tool.GetComponents_s(lab, ls_components)
+
+            hierarchy[parent_col] = []
+            new_collection = self.create_collection("Solid", parent_col)
+
+            for i in range(ls_components.Length()):
+                l_comp = ls_components.Value(i + 1)
+                if self.shape_tool.IsReference(l_comp):
+
+                    label_reference = TDF_Label()
+                    self.shape_tool.GetReferredShape(l_comp, label_reference)
+                    # Overrite location with parent location
+                    loc = self.shape_tool.GetLocation_s(l_comp)
+                    self.locs.append(loc)
+                    hierarchy[parent_col].append(self._get_sub_hierarchy(label_reference, loc, new_collection))
+                    self.locs.pop()
+
+        # Single sub shape
+        elif self.shape_tool.IsSimpleShape_s(lab):
+            _add_shape_from_label(lab, ls_subss)
+
+
+        # match shape.ShapeType():
+        #     case TopAbs.TopAbs_COMPOUND:
+        #         hierarchy[parent_col] = []
+        #         new_collection = self.create_collection("Compound", parent_col)
+        #         iterator = TopoDS_Iterator(shape)
+        #         while iterator.More():
+        #             hierarchy[parent_col].append(
+        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
+        #             )
+        #             iterator.Next()
+
+        #     case TopAbs.TopAbs_COMPSOLID:
+        #         hierarchy[parent_col] = []
+        #         new_collection = self.create_collection("CompSolid", parent_col)
+        #         iterator = TopoDS_Iterator(shape)
+        #         while iterator.More():
+        #             hierarchy[parent_col].append(
+        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
+        #             )
+        #             iterator.Next()
+
+        #     case TopAbs.TopAbs_SOLID:
+        #         hierarchy[parent_col] = []
+        #         new_collection = self.create_collection("Solid", parent_col)
+        #         iterator = TopoDS_Iterator(shape)
+        #         while iterator.More():
+        #             hierarchy[parent_col].append(
+        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
+        #             )
+        #             iterator.Next()
+
+        #     case TopAbs.TopAbs_SHELL:
+        #         hierarchy[parent_col] = []
+        #         new_collection = self.create_collection("Shell", parent_col)
+        #         iterator = TopoDS_Iterator(shape)
+        #         while iterator.More():
+        #             hierarchy[parent_col].append(
+        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
+        #             )
+        #             iterator.Next()
+
+        return hierarchy
+
+#     case TopAbs.TopAbs_FACE:  # must be before wire and edge
+#         face = TopoDS.Face_s(shape)
+#         hierarchy["Face"] = face
+#         self.faces.append((face, name, color, parent_col))
+
+#     case TopAbs.TopAbs_WIRE:  # must be before edge
+#         wire = TopoDS.Wire_s(shape)
+#         hierarchy["Wire"] = wire
+#         self.edges.append((wire, name, color, parent_col))
+
+#     case TopAbs.TopAbs_EDGE:
+#         edge = TopoDS.Edge_s(shape)
+#         hierarchy["Edge"] = edge
+#         self.edges.append((edge, name, color, parent_col))
+
 
 
 # ###########################

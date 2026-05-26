@@ -1186,16 +1186,16 @@ def build_SP_revolution(
 
 
 class ShapeHierarchy:
-    def __init__(self, shape, container_name):
+    def __init__(self, shape, root_name):
         self.faces = []  # tuples (face, name, color, collection)
         self.edges = []  # tuples (edges, collection)
         self.hierarchy = {}
-        container_collection = self.create_collection(container_name)
-        self.hierarchy[container_collection] = []
+        root_collection = self.create_collection(root_name)
+        self.hierarchy[root_collection] = []
         iterator = TopoDS_Iterator(shape)
         while iterator.More():
-            self.hierarchy[container_collection].append(
-                self.create_shape_hierarchy(iterator.Value(), container_collection)
+            self.hierarchy[root_collection].append(
+                self.create_shape_hierarchy(iterator.Value(), root_collection)
             )
             iterator.Next()
 
@@ -1211,6 +1211,8 @@ class ShapeHierarchy:
         return new_collection
 
     def create_shape_hierarchy(self, shape, parent_col):
+        """Recursive"""
+        
         hierarchy = {}
 
         match shape.ShapeType():

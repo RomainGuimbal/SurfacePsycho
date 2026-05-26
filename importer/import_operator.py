@@ -63,8 +63,8 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
         # Initialize your CAD import data
         root_shape = read_cad(self.filepath, self.materials_on)
-        container_name = splitext(split(self.filepath)[1])[0]
-        shape_hierarchy = ShapeHierarchy(root_shape, container_name)
+        root_name = splitext(split(self.filepath)[1])[0]
+        shape_hierarchy = ShapeHierarchy(self.filepath)
 
         # Collect shapes to process
         shapes_args = []
