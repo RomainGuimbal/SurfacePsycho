@@ -241,16 +241,16 @@ def menu_surface(self, context):
     if context.mode == "OBJECT":
         self.layout.operator(
             "object.sp_add_bezier_patch",
-            text="Bezier PsychoPatch",
+            text="Bezier Psycho Patch",
             icon="SURFACE_NSURFACE",
         )
         self.layout.operator(
             "object.sp_add_nurbs_patch",
-            text="NURBS PsychoPatch",
+            text="NURBS Psycho Patch",
             icon="SURFACE_NSURFACE",
         )
         self.layout.operator(
-            "object.sp_add_flat_patch", text="Flat patch", icon="SURFACE_NCURVE"
+            "object.sp_add_flat_patch", text="Flat Psycho Patch", icon="SURFACE_NCURVE"
         )
         self.layout.operator(
             "object.sp_add_compound", text="Compound", icon="MOD_BUILD"
@@ -262,7 +262,7 @@ def menu_curve(self, context):
     self.layout.separator()
     if context.mode == "OBJECT":
         self.layout.operator(
-            "object.sp_add_curve", text="PsychoCurve", icon="CURVE_NCURVE"
+            "object.sp_add_curve", text="Psycho Curve", icon="CURVE_NCURVE"
         )
 
 
