@@ -69,7 +69,7 @@ def sp_type_of_object(o: bpy.types.Object) -> SP_obj_type:
 
     # Standard
     for m in reversed(o.modifiers):
-        if m.type == "NODES" and m.node_group:
+        if m.type == "NODES" and m.node_group and m.show_viewport:
             for k, v in MESHER_NAMES.items():
                 if v == m.node_group.name[:-4] or v == m.node_group.name:
                     return k
