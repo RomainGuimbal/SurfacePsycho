@@ -27,6 +27,7 @@ OLD_NODE_MAPPING = {
     "SP - AOP Continuities": "SP - Connect Bezier Patch",
     "SP - Fillet Flat Patch": "SP - Fillet Curve or FlatPatch",
     "SP - Raise or Lower Curve Order": "SP - Raise or Lower Curve Degree",
+    "SP - Extrude FlatPatch" : "SP - Extrude Compound",
     # TODO FILL
 }
 

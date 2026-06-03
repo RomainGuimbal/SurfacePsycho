@@ -222,7 +222,7 @@ ASSET_NODE_GROUPS_OTHER_SURFACES = {
 
 ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Compound Meshing",
-    "SP - Extrude FlatPatch",
+    "SP - Extrude Compound",
     "SP - Intersect Bezier Patches",
     "SP - Interval Curves",
     "SP - NURBS to Bezier Patches",
