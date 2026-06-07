@@ -162,6 +162,7 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
 
 ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Bezier Patch Meshing",
+    "SP - Bezier Segment Through Segment",
     "SP - Blend Surfaces",
     "SP - Bump Surface",
     "SP - Connect Bezier Patch",
