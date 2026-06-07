@@ -1,8 +1,7 @@
 import bpy
 from ..common.enums import SP_obj_type
-from ..common.utils import create_grid_mesh, toggle_bool_attribute
+from ..common.utils import create_grid_mesh, fill_bool_attribute
 from ..common.asset_append import (
-
     append_object_by_name,
     append_multiple_node_groups,
     append_node_group,
@@ -156,14 +155,13 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
 
     def execute(self, context):
         ng = append_node_group(SP_obj_type.PLANE.mesher_name)
-      
+
         # Create and link the object
         mesh = create_grid_mesh(2, 2)
-        mesh.attributes.new(name='Endpoints', type="BOOLEAN", domain="POINT")
-        
+        att_endpoints = mesh.attributes.new(name="Endpoints", type="BOOLEAN", domain="POINT")
+        mesh.update()
+        fill_bool_attribute(mesh, att_endpoints, True)
         obj = bpy.data.objects.new("FlatPatch", mesh)
-        obj.data.update()
-        toggle_bool_attribute(obj, 'Endpoints')
         context.collection.objects.link(obj)
 
         add_modifier_asset_from_node_group(

@@ -217,7 +217,7 @@ def add_bool_attribute(
 
     return True
 
-
+# TODO atomize
 def set_attribute(context, att_name, value, fallback_type):
     objs = context.objects_in_mode
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -246,7 +246,7 @@ def set_attribute(context, att_name, value, fallback_type):
         for i, v in enumerate(o.data.vertices):
             if v.select:
                 values[i] = value
-                # To improve one day to change all verts between endpoints
+                # TODO improve : change all verts between endpoints
 
         # Set new
         att.data.foreach_set("value", values)
@@ -279,6 +279,19 @@ def toggle_bool_attribute(o, att_name):
             if value == None:
                 value = not values[i]
             values[i] = value
+
+    # Set new
+    att.data.foreach_set("value", values)
+    return True
+
+
+def fill_bool_attribute(mesh: bpy.types.Mesh, att: bpy.types.Attribute, value: bool):
+    # Get attribute
+    if att.data_type != "BOOLEAN":
+        return False
+
+    # Init values
+    values = [value] * len(mesh.vertices)
 
     # Set new
     att.data.foreach_set("value", values)
