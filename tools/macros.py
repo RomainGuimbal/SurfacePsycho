@@ -515,7 +515,7 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
                 bpy.ops.object.mode_set(mode="OBJECT")
 
             for m in o.modifiers:
-                if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+                if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
                     is_patch = True
                     break
 
