@@ -8,8 +8,8 @@ from ..common.asset_append import (
     append_node_group,
 )
 from ..common.modifier_utils import (
-    add_sp_modifier,
-    add_sp_modifier_from_node_group,
+    add_modifier_asset,
+    add_modifier_asset_from_node_group,
 )
 
 
@@ -63,8 +63,8 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
         obj = bpy.data.objects.new("Nurbs Patch", mesh)
         context.collection.objects.link(obj)
 
-        add_sp_modifier(obj, "SP - Reorder Grid Index")
-        add_sp_modifier(
+        add_modifier_asset(obj, "SP - Reorder Grid Index")
+        add_modifier_asset(
             obj,
             SP_obj_type.BSPLINE_SURFACE.mesher_name,
             {
@@ -125,13 +125,13 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         obj = bpy.data.objects.new("Bezier Patch", mesh)
         context.collection.objects.link(obj)
 
-        add_sp_modifier(obj, "SP - Reorder Grid Index")
-        add_sp_modifier(
+        add_modifier_asset(obj, "SP - Reorder Grid Index")
+        add_modifier_asset(
             obj,
             "SP - Connect Bezier Patch",
             {"Continuity": 3},
         )
-        add_sp_modifier(
+        add_modifier_asset(
             obj,
             SP_obj_type.BEZIER_SURFACE.mesher_name,
             {"Control Polygon": self.show_control_geom},
@@ -166,7 +166,7 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
         toggle_bool_attribute(obj, 'Endpoints')
         context.collection.objects.link(obj)
 
-        add_sp_modifier_from_node_group(
+        add_modifier_asset_from_node_group(
             obj,
             ng,
             pin=True,

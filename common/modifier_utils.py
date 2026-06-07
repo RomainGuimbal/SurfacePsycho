@@ -1,6 +1,7 @@
 import bpy
 from .asset_append import append_node_group
 from .enums import MESHER_NAMES
+from .utils import remove_suffix
 
 
 def get_modifier_by_name(obj: bpy.types.Object, name):
@@ -39,7 +40,10 @@ def change_node_socket_value(
                 m.node_group.interface_update(context)
 
 
-def change_GN_modifier_settings(modifier, settings_dict):
+def set_modifier_values(modifier, settings_dict):
+    """
+    Only for GN node groups
+    """
     tree = modifier.node_group.interface.items_tree
     remaining = set(settings_dict.keys())
     for item in tree:
@@ -52,14 +56,27 @@ def change_GN_modifier_settings(modifier, settings_dict):
                 break
 
 
+def get_modifier_value(modifier, socket_name):
+    """
+    Only for GN node groups
+    """
+    tree = modifier.node_group.interface.items_tree
+    for item in tree:
+        if item.name == socket_name and isinstance(
+            item, bpy.types.NodeTreeInterfaceSocket
+        ):
+            return modifier[item.identifier]
+    raise ValueError(f"Socket '{socket_name}' not found in modifier '{modifier.name}'")
+
+
 def change_mod_settings_from_object(
     object: bpy.types.Object, modifier_name, settings_dict
 ):
     m = get_modifier_by_name(object, modifier_name)
-    change_GN_modifier_settings(m, settings_dict)
+    set_modifier_values(m, settings_dict)
 
 
-def add_sp_modifier(
+def add_modifier_asset(
     obj,
     asset_name: str,
     settings_dict={},
@@ -94,12 +111,12 @@ def add_sp_modifier(
         raise ValueError(f"Node group '{asset_name}' not found")
 
     # Change settings
-    change_GN_modifier_settings(modifier, settings_dict)
+    set_modifier_values(modifier, settings_dict)
 
     return modifier
 
 
-def add_sp_modifier_from_node_group(
+def add_modifier_asset_from_node_group(
     obj,
     node_group,
     settings_dict={},
@@ -127,7 +144,7 @@ def add_sp_modifier_from_node_group(
             m.use_pin_to_last = True
 
     # Change settings
-    change_GN_modifier_settings(modifier, settings_dict)
+    set_modifier_values(modifier, settings_dict)
 
     return modifier
 
@@ -150,25 +167,24 @@ def modifier_exists(object, name: str):
     return False
 
 
-def move_modifier_above_mesher(obj, name):
+def move_modifier_above_mesher(obj, modifier):
     mod_index = -1
     mesh_mod_index = -1
     mod_count = len(obj.modifiers)
 
     for i, m in enumerate(reversed(obj.modifiers)):
-        if m.type == "NODES":
-            if m.node_group.name == name:
-                mod_index = mod_count - 1 - i
-            elif m.node_group.name in MESHER_NAMES.values():
-                mesh_mod_index = mod_count - 1 - i
-        if mod_index>-1 and mesh_mod_index>-1:
+        if m == modifier:
+            mod_index = mod_count - 1 - i
+        elif remove_suffix(m.node_group.name) in MESHER_NAMES.values():
+            mesh_mod_index = mod_count - 1 - i
+        if mod_index > -1 and mesh_mod_index > -1:
             break
-        
-    if mod_index==-1 or mesh_mod_index==-1:
-        raise Exception(f"Modifier \"{name}\" couldn't be moved")
+
+    if mesh_mod_index == -1:
+        raise Exception(f"Mesher modifier not found in object '{obj.name}'")
     elif mod_index <= mesh_mod_index:
-        return 
-    
+        return
+
     obj.modifiers.move(mod_index, index=mesh_mod_index)
 
 

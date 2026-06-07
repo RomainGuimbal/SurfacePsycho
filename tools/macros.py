@@ -19,10 +19,10 @@ from ..common.utils import (
     flip_node_socket_bool,
 )
 from ..common.modifier_utils import (
-    add_sp_modifier,
+    add_modifier_asset,
     change_node_socket_value,
-    change_GN_modifier_settings,
-    add_sp_modifier_from_node_group,
+    set_modifier_values,
+    add_modifier_asset_from_node_group,
 )
 from ..common.asset_append import (
     append_object_by_name,
@@ -32,7 +32,6 @@ from ..common.compound_utils import convert_compound_to_patches
 from ..common.versioning import (
     replace_all_instances_of_node_group_by_name,
     report_outdated_node_groups,
-    remove_suffix,
     update_all_node_groups,
     update_node_group,
     ALL_SP_ASSET_NODE_GROUPS_EVER,
@@ -761,7 +760,7 @@ def scale_analysis(self, context):
             for m in o.modifiers:
                 if m.type == "NODES":
                     if m.node_group.name == "SP - Curvature Analysis":
-                        change_GN_modifier_settings(m, {"Scale": self.analysis_scale})
+                        set_modifier_values(m, {"Scale": self.analysis_scale})
                         break
             o.update_tag()
 
@@ -1074,7 +1073,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         )
 
         # Add blend modifier
-        add_sp_modifier_from_node_group(
+        add_modifier_asset_from_node_group(
             blend_surf,
             blend_ng,
             {
@@ -1092,7 +1091,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         )
 
         # Add meshing modifier
-        add_sp_modifier_from_node_group(blend_surf, meshing_ng)
+        add_modifier_asset_from_node_group(blend_surf, meshing_ng)
 
         # SELECTED_SEGMENTS.clear() can't do that otherwise last operator panel fails
 
@@ -1199,8 +1198,8 @@ class SP_OT_mesh_to_compound(bpy.types.Operator):
     def execute(self, context):
         for o in context.selected_objects:
             if o.type == "MESH" and sp_type_of_object(o) == None:
-                add_sp_modifier(o, "SP - Poly to Compound", append=True)
-                add_sp_modifier(o, "SP - Compound Meshing", pin=True, append=True)
+                add_modifier_asset(o, "SP - Poly to Compound", append=True)
+                add_modifier_asset(o, "SP - Compound Meshing", pin=True, append=True)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1240,7 +1239,7 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
                     continue
 
                 # Add modifier
-                add_sp_modifier(
+                add_modifier_asset(
                     o,
                     "SP - Curvature Analysis",
                     {"Scale":context.scene.sp_properties.analysis_scale},
@@ -1367,7 +1366,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
             extracted_segment_object.location = Vector(segment[2])
             context.collection.objects.link(extracted_segment_object)
 
-            add_sp_modifier_from_node_group(
+            add_modifier_asset_from_node_group(
                 extracted_segment_object,
                 copy_ng,
                 {
@@ -1376,7 +1375,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
                     "Target Segment": seg_id,
                 },
             )
-            add_sp_modifier_from_node_group(
+            add_modifier_asset_from_node_group(
                 extracted_segment_object,
                 meshing_ng,
                 {"Combs": True, "Resolution": 32},

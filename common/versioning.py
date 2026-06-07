@@ -1,17 +1,18 @@
 import bpy
-from enum import Enum
 import re
 from .enums import ASSET_NODE_GROUPS, ADDON_PATH, SP_obj_type, MesherName
 from .asset_append import append_node_group
 from .enums import ASSETS_FILE
 from .modifier_utils import (
-    add_sp_modifier,
+    add_modifier_asset,
     remove_modifier,
-    change_mod_settings_from_object,
     move_modifier_above_mesher,
+    get_modifier_by_name,
+    set_modifier_values,
+    get_modifier_value,
 )
 from .version_utils import is_latest_version, get_node_version
-from .utils import sp_type_of_object, has_contour
+from .utils import sp_type_of_object, has_contour, remove_suffix
 
 #####################
 ## VERSIONING DATA ##
@@ -27,7 +28,7 @@ OLD_NODE_MAPPING = {
     "SP - AOP Continuities": "SP - Connect Bezier Patch",
     "SP - Fillet Flat Patch": "SP - Fillet Curve or FlatPatch",
     "SP - Raise or Lower Curve Order": "SP - Raise or Lower Curve Degree",
-    "SP - Extrude FlatPatch" : "SP - Extrude Compound",
+    "SP - Extrude FlatPatch": "SP - Extrude Compound",
     # TODO FILL
 }
 
@@ -158,14 +159,10 @@ def highest_suffix_of_each_object_name(names):
     return last_string
 
 
-def remove_suffix(data_block_name):
-    if re.match(r"[.]\d*$", data_block_name):
-        return data_block_name[:-4]
-    else:
-        return data_block_name
-
-
 def update_node_group(name):
+    """
+    At data level. Replaces all instances
+    """
     # check if name is outdated
     new_name = name
     if remove_suffix(name) in OLD_NODE_MAPPING.keys():
@@ -215,6 +212,18 @@ def update_node_group(name):
                 mod.node_group.interface_update(bpy.context)
 
     return replaced
+
+
+def update_modifier(modifier):
+    name = remove_suffix(modifier.node_group.name)
+    if name in ASSET_NODE_GROUPS:
+        curr_node_group = bpy.data.node_groups.get(name)
+        if is_latest_version(curr_node_group):
+            return
+
+        new_node_group = append_node_group(name)
+        modifier.node_group = new_node_group
+        modifier.node_group.interface_update(bpy.context)
 
 
 def update_all_node_groups():
@@ -268,86 +277,41 @@ def update_all_node_groups():
 #####################
 #     SCENARIOS     #
 #####################
+def update_scenario_deprecate_contour_fit(object):
+    mesh_mod = get_modifier_by_name(object, MesherName.BEZIER_SURFACE)
+    set_modifier_values(mesh_mod, {"Scaling Method": 1})
+    if has_contour(object):
+        conv_mod = add_modifier_asset(
+            object, "SP - Convert Contour", {}, pin=False, append=True
+        )
+        move_modifier_above_mesher(object, conv_mod)
+    update_modifier(mesh_mod)
 
-
-def scenario_branching(obj, condition, scenario1, scenario2=None):
-    if condition(obj):
-        scenario1.run(obj)
-    elif scenario2 != None:
-        scenario2.run(obj)
-
-class ReplaceActionFunc(Enum):
-    UPDATE_MOD = None
-    ADD_MOD = add_sp_modifier
-    REMOVE_MOD = remove_modifier
-    CHANGE_MOD_VAL = change_mod_settings_from_object
-    MOD_EXISTS = None
-    MOVE_MOD = None
-    MOVE_ABOVE_MESHER = move_modifier_above_mesher
-    CONDITION = scenario_branching
-
-
-class ReplaceAction:
-    def __init__(self, func, *args):
-        self.function = func
-        self.args = args
-
-    def __add__(self, action):
-        return ReplaceScenario().add(self).add(action)
-
-    def run(self, object):
-        self.function(object, *self.args)
-
-
-class ReplaceScenario:
-    def __init__(self):
-        self.actions = []
-
-    def add(self, *args):
-        if type(args[0]) == ReplaceAction:
-            self.actions.append(args[0])
-        else:
-            self.actions.append(ReplaceAction(*args))
-        return self
-
-    def insert(self, action, index):
-        self.actions.insert(index, action)
-
-    def __add__(self, scenario):
-        self.actions.extend(scenario.actions)
-        return self
-
-    def run(self, object):
-        for a in self.actions:
-            a.run(object)
-
-
-# Deprecate contour fit
-deprecate_contour_fit_option = ReplaceScenario()
-deprecate_contour_fit_option.add(
-    ReplaceActionFunc.CHANGE_MOD_VAL, MesherName.BEZIER_SURFACE, {"Scaling Method": 1}
-)
-deprecate_contour_fit_option.add(  # only add converter if trim exists
-    ReplaceActionFunc.CONDITION,
-    has_contour,
-    ReplaceScenario()
-    .add(
-        ReplaceActionFunc.ADD_MOD,
-        "SP - Convert Contour",
-        {},
-        False,
-        True,  # append if not already
-    )
-    .add(ReplaceActionFunc.MOVE_ABOVE_MESHER, "SP - Convert Contour")
-)
-# deprecate_contour_fit_option.add(ReplaceActionFunc.UPDATE_MOD, MesherName.BEZIER_SURFACE, {}, True)
+def update_scenario_replace_fillet_factor_2(object):
+    """
+    Old fillets with fast method where 2 times 2 short with straight edges.
+    """
+    mod_name = "SP - Fillet Curve or FlatPatch"
+    mod = get_modifier_by_name(object, mod_name)
+    fillet_method = get_modifier_value(mod, "Method")
+    if fillet_method == "Distance (Fast)":
+        current_fillet = get_modifier_value(mod, "Fillet")
+        set_modifier_values(mod, {"Fillet": current_fillet / 2})
+    update_modifier(mod)
 
 
 def update_object(obj):
+    """
+    Apply every update scenario to the object
+    """
     type = sp_type_of_object(obj)
     match type:
         case SP_obj_type.BEZIER_SURFACE:
-            deprecate_contour_fit_option.run(obj)
+            update_scenario_deprecate_contour_fit(obj)
+        case SP_obj_type.PLANE:
+            update_scenario_replace_fillet_factor_2(obj)
+        case SP_obj_type.CURVE:
+            update_scenario_replace_fillet_factor_2(obj)
         case _:
             pass
 

@@ -1,7 +1,7 @@
 import bpy
 import numpy as np
 from .enums import SP_obj_type, MesherName
-from .modifier_utils import add_sp_modifier
+from .modifier_utils import add_modifier_asset
 
 def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     """
@@ -82,7 +82,7 @@ def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix=""
             SP_obj_type.BEZIER_SURFACE,
             SP_obj_type.BSPLINE_SURFACE,
         ]:
-            add_sp_modifier(obj, "SP - Reorder Grid Index", append=False)
+            add_modifier_asset(obj, "SP - Reorder Grid Index", append=False)
             settings_dict = {
                 "Resolution U": resolution,
                 "Resolution V": resolution,
@@ -90,7 +90,7 @@ def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix=""
         if SP_obj_type(types[i]) == SP_obj_type.PLANE:
             settings_dict = {"Orient": True}
 
-        add_sp_modifier(
+        add_modifier_asset(
             obj,
             MesherName.types[i],
             settings_dict,

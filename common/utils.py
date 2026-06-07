@@ -1,8 +1,9 @@
 import bmesh
 import bpy
 import numpy as np
-from mathutils import Vector, Matrix, Quaternion
+import re
 import math
+from mathutils import Vector, Matrix, Quaternion
 from typing import List, Tuple
 
 from .enums import SP_obj_type, MESHER_NAMES, GEOM_TO_SP_TYPE
@@ -867,5 +868,12 @@ def get_patch_knot_and_mult(
     return uknot, vknot, umult, vmult
 
 
-def has_contour(obj):  # simple version
+def has_contour(obj: bpy.types.Object):  # simple version
     return "Trim Contour" in obj.data.attributes.keys()
+
+
+def remove_suffix(data_block_name):
+    if re.match(r"[.]\d*$", data_block_name):
+        return data_block_name[:-4]
+    else:
+        return data_block_name
