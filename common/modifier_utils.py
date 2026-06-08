@@ -6,7 +6,7 @@ from .utils import remove_suffix
 
 def get_modifier_by_name(obj: bpy.types.Object, name):
     for m in obj.modifiers:
-        if m.type == name or (m.type == "NODES" and m.node_group.name == name):
+        if m.type == name or (m.type == "NODES" and m.node_group and m.node_group.name == name):
             return m
     return None
 
@@ -151,7 +151,7 @@ def add_modifier_asset_from_node_group(
 
 def remove_modifier(object, name: str):
     for m in object.modifiers:
-        if m.type == "NODES" and m.node_group.name == name:
+        if m.type == "NODES" and m.node_group and m.node_group.name == name:
             object.modifiers.remove(m)
             return True
         elif m.type == name:
@@ -162,7 +162,7 @@ def remove_modifier(object, name: str):
 
 def modifier_exists(object, name: str):
     for m in object.modifiers:
-        if m.type == "NODES" and m.node_group.name == name:
+        if m.type == "NODES" and m.node_group and m.node_group.name == name:
             return True
     return False
 
@@ -190,7 +190,7 @@ def move_modifier_above_mesher(obj, modifier):
 
 def has_socket_value(o, mod_name, socket_name, value):
     for m in o.modifiers:
-        if m.type == "NODES" and m.node_group.name == mod_name:
+        if m.type == "NODES" and m.node_group and m.node_group.name == mod_name:
             tree = m.node_group.interface.items_tree
             for item in tree:
                 if item.name == socket_name and isinstance(

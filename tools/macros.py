@@ -29,15 +29,7 @@ from ..common.asset_append import (
     append_multiple_node_groups,
 )
 from ..common.compound_utils import convert_compound_to_patches
-from ..common.versioning import (
-    replace_all_instances_of_node_group_by_name,
-    report_outdated_node_groups,
-    update_all_node_groups,
-    update_node_group,
-    ALL_SP_ASSET_NODE_GROUPS_EVER,
-    update_object,
-)
-from bpy.types import UILayout
+from ..common.versioning import replace_all_instances_of_node_group_by_name
 from .overlay_segment_selection import SELECTED_SEGMENTS
 
 
@@ -78,7 +70,7 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
         first_obj_found = False
         for o in objects:
             for m in o.modifiers:
-                if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+                if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
                     for it in m.node_group.interface.items_tree:
                         if (
                             it.name
@@ -515,7 +507,11 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
                 bpy.ops.object.mode_set(mode="OBJECT")
 
             for m in o.modifiers:
-                if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
+                if (
+                    m.type == "NODES"
+                    and m.node_group
+                    and m.node_group.name[:5] == "SP - "
+                ):
                     is_patch = True
                     break
 
@@ -621,7 +617,7 @@ def show_combs(self, context):
     objects = [ob for ob in context.selected_objects]
     for o in objects:
         for m in o.modifiers:
-            if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+            if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
                 if "Combs" in m.node_group.interface.items_tree.keys():
                     for it in m.node_group.interface.items_tree[
                         "Combs"
@@ -640,7 +636,7 @@ def scale_combs(self, context):
     objects = [ob for ob in context.selected_objects]
     for o in objects:
         for m in o.modifiers:
-            if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+            if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
                 if "Combs" in m.node_group.interface.items_tree.keys():
                     for it in m.node_group.interface.items_tree[
                         "Combs"
@@ -695,7 +691,7 @@ def set_seg_resolution(resolution: int, context):
         # Get global resolution
         o_resolution = 16
         for m in reversed(o.modifiers):
-            if m.type == "NODES" and m.node_group.name in MESHER_NAMES:
+            if m.type == "NODES" and m.node_group and m.node_group.name in MESHER_NAMES:
                 try:
                     o_resolution = math.ceil(
                         math.sqrt(m["Resolution U"] ** 2 + m["Resolution V"] ** 2)
@@ -758,7 +754,7 @@ def scale_analysis(self, context):
     for o in reversed(context.visible_objects):
         if o.type == "MESH":
             for m in o.modifiers:
-                if m.type == "NODES":
+                if m.type == "NODES" and m.node_group:
                     if m.node_group.name == "SP - Curvature Analysis":
                         set_modifier_values(m, {"Scale": self.analysis_scale})
                         break
@@ -1242,7 +1238,7 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
                 add_modifier_asset(
                     o,
                     "SP - Curvature Analysis",
-                    {"Scale":context.scene.sp_properties.analysis_scale},
+                    {"Scale": context.scene.sp_properties.analysis_scale},
                     append=True,
                     pin=True,
                     render=False,
@@ -1283,7 +1279,7 @@ class SP_OT_add_matcaps(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        try :
+        try:
             return not context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps
         except KeyError:
             return False
@@ -1298,7 +1294,7 @@ class SP_OT_add_matcaps(bpy.types.Operator):
             directory=ASSETS_PATH,
             type="MATCAP",
         )
-        try :
+        try:
             context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps = True
         except KeyError:
             pass
@@ -1338,8 +1334,6 @@ class SP_OT_remove_matcaps(bpy.types.Operator):
         except KeyError:
             pass
         return {"FINISHED"}
-
-
 
 
 class SP_OT_extract_segment(bpy.types.Operator):

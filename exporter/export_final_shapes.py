@@ -941,7 +941,7 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
         # Check modifiers warnings
         has_error = False
         for m in reversed(o.modifiers):
-            if m.type == "NODES":
+            if m.type == "NODES" and m.node_group:
                 for w in m.node_warnings:
                     if w.type == 'ERROR':
                         warnings.warn(f"\"{o.name}\" skipped due to error on \"{m.name}\" modifier")

@@ -42,20 +42,6 @@ class SP_obj_type(IntEnum):
         """Get corresponding MesherName."""
         return MesherName[self.name]
 
-
-# TYPES_FROM_CP_ATTR = {
-#     "CP_any_order_surf": SP_obj_type.BEZIER_SURFACE,
-#     "CP_NURBS_surf": SP_obj_type.BSPLINE_SURFACE,
-#     "CP_planar": SP_obj_type.PLANE,
-#     "CP_curve": SP_obj_type.CURVE,
-#     "axis3_cylinder": SP_obj_type.CYLINDER,
-#     "axis3_torus": SP_obj_type.TORUS,
-#     "axis3_cone": SP_obj_type.CONE,
-#     "axis3_sphere": SP_obj_type.SPHERE,
-#     "CP_extrusion": SP_obj_type.SURFACE_OF_EXTRUSION,
-#     "CP_revolution": SP_obj_type.SURFACE_OF_REVOLUTION,
-# }
-
 GEOM_TO_SP_TYPE = {
     GeomAbs_Plane: SP_obj_type.PLANE,
     GeomAbs_Cylinder: SP_obj_type.CYLINDER,
@@ -143,7 +129,6 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Oblong Wire",
     "SP - Offset Curve",
     "SP - Plot Curve Torsion",
-    "SP - Project on Flat Patch",
     "SP - Radial Array FlatPatch",
     "SP - Raise or Lower Curve Degree",
     "SP - Raise or Lower Degree of Selected Segment",
@@ -178,11 +163,10 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Loft from Internal Curves",
     "SP - Loft",
     "SP - Mirror Patch Control Points",
-    "SP - Nearest Curve on Bezier Patch",
     "SP - Offset Precisely",
     "SP - Patch Exact Normals",
     "SP - Patch Normal to Side",
-    "SP - Project Curve on Bezier Patch",
+    "SP - Project Curve on Surface",
     "SP - Raise or Lower Degree Bezier Patch",
     "SP - Reorder Grid Index",
     "SP - Ruled Surface from Mesh Loop",
