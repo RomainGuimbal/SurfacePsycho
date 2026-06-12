@@ -92,7 +92,7 @@ def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix=""
 
         add_modifier_asset(
             obj,
-            MesherName.types[i],
+            MesherName(types[i]),
             settings_dict,
             pin=True,
             append=False,

@@ -1,6 +1,7 @@
 import bpy
 import re
-from .enums import ASSET_NODE_GROUPS, ADDON_PATH, SP_obj_type, MesherName
+from .asset_list import ASSET_NODE_GROUPS
+from .enums import ADDON_PATH, SP_obj_type, MesherName
 from .asset_append import append_node_group
 from .enums import ASSETS_FILE
 from .modifier_utils import (
@@ -161,14 +162,14 @@ def highest_suffix_of_each_object_name(names):
 
 def update_node_group(name):
     """
-    At data level. Replaces all instances
+    At bpy.data level. Replaces all instances
     """
     # check if name is outdated
     new_name = name
-    if remove_suffix(name) in OLD_NODE_MAPPING.keys():
+    if remove_suffix(name) in OLD_NODE_MAPPING:
         new_name = OLD_NODE_MAPPING[name]
 
-    # get latest version if it exists
+    # Get latest version if it exists
     latest_node = None
     for ng in bpy.data.node_groups:
         # assumes latest version never has suffix
@@ -198,7 +199,7 @@ def update_node_group(name):
             ng.type == "GEOMETRY"
             and ng_name == name
             and ng != latest_node
-            and (ng_name in ASSET_NODE_GROUPS or ng_name in OLD_NODE_MAPPING.keys())
+            and (ng_name in ASSET_NODE_GROUPS or ng_name in OLD_NODE_MAPPING)
         ):
             if latest_node is None:
                 latest_node = append_node_group(new_name)

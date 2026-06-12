@@ -4,6 +4,7 @@ from .version_utils import is_latest_version
 
 
 def remove_preview_image(ng: bpy.types.GeometryNodeTree):
+    # TODO : use new built-in operator
     if ng.preview:
         ng.preview.image_size = [0, 0]
         return True
