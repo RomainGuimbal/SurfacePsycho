@@ -130,8 +130,9 @@ def assign_asset_to_catalog(asset_name, catalog_identifier):
     # Assign to catalog if it is an asset
     if asset.asset_data is not None:
         asset.asset_data.catalog_id = catalog_uuid
+        asset.asset_data.license = "GPL 3.0"
+        asset.asset_data.copyright = "2026 Romain Guimbal"
         asset.asset_data.author = "Romain Guimbal"
-        asset.asset_data.copyright = "GPL 3.0"
     else:
         raise ValueError(f"'{asset_name}' is not marked as an asset")
 
@@ -374,4 +375,6 @@ if __name__ == "__main__":
     bpy.ops.wm.save_as_mainfile(filepath=tmp_path, copy=True)
     shutil.move(tmp_path, str(FILE_PATH))
 
-    print("\nAssets successfully updated !")
+    print("\n\033[32m"+"="*50)
+    print("\n         Assets successfully updated !\n")
+    print("="*50+"\033[0m\n")

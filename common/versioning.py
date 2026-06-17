@@ -1,5 +1,6 @@
 import bpy
 import re
+import numpy as np
 from .asset_list import ASSET_NODE_GROUPS
 from .enums import ADDON_PATH, SP_obj_type, MesherName
 from .asset_append import append_node_group
@@ -9,6 +10,7 @@ from .modifier_utils import (
     remove_modifier,
     move_modifier_above_mesher,
     get_modifier_by_name,
+    get_modifier_by_names,
     set_modifier_values,
     get_modifier_value,
 )
@@ -22,6 +24,7 @@ from .utils import sp_type_of_object, has_contour, remove_suffix
 # Old nodes names
 OLD_NODE_MAPPING = {
     "SP - Trim 4 Sides": "SP - Crop or Extend Patch",
+    "SP - AOP Trim 4 sides": "SP - Crop or Extend Patch",
     "SP - Any Order Patch Meshing": "SP - Bezier Patch Meshing",
     "SP - Combs": "",
     "SP - Continuities Curve": "SP - Connect Curve",
@@ -30,6 +33,7 @@ OLD_NODE_MAPPING = {
     "SP - Fillet Flat Patch": "SP - Fillet Curve or FlatPatch",
     "SP - Raise or Lower Curve Order": "SP - Raise or Lower Curve Degree",
     "SP - Extrude FlatPatch": "SP - Extrude Compound",
+    "SP - Plot Distance Between Curves": "SP - Distance Between Curves",
     # TODO FILL
 }
 
@@ -226,6 +230,14 @@ def update_modifier(modifier):
         modifier.node_group = new_node_group
         modifier.node_group.interface_update(bpy.context)
 
+    if name in OLD_NODE_MAPPING.keys():
+        curr_node_group = bpy.data.node_groups.get(name)
+
+        new_name = OLD_NODE_MAPPING[name]
+        new_node_group = append_node_group(new_name)
+        modifier.node_group = new_node_group
+        modifier.node_group.interface_update(bpy.context)
+
 
 def update_all_node_groups():
     # get latest version nodes if they exist
@@ -288,18 +300,40 @@ def update_scenario_deprecate_contour_fit(object):
         move_modifier_above_mesher(object, conv_mod)
     update_modifier(mesh_mod)
 
+
 def update_scenario_replace_fillet_factor_2(object):
     """
     Old fillets with fast method where 2 times 2 short with straight edges.
+    TODO handle 2 modifiers of the same type on the same objects
     """
-    mod_name = "SP - Fillet Curve or FlatPatch"
-    mod = get_modifier_by_name(object, mod_name)
-    fillet_method = get_modifier_value(mod, "Method")
-    if fillet_method == "Distance (Fast)":
-        current_fillet = get_modifier_value(mod, "Fillet")
-        set_modifier_values(mod, {"Fillet": current_fillet / 2})
-    update_modifier(mod)
+    mod_names = ["SP - Fillet Curve or FlatPatch"]
+    values = list(OLD_NODE_MAPPING.values())
+    if mod_names[0] in values:
+        old_name = list(OLD_NODE_MAPPING.keys())[values.index(mod_names[0])]
+        mod_names.append(old_name)
 
+    mod = get_modifier_by_names(object, mod_names)
+    if mod:
+        fillet_method = get_modifier_value(mod, "Method")
+        # item = "Distance (Fast)" if mod.node_group.name == mod_names[0] else "Distance"
+        item = 1
+        if fillet_method == item:
+            current_fillet = get_modifier_value(mod, "Fillet")
+            set_modifier_values(mod, {"Fillet": current_fillet / 2})
+        update_modifier(mod)
+
+
+def upgrade_vertex_group_endpoints(obj):
+    vg = obj.vertex_groups["Endpoints"]
+    indices = [
+        v.index for v in obj.data.vertices if vg.index in [vg.group for vg in v.groups]
+    ]
+    obj.vertex_groups.remove(vg)
+    att = obj.data.attributes.new(name="Endpoints", type="BOOLEAN", domain="POINT")
+    values = np.full(len(obj.data.vertices), False, dtype=bool)
+    for i in indices:
+        values[i]=True
+    att.data.foreach_set("value", values)
 
 def update_object(obj):
     """
@@ -315,6 +349,13 @@ def update_object(obj):
             update_scenario_replace_fillet_factor_2(obj)
         case _:
             pass
+
+    if "Endpoints" in obj.vertex_groups.keys():
+        upgrade_vertex_group_endpoints(obj)
+
+    for m in obj.modifiers:
+        if m.type == "NODES" and m.node_group:
+            update_modifier(m)
 
 
 #####################

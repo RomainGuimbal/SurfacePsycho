@@ -886,7 +886,7 @@ def has_contour(obj: bpy.types.Object):  # simple version
 
 
 def remove_suffix(data_block_name):
-    if re.match(r"[.]\d*$", data_block_name):
+    if re.match(r".*[.]\d*$", data_block_name):
         return data_block_name[:-4]
     else:
         return data_block_name

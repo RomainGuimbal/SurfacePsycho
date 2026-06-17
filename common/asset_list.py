@@ -17,8 +17,6 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Interpolate Curve or FlatPatch",
     "SP - Interval Curve",
     "SP - Make SVG Ready",
-    "SP - Mirror Curve Control Points",
-    "SP - Mirror FlatPatch or Curve",
     "SP - Multi Split Curve",
     "SP - NURBS to Bezier Curve or FlatPatch",
     "SP - Oblong Wire",
@@ -36,6 +34,7 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Set Edge Length",
     "SP - Split Curve",
     "SP - Switch Curve Direction",
+    "SP - Set Segment Type",
     # "SP - Bezier Circlular Arc",
     # "SP - Compose FlatPatch From Sides",
 }
@@ -56,9 +55,7 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Gradient Map",
     "SP - Loft from Internal Curves",
     "SP - Loft",
-    "SP - Mirror Patch Control Points",
     "SP - Offset Precisely",
-    "SP - Patch Exact Normals",
     "SP - Patch Normal to Side",
     "SP - Project Curve on Surface",
     "SP - Raise or Lower Degree Bezier Patch",
@@ -97,6 +94,8 @@ ASSET_NODE_GROUPS_OTHER_SURFACES = {
     "SP - Toroidal Meshing",
     "SP - Transform UVMap",
     "SP - Connect Flat Patch",
+    "SP - Symmetrize",
+    "SP - Square Fill",
 }
 
 ASSET_NODE_GROUPS_COMPOUND = {

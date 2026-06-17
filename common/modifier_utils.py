@@ -6,7 +6,22 @@ from .utils import remove_suffix
 
 def get_modifier_by_name(obj: bpy.types.Object, name):
     for m in obj.modifiers:
-        if m.type == name or (m.type == "NODES" and m.node_group and m.node_group.name == name):
+        if m.type == "NODES" and m.node_group and m.node_group.name == name:
+            return m
+    return None
+
+
+def get_modifier_by_names(obj: bpy.types.Object, names):
+    """For several name candidates"""
+    for m in obj.modifiers:
+        if m.type == "NODES" and m.node_group and m.node_group.name in names:
+            return m
+    return None
+
+
+def get_modifier_by_type(obj: bpy.types.Object, name):
+    for m in obj.modifiers:
+        if m.type == name:
             return m
     return None
 
