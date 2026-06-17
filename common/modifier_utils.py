@@ -1,6 +1,6 @@
 import bpy
 from .asset_append import append_node_group
-from .enums import MESHER_NAMES
+from .enums import MesherName
 from .utils import remove_suffix
 
 
@@ -190,7 +190,7 @@ def move_modifier_above_mesher(obj, modifier):
     for i, m in enumerate(reversed(obj.modifiers)):
         if m == modifier:
             mod_index = mod_count - 1 - i
-        elif remove_suffix(m.node_group.name) in MESHER_NAMES.values():
+        elif remove_suffix(m.node_group.name) in MesherName:
             mesh_mod_index = mod_count - 1 - i
         if mod_index > -1 and mesh_mod_index > -1:
             break

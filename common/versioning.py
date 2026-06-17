@@ -35,6 +35,7 @@ OLD_TO_NEW_NODE_MAPPING = {
     "SP - Extrude FlatPatch": "SP - Extrude Compound",
     "SP - Plot Distance Between Curves": "SP - Distance Between Curves",
     "SP - Bezier Curve Any Order": "SP - Curve Meshing",
+    "SP - AOP Continuities with Flat Patch": "SP - Connect Bezier Patch",
     # TODO FILL
 }
 
@@ -292,10 +293,24 @@ def update_all_node_groups():
 
     return replaced
 
+
 def get_node_names_all_versions(curr_name):
     list = [curr_name]
     list.extend(NEW_TO_OLD_NODE_MAPPING.get(curr_name, []))
     return list
+
+
+def sp_type_of_outdated_objects(o):
+    type = sp_type_of_object(o)
+    if not type:
+        for m in reversed(o.modifiers):
+            if m.type == "NODES" and m.node_group and m.show_viewport:
+                name = remove_suffix(m.node_group.name)
+                # endswith is not very clean but ok
+                if name.endswith("Meshing") and name in OLD_TO_NEW_NODE_MAPPING.keys():
+                    type = SP_obj_type[MesherName(OLD_TO_NEW_NODE_MAPPING[name]).name]
+                    break
+    return type
 
 
 #####################
@@ -346,7 +361,32 @@ def upgrade_vertex_group_endpoints(obj):
 def update_scenario_switch_resolutions(mod):
     u = get_modifier_value(mod, "Resolution U")
     v = get_modifier_value(mod, "Resolution V")
-    set_modifier_values({"Resolution U": v, "Resolution V": u})
+    set_modifier_values(mod, {"Resolution U": v, "Resolution V": u})
+
+
+def update_scenario_loft_segment(mod):
+    tree = mod.node_group.interface.items_tree
+
+    # Because of a mistake, "Segment" is also the name of 2 sockets in 0.9 loft
+    seg_sockets_count = sum([item.name.startswith("Segment") for item in tree])
+    if seg_sockets_count > 1:
+        update_modifier(mod)
+        return
+
+    try:
+        segment = get_modifier_value(mod, "Segment")
+    except ValueError:
+        update_modifier(mod)
+        return
+
+    update_modifier(mod)
+    new_tree = mod.node_group.interface.items_tree
+    for item in new_tree:
+        if item.name.startswith("Segment") and isinstance(
+            item, bpy.types.NodeTreeInterfaceSocketInt
+        ):
+            mod[item.identifier] = segment
+
 
 
 def common_to_all_non_plane_surfaces(m, name, mesher_names, obj, version):
@@ -366,7 +406,7 @@ def update_object(obj):
     """
     Apply every update scenario to the object
     """
-    type = sp_type_of_object(obj)
+    type = sp_type_of_outdated_objects(obj)
     if not type:
         print(f"{obj.name} is not a SurfacePsycho object")
         return None
@@ -378,6 +418,7 @@ def update_object(obj):
 
     # Declare before loop for performances
     fillet_names = get_node_names_all_versions("SP - Fillet Curve or FlatPatch")
+    loft_names = get_node_names_all_versions("SP - Loft")
 
     # To ckeck : what happen on non SP modifiers (but sp object)
     for m in obj.modifiers:
@@ -413,7 +454,10 @@ def update_object(obj):
                     common_to_all_non_plane_surfaces(
                         m, name, mesher_names, obj, version
                     )
-                    update_modifier(m)
+                    if name in loft_names:
+                        update_scenario_loft_segment(m)
+                    else:
+                        update_modifier(m)
                 case SP_obj_type.BSPLINE_SURFACE:
                     common_to_all_non_plane_surfaces(
                         m, name, mesher_names, obj, version

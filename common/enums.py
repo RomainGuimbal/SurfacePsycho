@@ -9,6 +9,7 @@ from OCP.GeomAbs import (
     GeomAbs_BSplineSurface,
     GeomAbs_SurfaceOfRevolution,
     GeomAbs_SurfaceOfExtrusion,
+    GeomAbs_OffsetSurface,
     GeomAbs_OtherSurface,
 )
 from os.path import dirname, abspath, basename, join
@@ -40,7 +41,7 @@ class SP_obj_type(IntEnum):
     @property
     def mesher_name(self) -> 'MesherName':
         """Get corresponding MesherName."""
-        return MesherName[self.name]
+        return MesherName[self.name] if self.name in MesherName.keys() else None
 
 GEOM_TO_SP_TYPE = {
     GeomAbs_Plane: SP_obj_type.PLANE,
@@ -52,21 +53,8 @@ GEOM_TO_SP_TYPE = {
     GeomAbs_BSplineSurface: SP_obj_type.BSPLINE_SURFACE,
     GeomAbs_SurfaceOfRevolution: SP_obj_type.SURFACE_OF_REVOLUTION,
     GeomAbs_SurfaceOfExtrusion: SP_obj_type.SURFACE_OF_EXTRUSION,
+    GeomAbs_OffsetSurface: SP_obj_type.OFFSET_SURFACE,
     GeomAbs_OtherSurface: SP_obj_type.OTHER_SURFACE,
-}
-
-MESHER_NAMES = {
-    SP_obj_type.PLANE: "SP - FlatPatch Meshing",
-    SP_obj_type.CYLINDER: "SP - Cylindrical Meshing",
-    SP_obj_type.CONE: "SP - Conical Meshing",
-    SP_obj_type.SPHERE: "SP - Spherical Meshing",
-    SP_obj_type.TORUS: "SP - Toroidal Meshing",
-    SP_obj_type.BEZIER_SURFACE: "SP - Bezier Patch Meshing",
-    SP_obj_type.BSPLINE_SURFACE: "SP - NURBS Patch Meshing",
-    SP_obj_type.SURFACE_OF_REVOLUTION: "SP - Surface of Revolution Meshing",
-    SP_obj_type.SURFACE_OF_EXTRUSION: "SP - Surface of Extrusion Meshing",
-    SP_obj_type.CURVE: "SP - Curve Meshing",
-    SP_obj_type.COMPOUND: "SP - Compound Meshing",
 }
 
 class MesherName(StrEnum):
@@ -79,8 +67,14 @@ class MesherName(StrEnum):
     BSPLINE_SURFACE = "SP - NURBS Patch Meshing"
     SURFACE_OF_REVOLUTION = "SP - Surface of Revolution Meshing"
     SURFACE_OF_EXTRUSION = "SP - Surface of Extrusion Meshing"
+    OFFSET_SURFACE = ""
     CURVE = "SP - Curve Meshing"
     COMPOUND = "SP - Compound Meshing"
+
+    @classmethod
+    def keys(self):
+        return [s.name for s in self]
+        
 
 # to replace with official index
 class SP_segment_type(IntEnum):

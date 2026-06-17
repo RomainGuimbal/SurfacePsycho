@@ -1,7 +1,8 @@
 import bpy
 import numpy as np
-from .enums import SP_obj_type, MesherName
+from .enums import SP_obj_type
 from .modifier_utils import add_modifier_asset
+from .utils import remove_suffix
 
 def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     """
@@ -52,7 +53,7 @@ def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix=""
     # Find compound meshing modifier
     mod = None
     for m in reversed(o.modifiers):
-        if m.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
+        if remove_suffix(m.node_group.name) == "SP - Compound Meshing":
             mod = m
             break
 

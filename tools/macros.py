@@ -5,9 +5,9 @@ from mathutils import Vector, Matrix
 import bmesh
 from ..common.enums import (
     SP_obj_type,
-    MESHER_NAMES,
     ADDON_PREF_KEY,
     ASSETS_PATH,
+    MesherName
 )
 from ..common.utils import (
     sp_type_of_object,
@@ -691,7 +691,7 @@ def set_seg_resolution(resolution: int, context):
         # Get global resolution
         o_resolution = 16
         for m in reversed(o.modifiers):
-            if m.type == "NODES" and m.node_group and m.node_group.name in MESHER_NAMES:
+            if m.type == "NODES" and m.node_group and m.node_group.name in MesherName:
                 try:
                     o_resolution = math.ceil(
                         math.sqrt(m["Resolution U"] ** 2 + m["Resolution V"] ** 2)

@@ -1,12 +1,12 @@
-import bmesh
 import bpy
+import bmesh
 import numpy as np
 import re
 import math
 from mathutils import Vector, Matrix, Quaternion
 from typing import List, Tuple
 
-from .enums import SP_obj_type, MESHER_NAMES, GEOM_TO_SP_TYPE
+from .enums import SP_obj_type, MesherName, GEOM_TO_SP_TYPE
 
 from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
@@ -68,13 +68,12 @@ def sp_type_of_object(o: bpy.types.Object) -> SP_obj_type:
         else:
             return SP_obj_type.EMPTY
 
-    # Standard
+    # Others
     for m in reversed(o.modifiers):
         if m.type == "NODES" and m.node_group and m.show_viewport:
-            for k, v in MESHER_NAMES.items():
-                if v == m.node_group.name[:-4] or v == m.node_group.name:
-                    return k
-
+            name = remove_suffix(m.node_group.name)
+            if name in MesherName:
+                return SP_obj_type[MesherName(name).name]
     # Non SP
     return None
 
@@ -216,6 +215,7 @@ def add_bool_attribute(
         return False
 
     return True
+
 
 # TODO atomize
 def set_attribute(context, att_name, value, fallback_type):
