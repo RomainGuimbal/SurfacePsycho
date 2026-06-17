@@ -1,6 +1,7 @@
 import bpy
 import re
 import numpy as np
+from packaging.version import Version
 from .asset_list import ASSET_NODE_GROUPS
 from .enums import ADDON_PATH, SP_obj_type, MesherName
 from .asset_append import append_node_group
@@ -22,11 +23,10 @@ from .utils import sp_type_of_object, has_contour, remove_suffix
 #####################
 
 # Old nodes names
-OLD_NODE_MAPPING = {
+OLD_TO_NEW_NODE_MAPPING = {
     "SP - Trim 4 Sides": "SP - Crop or Extend Patch",
     "SP - AOP Trim 4 sides": "SP - Crop or Extend Patch",
     "SP - Any Order Patch Meshing": "SP - Bezier Patch Meshing",
-    "SP - Combs": "",
     "SP - Continuities Curve": "SP - Connect Curve",
     "SP - Trim Range Any Order Curve": "SP - Crop or Extend Curve",
     "SP - AOP Continuities": "SP - Connect Bezier Patch",
@@ -34,8 +34,14 @@ OLD_NODE_MAPPING = {
     "SP - Raise or Lower Curve Order": "SP - Raise or Lower Curve Degree",
     "SP - Extrude FlatPatch": "SP - Extrude Compound",
     "SP - Plot Distance Between Curves": "SP - Distance Between Curves",
+    "SP - Bezier Curve Any Order": "SP - Curve Meshing",
     # TODO FILL
 }
+
+# Reversed mapping
+NEW_TO_OLD_NODE_MAPPING = {}
+for k, v in OLD_TO_NEW_NODE_MAPPING.items():
+    NEW_TO_OLD_NODE_MAPPING[v] = NEW_TO_OLD_NODE_MAPPING.get(v, []) + [k]
 
 # Old nodes params
 OLD_NODE_PARAMS = {
@@ -43,7 +49,7 @@ OLD_NODE_PARAMS = {
     # TODO FILL
 }
 
-ALL_SP_ASSET_NODE_GROUPS_EVER = ASSET_NODE_GROUPS | set(OLD_NODE_MAPPING.keys())
+ALL_SP_ASSET_NODE_GROUPS_EVER = ASSET_NODE_GROUPS | set(OLD_TO_NEW_NODE_MAPPING.keys())
 
 
 #####################
@@ -170,8 +176,8 @@ def update_node_group(name):
     """
     # check if name is outdated
     new_name = name
-    if remove_suffix(name) in OLD_NODE_MAPPING:
-        new_name = OLD_NODE_MAPPING[name]
+    if remove_suffix(name) in OLD_TO_NEW_NODE_MAPPING:
+        new_name = OLD_TO_NEW_NODE_MAPPING[name]
 
     # Get latest version if it exists
     latest_node = None
@@ -203,7 +209,7 @@ def update_node_group(name):
             ng.type == "GEOMETRY"
             and ng_name == name
             and ng != latest_node
-            and (ng_name in ASSET_NODE_GROUPS or ng_name in OLD_NODE_MAPPING)
+            and (ng_name in ASSET_NODE_GROUPS or ng_name in OLD_TO_NEW_NODE_MAPPING)
         ):
             if latest_node is None:
                 latest_node = append_node_group(new_name)
@@ -230,10 +236,10 @@ def update_modifier(modifier):
         modifier.node_group = new_node_group
         modifier.node_group.interface_update(bpy.context)
 
-    if name in OLD_NODE_MAPPING.keys():
+    if name in OLD_TO_NEW_NODE_MAPPING.keys():
         curr_node_group = bpy.data.node_groups.get(name)
 
-        new_name = OLD_NODE_MAPPING[name]
+        new_name = OLD_TO_NEW_NODE_MAPPING[name]
         new_node_group = append_node_group(new_name)
         modifier.node_group = new_node_group
         modifier.node_group.interface_update(bpy.context)
@@ -271,8 +277,8 @@ def update_all_node_groups():
             replace_node_group(ng, latest_nodes[name])
             bpy.data.node_groups.remove(ng)
             replaced += 1
-        elif name in OLD_NODE_MAPPING.keys():
-            new_name = OLD_NODE_MAPPING[name]
+        elif name in OLD_TO_NEW_NODE_MAPPING.keys():
+            new_name = OLD_TO_NEW_NODE_MAPPING[name]
             if new_name not in latest_nodes.keys():
                 latest_nodes[new_name] = append_node_group(new_name)
             replace_node_group(ng, latest_nodes[new_name])
@@ -286,76 +292,152 @@ def update_all_node_groups():
 
     return replaced
 
+def get_node_names_all_versions(curr_name):
+    list = [curr_name]
+    list.extend(NEW_TO_OLD_NODE_MAPPING.get(curr_name, []))
+    return list
+
 
 #####################
 #     SCENARIOS     #
 #####################
-def update_scenario_deprecate_contour_fit(object):
-    mesh_mod = get_modifier_by_name(object, MesherName.BEZIER_SURFACE)
-    set_modifier_values(mesh_mod, {"Scaling Method": 1})
+def update_scenario_deprecate_contour_fit(m, object):
+    set_modifier_values(m, {"Scaling Method": 1})
     if has_contour(object):
         conv_mod = add_modifier_asset(
             object, "SP - Convert Contour", {}, pin=False, append=True
         )
         move_modifier_above_mesher(object, conv_mod)
-    update_modifier(mesh_mod)
 
 
-def update_scenario_replace_fillet_factor_2(object):
+def update_scenario_replace_fillet_factor_2(mod):
     """
     Old fillets with fast method where 2 times 2 short with straight edges.
-    TODO handle 2 modifiers of the same type on the same objects
     """
-    mod_names = ["SP - Fillet Curve or FlatPatch"]
-    values = list(OLD_NODE_MAPPING.values())
-    if mod_names[0] in values:
-        old_name = list(OLD_NODE_MAPPING.keys())[values.index(mod_names[0])]
-        mod_names.append(old_name)
+    fillet_method = get_modifier_value(mod, "Method")
+    item = 1
+    if fillet_method == item:
+        current_fillet = get_modifier_value(mod, "Fillet")
+        set_modifier_values(mod, {"Fillet": current_fillet / 2})
 
-    mod = get_modifier_by_names(object, mod_names)
-    if mod:
-        fillet_method = get_modifier_value(mod, "Method")
-        # item = "Distance (Fast)" if mod.node_group.name == mod_names[0] else "Distance"
-        item = 1
-        if fillet_method == item:
-            current_fillet = get_modifier_value(mod, "Fillet")
-            set_modifier_values(mod, {"Fillet": current_fillet / 2})
+
+def update_scenario_curve_preserve_combs_display(mod):
+    if get_modifier_value(mod, "Enable"):
         update_modifier(mod)
+        set_modifier_values(mod, {"Combs": True})
 
 
 def upgrade_vertex_group_endpoints(obj):
     vg = obj.vertex_groups["Endpoints"]
     indices = [
-        v.index for v in obj.data.vertices if vg.index in [vg.group for vg in v.groups]
+        v.index
+        for v in obj.data.vertices
+        if (vg.index in [vg.group for vg in v.groups])
+        and v.groups[vg.index].weight > 0.6
     ]
     obj.vertex_groups.remove(vg)
     att = obj.data.attributes.new(name="Endpoints", type="BOOLEAN", domain="POINT")
     values = np.full(len(obj.data.vertices), False, dtype=bool)
     for i in indices:
-        values[i]=True
+        values[i] = True
     att.data.foreach_set("value", values)
+
+
+def update_scenario_switch_resolutions(mod):
+    u = get_modifier_value(mod, "Resolution U")
+    v = get_modifier_value(mod, "Resolution V")
+    set_modifier_values({"Resolution U": v, "Resolution V": u})
+
+
+def common_to_all_non_plane_surfaces(m, name, mesher_names, obj, version):
+    if name in mesher_names:
+        update_scenario_deprecate_contour_fit(m, obj)
+        if version < Version("0.9.0"):
+            # issue here because versions were not set in 0.9
+            update_scenario_switch_resolutions(m)
+
+
+# TODO ?
+# - def update_scenario_patch_combs_to_isoparams(mod)(also do the operator for fast isoparam)
+# - def update_scenario_remove_standalone_modifier_combs(["SP - Combs Any Order Curve", "SP - Combs"])
+
 
 def update_object(obj):
     """
     Apply every update scenario to the object
     """
     type = sp_type_of_object(obj)
-    match type:
-        case SP_obj_type.BEZIER_SURFACE:
-            update_scenario_deprecate_contour_fit(obj)
-        case SP_obj_type.PLANE:
-            update_scenario_replace_fillet_factor_2(obj)
-        case SP_obj_type.CURVE:
-            update_scenario_replace_fillet_factor_2(obj)
-        case _:
-            pass
+    if not type:
+        print(f"{obj.name} is not a SurfacePsycho object")
+        return None
 
     if "Endpoints" in obj.vertex_groups.keys():
         upgrade_vertex_group_endpoints(obj)
 
+    mesher_names = get_node_names_all_versions(str(type.mesher_name))
+
+    # Declare before loop for performances
+    fillet_names = get_node_names_all_versions("SP - Fillet Curve or FlatPatch")
+
+    # To ckeck : what happen on non SP modifiers (but sp object)
     for m in obj.modifiers:
         if m.type == "NODES" and m.node_group:
-            update_modifier(m)
+            name = remove_suffix(m.node_group.name)
+            version = get_node_version(m.node_group)
+            match type:
+                case SP_obj_type.PLANE:
+                    if name in fillet_names:
+                        update_scenario_replace_fillet_factor_2(m)
+                    update_modifier(m)
+                case SP_obj_type.CYLINDER:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.CONE:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.SPHERE:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.TORUS:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.BEZIER_SURFACE:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.BSPLINE_SURFACE:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.SURFACE_OF_REVOLUTION:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.SURFACE_OF_EXTRUSION:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.CURVE:
+                    if name in mesher_names:
+                        update_scenario_curve_preserve_combs_display(m)
+                    else:  # To skip update modifier which has to be inside the scenario
+                        if name in fillet_names:
+                            update_scenario_replace_fillet_factor_2(m)
+                        update_modifier(m)
+                case SP_obj_type.COMPOUND:
+                    update_modifier(m)
 
 
 #####################
