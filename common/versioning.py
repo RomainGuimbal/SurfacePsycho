@@ -14,6 +14,7 @@ from .modifier_utils import (
     get_modifier_by_names,
     set_modifier_values,
     get_modifier_value,
+    get_modifier_values,
 )
 from .version_utils import is_latest_version, get_node_version
 from .utils import sp_type_of_object, has_contour, remove_suffix
@@ -36,6 +37,7 @@ OLD_TO_NEW_NODE_MAPPING = {
     "SP - Plot Distance Between Curves": "SP - Distance Between Curves",
     "SP - Bezier Curve Any Order": "SP - Curve Meshing",
     "SP - AOP Continuities with Flat Patch": "SP - Connect Bezier Patch",
+    "SP - Blend Flat Patches": "SP - Blend Surfaces",
     # TODO FILL
 }
 
@@ -44,14 +46,7 @@ NEW_TO_OLD_NODE_MAPPING = {}
 for k, v in OLD_TO_NEW_NODE_MAPPING.items():
     NEW_TO_OLD_NODE_MAPPING[v] = NEW_TO_OLD_NODE_MAPPING.get(v, []) + [k]
 
-# Old nodes params
-OLD_NODE_PARAMS = {
-    "connect": {"side": ((0, 1, 2, 3), (2, 3, 0, 1))}
-    # TODO FILL
-}
-
 ALL_SP_ASSET_NODE_GROUPS_EVER = ASSET_NODE_GROUPS | set(OLD_TO_NEW_NODE_MAPPING.keys())
-
 
 #####################
 ## VERSIONING CODE ##
@@ -228,8 +223,8 @@ def update_node_group(name):
 
 def update_modifier(modifier):
     name = remove_suffix(modifier.node_group.name)
+    curr_node_group = modifier.node_group
     if name in ASSET_NODE_GROUPS:
-        curr_node_group = bpy.data.node_groups.get(name)
         if is_latest_version(curr_node_group):
             return
 
@@ -238,8 +233,6 @@ def update_modifier(modifier):
         modifier.node_group.interface_update(bpy.context)
 
     if name in OLD_TO_NEW_NODE_MAPPING.keys():
-        curr_node_group = bpy.data.node_groups.get(name)
-
         new_name = OLD_TO_NEW_NODE_MAPPING[name]
         new_node_group = append_node_group(new_name)
         modifier.node_group = new_node_group
@@ -302,7 +295,7 @@ def get_node_names_all_versions(curr_name):
 
 def sp_type_of_outdated_objects(o):
     type = sp_type_of_object(o)
-    if not type:
+    if type is None:
         for m in reversed(o.modifiers):
             if m.type == "NODES" and m.node_group and m.show_viewport:
                 name = remove_suffix(m.node_group.name)
@@ -388,6 +381,37 @@ def update_scenario_loft_segment(mod):
             mod[item.identifier] = segment
 
 
+def update_scenario_connect_bezier_patch(mod, version):
+    if version < Version("0.9.0"):  # cannot know :(
+        param_dict = {}
+
+        is_flat = mod.node_group.name.endswith("Flat Patch")
+
+        # Side shift
+        side_map = {0: 2, 1: 3, 2: 0, 3: 1}
+        if not is_flat:
+            param_dict["Target Segment"] = side_map[
+                get_modifier_value(mod, "Target Side")
+            ]
+        # param_dict["Self Side"] = side_map[get_modifier_value(mod, "Side")] # apparently not needed
+
+        # Continuity checkboxes
+        try:
+            g1, g2, g3, g4 = get_modifier_values(mod, set(("G1", "G2", "G3", "G4")))
+            continuity = 4 if g4 else 3 if g3 else 2 if g2 else 1 if g1 else 0
+            param_dict["Continuity"] = continuity
+        except ValueError:
+            pass
+
+        # Target reasign
+        if is_flat:
+            param_dict["Target"] = get_modifier_value(mod, "Flat Patch Target")
+
+        update_modifier(mod)
+        set_modifier_values(mod, param_dict)
+        return
+    update_modifier(mod)
+
 
 def common_to_all_non_plane_surfaces(m, name, mesher_names, obj, version):
     if name in mesher_names:
@@ -400,6 +424,7 @@ def common_to_all_non_plane_surfaces(m, name, mesher_names, obj, version):
 # TODO ?
 # - def update_scenario_patch_combs_to_isoparams(mod)(also do the operator for fast isoparam)
 # - def update_scenario_remove_standalone_modifier_combs(["SP - Combs Any Order Curve", "SP - Combs"])
+# - flip face if blend surface
 
 
 def update_object(obj):
@@ -407,7 +432,7 @@ def update_object(obj):
     Apply every update scenario to the object
     """
     type = sp_type_of_outdated_objects(obj)
-    if not type:
+    if type is None:
         print(f"{obj.name} is not a SurfacePsycho object")
         return None
 
@@ -419,6 +444,7 @@ def update_object(obj):
     # Declare before loop for performances
     fillet_names = get_node_names_all_versions("SP - Fillet Curve or FlatPatch")
     loft_names = get_node_names_all_versions("SP - Loft")
+    connect_bezier_names = get_node_names_all_versions("SP - Connect Bezier Patch")
 
     # To ckeck : what happen on non SP modifiers (but sp object)
     for m in obj.modifiers:
@@ -454,7 +480,9 @@ def update_object(obj):
                     common_to_all_non_plane_surfaces(
                         m, name, mesher_names, obj, version
                     )
-                    if name in loft_names:
+                    if name in connect_bezier_names:
+                        update_scenario_connect_bezier_patch(m, version)
+                    elif name in loft_names:
                         update_scenario_loft_segment(m)
                     else:
                         update_modifier(m)
@@ -579,8 +607,15 @@ class SP_OT_update_objects(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        for o in context.selected_objects:
-            update_object(o)
+        from viztracer import VizTracer
+
+        with VizTracer(
+            output_file="/tmp/blender_trace.json",
+            tracer_entries=3000000,
+            min_duration=5,
+        ) as tracer:
+            for o in context.selected_objects:
+                update_object(o)
 
         return {"FINISHED"}
 
