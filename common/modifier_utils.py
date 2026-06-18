@@ -71,7 +71,7 @@ def set_modifier_values(modifier, settings_dict):
                 break
 
 
-def get_modifier_value(modifier, socket_name):
+def get_modifier_value(modifier, socket_name: str):
     """
     Only for GN node groups
     """
@@ -82,6 +82,25 @@ def get_modifier_value(modifier, socket_name):
         ):
             return modifier[item.identifier]
     raise ValueError(f"Socket '{socket_name}' not found in modifier '{modifier.name}'")
+
+
+def get_modifier_values(modifier, socket_names):
+    """
+    Only for GN node groups
+    """
+    vals = []
+    remaining = set(socket_names)
+    tree = modifier.node_group.interface.items_tree
+
+    for item in tree:
+        if item.name in socket_names and isinstance(
+            item, bpy.types.NodeTreeInterfaceSocket
+        ):
+            vals.append(modifier[item.identifier])
+            remaining.discard(item.name)
+            if not remaining:
+                return vals
+    raise ValueError(f"Socket '{remaining}' not found in modifier '{modifier.name}'")
 
 
 def change_mod_settings_from_object(
@@ -190,7 +209,7 @@ def move_modifier_above_mesher(obj, modifier):
     for i, m in enumerate(reversed(obj.modifiers)):
         if m == modifier:
             mod_index = mod_count - 1 - i
-        elif remove_suffix(m.node_group.name) in MesherName:
+        elif m.type == "NODES" and remove_suffix(m.node_group.name) in MesherName:
             mesh_mod_index = mod_count - 1 - i
         if mod_index > -1 and mesh_mod_index > -1:
             break
@@ -200,7 +219,7 @@ def move_modifier_above_mesher(obj, modifier):
     elif mod_index <= mesh_mod_index:
         return
 
-    obj.modifiers.move(mod_index, index=mesh_mod_index)
+    obj.modifiers.move(from_index=mod_index, to_index=mesh_mod_index)
 
 
 def has_socket_value(o, mod_name, socket_name, value):
