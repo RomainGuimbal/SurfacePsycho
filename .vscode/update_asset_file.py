@@ -18,9 +18,7 @@ VERSION = enums.VERSION
 # Extract what we need
 VERSION = enums.VERSION
 ASSET_NODE_GROUPS_BEZIER_PATCH = asset_list.ASSET_NODE_GROUPS_BEZIER_PATCH
-ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = (
-    asset_list.ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
-)
+ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = asset_list.ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
 ASSET_NODE_GROUPS_NURBS_PATCH = asset_list.ASSET_NODE_GROUPS_NURBS_PATCH
 ASSET_NODE_GROUPS_OTHER_SURFACES = asset_list.ASSET_NODE_GROUPS_OTHER_SURFACES
 ASSET_NODE_GROUPS_COMPOUND = asset_list.ASSET_NODE_GROUPS_COMPOUND
@@ -375,6 +373,6 @@ if __name__ == "__main__":
     bpy.ops.wm.save_as_mainfile(filepath=tmp_path, copy=True)
     shutil.move(tmp_path, str(FILE_PATH))
 
-    print("\n\033[32m"+"="*50)
+    print("\n\033[32m" + "=" * 50)
     print("\n         Assets successfully updated !\n")
-    print("="*50+"\033[0m\n")
+    print("=" * 50 + "\033[0m\n")
