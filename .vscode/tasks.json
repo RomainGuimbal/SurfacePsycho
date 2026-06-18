@@ -78,7 +78,7 @@
             ],
             "problemMatcher": []
         },
-        {   
+        {
             "label": "Start Blender",
             "type": "shell",
             "command": "${command:blender.start}",
@@ -88,17 +88,25 @@
             // ],
             "problemMatcher": []
         },
+        // {
+        //     "label": "Plot Profile",
+        //     "type": "shell",
+        //     "command": "python",
+        //     "args": [
+        //         "-m",
+        //         "snakeviz",
+        //         "profile_output.prof"
+        //     ],
+        //     "problemMatcher": []
+        // }
         {
-            "label": "Plot Profile",
+            "label": "Open Profile",
             "type": "shell",
-            "command": "python",
+            "command": "vizviewer",
             "args": [
-                "-m",
-                "snakeviz",
-                "profile_output.prof"
+                "C:/tmp/blender_trace.json"
             ],
             "problemMatcher": []
-        }
-        
+        },
     ]
 }

@@ -26,9 +26,9 @@
     },
     {
       "name": "",
-      "task": "Plot Profile",
+      "task": "Open Profile",
       "icon": "📊",
-      "tooltip": "Plot Profile"
+      "tooltip": "Open Profile"
     }
   ]
 }
