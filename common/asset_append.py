@@ -3,15 +3,10 @@ from .enums import ASSETS_FILE
 from .version_utils import is_latest_version
 
 
-def remove_preview_image(ng: bpy.types.GeometryNodeTree):
-    if ng.preview:
-        ng.preview.image_size = [0, 0]
-        return True
-    return False
-
-
 def append_object_by_name(obj_name, context):  # for importing from the asset file
-    with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (
+    with bpy.data.libraries.load(
+        ASSETS_FILE, link=True, assets_only=True, pack=True
+    ) as (
         _,
         data_to,
     ):
@@ -33,7 +28,6 @@ def append_object_by_name(obj_name, context):  # for importing from the asset fi
         # Iterate through all objects and their geometry node modifiers
         for mod in o.modifiers:
             if mod.type == "NODES" and mod.node_group:
-                remove_preview_image(mod.node_group)
                 mod.node_group.asset_clear()
 
 
@@ -46,20 +40,16 @@ def _get_latest_loaded_node_group(asset_name: str):
     return None
 
 
-def append_node_group(asset_name, link=False, remove_asset_data=True):
+def append_node_group(asset_name):
     ng = _get_latest_loaded_node_group(asset_name)
     if ng is not None:
         return ng
 
-    node_groups = append_multiple_node_groups(
-        [asset_name], link=link, remove_asset_data=remove_asset_data
-    )
+    node_groups = append_multiple_node_groups([asset_name])
     return node_groups[0]
 
 
-def append_multiple_node_groups(
-    ng_names: list, remove_asset_data=True, link=False
-) -> list[bpy.types.NodeGroup]:
+def append_multiple_node_groups(ng_names: list) -> list[bpy.types.NodeGroup]:
     to_append = []
     already_present = []
 
@@ -71,16 +61,13 @@ def append_multiple_node_groups(
             to_append.append(asset_name)
 
     if to_append:
-        with bpy.data.libraries.load(ASSETS_FILE, link=link, assets_only=True) as (
+        with bpy.data.libraries.load(
+            ASSETS_FILE, link=True, assets_only=True, pack=True
+        ) as (
             _,
             data_to,
         ):
             data_to.node_groups = list(to_append)
-
-        if remove_asset_data:
-            for ng in data_to.node_groups:
-                remove_preview_image(ng)
-                ng.asset_clear()
 
         already_present.extend(data_to.node_groups)
 
