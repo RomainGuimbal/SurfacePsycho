@@ -1,4 +1,5 @@
 import bpy
+import numpy as np
 from ..common.enums import SP_obj_type
 from ..common.utils import create_grid_mesh, fill_bool_attribute
 from ..common.asset_append import (
@@ -158,7 +159,9 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
 
         # Create and link the object
         mesh = create_grid_mesh(2, 2)
-        att_endpoints = mesh.attributes.new(name="Endpoints", type="BOOLEAN", domain="POINT")
+        att_endpoints = mesh.attributes.new(
+            name="Endpoints", type="BOOLEAN", domain="POINT"
+        )
         mesh.update()
         fill_bool_attribute(mesh, att_endpoints, True)
         obj = bpy.data.objects.new("FlatPatch", mesh)
@@ -186,7 +189,34 @@ class SP_OT_add_curve(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        append_object_by_name("PsychoCurve", context)
+        ng = append_node_group(SP_obj_type.CURVE.mesher_name)
+
+        # Create mesh
+        verts = np.array(
+            ((-1, 0, 0), (-0.5, 0.5, 0), (0, 0, 0), (1, 0, 0)), dtype=np.float32
+        )
+        edges = ((0, 1), (1, 2), (2, 3))
+        mesh = bpy.data.meshes.new("PsychoCurve")
+        mesh.from_pydata(verts, edges, [])
+        mesh.update()
+
+        # Create and link the object
+        obj = bpy.data.objects.new("PsychoCurve", mesh)
+        context.collection.objects.link(obj)
+
+        add_modifier_asset_from_node_group(
+            obj,
+            ng,
+            pin=True,
+        )
+
+        # Set object location to 3D cursor
+        obj.location = context.scene.cursor.location
+
+        # Select the new object and make it active
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
         return {"FINISHED"}
 
 
@@ -196,6 +226,8 @@ class SP_OT_add_compound(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        
+
         append_object_by_name("Compound", context)
         return {"FINISHED"}
 
