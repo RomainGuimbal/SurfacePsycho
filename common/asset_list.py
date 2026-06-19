@@ -109,7 +109,9 @@ ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Set Patch Instance Type",
     "SP - Split to Patches",
     "SP - SubD to Compound",
-    # "SP - Text to Compound",
+    "SP - Add Shape to Compound",
+    "SP - Copy Compound Nearest Shapes",
+    # "SP - Text to Compound", # imported by shape presets
 }
 
 ASSET_NODE_GROUPS_SHAPE_PRESETS = {
