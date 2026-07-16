@@ -310,7 +310,7 @@ def sp_type_of_outdated_objects(o):
 #     SCENARIOS     #
 #####################
 def update_scenario_deprecate_contour_fit(m, object):
-    set_modifier_values(m, {"Scaling Method": 1})
+    set_modifier_values(m, {"Scaling Method": "Fit to UV"})
     if has_contour(object):
         conv_mod = add_modifier_asset(
             object, "SP - Convert Contour", {}, pin=False, append=True
@@ -398,7 +398,9 @@ def update_scenario_connect_bezier_patch(mod, version):
         # Continuity checkboxes
         try:
             g1, g2, g3, g4 = get_modifier_values(mod, set(("G1", "G2", "G3", "G4")))
-            continuity = 4 if g4 else 3 if g3 else 2 if g2 else 1 if g1 else 0
+            continuity = (
+                "G4" if g4 else "G3" if g3 else "G2" if g2 else "G1" if g1 else "G0"
+            )
             param_dict["Continuity"] = continuity
         except ValueError:
             pass

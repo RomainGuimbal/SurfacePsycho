@@ -3,12 +3,7 @@ import bpy
 import numpy as np
 from mathutils import Vector, Matrix
 import bmesh
-from ..common.enums import (
-    SP_obj_type,
-    ADDON_PREF_KEY,
-    ASSETS_PATH,
-    MesherName
-)
+from ..common.enums import SP_obj_type, ADDON_PREF_KEY, ASSETS_PATH, MesherName
 from ..common.utils import (
     sp_type_of_object,
     read_attribute_by_name,
@@ -70,7 +65,11 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
         first_obj_found = False
         for o in objects:
             for m in o.modifiers:
-                if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
+                if (
+                    m.type == "NODES"
+                    and m.node_group
+                    and m.node_group.name[:5] == "SP - "
+                ):
                     for it in m.node_group.interface.items_tree:
                         if (
                             it.name
@@ -1001,11 +1000,11 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         name="Continuity 1",
         default=3,
         items=[
-            ("0", "G0", "Positional Continuity", 0),
-            ("1", "G1", "Tangential Continuity", 1),
-            ("2", "G2", "Curvature Continuity", 2),
-            ("3", "G3", "Higher Order Continuity", 3),
-            ("4", "G4", "Maximum Continuity", 4),
+            ("G0", "G0", "Positional Continuity", 0),
+            ("G1", "G1", "Tangential Continuity", 1),
+            ("G2", "G2", "Curvature Continuity", 2),
+            ("G3", "G3", "Higher Order Continuity", 3),
+            ("G4", "G4", "Maximum Continuity", 4),
         ],
     )
 
@@ -1013,11 +1012,11 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         name="Continuity 2",
         default=3,
         items=[
-            ("0", "G0", "Positional Continuity", 0),
-            ("1", "G1", "Tangential Continuity", 1),
-            ("2", "G2", "Curvature Continuity", 2),
-            ("3", "G3", "Higher Order Continuity", 3),
-            ("4", "G4", "Maximum Continuity", 4),
+            ("G0", "G0", "Positional Continuity", 0),
+            ("G1", "G1", "Tangential Continuity", 1),
+            ("G2", "G2", "Curvature Continuity", 2),
+            ("G3", "G3", "Higher Order Continuity", 3),
+            ("G4", "G4", "Maximum Continuity", 4),
         ],
     )
 
@@ -1065,7 +1064,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         context.collection.objects.link(blend_surf)
 
         blend_ng, meshing_ng = append_multiple_node_groups(
-            ["SP - Blend Surfaces", "SP - Bezier Patch Meshing"], True
+            ["SP - Blend Surfaces", "SP - Bezier Patch Meshing"]
         )
 
         # Add blend modifier
@@ -1079,8 +1078,8 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
                 "Segment 2": segment_2,
                 "Auto": auto,
                 "Invert": self.invert,
-                "Continuity 1": int(self.continuity1),
-                "Continuity 2": int(self.continuity2),
+                "Continuity 1": self.continuity1,
+                "Continuity 2": self.continuity2,
                 "Tension 1": self.tension1,
                 "Tension 2": self.tension2,
             },
@@ -1343,7 +1342,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
 
     def execute(self, context):
         copy_ng, meshing_ng = append_multiple_node_groups(
-            ["SP - Copy Geometry", SP_obj_type.CURVE.mesher_name], True
+            ["SP - Copy Geometry", SP_obj_type.CURVE.mesher_name]
         )
 
         if len(SELECTED_SEGMENTS) == 0:

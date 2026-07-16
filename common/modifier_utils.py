@@ -65,7 +65,9 @@ def set_modifier_values(modifier, settings_dict):
         if item.name in remaining and isinstance(
             item, bpy.types.NodeTreeInterfaceSocket
         ):
-            modifier[item.identifier] = settings_dict[item.name]
+            getattr(modifier.properties.inputs, item.identifier).value = settings_dict[
+                item.name
+            ]
             remaining.discard(item.name)
             if not remaining:
                 break

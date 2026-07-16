@@ -1,4 +1,6 @@
 import bpy
+import bmesh
+from mathutils import Matrix
 import numpy as np
 from ..common.enums import SP_obj_type
 from ..common.utils import create_grid_mesh, fill_bool_attribute
@@ -112,7 +114,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
     )
 
     def execute(self, context):
-        append_multiple_node_groups(
+        reo, connect, mesher = append_multiple_node_groups(
             [
                 "SP - Reorder Grid Index",
                 "SP - Connect Bezier Patch",
@@ -125,15 +127,15 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         obj = bpy.data.objects.new("Bezier Patch", mesh)
         context.collection.objects.link(obj)
 
-        add_modifier_asset(obj, "SP - Reorder Grid Index")
-        add_modifier_asset(
+        add_modifier_asset_from_node_group(obj, reo)
+        add_modifier_asset_from_node_group(
             obj,
-            "SP - Connect Bezier Patch",
-            {"Continuity": 3},
+            connect,
+            {"Continuity": "G3"},
         )
-        add_modifier_asset(
+        add_modifier_asset_from_node_group(
             obj,
-            SP_obj_type.BEZIER_SURFACE.mesher_name,
+            mesher,
             {"Control Polygon": self.show_control_geom},
             pin=True,
         )
@@ -158,7 +160,14 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
         ng = append_node_group(SP_obj_type.PLANE.mesher_name)
 
         # Create and link the object
-        mesh = create_grid_mesh(2, 2)
+        verts = np.array(
+            ((-1, -1, 0), (1, -1, 0), (1, 1, 0), (-1, 1, 0)), dtype=np.float32
+        )
+        edges = ((0, 1), (1, 2), (2, 3), (3, 0))
+        mesh = bpy.data.meshes.new("FlatPatch")
+        mesh.from_pydata(verts, edges, [])
+        mesh.update()
+
         att_endpoints = mesh.attributes.new(
             name="Endpoints", type="BOOLEAN", domain="POINT"
         )
@@ -226,9 +235,48 @@ class SP_OT_add_compound(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        
+        poly, mesher = append_multiple_node_groups(
+            [
+                "SP - Poly to Compound",
+                SP_obj_type.COMPOUND.mesher_name,
+            ]
+        )
 
-        append_object_by_name("Compound", context)
+        bm = bmesh.new()
+        bmesh.ops.create_icosphere(
+            bm,
+            subdivisions=0,
+            radius=.125,
+            matrix=Matrix(),
+            calc_uvs=False,
+        )
+
+        if context.mode != "OBJECT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.select_all(action="DESELECT")
+
+        me = bpy.data.meshes.new("Mesh")
+        bm.to_mesh(me)
+        bm.free()
+
+        obj = bpy.data.objects.new("Compound", me)
+        context.collection.objects.link(obj)
+
+        add_modifier_asset_from_node_group(obj, poly)
+
+        add_modifier_asset_from_node_group(
+            obj,
+            mesher,
+            pin=True,
+        )
+
+        # Set object location to 3D cursor
+        obj.location = context.scene.cursor.location
+
+        # Select the new object and make it active
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
         return {"FINISHED"}
 
 
