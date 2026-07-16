@@ -4,6 +4,7 @@ from .enums import SP_obj_type
 from .modifier_utils import add_modifier_asset
 from .utils import remove_suffix
 
+
 def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     """
     Create individual mesh objects from Geometry Nodes instances
@@ -34,7 +35,7 @@ def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     return created_objects
 
 
-# Instance domain fails /!\
+#
 # def get_instance_patch_type(o, context):
 #     ob = o.evaluated_get(context.evaluated_depsgraph_get())
 #     data = np.zeros(len(attr.data), dtype=np.int32)
@@ -49,7 +50,9 @@ def create_objects_from_instances(source_obj, depsgraph, suffix=""):
 #     return data
 
 
-def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix="", resolution=16, ):
+def convert_compound_to_patches(
+    o, context, initial_depsgraph, objects_suffix="", resolution=16
+):
     # Find compound meshing modifier
     mod = None
     for m in reversed(o.modifiers):
@@ -83,7 +86,7 @@ def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix=""
             SP_obj_type.BEZIER_SURFACE,
             SP_obj_type.BSPLINE_SURFACE,
         ]:
-            add_modifier_asset(obj, "SP - Reorder Grid Index", append=False)
+            #     add_modifier_asset(obj, "SP - Reorder Grid Index", append=False)
             settings_dict = {
                 "Resolution U": resolution,
                 "Resolution V": resolution,

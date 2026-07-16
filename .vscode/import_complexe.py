@@ -10,13 +10,13 @@ for area in bpy.context.screen.areas:
         for space in area.spaces:
             if space.type == "VIEW_3D":
                 region_3d = space.region_3d
-                
+
                 region_3d.view_matrix = Matrix(
                     (
-                        ( 0.9006,  0.4346, -0.0000, -0.0130),
-                        (-0.1390,  0.2881,  0.9474, -0.0212),
-                        ( 0.4118, -0.8533,  0.3199, -0.6166),
-                        ( 0.0000,  0.0000,  0.0000,  1.0000)
+                        (0.9006, 0.4346, -0.0000, -0.0130),
+                        (-0.1390, 0.2881, 0.9474, -0.0212),
+                        (0.4118, -0.8533, 0.3199, -0.6166),
+                        (0.0000, 0.0000, 0.0000, 1.0000),
                     )
                 )
 
@@ -35,7 +35,7 @@ for area in bpy.context.screen.areas:
 #                 print(region_3d.view_location)
 #                 break
 
-names =  [
+names = [
     # "jante.stp",
     "Audi_R8_Wheel.stp",
     # "plancher G5.step",
@@ -45,8 +45,7 @@ names =  [
 ]
 
 
-
-for n in names :
+for n in names:
     bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\" + n)
 
 # bpy.context.view_layer.update()
@@ -59,13 +58,13 @@ for n in names :
 #                 override = bpy.context.copy()
 #                 override['area'] = area
 #                 override['region'] = region
-                
+
 #                 bpy.ops.object.select_all(action='SELECT')
-                
+
 #                 # Use the override context
 #                 with bpy.context.temp_override(**override):
 #                     bpy.ops.view3d.view_selected()
-                
+
 #                 bpy.ops.object.select_all(action='DESELECT')
 #                 break
 #         break

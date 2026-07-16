@@ -96,6 +96,7 @@ ASSET_NODE_GROUPS_OTHER_SURFACES = {
     "SP - Connect Flat Patch",
     "SP - Symmetrize",
     "SP - Square Fill",
+    "SP - Compare Mesh",
 }
 
 ASSET_NODE_GROUPS_COMPOUND = {
@@ -104,6 +105,7 @@ ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Intersect Bezier Patches",
     "SP - Interval Curves",
     "SP - NURBS to Bezier Patches",
+    "SP - Pipe Compound",
     "SP - Poly to Compound",
     "SP - Profile Revolution Compound",
     "SP - Set Patch Instance Type",
