@@ -51,14 +51,16 @@ def append_node_group(asset_name):
 
 def append_multiple_node_groups(ng_names: list) -> list[bpy.types.NodeGroup]:
     to_append = []
-    already_present = []
+    ids = []
+    already_present = [None] * len(ng_names)
 
-    for asset_name in ng_names:
+    for i, asset_name in enumerate(ng_names):
         ng = _get_latest_loaded_node_group(asset_name)
         if ng is not None:
-            already_present.append(ng)
+            already_present[i] = ng
         else:
             to_append.append(asset_name)
+            ids.append(i)
 
     if to_append:
         with bpy.data.libraries.load(
@@ -69,6 +71,7 @@ def append_multiple_node_groups(ng_names: list) -> list[bpy.types.NodeGroup]:
         ):
             data_to.node_groups = list(to_append)
 
-        already_present.extend(data_to.node_groups)
+        for i, dt in enumerate(data_to.node_groups):
+            already_present[ids[i]] = dt
 
     return already_present
