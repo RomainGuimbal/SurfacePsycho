@@ -47,7 +47,7 @@ def change_node_socket_value(
             for it in items_to_process:
                 input_id = it.identifier
                 # if input_id in m:  # Check existence before access
-                m[input_id] = value
+                getattr(m.properties.inputs, input_id).value = value
                 modifier_updated = True
 
             # Single interface update after all changes
@@ -82,7 +82,7 @@ def get_modifier_value(modifier, socket_name: str):
         if item.name == socket_name and isinstance(
             item, bpy.types.NodeTreeInterfaceSocket
         ):
-            return modifier[item.identifier]
+            return getattr(modifier.properties.inputs, item.identifier).value
     raise ValueError(f"Socket '{socket_name}' not found in modifier '{modifier.name}'")
 
 
@@ -98,7 +98,7 @@ def get_modifier_values(modifier, socket_names):
         if item.name in socket_names and isinstance(
             item, bpy.types.NodeTreeInterfaceSocket
         ):
-            vals.append(modifier[item.identifier])
+            vals.append(getattr(modifier.properties.inputs, item.identifier).value)
             remaining.discard(item.name)
             if not remaining:
                 return vals
@@ -232,5 +232,5 @@ def has_socket_value(o, mod_name, socket_name, value):
                 if item.name == socket_name and isinstance(
                     item, bpy.types.NodeTreeInterfaceSocket
                 ):
-                    return m[item.identifier] == value
+                    return getattr(m.properties.inputs, item.identifier).value == value
     return False

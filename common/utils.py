@@ -145,7 +145,9 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
             for it in items_to_process:
                 input_id = it.identifier
                 # if input_id in m:  # Check existence before access
-                m[input_id] = not m[input_id]
+                getattr(m.properties.inputs, input_id).value = not getattr(
+                    m.properties.inputs, input_id
+                ).value
                 modifier_updated = True
 
             # Single interface update after all changes

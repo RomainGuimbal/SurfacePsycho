@@ -310,10 +310,14 @@ def sp_type_of_outdated_objects(o):
 #     SCENARIOS     #
 #####################
 def update_scenario_deprecate_contour_fit(m, object):
-    set_modifier_values(m, {"Scaling Method": "Fit to UV"})
+    set_modifier_values(m, {"Scaling Method": "UV"})
     if has_contour(object):
         conv_mod = add_modifier_asset(
-            object, "SP - Convert Contour", {}, pin=False, append=True
+            object,
+            "SP - Convert Contour",
+            {"Conversion": "Fit to UV"},
+            pin=False,
+            append=True,
         )
         move_modifier_above_mesher(object, conv_mod)
 
@@ -323,8 +327,7 @@ def update_scenario_replace_fillet_factor_2(mod):
     Old fillets with fast method where 2 times 2 short with straight edges.
     """
     fillet_method = get_modifier_value(mod, "Method")
-    item = 1
-    if fillet_method == item:
+    if fillet_method == "Distance (Fast)" or fillet_method == "Distance":
         current_fillet = get_modifier_value(mod, "Fillet")
         set_modifier_values(mod, {"Fillet": current_fillet / 2})
 
@@ -378,7 +381,7 @@ def update_scenario_loft_segment(mod):
         if item.name.startswith("Segment") and isinstance(
             item, bpy.types.NodeTreeInterfaceSocketInt
         ):
-            mod[item.identifier] = segment
+            getattr(mod.properties.inputs, item.identifier).value = segment
 
 
 def update_scenario_connect_bezier_patch(mod, version):
@@ -390,9 +393,14 @@ def update_scenario_connect_bezier_patch(mod, version):
         # Side shift
         side_map = {0: 2, 1: 3, 2: 0, 3: 1}
         if not is_flat:
-            param_dict["Target Segment"] = side_map[
-                get_modifier_value(mod, "Target Side")
-            ]
+            try:
+                param_dict["Target Segment"] = side_map[
+                    get_modifier_value(mod, "Target Side")%4
+                ]
+            except ValueError:
+                param_dict["Target Segment"] = side_map[
+                    get_modifier_value(mod, "Target Segment")%4
+                ]
         # param_dict["Self Side"] = side_map[get_modifier_value(mod, "Side")] # apparently not needed
 
         # Continuity checkboxes
@@ -609,15 +617,15 @@ class SP_OT_update_objects(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        from viztracer import VizTracer
+        # from viztracer import VizTracer
 
-        with VizTracer(
-            output_file="/tmp/blender_trace.json",
-            tracer_entries=3000000,
-            min_duration=5,
-        ) as tracer:
-            for o in context.selected_objects:
-                update_object(o)
+        # with VizTracer(
+        #     output_file="/tmp/blender_trace.json",
+        #     tracer_entries=3000000,
+        #     min_duration=5,
+        # ) as tracer:
+        for o in context.selected_objects:
+            update_object(o)
 
         return {"FINISHED"}
 

@@ -84,7 +84,7 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
                             input_id = it.identifier
                             if not first_obj_found:
                                 first_obj_found = True
-                                toggle_side = not m[input_id]
+                                toggle_side = not getattr(m.properties.inputs, input_id).value
                             m[input_id] = toggle_side
                     m.node_group.interface_update(context)
         return {"FINISHED"}
@@ -626,7 +626,7 @@ def show_combs(self, context):
                             and it.socket_type == "NodeSocketBool"
                         ):
                             input_id = it.identifier
-                            m[input_id] = self.combs_on
+                            getattr(m.properties.inputs, input_id).value = self.combs_on
                     m.node_group.interface_update(context)
                     break
 
@@ -642,7 +642,7 @@ def scale_combs(self, context):
                     ].interface_items:
                         if it.name == "Scale" and it.socket_type == "NodeSocketFloat":
                             input_id = it.identifier
-                            m[input_id] = self.combs_scale
+                            getattr(m.properties.inputs, input_id).value = self.combs_scale
                     m.node_group.interface_update(context)
                     break
 
