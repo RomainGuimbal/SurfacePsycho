@@ -1364,7 +1364,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
                 copy_ng,
                 {
                     "Target": target_obj,
-                    "Geometry": "Segment",
+                    "Target Shape": "Segment",
                     "Target Segment": seg_id,
                 },
             )

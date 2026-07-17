@@ -11,7 +11,7 @@
                 "--background",
                 "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
                 "--python",
-                ".vscode/asset_importer.py"
+                ".vscode/update_asset_file.py"
             ],
             "problemMatcher": []
         },
@@ -23,7 +23,7 @@
                 "--background",
                 "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
                 "--python",
-                ".vscode/asset_importer.py",
+                ".vscode/update_asset_file.py",
                 "--",
                 "--fast"
             ],
