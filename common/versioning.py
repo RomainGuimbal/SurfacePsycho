@@ -328,8 +328,8 @@ def update_scenario_replace_fillet_factor_2(mod):
     """
     fillet_method = get_modifier_value(mod, "Method")
     if fillet_method == "Distance (Fast)" or fillet_method == "Distance":
-        current_fillet = get_modifier_value(mod, "Fillet")
-        set_modifier_values(mod, {"Fillet": current_fillet / 2})
+        current_fillet, current_tension = get_modifier_values(mod, set(("Fillet", "Tension Offset")))
+        set_modifier_values(mod, {"Fillet": current_fillet / 2, "Tension Offset": current_tension / 2})
 
 
 def update_scenario_curve_preserve_combs_display(mod):
