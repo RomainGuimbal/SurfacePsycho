@@ -18,7 +18,7 @@ from ..common.utils import (
     override_attribute_dictionary,
     create_grid,
     curve_range_from_type,
-    get_shape_name_and_color,
+    # get_shape_name_and_color,
     get_face_sp_type,
     add_bool_attribute,
     add_int_attribute,
@@ -1259,19 +1259,19 @@ class ShapeHierarchy:
             case TopAbs.TopAbs_FACE:  # must be before wire and edge
                 face = TopoDS.Face_s(shape)
                 hierarchy["Face"] = face
-                name, color = get_shape_name_and_color(face, self.doc)
+                name, color = "temp", 0 # get_shape_name_and_color(face, self.doc)
                 self.faces.append((face, name, color, parent_col))
 
             case TopAbs.TopAbs_WIRE:  # must be before edge
                 wire = TopoDS.Wire_s(shape)
                 hierarchy["Wire"] = wire
-                name, color = get_shape_name_and_color(wire, self.doc)
+                name, color = "temp", 0 # get_shape_name_and_color(wire, self.doc)
                 self.edges.append((wire, name, color, parent_col))
 
             case TopAbs.TopAbs_EDGE:
                 edge = TopoDS.Edge_s(shape)
                 hierarchy["Edge"] = edge
-                name, color = get_shape_name_and_color(edge, self.doc)
+                name, color = "temp", 0 # get_shape_name_and_color(edge, self.doc)
                 self.edges.append((edge, name, color, parent_col))
 
         return hierarchy
@@ -1359,7 +1359,7 @@ def create_blender_object(object_data):
     if object_data == {}:
         return False
     
-    from ..common.modifier_utils import add_sp_modifier
+    from ..common.modifier_utils import add_modifier_asset
 
     mesh = bpy.data.meshes.new(object_data["name"])
     mesh.from_pydata(*object_data["mesh_data"], False)
@@ -1379,7 +1379,7 @@ def create_blender_object(object_data):
                 raise Exception("Attribute type issue")
 
     name, param, pin = object_data["modifier"]
-    add_sp_modifier(ob, name, param, pin)
+    add_modifier_asset(ob, name, param, pin)
 
     object_data["collection"].objects.link(ob)
     return True

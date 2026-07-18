@@ -892,3 +892,14 @@ def remove_suffix(data_block_name):
         return data_block_name[:-4]
     else:
         return data_block_name
+
+def create_collection(name, parent=None):
+    new_collection = bpy.data.collections.new(name)
+
+    # If no parent, link to scene collection
+    if parent is None:
+        bpy.context.scene.collection.children.link(new_collection)
+    else:
+        parent.children.link(new_collection)
+        
+    return new_collection

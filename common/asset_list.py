@@ -35,6 +35,8 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Split Curve",
     "SP - Switch Curve Direction",
     "SP - Set Segment Type",
+    "SP - Edge offset of Flat Patch",
+    "SP - Offset Curve",
     # "SP - Bezier Circlular Arc",
     # "SP - Compose FlatPatch From Sides",
 }
@@ -64,6 +66,8 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Select Patch Range",
     "SP - Trim Bezier Surface from Projected Wires",
     "SP - UV Curve on Surface",
+    "SP - Rail Bezier Surface",
+    "SP - Reparametrize Bezier Patch",
 }
 
 ASSET_NODE_GROUPS_NURBS_PATCH = {
@@ -113,6 +117,9 @@ ASSET_NODE_GROUPS_COMPOUND = {
     "SP - SubD to Compound",
     "SP - Add Shape to Compound",
     "SP - Copy Compound Nearest Shapes",
+    "SP - Copy Compound Nearest Edges",
+    "SP - Trim Bezier Patches as Compound",
+    "SP - Trim Bezier Patch",
     # "SP - Text to Compound", # imported by shape presets
 }
 

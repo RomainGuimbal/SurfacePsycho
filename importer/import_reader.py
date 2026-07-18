@@ -26,6 +26,7 @@ from OCP.XCAFDoc import (
     XCAFDoc_ColorGen,
 )
 
+from ..common.utils import create_collection
 
 def read_cad(filepath, import_colors):
     # STEP
@@ -103,16 +104,16 @@ def read_step_file_with_names_colors(
     # layer_tool = XCAFDoc_DocumentTool_LayerTool(doc.Main())
     # mat_tool = XCAFDoc_DocumentTool_MaterialTool(doc.Main())
 
-    step_reader = STEPCAFControl_Reader()
-    step_reader.SetColorMode(True)
-    step_reader.SetLayerMode(True)
-    step_reader.SetNameMode(True)
-    step_reader.SetMatMode(True)
-    step_reader.SetGDTMode(True)
+    reader = STEPCAFControl_Reader()
+    reader.SetColorMode(True)
+    # reader.SetLayerMode(True)
+    reader.SetNameMode(True)
+    # reader.SetMatMode(True)
+    # reader.SetGDTMode(True)
 
-    status = step_reader.ReadFile(filename)
+    status = reader.ReadFile(filename)
     if status == IFSelect_RetDone:
-        step_reader.Transfer(doc)
+        reader.Transfer(doc)
 
     locs = []
 
@@ -267,8 +268,9 @@ def read_step_file_with_names_colors(
 
 
 class ImportHierarchy:
-    def __init__(self, filename):
-        self.init_reader(filename)
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self.init_reader()
 
         # Init main data
         self.faces = []  # tuples (face, name, color, collection)
@@ -277,7 +279,7 @@ class ImportHierarchy:
 
         # Create root collection
         root_name = splitext(split(self.filepath)[1])[0]
-        root_collection = self.create_collection(root_name)
+        root_collection = create_collection(root_name)
         self.hierarchy[root_collection] = []
 
         # Get root labels
@@ -292,9 +294,9 @@ class ImportHierarchy:
                 self._get_sub_hierarchy(root_item, root_collection)
             )
 
-    def init_reader(self, filename):
-        if not isfile(filename):
-            raise FileNotFoundError(f"{filename} not found.")
+    def init_reader(self):
+        if not isfile(self.filepath):
+            raise FileNotFoundError(f"{self.filepath} not found.")
 
         # create an handle to a document
         doc = TDocStd_Document(TCollection_ExtendedString("pythonocc-doc-step-import"))
@@ -307,12 +309,12 @@ class ImportHierarchy:
 
         step_reader = STEPCAFControl_Reader()
         step_reader.SetColorMode(True)
-        step_reader.SetLayerMode(True)
+        # step_reader.SetLayerMode(True)
         step_reader.SetNameMode(True)
-        step_reader.SetMatMode(True)
-        step_reader.SetGDTMode(True)
+        # step_reader.SetMatMode(True)
+        # step_reader.SetGDTMode(True)
 
-        status = step_reader.ReadFile(filename)
+        status = step_reader.ReadFile(self.filepath)
         if status == IFSelect_RetDone:
             step_reader.Transfer(doc)
 
@@ -320,16 +322,49 @@ class ImportHierarchy:
 
         self.reader = step_reader
 
-    def create_collection(self, name, parent=None):
-        new_collection = bpy.data.collections.new(name)
 
-        # If no parent, link to scene collection
-        if parent is None:
-            bpy.context.scene.collection.children.link(new_collection)
-        else:
-            parent.children.link(new_collection)
+    def _add_shape_from_label(lab, ls_subss):
+        pass
+        # match shape.ShapeType():
+        #     case TopAbs.TopAbs_COMPOUND:
+        #         hierarchy[parent_col] = []
+        #         new_collection = create_collection("Compound", parent_col)
+        #         iterator = TopoDS_Iterator(shape)
+        #         while iterator.More():
+        #             hierarchy[parent_col].append(
+        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
+        #             )
+        #             iterator.Next()
 
-        return new_collection
+        #     case TopAbs.TopAbs_COMPSOLID:
+        #         hierarchy[parent_col] = []
+        #         new_collection = create_collection("CompSolid", parent_col)
+        #         iterator = TopoDS_Iterator(shape)
+        #         while iterator.More():
+        #             hierarchy[parent_col].append(
+        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
+        #             )
+        #             iterator.Next()
+
+        #     case TopAbs.TopAbs_SOLID:
+        #         hierarchy[parent_col] = []
+        #         new_collection = create_collection("Solid", parent_col)
+        #         iterator = TopoDS_Iterator(shape)
+        #         while iterator.More():
+        #             hierarchy[parent_col].append(
+        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
+        #             )
+        #             iterator.Next()
+
+        #     case TopAbs.TopAbs_SHELL:
+        #         hierarchy[parent_col] = []
+        #         new_collection = create_collection("Shell", parent_col)
+        #         iterator = TopoDS_Iterator(shape)
+        #         while iterator.More():
+        #             hierarchy[parent_col].append(
+        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
+        #             )
+        #             iterator.Next()
 
     def _get_sub_hierarchy(self, lab, parent_col):
         """
@@ -345,8 +380,8 @@ class ImportHierarchy:
         # "subss" means sub shape
         ls_subss = TDF_LabelSequence()
         self.shape_tool.GetSubShapes_s(lab, ls_subss)
-        ls_comps = TDF_LabelSequence()
-        self.shape_tool.GetComponents_s(lab, ls_comps)
+        # ls_comps = TDF_LabelSequence()
+        # self.shape_tool.GetComponents_s(lab, ls_comps)
 
         # Several sub shapes -> Recurse
         if self.shape_tool.IsAssembly_s(lab):
@@ -354,7 +389,7 @@ class ImportHierarchy:
             self.shape_tool.GetComponents_s(lab, ls_components)
 
             hierarchy[parent_col] = []
-            new_collection = self.create_collection("Solid", parent_col)
+            new_collection = create_collection("Solid", parent_col)
 
             for i in range(ls_components.Length()):
                 l_comp = ls_components.Value(i + 1)
@@ -370,49 +405,9 @@ class ImportHierarchy:
 
         # Single sub shape
         elif self.shape_tool.IsSimpleShape_s(lab):
-            _add_shape_from_label(lab, ls_subss)
+            self._add_shape_from_label(lab, ls_subss)
 
-
-        # match shape.ShapeType():
-        #     case TopAbs.TopAbs_COMPOUND:
-        #         hierarchy[parent_col] = []
-        #         new_collection = self.create_collection("Compound", parent_col)
-        #         iterator = TopoDS_Iterator(shape)
-        #         while iterator.More():
-        #             hierarchy[parent_col].append(
-        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
-        #             )
-        #             iterator.Next()
-
-        #     case TopAbs.TopAbs_COMPSOLID:
-        #         hierarchy[parent_col] = []
-        #         new_collection = self.create_collection("CompSolid", parent_col)
-        #         iterator = TopoDS_Iterator(shape)
-        #         while iterator.More():
-        #             hierarchy[parent_col].append(
-        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
-        #             )
-        #             iterator.Next()
-
-        #     case TopAbs.TopAbs_SOLID:
-        #         hierarchy[parent_col] = []
-        #         new_collection = self.create_collection("Solid", parent_col)
-        #         iterator = TopoDS_Iterator(shape)
-        #         while iterator.More():
-        #             hierarchy[parent_col].append(
-        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
-        #             )
-        #             iterator.Next()
-
-        #     case TopAbs.TopAbs_SHELL:
-        #         hierarchy[parent_col] = []
-        #         new_collection = self.create_collection("Shell", parent_col)
-        #         iterator = TopoDS_Iterator(shape)
-        #         while iterator.More():
-        #             hierarchy[parent_col].append(
-        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
-        #             )
-        #             iterator.Next()
+    
 
         return hierarchy
 
