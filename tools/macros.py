@@ -644,7 +644,9 @@ def scale_combs(self, context):
                     ].interface_items:
                         if it.name == "Scale" and it.socket_type == "NodeSocketFloat":
                             input_id = it.identifier
-                            getattr(m.properties.inputs, input_id).value = self.combs_scale
+                            getattr(m.properties.inputs, input_id).value = (
+                                self.combs_scale
+                            )
                     m.node_group.interface_update(context)
                     break
 
@@ -1407,7 +1409,8 @@ class SP_OT_add_isoparam(bpy.types.Operator):
         name="Parameter",
         default=0.5,
         soft_min=0.0,
-        soft_max=1.0
+        soft_max=1.0,
+        precision=5,
     )
 
     x: None
@@ -1422,7 +1425,7 @@ class SP_OT_add_isoparam(bpy.types.Operator):
             SP_obj_type.BSPLINE_SURFACE,
         ]:
             return {"CANCELLED"}
-        
+
         self.x = event.mouse_x
 
         iso_ng, meshing_ng = append_multiple_node_groups(
@@ -1451,20 +1454,20 @@ class SP_OT_add_isoparam(bpy.types.Operator):
             {"Combs": True, "Resolution": 32},
             pin=True,
         )
-        
-        self.iso_obj = iso_obj
 
-        bpy.ops.object.select_all(action="DESELECT")
-        iso_obj.select_set(True)
-        context.view_layer.objects.active = iso_obj
+        self.iso_obj = iso_obj
         context.window_manager.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
         if event.type == "MOUSEMOVE":
-            self.parameter = 0.5 + (event.mouse_x - self.x)/100
+            val = 0.5 + (event.mouse_x - self.x) / 500
+            if event.ctrl:
+                self.parameter = int(val * 10) / 10
+            else:
+                self.parameter = val
             set_modifier_values(self.iso_mod, {"Parameter": self.parameter})
-            context.area.header_text_set(f"Parameter: {self.parameter}")
+            context.area.header_text_set(f"Parameter: {self.parameter:10.4f}")
             self.iso_obj.update_tag()
             context.view_layer.update()
 
