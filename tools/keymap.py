@@ -6,10 +6,11 @@ OBJ_KEYMAP = (
         None,
     ),
     ("object.sp_blend_surfaces", {"type": "B", "value": "PRESS", "ctrl": True}, None),
-    ("object.sp_toggle_control_geom", {"type": "V", "value": "PRESS"}, None),
+    # ("object.sp_toggle_control_geom", {"type": "V", "value": "PRESS"}, None),
     ("object.sp_extract_segment", {"type": "E", "value": "PRESS"}, None),
     # ("wm.call_menu_pie", {"type": "F", "value": "PRESS", "shift": True}, None),
     ("object.sp_toggle_control_geom", {"type": "F", "value": "PRESS", "shift": True}, None),
+    ("object.sp_add_isoparam", {"type": "I", "value": "PRESS"}, None),
 )
 
 EDIT_KEYMAP = (

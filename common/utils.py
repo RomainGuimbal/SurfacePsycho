@@ -144,7 +144,7 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
             modifier_updated = False
             for it in items_to_process:
                 input_id = it.identifier
-                # if input_id in m:  # Check existence before access
+                # if input_id in m:  # Check existence before access ?
                 getattr(m.properties.inputs, input_id).value = not getattr(
                     m.properties.inputs, input_id
                 ).value
@@ -893,6 +893,7 @@ def remove_suffix(data_block_name):
     else:
         return data_block_name
 
+
 def create_collection(name, parent=None):
     new_collection = bpy.data.collections.new(name)
 
@@ -901,5 +902,5 @@ def create_collection(name, parent=None):
         bpy.context.scene.collection.children.link(new_collection)
     else:
         parent.children.link(new_collection)
-        
+
     return new_collection

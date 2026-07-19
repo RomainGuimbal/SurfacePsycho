@@ -591,11 +591,6 @@ class SP_OT_update_node_group(bpy.types.Operator):
         self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        # call itself and run
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
 
 class SP_OT_update_all_node_groups(bpy.types.Operator):
     bl_idname = "object.sp_update_all_node_groups"

@@ -84,8 +84,10 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
                             input_id = it.identifier
                             if not first_obj_found:
                                 first_obj_found = True
-                                toggle_side = not getattr(m.properties.inputs, input_id).value
-                            m[input_id] = toggle_side
+                                toggle_side = not getattr(
+                                    m.properties.inputs, input_id
+                                ).value
+                            getattr(m.properties.inputs, input_id).value = toggle_side
                     m.node_group.interface_update(context)
         return {"FINISHED"}
 
