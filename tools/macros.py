@@ -1343,12 +1343,15 @@ class SP_OT_extract_segment(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        if len(SELECTED_SEGMENTS) == 0:
+            return {"CANCELLED"}
+
+        bpy.ops.object.select_all(action="DESELECT")
+
         copy_ng, meshing_ng = append_multiple_node_groups(
             ["SP - Copy Geometry", SP_obj_type.CURVE.mesher_name]
         )
 
-        if len(SELECTED_SEGMENTS) == 0:
-            return {"CANCELLED"}
         for segment in SELECTED_SEGMENTS:
             # Get target info
             target_obj = context.scene.objects[segment[0]]
@@ -1374,14 +1377,123 @@ class SP_OT_extract_segment(bpy.types.Operator):
                 extracted_segment_object,
                 meshing_ng,
                 {"Combs": True, "Resolution": 32},
+                pin=True,
             )
+            extracted_segment_object.select_set(True)
 
+        context.view_layer.objects.active = extracted_segment_object
         SELECTED_SEGMENTS.clear()
         return {"FINISHED"}
 
 
+class SP_OT_add_isoparam(bpy.types.Operator):
+    bl_idname = "object.sp_add_isoparam"
+    bl_label = "SP - Add Isoparametric Curve"
+    bl_options = {"REGISTER", "UNDO"}
+
+    direction: bpy.props.EnumProperty(
+        name="Direction",
+        default="U",
+        items=[
+            ("U", "U", "U Direction"),
+            ("V", "V", "V Direction"),
+        ],
+    )
+
+    iso_mod: None
+    iso_obj: None
+
+    parameter: bpy.props.FloatProperty(
+        name="Parameter",
+        default=0.5,
+        soft_min=0.0,
+        soft_max=1.0
+    )
+
+    x: None
+
+    def invoke(self, context, event):
+        if len(context.selected_objects) == 0:
+            return {"CANCELLED"}
+
+        patch_obj = context.object
+        if sp_type_of_object(patch_obj) not in [
+            SP_obj_type.BEZIER_SURFACE,
+            SP_obj_type.BSPLINE_SURFACE,
+        ]:
+            return {"CANCELLED"}
+        
+        self.x = event.mouse_x
+
+        iso_ng, meshing_ng = append_multiple_node_groups(
+            ["SP - Isoparametric Curve", SP_obj_type.CURVE.mesher_name]
+        )
+
+        # Create the object
+        mesh = bpy.data.meshes.new("Isoparametric Curve")
+        mesh.from_pydata([Vector((0, 0, 0))], [], [])
+        iso_obj = bpy.data.objects.new("Isoparametric Curve", mesh)
+        iso_obj.location = patch_obj.location
+        context.collection.objects.link(iso_obj)
+
+        self.iso_mod = add_modifier_asset_from_node_group(
+            iso_obj,
+            iso_ng,
+            {
+                "Target Patch": patch_obj,
+                "Direction": self.direction,
+                "Parameter": self.parameter,
+            },
+        )
+        add_modifier_asset_from_node_group(
+            iso_obj,
+            meshing_ng,
+            {"Combs": True, "Resolution": 32},
+            pin=True,
+        )
+        
+        self.iso_obj = iso_obj
+
+        bpy.ops.object.select_all(action="DESELECT")
+        iso_obj.select_set(True)
+        context.view_layer.objects.active = iso_obj
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        if event.type == "MOUSEMOVE":
+            self.parameter = 0.5 + (event.mouse_x - self.x)/100
+            set_modifier_values(self.iso_mod, {"Parameter": self.parameter})
+            context.area.header_text_set(f"Parameter: {self.parameter}")
+            self.iso_obj.update_tag()
+            context.view_layer.update()
+
+        if event.type == "MIDDLEMOUSE" and event.value == "PRESS":
+            if self.direction == "U":
+                self.direction = "V"
+            else:
+                self.direction = "U"
+
+            set_modifier_values(self.iso_mod, {"Direction": self.direction})
+            context.area.header_text_set(f"Direction: {self.direction}")
+            self.iso_obj.update_tag()
+            context.view_layer.update()
+            return {"RUNNING_MODAL"}
+
+        # Exit conditions
+        elif event.type in {"RIGHTMOUSE", "ESC"}:
+            return {"CANCELLED"}
+
+        elif event.type == "LEFTMOUSE":
+            return {"FINISHED"}
+
+        # Pass through other events
+        return {"PASS_THROUGH"}
+
+
 classes = [
     SP_OT_add_curvature_analysis,
+    SP_OT_add_isoparam,
     SP_OT_add_library,
     SP_OT_add_matcaps,
     SP_OT_add_oriented_empty,
