@@ -37,6 +37,7 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Set Segment Type",
     "SP - Edge offset of Flat Patch",
     "SP - Offset Curve",
+    "SP - Make Parallel to Flat Patch",
     # "SP - Bezier Circlular Arc",
     # "SP - Compose FlatPatch From Sides",
 }
