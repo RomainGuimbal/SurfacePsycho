@@ -129,8 +129,8 @@ class SP_Edge_export:
             self.geom = Geom_BezierCurve(segment_point_array)
 
     def bspline(self):
-        isclamped = self.seg_aligned_attrs["isclamped"][0] if not None else True
-        iscyclic = self.seg_aligned_attrs["isperiodic"][0] if not None else False
+        isclamped = self.seg_aligned_attrs["isclamped"] if not None else True
+        iscyclic = self.seg_aligned_attrs["isperiodic"] if not None else False
         degree = self.seg_aligned_attrs["degree"]
 
         if iscyclic:

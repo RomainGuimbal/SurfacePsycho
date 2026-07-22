@@ -67,7 +67,7 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Select Patch Range",
     "SP - Trim Bezier Surface from Projected Wires",
     "SP - UV Curve on Surface",
-    "SP - Rail Bezier Surface",
+    "SP - Railed Bezier Surface",
     "SP - Reparametrize Bezier Patch",
 }
 

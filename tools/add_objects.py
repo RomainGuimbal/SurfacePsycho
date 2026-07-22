@@ -114,10 +114,9 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
     )
 
     def execute(self, context):
-        reo, connect, mesher = append_multiple_node_groups(
+        reo, mesher = append_multiple_node_groups(
             [
                 "SP - Reorder Grid Index",
-                "SP - Connect Bezier Patch",
                 SP_obj_type.BEZIER_SURFACE.mesher_name,
             ]
         )
@@ -128,11 +127,6 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         context.collection.objects.link(obj)
 
         add_modifier_asset_from_node_group(obj, reo)
-        add_modifier_asset_from_node_group(
-            obj,
-            connect,
-            {"Continuity": "G3"},
-        )
         add_modifier_asset_from_node_group(
             obj,
             mesher,
@@ -246,7 +240,7 @@ class SP_OT_add_compound(bpy.types.Operator):
         bmesh.ops.create_icosphere(
             bm,
             subdivisions=0,
-            radius=.125,
+            radius=0.125,
             matrix=Matrix(),
             calc_uvs=False,
         )
