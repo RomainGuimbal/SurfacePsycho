@@ -17,6 +17,7 @@ VERSION = enums.VERSION
 
 # Extract what we need
 VERSION = enums.VERSION
+ASSET_NODE_GROUPS_LEVEL_2 = asset_list.ASSET_NODE_GROUPS_LEVEL_2
 ASSET_NODE_GROUPS_BEZIER_PATCH = asset_list.ASSET_NODE_GROUPS_BEZIER_PATCH
 ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = asset_list.ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
 ASSET_NODE_GROUPS_NURBS_PATCH = asset_list.ASSET_NODE_GROUPS_NURBS_PATCH
@@ -215,14 +216,14 @@ def remove_fake_user_node_groups():
         if ng.use_fake_user and ng.asset_data is None:
             ng.use_fake_user = False
 
+
 def hide_manage_panel():
-    for ng in bpy.data.node_groups :
+    for ng in bpy.data.node_groups:
         if ng.type == "GEOMETRY":
             ng.show_modifier_manage_panel = False
-            
-            
-    for o in bpy.data.objects :
-        for m in o.modifiers :
+
+    for o in bpy.data.objects:
+        for m in o.modifiers:
             if m.type == "NODES":
                 m.show_manage_panel = False
 
@@ -237,6 +238,9 @@ def hide_manage_panel():
 #          TO IMPORT           #
 #                              #
 ################################
+
+# LVL 2
+path_lvl_2 = "//../../SP Assets Level 2.blend"
 
 # PROBE
 path_probe = "//../../Principal curvature.blend"
@@ -259,7 +263,6 @@ obj_surf = {
 # NURBS
 path_nurbs = "//../../SP - NURBS.blend"
 obj_nurbs = {"NURBS Patch"}
-
 
 # OTHER
 path_other = "//../../SP - Other Primitives.blend"
@@ -334,6 +337,7 @@ if __name__ == "__main__":
     )
     print("\n______________________________________________________\n")
     print(f"Appending Groups..{RED}")
+    append_by_name(path_lvl_2, ASSET_NODE_GROUPS_LEVEL_2, "node_groups")
     append_by_name(
         path_curve_flat, ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH, "node_groups"
     )
@@ -376,11 +380,8 @@ if __name__ == "__main__":
         )
 
         set_nodes_version()
-        
+
         hide_manage_panel()
-
-        
-
 
     #    profiler.disable()
     #    profiler.print_stats()

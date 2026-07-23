@@ -1,3 +1,7 @@
+ASSET_NODE_GROUPS_LEVEL_2 = {
+    "SP - Reorder Grid Index",
+}
+
 ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Blend Curve",
     "SP - Connect Curve",
@@ -62,7 +66,6 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Patch Normal to Side",
     "SP - Project Curve on Surface",
     "SP - Raise or Lower Degree Bezier Patch",
-    "SP - Reorder Grid Index",
     "SP - Ruled Surface from Mesh Loop",
     "SP - Select Patch Range",
     "SP - Trim Bezier Surface from Projected Wires",
@@ -134,7 +137,8 @@ ASSET_NODE_GROUPS_SHAPE_PRESETS = {
 }
 
 ASSET_NODE_GROUPS = (
-    ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
+    ASSET_NODE_GROUPS_LEVEL_2
+    | ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
     | ASSET_NODE_GROUPS_BEZIER_PATCH
     | ASSET_NODE_GROUPS_NURBS_PATCH
     | ASSET_NODE_GROUPS_OTHER_SURFACES

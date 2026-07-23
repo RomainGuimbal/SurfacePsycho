@@ -57,8 +57,6 @@ def write_step_file(a_shape, filename, application_protocol="AP203"):
         raise AssertionError(
             f"application_protocol must be either AP203 or AP214IS. You passed {application_protocol}."
         )
-    if isfile(filename):
-        raise AssertionError(f"{filename} already exists.")
     
     # creates and initialise the step exporter
     step_writer = STEPControl_Writer()
