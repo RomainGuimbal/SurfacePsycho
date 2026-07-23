@@ -28,6 +28,11 @@ replace_duplicates = versioning.replace_duplicates
 
 FILE_PATH = Path(bpy.data.filepath)
 
+RED = "\033[91m"
+GREEN = "\033[32m"
+BLUE = "\033[94m"
+RESET = "\033[0m"
+
 
 def delete_all_data():
     # Delete all data except scripts
@@ -210,6 +215,17 @@ def remove_fake_user_node_groups():
         if ng.use_fake_user and ng.asset_data is None:
             ng.use_fake_user = False
 
+def hide_manage_panel():
+    for ng in bpy.data.node_groups :
+        if ng.type == "GEOMETRY":
+            ng.show_modifier_manage_panel = False
+            
+            
+    for o in bpy.data.objects :
+        for m in o.modifiers :
+            if m.type == "NODES":
+                m.show_manage_panel = False
+
 
 ############################################################################################
 ############################################################################################
@@ -317,7 +333,7 @@ if __name__ == "__main__":
         ]
     )
     print("\n______________________________________________________\n")
-    print("Appending Groups..")
+    print(f"Appending Groups..{RED}")
     append_by_name(
         path_curve_flat, ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH, "node_groups"
     )
@@ -327,7 +343,7 @@ if __name__ == "__main__":
     append_by_name(path_compound, ASSET_NODE_GROUPS_COMPOUND, "node_groups")
     append_by_name(path_preset, ASSET_NODE_GROUPS_SHAPE_PRESETS, "node_groups")
 
-    print("\n______________________________________________________\n")
+    print(f"{RESET}\n______________________________________________________\n")
     print("Appending Objects..")
     append_by_name(path_probe, obj_probe, "objects")
     append_by_name(path_curve_flat, obj_curve_flat, "objects")
@@ -360,6 +376,11 @@ if __name__ == "__main__":
         )
 
         set_nodes_version()
+        
+        hide_manage_panel()
+
+        
+
 
     #    profiler.disable()
     #    profiler.print_stats()
