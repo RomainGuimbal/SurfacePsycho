@@ -1402,9 +1402,6 @@ class SP_OT_add_isoparam(bpy.types.Operator):
         ],
     )
 
-    iso_mod: None
-    iso_obj: None
-
     parameter: bpy.props.FloatProperty(
         name="Parameter",
         default=0.5,
@@ -1413,7 +1410,11 @@ class SP_OT_add_isoparam(bpy.types.Operator):
         precision=5,
     )
 
+    iso_obj: None
+    iso_obj_name: None
+
     x: None
+    iso_mod: None
 
     def invoke(self, context, event):
         if len(context.selected_objects) == 0:
@@ -1456,10 +1457,14 @@ class SP_OT_add_isoparam(bpy.types.Operator):
         )
 
         self.iso_obj = iso_obj
+        self.iso_obj_name = iso_obj.name
         context.window_manager.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
+        if self.iso_obj_name not in bpy.data.objects :
+            return {"CANCELLED"}
+
         if event.type == "MOUSEMOVE":
             val = 0.5 + (event.mouse_x - self.x) / 500
             if event.ctrl:
@@ -1467,7 +1472,8 @@ class SP_OT_add_isoparam(bpy.types.Operator):
             else:
                 self.parameter = val
             set_modifier_values(self.iso_mod, {"Parameter": self.parameter})
-            context.area.header_text_set(f"Parameter: {self.parameter:10.4f}")
+            if context.area:
+                context.area.header_text_set(f"Parameter: {self.parameter:10.4f}")
             self.iso_obj.update_tag()
             context.view_layer.update()
 
@@ -1478,19 +1484,24 @@ class SP_OT_add_isoparam(bpy.types.Operator):
                 self.direction = "U"
 
             set_modifier_values(self.iso_mod, {"Direction": self.direction})
-            context.area.header_text_set(f"Direction: {self.direction}")
-            self.iso_obj.update_tag()
-            context.view_layer.update()
+            if context.area:
+                context.area.header_text_set(f"Direction: {self.direction}")
+                self.iso_obj.update_tag()
+                context.view_layer.update()
             return {"RUNNING_MODAL"}
 
         # Exit conditions
         elif event.type in {"RIGHTMOUSE", "ESC"}:
+            if context.area:
+                context.area.header_text_set(None)
+            bpy.data.objects.remove(self.iso_obj, do_unlink=True)
             return {"CANCELLED"}
 
         elif event.type == "LEFTMOUSE":
+            if context.area:
+                context.area.header_text_set(None)
             return {"FINISHED"}
 
-        # Pass through other events
         return {"PASS_THROUGH"}
 
 
