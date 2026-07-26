@@ -1370,11 +1370,11 @@ def create_blender_object(object_data):
     for name, att in object_data["attrs"].items():
         match att[0]:
             case _ if isinstance(att[0], bool):
-                add_bool_attribute(ob, name, np.array(att, dtype=bool))
+                add_bool_attribute(ob.data, name, np.array(att, dtype=bool))
             case _ if isinstance(att[0], int):
-                add_int_attribute(ob, name, att)
+                add_int_attribute(ob.data, name, att)
             case _ if isinstance(att[0], float):
-                add_float_attribute(ob, name, att)
+                add_float_attribute(ob.data, name, att)
             case _:
                 raise Exception("Attribute type issue")
 

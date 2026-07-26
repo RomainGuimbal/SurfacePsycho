@@ -155,13 +155,13 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
                 m.node_group.interface_update(context)
 
 
-def add_float_attribute(object: bpy.types.Object, name, values, fallback_value=0.0):
-    if name not in object.data.attributes:
-        object.data.attributes.new(name=name, type="FLOAT", domain="POINT")
-        object.data.update()
+def add_float_attribute(mesh: bpy.types.Mesh, name, values, fallback_value=0.0):
+    if name not in mesh.attributes:
+        mesh.attributes.new(name=name, type="FLOAT", domain="POINT")
+        mesh.update()
 
-    length_diff = len(object.data.vertices) - len(values)
-    att = object.data.attributes[name]
+    length_diff = len(mesh.vertices) - len(values)
+    att = mesh.attributes[name]
 
     if length_diff == 0:
         att.data.foreach_set("value", values)
@@ -169,19 +169,19 @@ def add_float_attribute(object: bpy.types.Object, name, values, fallback_value=0
         values.extend([fallback_value] * length_diff)
         att.data.foreach_set("value", values)
     elif length_diff < 0:
-        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
+        print(f"Error : {len(values)} values on {len(mesh.vertices)} vertices")
         return False
 
     return True
 
 
-def add_int_attribute(object: bpy.types.Object, name, values, fallback_value=0):
-    if name not in object.data.attributes:
-        object.data.attributes.new(name=name, type="INT", domain="POINT")
-        object.data.update()
+def add_int_attribute(mesh: bpy.types.Mesh, name, values, fallback_value=0):
+    if name not in mesh.attributes:
+        mesh.attributes.new(name=name, type="INT", domain="POINT")
+        mesh.update()
 
-    length_diff = len(object.data.vertices) - len(values)
-    att = object.data.attributes[name]
+    length_diff = len(mesh.vertices) - len(values)
+    att = mesh.attributes[name]
 
     if length_diff == 0:
         att.data.foreach_set("value", values)
@@ -189,33 +189,38 @@ def add_int_attribute(object: bpy.types.Object, name, values, fallback_value=0):
         values.extend([fallback_value] * length_diff)
         att.data.foreach_set("value", values)
     elif length_diff < 0:
-        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
+        print(f"Error : {len(values)} values on {len(mesh.vertices)} vertices")
         return False
 
     return True
 
 
 def add_bool_attribute(
-    object: bpy.types.Object, name, values: np.ndarray, fallback_value=False
+    mesh: bpy.types.Mesh, name, values: np.ndarray, fallback_value=False
 ):
-    if name not in object.data.attributes:
-        object.data.attributes.new(name=name, type="BOOLEAN", domain="POINT")
-        object.data.update()
+    current_vals = None
+    if name not in mesh.attributes:
+        mesh.attributes.new(name=name, type="BOOLEAN", domain="POINT")
+        mesh.update()
+        att = mesh.attributes[name]
+    else:
+        att = mesh.attributes[name]
+        current_vals = np.empty(len(mesh.vertices), dtype=bool)
+        att.data.foreach_get("value", current_vals)
 
-    length_diff = len(object.data.vertices) - len(values)
-    att = object.data.attributes[name]
-
-    if length_diff == 0:
-        att.data.foreach_set("value", values)
-    elif length_diff > 0:
+    # support values too short
+    length_diff = len(mesh.vertices) - len(values)
+    if length_diff > 0:
         values = np.concatenate(
             [values, np.full(length_diff, fallback_value, dtype=bool)]
         )
-        att.data.foreach_set("value", values)
     elif length_diff < 0:
-        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
+        print(f"Error : {len(values)} values on {len(mesh.vertices)} vertices")
         return False
 
+    if current_vals is not None:
+        values = np.logical_or(values, current_vals)
+    att.data.foreach_set("value", values)
     return True
 
 

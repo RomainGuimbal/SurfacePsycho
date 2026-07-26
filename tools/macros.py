@@ -564,14 +564,14 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
 
         # Add attributes
         add_bool_attribute(
-            obj,
+            obj.data,
             "Trim Contour",
-            np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
+            np.array([None] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool)
         )
         add_bool_attribute(
-            obj,
+            obj.data,
             "Endpoints",
-            np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
+            np.array([None] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool)
         )
 
 
