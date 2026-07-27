@@ -30,26 +30,6 @@
             "problemMatcher": []
         },
         {
-            "label": "Import primitives",
-            "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
-            "args": [
-                "--python",
-                ".vscode/import_primitives.py"
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "Import complexe",
-            "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
-            "args": [
-                "--python",
-                ".vscode/import_complexe.py"
-            ],
-            "problemMatcher": []
-        },
-        {
             "label": "Build",
             "type": "shell",
             "command": "blender",
@@ -108,5 +88,48 @@
             ],
             "problemMatcher": []
         },
-    ]
+        //-------------------------------------
+        //              TESTING
+        //-------------------------------------
+        // TODO "Test all"
+        {
+            "label": "Import primitives",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--python",
+                ".testing/import_primitives.py"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Import complexe",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--python",
+                ".testing/import_complexe.py"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "curve type export",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--background",
+                "--python",
+                ".testing/curve_type_export_test.py"
+            ],
+            "problemMatcher": [],
+            "hide": true
+        },
+        {
+            "label": "Curve cases check",
+            "type": "shell",
+            "command": "$file = Get-ChildItem 'C:/Users/romai/Documents/Projets/26 - Bezier Quest/Testing/TEST - curve types export*' | Sort-Object LastWriteTime | Select-Object -Last 1 -ExpandProperty FullName; & mayo $file",
+            "problemMatcher": [],
+            "dependsOn": "curve type export"
+        }
+    ],
 }
