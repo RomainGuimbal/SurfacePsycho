@@ -909,3 +909,9 @@ def create_collection(name, parent=None):
         parent.children.link(new_collection)
 
     return new_collection
+
+def selection_mean_point(selection):
+    res = Vector()
+    for s in selection :
+        res += Vector(s[2])
+    return res/len(selection)

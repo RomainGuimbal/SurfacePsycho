@@ -12,6 +12,7 @@ from ..common.utils import (
     set_segment_type,
     add_bool_attribute,
     flip_node_socket_bool,
+    selection_mean_point,
 )
 from ..common.modifier_utils import (
     add_modifier_asset,
@@ -566,12 +567,12 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
         add_bool_attribute(
             obj.data,
             "Trim Contour",
-            np.array([None] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool)
+            np.array([None] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
         )
         add_bool_attribute(
             obj.data,
             "Endpoints",
-            np.array([None] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool)
+            np.array([None] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
         )
 
 
@@ -1372,6 +1373,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
                 {
                     "Target": target_obj,
                     "Target Shape": "Segment",
+                    "Auto": False,
                     "Target Segment": seg_id,
                 },
             )
@@ -1462,7 +1464,7 @@ class SP_OT_add_isoparam(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
-        if self.iso_obj_name not in bpy.data.objects :
+        if self.iso_obj_name not in bpy.data.objects:
             return {"CANCELLED"}
 
         if event.type == "MOUSEMOVE":
@@ -1505,6 +1507,55 @@ class SP_OT_add_isoparam(bpy.types.Operator):
         return {"PASS_THROUGH"}
 
 
+class SP_OT_fill(bpy.types.Operator):
+    bl_idname = "object.sp_fill"
+    bl_label = "SP - Fill"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        # square fill
+        if len(SELECTED_SEGMENTS) == 4:
+            fill_ng, meshing_ng = append_multiple_node_groups(
+                ["SP - Square Fill", SP_obj_type.BEZIER_SURFACE.mesher_name]
+            )
+
+            # Create the patch
+            mesh = bpy.data.meshes.new("Fill Patch")
+            mesh.from_pydata([Vector((0, 0, 0))], [], [])
+            fill_object = bpy.data.objects.new("Fill Patch", mesh)
+            fill_object.location = selection_mean_point(SELECTED_SEGMENTS)
+            context.collection.objects.link(fill_object)
+
+            s_list = list(SELECTED_SEGMENTS)
+
+            add_modifier_asset_from_node_group(
+                fill_object,
+                fill_ng,
+                {
+                    "Target 1": context.scene.objects[s_list[0][0]],
+                    "Target Segment 1": s_list[0][1],
+                    "Target 2": context.scene.objects[s_list[1][0]],
+                    "Target Segment 2": s_list[1][1],
+                    "Target 3": context.scene.objects[s_list[2][0]],
+                    "Target Segment 3": s_list[2][1],
+                    "Target 4": context.scene.objects[s_list[3][0]],
+                    "Target Segment 4": s_list[3][1],
+                },
+            )
+            add_modifier_asset_from_node_group(
+                fill_object,
+                meshing_ng,
+                pin=True,
+            )
+            fill_object.select_set(True)
+            context.view_layer.objects.active = fill_object
+            SELECTED_SEGMENTS.clear()
+            return {"FINISHED"}
+        else:
+            self.report({"INFO"}, "Select 4 segments")
+            return {"CANCELLED"}
+
+
 classes = [
     SP_OT_add_curvature_analysis,
     SP_OT_add_isoparam,
@@ -1516,6 +1567,7 @@ classes = [
     SP_OT_blend_surfaces,
     SP_OT_explode_compound,
     SP_OT_extract_segment,
+    SP_OT_fill,
     SP_OT_flip_normals,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_matcaps,
