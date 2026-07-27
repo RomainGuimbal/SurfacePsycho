@@ -28,14 +28,14 @@ from OCP.XCAFDoc import (
 
 from ..common.utils import create_collection
 
-def read_cad(filepath, import_colors):
+def read_cad(filepath, import_colors=True):
     # STEP
     if splitext(split(filepath)[1])[1].lower() in [".step", ".stp"]:
 
-        if import_colors:
-            all_file_shapes_dic = read_step_file_with_names_colors(filepath)
-        else:
-            root_shape = read_step_file(filepath)
+        # if import_colors:
+        #     all_file_shapes_dic = read_step_file_with_names_colors(filepath)
+        # else:
+        root_shape = read_step_file(filepath)
 
     # IGES
     elif splitext(split(filepath)[1])[1] in [".igs", ".iges", ".IGES", ".IGS"]:
@@ -233,7 +233,7 @@ def read_step_file_with_names_colors(
             shape_tool.GetComponents_s(lab, ls_components)
             for i in range(ls_components.Length()):
                 l_comp = ls_components.Value(i + 1)
-                if shape_tool.IsReference(l_comp):
+                if shape_tool.IsReference_s(l_comp):
                     label_reference = TDF_Label()
                     shape_tool.GetReferredShape(l_comp, label_reference)
                     # Overrite location with parent location
@@ -393,7 +393,7 @@ class ImportHierarchy:
 
             for i in range(ls_components.Length()):
                 l_comp = ls_components.Value(i + 1)
-                if self.shape_tool.IsReference(l_comp):
+                if self.shape_tool.IsReference_s(l_comp):
 
                     label_reference = TDF_Label()
                     self.shape_tool.GetReferredShape(l_comp, label_reference)

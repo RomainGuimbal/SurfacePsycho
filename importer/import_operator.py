@@ -40,15 +40,15 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         description="Import faces with their trim contours",
         default=True,
     )
-    materials_on: BoolProperty(
-        name="Materials",
-        description="Set materials according to STEP colors",
-        default=True
-    )
-    
+    # materials_on: BoolProperty(
+    #     name="Materials",
+    #     description="Set materials according to STEP colors",
+    #     default=True
+    # )
+
     def is_step_file(self):
         path = self.filepath.lower() if self.filepath else None
-        return (path.endswith('.step') or path.endswith('.stp')) if path else True
+        return (path.endswith(".step") or path.endswith(".stp")) if path else True
 
     def execute(self, context):
         self.t0 = time.time()
@@ -62,13 +62,12 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         context.window.cursor_set("WAIT")
 
         # Initialize your CAD import data
-        root_shape = read_cad(self.filepath, self.materials_on)
+        root_shape = read_cad(self.filepath)  # , self.materials_on)
         root_name = splitext(split(self.filepath)[1])[0]
-        shape_hierarchy = ShapeHierarchy(self.filepath)
+        shape_hierarchy = ShapeHierarchy(root_shape, root_name)
 
         # Collect shapes to process
         shapes_args = []
-
         if self.faces_on:
             import_face_nodegroups(shape_hierarchy)
             shapes_args.extend(
@@ -77,7 +76,6 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
                     for shape, name, color, collection in shape_hierarchy.faces
                 ]
             )
-
         if self.curves_on:
             append_node_group(SP_obj_type.CURVE.mesher_name)
             shapes_args.extend(
@@ -86,7 +84,6 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
                     for shape, name, color, collection in shape_hierarchy.edges
                 ]
             )
-
         if len(shapes_args) == 0:
             self.report({"WARNING"}, "No shapes to import")
             return {"CANCELLED"}
@@ -162,7 +159,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         self.status = f"{self.created_object_count}/{self.total_count} shapes imported"
 
         return {"PASS_THROUGH"}
-    
+
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "faces_on")
@@ -170,12 +167,11 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         layout.prop(self, "trims_on")
 
         row = layout.row()
-        row.enabled = self.is_step_file()  # gray out if not .test
-        row.prop(self, "materials_on")
+        row.enabled = self.is_step_file()  # gray out if not .step
+        # row.prop(self, "materials_on")
 
         layout.prop(self, "scale")
         layout.prop(self, "resolution")
-        
 
 
 classes = [

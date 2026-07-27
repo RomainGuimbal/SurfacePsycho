@@ -510,15 +510,15 @@ def generic_import_surface(
     if name == None:
         name = ob_name
 
-    if len(color) == 3:
-        color = list(color) + [1.0]
+    # if len(color) == 3:
+    #     color = list(color) + [1.0]
 
     object_data = {
         "mesh_data": mesh_data,
         "name": name,
         "collection": collection,
         "scale": scale,
-        "color": color,
+        # "color": color,
         "attrs": attrs,
         "modifier": modifier,
         "transform": transform,
@@ -958,8 +958,8 @@ def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
     if name == None:
         name = "STEP Curve"
 
-    if len(color) == 3:
-        color = list(color) + [1.0]
+    # if len(color) == 3:
+    #     color = list(color) + [1.0]
 
     modifier = (MesherName.CURVE, {"Resolution": resolution}, True)
 
@@ -979,7 +979,7 @@ def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
         "name": name,
         "collection": collection,
         "scale": scale,
-        "color": color,
+        # "color": color,
         "attrs": attrs,
         "modifier": modifier,
         "transform": Matrix(),
@@ -1005,8 +1005,8 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
     if name == None:
         name = "STEP FlatPatch"
 
-    if len(color) == 3:
-        color = list(color) + [1.0]
+    # if len(color) == 3:
+    #     color = list(color) + [1.0]
 
     modifier = (
         MesherName.PLANE,
@@ -1034,7 +1034,7 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
         "name": name,
         "collection": collection,
         "scale": scale,
-        "color": color,
+        # "color": color,
         "attrs": attrs,
         "modifier": modifier,
         "transform": Matrix(),
@@ -1186,13 +1186,13 @@ def build_SP_revolution(
 
 
 class ShapeHierarchy:
-    def __init__(self, shape, root_name):
+    def __init__(self, root_shape, root_name):
         self.faces = []  # tuples (face, name, color, collection)
         self.edges = []  # tuples (edges, collection)
         self.hierarchy = {}
         root_collection = self.create_collection(root_name)
         self.hierarchy[root_collection] = []
-        iterator = TopoDS_Iterator(shape)
+        iterator = TopoDS_Iterator(root_shape)
         while iterator.More():
             self.hierarchy[root_collection].append(
                 self.create_shape_hierarchy(iterator.Value(), root_collection)
@@ -1365,7 +1365,7 @@ def create_blender_object(object_data):
     mesh.from_pydata(*object_data["mesh_data"], False)
     ob = bpy.data.objects.new(object_data["name"], mesh)
     ob.matrix_world = object_data["transform"]
-    ob.color = object_data["color"]
+    # ob.color = object_data["color"]
 
     for name, att in object_data["attrs"].items():
         match att[0]:
