@@ -5,10 +5,12 @@ from ..common.utils import (
     vec_list_to_step_cartesian2d,
     vec_list_to_step_cartesian,
     float_list_to_tcolstd_H,
-    knot_tcol_from_att
+    knot_tcol_from_att,
+    print_vec_list,
 )
 from .export_ellipse import gp_Elips_from_3_points, gp_Elips2d_from_3_points
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
+from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.GC import (
     GC_MakeArcOfCircle,
     GC_MakeSegment,
@@ -60,16 +62,18 @@ class SP_Edge_export:
         self.knot = seg_aligned_attrs["knot"]
         self.mult = seg_aligned_attrs["mult"]
 
-        # Generate Geom
-        self.format_cp()
+        # print_vec_list(self.vec_cp)
 
-        self.type = self.get_type()
-        self.generate_geom()
+        # Generate Geom
+        self._format_cp()
+
+        self.type = self._get_type()
+        self._generate_geom()
 
         # Make edge
-        self.make_edge(geom_surf)
+        self._make_edge(geom_surf)
 
-    def format_cp(self):
+    def _format_cp(self):
         # Create GP points
         if self.is2D:
             self.gp_cp = [gp_Pnt2d(v[0], v[1]) for v in self.vec_cp]
@@ -84,43 +88,43 @@ class SP_Edge_export:
             else:
                 self.gp_cp = [gp_Pnt(v[0], v[1], v[2]) for v in self.vec_cp]
 
-    def get_type(self):
+    def _get_type(self):
         if "type" in self.seg_aligned_attrs.keys():
             return SP_segment_type(self.seg_aligned_attrs["type"])
         else:
             raise ValueError("Missing segment type")
 
-    def generate_geom(self):
+    def _generate_geom(self):
         match self.type:
             case SP_segment_type.BEZIER:
                 if self.p_count == 2:
-                    self.line()
+                    self._line()
                 else:
-                    self.bezier()
+                    self._bezier()
             case SP_segment_type.NURBS:
                 if self.p_count == 2:
-                    self.line()
+                    self._line()
                 else:
-                    self.bspline()
+                    self._bspline()
             case SP_segment_type.CIRCLE_ARC:
-                self.circle_arc()
+                self._circle_arc()
             case SP_segment_type.CIRCLE:
-                self.circle()
+                self._circle()
             case SP_segment_type.ELLIPSE_ARC:
-                self.ellipse_arc()
+                self._ellipse_arc()
             case SP_segment_type.ELLIPSE:
-                self.ellipse()
+                self._ellipse()
             case _:
                 raise ValueError("Invalid segment type")
 
-    def line(self):
+    def _line(self):
         if self.is2D:
             makesegment = GCE2d_MakeSegment(self.gp_cp[0], self.gp_cp[1])
         else:
             makesegment = GC_MakeSegment(self.gp_cp[0], self.gp_cp[1])
         self.geom = makesegment.Value()
 
-    def bezier(self):
+    def _bezier(self):
         if self.is2D:
             segment_point_array = vec_list_to_gp_pnt2d(self.vec_cp)
             self.geom = Geom2d_BezierCurve(segment_point_array)
@@ -128,7 +132,7 @@ class SP_Edge_export:
             segment_point_array = gp_list_to_arrayofpnt(self.gp_cp)
             self.geom = Geom_BezierCurve(segment_point_array)
 
-    def bspline(self):
+    def _bspline(self):
         isclamped = self.seg_aligned_attrs["isclamped"] if not None else True
         iscyclic = self.seg_aligned_attrs["isperiodic"] if not None else False
         degree = self.seg_aligned_attrs["degree"]
@@ -187,7 +191,7 @@ class SP_Edge_export:
         if self.geom == None:
             raise ValueError("Failed to create BSpline geometry")
 
-    def circle_arc(self):
+    def _circle_arc(self):
         if self.is2D:
             makesegment = GCE2d_MakeArcOfCircle(
                 self.gp_cp[0], self.gp_cp[1], self.gp_cp[2]
@@ -198,7 +202,7 @@ class SP_Edge_export:
             )
         self.geom = makesegment.Value()
 
-    def circle(self):
+    def _circle(self):
 
         # Circle 2D
         if self.is2D:
@@ -236,7 +240,7 @@ class SP_Edge_export:
 
             self.geom = makesegment.Value()
 
-    def ellipse_arc(self):
+    def _ellipse_arc(self):
         if self.is2D:
             p_center = self.gp_cp[2]
             gp_ellipse = gp_Elips2d_from_3_points(
@@ -256,7 +260,7 @@ class SP_Edge_export:
             )
             self.geom = makesegment.Value()
 
-    def ellipse(self):
+    def _ellipse(self):
         if self.is2D:
             gp_elips = gp_Elips2d_from_3_points(
                 self.gp_cp[1], self.gp_cp[0], self.gp_cp[2]
@@ -270,19 +274,15 @@ class SP_Edge_export:
             makesegment = GC_MakeEllipse(gp_elips)
             self.geom = makesegment.Value()
 
-    def make_edge(self, geom_surf):
+    def _make_edge(self, geom_surf):
         if geom_surf == None:
             builder = BRepBuilderAPI_MakeEdge(self.geom)
-            if not builder.IsDone():
-                raise RuntimeError(
-                    f"Edge creation failed with error: {builder.Error()}"
-                )
-            self.topods_edge = builder.Edge()
         else:  # UV space
             adapt = GeomAdaptor_Surface(geom_surf)
             builder = BRepBuilderAPI_MakeEdge(self.geom, adapt.Surface())
-            if not builder.IsDone():
-                raise RuntimeError(
-                    f"Edge creation failed with error: {builder.Error()}"
-                )
-            self.topods_edge = builder.Edge()
+
+        if not builder.IsDone():
+            raise RuntimeError(f"Edge creation failed with error: {builder.Error()}")
+        edge = builder.Edge()
+        # assert BRepCheck_Analyzer(edge).IsValid()
+        self.topods_edge = edge

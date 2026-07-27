@@ -915,3 +915,10 @@ def selection_mean_point(selection):
     for s in selection :
         res += Vector(s[2])
     return res/len(selection)
+
+
+def print_vec_list(vec_list):
+    for v in vec_list:
+        print(f"{v[0]:5.3f} {v[1]:5.3f} {v[2]:5.3f}")
+    print("\n")
+    
