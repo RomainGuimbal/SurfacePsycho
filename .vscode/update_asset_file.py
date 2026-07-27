@@ -24,6 +24,7 @@ ASSET_NODE_GROUPS_NURBS_PATCH = asset_list.ASSET_NODE_GROUPS_NURBS_PATCH
 ASSET_NODE_GROUPS_OTHER_SURFACES = asset_list.ASSET_NODE_GROUPS_OTHER_SURFACES
 ASSET_NODE_GROUPS_COMPOUND = asset_list.ASSET_NODE_GROUPS_COMPOUND
 ASSET_NODE_GROUPS_SHAPE_PRESETS = asset_list.ASSET_NODE_GROUPS_SHAPE_PRESETS
+ASSET_NODE_GROUPS = asset_list.ASSET_NODE_GROUPS
 set_nodes_version = versioning.set_nodes_version
 replace_duplicates = versioning.replace_duplicates
 
@@ -386,6 +387,12 @@ if __name__ == "__main__":
     #    profiler.disable()
     #    profiler.print_stats()
 
+    missing = []
+    present = bpy.data.node_groups.keys()
+    for ng in ASSET_NODE_GROUPS:
+        if ng not in present:
+            missing.append(ng)
+
     # Blender refuses to overwrite a file that is currently loaded as a library.
     # Workaround: save to a temp path (copy=True keeps the session filepath unchanged),
     # then replace the real file with the temp file via Python.
@@ -395,6 +402,17 @@ if __name__ == "__main__":
     bpy.ops.wm.save_as_mainfile(filepath=tmp_path, copy=True)
     shutil.move(tmp_path, str(FILE_PATH))
 
-    print("\n\033[32m" + "=" * 50)
-    print("\n         Assets successfully updated !\n")
-    print("=" * 50 + "\033[0m\n")
+    # Print Final status
+    if len(missing) == 0:
+        # Print Success
+        print("\n" + GREEN + "=" * 50)
+        print("\n         Assets successfully updated !\n")
+        print("=" * 50 + RESET)
+    else:
+        print("\n" + RED + "=" * 50)
+        print("\n         Missing node_groups\n")
+        for m in missing:
+            print(f'- "{m}"')
+        print("=" * 50 + RESET)
+
+# TODO missing objects

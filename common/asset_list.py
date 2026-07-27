@@ -84,7 +84,6 @@ ASSET_NODE_GROUPS_NURBS_PATCH = {
     "SP - Continuity Analysis",
     "SP - Fit Patch",
     "SP - Interpolate Patch",
-    "SP_Curvature",
     "SP - Convert Contour",
 }
 
