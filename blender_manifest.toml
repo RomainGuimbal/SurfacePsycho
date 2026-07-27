@@ -35,6 +35,7 @@ paths_exclude_pattern = [
   "/.trunk/",
   "/.vscode/",
   "/.github/",
+  "/.testing",
   "/*.zip",
   "*.blend1",
   ".gitignore",
