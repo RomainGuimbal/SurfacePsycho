@@ -309,17 +309,18 @@ def sp_type_of_outdated_objects(o):
 #####################
 #     SCENARIOS     #
 #####################
-def update_scenario_deprecate_contour_fit(m, object):
+def update_scenario_deprecate_contour_fit(m, object, version):
     set_modifier_values(m, {"Scaling Method": "UV"})
-    if has_contour(object):
-        conv_mod = add_modifier_asset(
-            object,
-            "SP - Convert Contour",
-            {"Conversion": "Fit to UV"},
-            pin=False,
-            append=True,
-        )
-        move_modifier_above_mesher(object, conv_mod)
+    if version < Version("0.10.0"):
+        if has_contour(object):
+            conv_mod = add_modifier_asset(
+                object,
+                "SP - Convert Contour",
+                {"Conversion": "Fit to UV"},
+                pin=False,
+                append=True,
+            )
+            move_modifier_above_mesher(object, conv_mod)
 
 
 def update_scenario_replace_fillet_factor_2(mod):
@@ -332,10 +333,11 @@ def update_scenario_replace_fillet_factor_2(mod):
         set_modifier_values(mod, {"Fillet": current_fillet / 2, "Tension Offset": current_tension / 2})
 
 
-def update_scenario_curve_preserve_combs_display(mod):
-    if get_modifier_value(mod, "Enable"):
-        update_modifier(mod)
-        set_modifier_values(mod, {"Combs": True})
+def update_scenario_curve_preserve_combs_display(mod, version):
+    if version < Version("0.9.0"):
+        if get_modifier_value(mod, "Enable"):
+            update_modifier(mod)
+            set_modifier_values(mod, {"Combs": True})
 
 
 def upgrade_vertex_group_endpoints(obj):
@@ -354,10 +356,11 @@ def upgrade_vertex_group_endpoints(obj):
     att.data.foreach_set("value", values)
 
 
-def update_scenario_switch_resolutions(mod):
-    u = get_modifier_value(mod, "Resolution U")
-    v = get_modifier_value(mod, "Resolution V")
-    set_modifier_values(mod, {"Resolution U": v, "Resolution V": u})
+def update_scenario_switch_resolutions(mod, version):
+    if version < Version("0.9.0"):
+        u = get_modifier_value(mod, "Resolution U")
+        v = get_modifier_value(mod, "Resolution V")
+        set_modifier_values(mod, {"Resolution U": v, "Resolution V": u})
 
 
 def update_scenario_loft_segment(mod):
@@ -425,10 +428,8 @@ def update_scenario_connect_bezier_patch(mod, version):
 
 def common_to_all_non_plane_surfaces(m, name, mesher_names, obj, version):
     if name in mesher_names:
-        update_scenario_deprecate_contour_fit(m, obj)
-        if version < Version("0.9.0"):
-            # issue here because versions were not set in 0.9
-            update_scenario_switch_resolutions(m)
+        update_scenario_deprecate_contour_fit(m, obj, version)
+        update_scenario_switch_resolutions(m, version)
 
 
 # TODO ?
@@ -513,7 +514,7 @@ def update_object(obj):
                     update_modifier(m)
                 case SP_obj_type.CURVE:
                     if name in mesher_names:
-                        update_scenario_curve_preserve_combs_display(m)
+                        update_scenario_curve_preserve_combs_display(m, version)
                     else:  # To skip update modifier which has to be inside the scenario
                         if name in fillet_names:
                             update_scenario_replace_fillet_factor_2(m)
