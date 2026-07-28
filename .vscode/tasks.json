@@ -4,6 +4,15 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Open assets",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
+            ],
+            "problemMatcher": [],
+        },
+        {
             "label": "Update assets",
             "type": "shell",
             "command": ".vscode/launch_blender_with_script.bat",
@@ -14,6 +23,11 @@
                 ".vscode/update_asset_file.py"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "Update and check assets",
+            "dependsOn": ["Update assets", "Open assets"],
+            "dependsOrder": "sequence"
         },
         {
             "label": "Update assets FAST",

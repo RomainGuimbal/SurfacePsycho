@@ -31,7 +31,7 @@ def get_addon_version():
 VERSION_STR = get_addon_version()
 ASSETS_PATH = ADDON_PATH / "assets"
 ASSETS_FILE = ASSETS_PATH / "assets.blend"
-ADDON_PREF_KEY = "bl_ext." + ADDON_PATH.name + ".SurfacePsycho"
+ADDON_PREF_KEY = ".".join(__package__.split(".")[:-1])
 
 
 class SP_obj_type(IntEnum):

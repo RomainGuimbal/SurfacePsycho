@@ -1,6 +1,4 @@
 {
-    "cmake.sourceDirectory": "D:/Projets/SurfacePsycho/.github/workflows",
-
     "python.analysis.diagnosticSeverityOverrides": {
         "reportInvalidTypeForm": "none"
     },
