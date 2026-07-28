@@ -26,7 +26,7 @@ ASSET_NODE_GROUPS = asset_list.ASSET_NODE_GROUPS
 set_nodes_version = version_utils.set_nodes_version
 replace_duplicates = version_utils.replace_duplicates
 
-FILE_PATH = Path(bpy.data.filepath)
+FILE_PATH = Path(bpy.data.filepath).resolve()
 
 RED = "\033[91m"
 GREEN = "\033[32m"

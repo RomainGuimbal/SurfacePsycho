@@ -1,5 +1,6 @@
 import bpy
 import numpy as np
+from pathlib import Path
 from packaging.version import Version
 from .asset_list import ASSET_NODE_GROUPS
 from .enums import SP_obj_type, MesherName
@@ -115,7 +116,7 @@ def update_node_group(name):
             and ng.name == new_name
             and ng.name in ASSET_NODE_GROUPS
             and is_latest_version(ng)
-            and ng.library.filepath == ASSETS_FILE
+            and Path(ng.library.filepath).resolve() == ASSETS_FILE
         ):
             latest_node = ng
             break
@@ -173,15 +174,22 @@ def update_modifier(modifier):
 def update_all_node_groups(force=False):
     # get latest version nodes if they exist
     latest_nodes = {}
-    for ng in bpy.data.node_groups:
-        # assumes latest version never has suffix
+    # assumes latest version never has suffix
+    file_ng_names = set(ng.name for ng in bpy.data.node_groups if ng.type == "GEOMETRY")
+    all_sp_ng_names = set(ASSET_NODE_GROUPS)
+    to_treat_names = file_ng_names.intersection(all_sp_ng_names)
+
+    for ng_name in to_treat_names:
+        ng = bpy.data.node_groups[ng_name]
         if (
-            ng.type == "GEOMETRY"
-            and ng.name in ASSET_NODE_GROUPS
-            and (is_latest_version(ng) or force)
-            and ng.library.filepath == ASSETS_FILE
+            is_latest_version(ng)
+            and ng.library
+            and Path(ng.library.filepath).resolve() == ASSETS_FILE
         ):
-            latest_nodes[ng.name] = ng
+            if force:
+                bpy.data.node_groups[ng_name].make_local()
+            else:
+                latest_nodes[ng_name] = ng
 
     # Make a unique id for each current node group
     snapshot = [
@@ -196,16 +204,19 @@ def update_all_node_groups(force=False):
         ng = bpy.data.node_groups.get(n, lib)
         name = remove_suffix(ng.name)
 
+        # Old with same name
         if name in ASSET_NODE_GROUPS and ng not in latest_nodes.values():
             if name not in latest_nodes.keys():
-                latest_nodes[name] = append_node_group(name)
+                latest_nodes[name] = append_node_group(name, force=True)
             replace_node_group(ng, latest_nodes[name])
             bpy.data.node_groups.remove(ng)
             replaced += 1
+
+        # Old with different name
         elif name in OLD_TO_NEW_NODE_MAPPING.keys():
             new_name = OLD_TO_NEW_NODE_MAPPING[name]
             if new_name not in latest_nodes.keys():
-                latest_nodes[new_name] = append_node_group(new_name)
+                latest_nodes[new_name] = append_node_group(new_name, force=True)
             replace_node_group(ng, latest_nodes[new_name])
             bpy.data.node_groups.remove(ng)
             replaced += 1
@@ -490,7 +501,7 @@ class SP_OT_set_all_nodes_version(bpy.types.Operator):
 
 
 class SP_OT_update_node_group(bpy.types.Operator):
-    bl_idname = "object.sp_update_node_group"
+    bl_idname = "node.sp_update_node_group"
     bl_label = "SP - Update Node Group"
     bl_description = (
         "Make sure specified node group is the same as in current addon version"
@@ -534,7 +545,7 @@ class SP_OT_update_node_group(bpy.types.Operator):
 
 
 class SP_OT_update_all_node_groups(bpy.types.Operator):
-    bl_idname = "object.sp_update_all_node_groups"
+    bl_idname = "node.sp_update_all_node_groups"
     bl_label = "SP - Update All Node Groups"
     bl_description = (
         "Make sure each SP node group is the same as assets in current addon version"
@@ -573,7 +584,7 @@ class SP_OT_update_objects(bpy.types.Operator):
 
 
 class SP_OT_replace_node_group(bpy.types.Operator):
-    bl_idname = "object.sp_replace_node_group"
+    bl_idname = "node.sp_replace_node_group"
     bl_label = "SP - Replace Node Group"
     bl_description = (
         "For updating old assets. Replaces all instance of a modifier with another"

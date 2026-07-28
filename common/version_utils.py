@@ -77,5 +77,8 @@ def replace_all_instances_of_node_group_by_name(
         return -1
 
 
-def replace_node_group(target_node_group, new_node_group):
-    target_node_group.user_remap(new_node_group)
+def replace_node_group(target_ng, new_ng):
+    assert (target_ng != new_ng) or (
+        target_ng == new_ng and target_ng.library != new_ng.library
+    )
+    target_ng.user_remap(new_ng)

@@ -143,7 +143,7 @@ class SP_PT_EditPanel(bpy.types.Panel):
 
             # Replace node group
             col.operator(
-                "object.sp_replace_node_group",
+                "node.sp_replace_node_group",
                 text="Replace Node Group",
                 icon="UV_SYNC_SELECT",
             )
