@@ -188,7 +188,7 @@ class SP_OT_QuickExport(bpy.types.Operator):
         if blenddir != "":
             export_dir = Path(blenddir)
         else:
-            export_dir = context.preferences.filepaths.temporary_directory
+            export_dir = Path(context.preferences.filepaths.temporary_directory)
             if str(export_dir) == "":
                 self.report(
                     {"WARNING"},
@@ -212,7 +212,7 @@ class SP_OT_QuickExport(bpy.types.Operator):
             next_number = max(existing_numbers) + 1
 
         filename = f"{blendname} {date_str} ({next_number}).step"
-        pathstr = str(Path(export_dir) / filename)
+        pathstr = str(export_dir / filename)
         
         # Export
         with warnings.catch_warnings(record=True) as w:
