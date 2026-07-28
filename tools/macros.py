@@ -3,7 +3,7 @@ import bpy
 import numpy as np
 from mathutils import Vector, Matrix
 import bmesh
-from ..common.enums import SP_obj_type, ADDON_PREF_KEY, ASSETS_PATH, MesherName
+from ..common.enums import SP_obj_type, ADDON_PREF_KEY, ASSETS_PATH, MesherName, MESHERS
 from ..common.utils import (
     sp_type_of_object,
     read_attribute_by_name,
@@ -19,6 +19,7 @@ from ..common.modifier_utils import (
     change_node_socket_value,
     set_modifier_values,
     add_modifier_asset_from_node_group,
+    get_modifier_value,
 )
 from ..common.asset_append import (
     append_object_by_name,
@@ -35,13 +36,13 @@ class SP_OT_add_library(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return ASSETS_PATH not in [
+        return str(ASSETS_PATH) not in [
             a.path for a in context.preferences.filepaths.asset_libraries
         ]
 
     def execute(self, context):
         # create lib
-        asset_lib_path = ASSETS_PATH
+        asset_lib_path = str(ASSETS_PATH)
         paths = [a.path for a in context.preferences.filepaths.asset_libraries]
         if asset_lib_path not in paths:
             bpy.ops.preferences.asset_library_add(directory=asset_lib_path)
@@ -1263,7 +1264,7 @@ class SP_OT_add_matcaps(bpy.types.Operator):
                 {"name": "SP matcap horizontal pixel-perfect-lines-3.png"},
                 {"name": "SP matcap horizontal shinny3.png"},
             ],
-            directory=ASSETS_PATH,
+            directory=str(ASSETS_PATH),
             type="MATCAP",
         )
         try:

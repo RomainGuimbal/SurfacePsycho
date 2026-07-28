@@ -2,8 +2,7 @@ import warnings
 import bpy
 from datetime import datetime
 import re
-import os
-from os.path import join
+from pathlib import Path
 import time
 
 # from .macros import SP_Props_Group
@@ -187,10 +186,10 @@ class SP_OT_QuickExport(bpy.types.Operator):
         # Get temp dir
         blenddir = bpy.path.abspath("//")
         if blenddir != "":
-            dir = blenddir
+            export_dir = Path(blenddir)
         else:
-            dir = context.preferences.filepaths.temporary_directory
-            if dir == "":
+            export_dir = context.preferences.filepaths.temporary_directory
+            if str(export_dir) == "":
                 self.report(
                     {"WARNING"},
                     "Save your file first or set the temporary directory in preferences",
@@ -204,8 +203,8 @@ class SP_OT_QuickExport(bpy.types.Operator):
 
         # Find next available number to avoid overrides
         existing_numbers = []
-        for fname in os.listdir(dir):
-            match = pattern.match(fname)
+        for fname in export_dir.iterdir():
+            match = pattern.match(fname.name)
             if match:
                 existing_numbers.append(int(match.group(1)))
         next_number = 1
@@ -213,7 +212,7 @@ class SP_OT_QuickExport(bpy.types.Operator):
             next_number = max(existing_numbers) + 1
 
         filename = f"{blendname} {date_str} ({next_number}).step"
-        pathstr = join(dir, filename)
+        pathstr = str(Path(export_dir) / filename)
         
         # Export
         with warnings.catch_warnings(record=True) as w:

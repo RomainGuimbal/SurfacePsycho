@@ -1,12 +1,11 @@
-import bpy
 import unicodedata
+from pathlib import Path
 import OCP.TopAbs as TopAbs
 import OCP.TopAbs as TopAbs
 import OCP.TDF as TDF
 import OCP.Quantity as Quantity
 import warnings
 
-from os.path import splitext, split, isfile
 from OCP.TDataStd import TDataStd_Name
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
@@ -30,7 +29,8 @@ from ..common.utils import create_collection
 
 def read_cad(filepath, import_colors=True):
     # STEP
-    if splitext(split(filepath)[1])[1].lower() in [".step", ".stp"]:
+    file_path = Path(filepath)
+    if file_path.suffix.lower() in [".step", ".stp"]:
 
         # if import_colors:
         #     all_file_shapes_dic = read_step_file_with_names_colors(filepath)
@@ -38,7 +38,7 @@ def read_cad(filepath, import_colors=True):
         root_shape = read_step_file(filepath)
 
     # IGES
-    elif splitext(split(filepath)[1])[1] in [".igs", ".iges", ".IGES", ".IGS"]:
+    elif file_path.suffix in [".igs", ".iges", ".IGES", ".IGS"]:
         iges_reader = IGESControl_Reader()
         status = iges_reader.ReadFile(filepath)
         if status != IFSelect_RetDone:
@@ -64,7 +64,7 @@ def read_step_file(filename, verbosity=True) -> TopAbs.TopAbs_SHAPE:
     as_compound: True by default. If there are more than one shape at root,
     gather all shapes into one compound. Otherwise returns a list of shapes.
     """
-    if not isfile(filename):
+    if not Path(filename).is_file():
         raise FileNotFoundError(f"{filename} not found.")
 
     step_reader = STEPControl_Reader()
@@ -90,7 +90,7 @@ def read_step_file(filename, verbosity=True) -> TopAbs.TopAbs_SHAPE:
 def read_step_file_with_names_colors(
     filename,
 ) -> dict[TopAbs.TopAbs_SHAPE : tuple[TDF.TDF_Label, Quantity.Quantity_Color]]:
-    if not isfile(filename):
+    if not Path(filename).is_file():
         raise FileNotFoundError(f"{filename} not found.")
 
     output_shapes = {}
@@ -269,7 +269,7 @@ def read_step_file_with_names_colors(
 
 class ImportHierarchy:
     def __init__(self, filepath):
-        self.filepath = filepath
+        self.filepath = Path(filepath)
         self.init_reader()
 
         # Init main data
@@ -278,7 +278,7 @@ class ImportHierarchy:
         self.hierarchy = {}
 
         # Create root collection
-        root_name = splitext(split(self.filepath)[1])[0]
+        root_name = self.filepath.stem
         root_collection = create_collection(root_name)
         self.hierarchy[root_collection] = []
 
@@ -295,7 +295,7 @@ class ImportHierarchy:
             )
 
     def init_reader(self):
-        if not isfile(self.filepath):
+        if not self.filepath.is_file():
             raise FileNotFoundError(f"{self.filepath} not found.")
 
         # create an handle to a document

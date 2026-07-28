@@ -1,7 +1,7 @@
 import bpy
 import time
 
-from os.path import splitext, split
+from pathlib import Path
 from ..common.enums import SP_obj_type
 from ..common.asset_append import append_node_group
 from .import_shape_to_blender_object import (
@@ -63,7 +63,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
         # Initialize your CAD import data
         root_shape = read_cad(self.filepath)  # , self.materials_on)
-        root_name = splitext(split(self.filepath)[1])[0]
+        root_name = Path(self.filepath).stem
         shape_hierarchy = ShapeHierarchy(root_shape, root_name)
 
         # Collect shapes to process

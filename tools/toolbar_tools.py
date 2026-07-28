@@ -1,5 +1,5 @@
-import os
 import bpy
+from pathlib import Path
 from . import overlay_endpoints
 from . import overlay_segment_selection
 from .keymap import OBJ_KEYMAP, EDIT_KEYMAP
@@ -10,11 +10,9 @@ _custom_icon_value = None
 
 def _load_custom_icon():
     global _custom_icon_value
-    icon_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "icons", _ICON_NAME + ".dat"
-    )
+    icon_path = Path(__file__).parent.parent / "icons" / (_ICON_NAME + ".dat")
     try:
-        _custom_icon_value = bpy.app.icons.new_triangles_from_file(icon_path)
+        _custom_icon_value = bpy.app.icons.new_triangles_from_file(str(icon_path))
         from bl_ui.space_toolsystem_common import _icon_cache
 
         _icon_cache[_ICON_NAME] = _custom_icon_value

@@ -12,15 +12,14 @@ from OCP.GeomAbs import (
     GeomAbs_OffsetSurface,
     GeomAbs_OtherSurface,
 )
-from os.path import dirname, abspath, basename, join
 from pathlib import Path
 
-ADDON_PATH = dirname(dirname(abspath(__file__)))  # The PsychoPath ;)
+ADDON_PATH = Path(__file__).resolve().parent.parent  # The PsychoPath ;)
 
 
 def get_addon_version():
     # get version from toml file
-    path = ADDON_PATH + "/blender_manifest.toml"
+    path = ADDON_PATH / "blender_manifest.toml"
     with open(path, "r") as f:
         for line in f:
             if line.startswith("version"):
@@ -30,9 +29,9 @@ def get_addon_version():
 
 
 VERSION_STR = get_addon_version()
-ASSETS_PATH = Path(join(ADDON_PATH, "assets")).resolve()
-ASSETS_FILE = Path(join(ASSETS_PATH, "assets.blend")).resolve()
-ADDON_PREF_KEY = "bl_ext." + basename(dirname(ADDON_PATH)) + ".SurfacePsycho"
+ASSETS_PATH = ADDON_PATH / "assets"
+ASSETS_FILE = ASSETS_PATH / "assets.blend"
+ADDON_PREF_KEY = "bl_ext." + ADDON_PATH.name + ".SurfacePsycho"
 
 
 class SP_obj_type(IntEnum):

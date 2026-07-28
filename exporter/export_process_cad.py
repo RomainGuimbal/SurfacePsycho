@@ -1,4 +1,4 @@
-from os.path import isfile
+from pathlib import Path
 from OCP.IFSelect import IFSelect_RetDone
 from OCP.IGESControl import IGESControl_Writer
 from OCP.Interface import Interface_Static
@@ -68,7 +68,7 @@ def write_step_file(a_shape, filename, application_protocol="AP203"):
 
     if status != IFSelect_RetDone:
         raise IOError("Error while writing shape to STEP file.")
-    if not isfile(filename):
+    if not Path(filename).is_file():
         raise IOError(f"{filename} not saved to filesystem.")
 
 
@@ -83,10 +83,11 @@ def write_iges_file(a_shape, filename):
     filename: the filename
     application protocol: "AP203" or "AP214"
     """
+    path = Path(filename)
     # a few checks
     if a_shape.IsNull():
         raise AssertionError("Shape is null.")
-    if isfile(filename):
+    if path.is_file():
         print(f"Warning: {filename} already exists and will be replaced")
     # creates and initialise the step exporter
     iges_writer = IGESControl_Writer()
@@ -95,5 +96,5 @@ def write_iges_file(a_shape, filename):
 
     if status != IFSelect_RetDone:
         raise AssertionError("Not done.")
-    if not isfile(filename):
+    if not path.is_file():
         raise IOError("File not written to disk.")
