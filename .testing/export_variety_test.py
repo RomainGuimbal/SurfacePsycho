@@ -2,7 +2,7 @@ import bpy
 from bpy import context
 
 bpy.ops.wm.open_mainfile(
-    filepath="c:/Users/romai/Documents/Projets/26 - Bezier Quest/Testing/TEST - curve types export.blend"
+    filepath="c:/Users/romai/Documents/Projets/26 - Bezier Quest/Testing/TEST - Export variety.blend"
 )
 
 for window in context.window_manager.windows:

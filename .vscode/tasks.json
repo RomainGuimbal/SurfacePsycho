@@ -130,6 +130,25 @@
             "command": "$file = Get-ChildItem 'C:/Users/romai/Documents/Projets/26 - Bezier Quest/Testing/TEST - curve types export*' | Sort-Object LastWriteTime | Select-Object -Last 1 -ExpandProperty FullName; & mayo $file",
             "problemMatcher": [],
             "dependsOn": "curve type export"
+        },
+        {
+            "label": "variety export",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--background",
+                "--python",
+                ".testing/export_variety_test.py"
+            ],
+            "problemMatcher": [],
+            "hide": true
+        },
+        {
+            "label": "Export variety",
+            "type": "shell",
+            "command": "$file = Get-ChildItem 'C:/Users/romai/Documents/Projets/26 - Bezier Quest/Testing/TEST - Export variety*' | Sort-Object LastWriteTime | Select-Object -Last 1 -ExpandProperty FullName; & mayo $file",
+            "problemMatcher": [],
+            "dependsOn": "variety export"
         }
     ],
 }
