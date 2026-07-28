@@ -111,3 +111,6 @@ EDGES_TYPES = {
     "ellipse_arc": 4,
     "ellipse": 5,
 }
+
+
+MESHERS = [t.mesher_name for t in SP_obj_type]

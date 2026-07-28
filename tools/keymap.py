@@ -22,7 +22,7 @@ OBJ_KEYMAP = (
     ("object.sp_add_isoparam", {"type": "I", "value": "PRESS"}, None),
     ("object.sp_flip_normals", {"type": "N", "value": "PRESS", "shift": True}, None),
     (
-        "object.sp_enable_exact_normals",
+        "object.sp_toggle_exact_normals",
         {"type": "N", "value": "PRESS", "alt": True},
         None,
     ),

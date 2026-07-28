@@ -1088,6 +1088,26 @@ class SP_OT_enable_exact_normals(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_toggle_exact_normals(bpy.types.Operator):
+    bl_idname = "object.sp_toggle_exact_normals"
+    bl_label = "SP - Toggle Exact Normals"
+    bl_description = "Toggle exact normals on selected surfaces"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        for m in context.object.modifiers:
+            if m.type == "NODES" and m.node_group and m.node_group.name in MESHERS:
+                try:
+                    val = get_modifier_value(m, "Exact Normals")
+                except Exception:
+                    val = get_modifier_value(m, "Exact Normal")
+        for o in reversed(context.selected_objects):
+            change_node_socket_value(
+                o, not val, ["Exact Normals", "Exact Normal"], "NodeSocketBool", context
+            )
+        return {"FINISHED"}
+
+
 class SP_OT_disable_exact_normals(bpy.types.Operator):
     bl_idname = "object.sp_disable_exact_normals"
     bl_label = "SP - Disable Exact Normals"
@@ -1529,6 +1549,7 @@ classes = [
     SP_OT_set_segment_type,
     SP_OT_set_spline,
     SP_OT_toggle_control_geom,
+    SP_OT_toggle_exact_normals,
     SP_OT_toggle_endpoints,
     SP_OT_toggle_trim_contour_belonging,
     SP_OT_update_modifiers,
