@@ -1,9 +1,8 @@
 import bpy
-import re
 import numpy as np
 from packaging.version import Version
 from .asset_list import ASSET_NODE_GROUPS
-from .enums import ADDON_PATH, SP_obj_type, MesherName
+from .enums import SP_obj_type, MesherName
 from .asset_append import append_node_group
 from .enums import ASSETS_FILE
 from .modifier_utils import (
@@ -16,7 +15,13 @@ from .modifier_utils import (
     get_modifier_value,
     get_modifier_values,
 )
-from .version_utils import is_latest_version, get_node_version
+from .version_utils import (
+    is_latest_version,
+    get_node_version,
+    set_nodes_version,
+    replace_node_group,
+    replace_all_instances_of_node_group_by_name,
+)
 from .utils import sp_type_of_object, has_contour, remove_suffix
 
 #####################
@@ -53,43 +58,6 @@ ALL_SP_ASSET_NODE_GROUPS_EVER = ASSET_NODE_GROUPS | set(OLD_TO_NEW_NODE_MAPPING.
 #####################
 
 
-def replace_all_instances_of_node_group_by_name(
-    target_node_group_name, new_node_group_name
-):
-    # Get the target node group
-    prefix, suffix = target_node_group_name[:-2], target_node_group_name[-2:]
-
-    if suffix == ".*":
-        pattern = rf"^{re.escape(prefix)}\.(\d{{3}}|\d{{3}}\.\d{{3}})$"
-        target_node_groups = [
-            ng for ng in bpy.data.node_groups if re.match(pattern, ng.name)
-        ]
-    else:
-        target_node_groups = [bpy.data.node_groups.get(target_node_group_name)]
-
-    # Get the new node group
-    new_node_group = bpy.data.node_groups.get(new_node_group_name)
-    if not new_node_group:
-        return 0  # New node group not found
-
-    if len(target_node_groups) > 0:
-        for t in target_node_groups:
-            if t and t != new_node_group:
-                # Replace the node group data
-                t.user_remap(new_node_group)
-
-                # Remove the old node group
-                bpy.data.node_groups.remove(t)
-
-        return len(target_node_groups)
-    else:
-        return -1
-
-
-def replace_node_group(target_node_group, new_node_group):
-    target_node_group.user_remap(new_node_group)
-
-
 def report_outdated_node_groups():
     # technically, if you are using an old version, this is not "outdated" but "unmatching current"
     outdated_node_groups = [
@@ -101,43 +69,6 @@ def report_outdated_node_groups():
             print(f"- {ng.name} (version: {get_node_version(ng)})")
     else:
         print("All node groups are up to date.")
-
-
-def set_nodes_version(version=None):
-    # get version from toml file
-    if version is None:
-        path = ADDON_PATH + "/blender_manifest.toml"
-        with open(path, "r") as f:
-            for line in f:
-                if line.startswith("version"):
-                    version = line.split('"')[1]
-                    break
-
-    for ng in bpy.data.node_groups:
-        ng["version"] = version
-
-    print("version set to " + version)
-
-
-def replace_duplicates():
-
-    #############################
-    #         DANGER            #
-    # May remove different node #
-    #   groups with same name   #
-    #############################
-
-    duplicated_list = []
-    for ng in bpy.data.node_groups:
-        if ng.name[-4] == ".":
-            duplicated_list.append(ng.name[:-4])
-            # print(ng.name)
-    duplicated_groups = set(duplicated_list)
-
-    for d in duplicated_groups:
-        replaced = replace_all_instances_of_node_group_by_name(d + ".*", d)
-        if replaced <= 0:
-            print(f"No instances of {d}.* found")
 
 
 def classify_strings_by_prefix(strings):
@@ -239,7 +170,7 @@ def update_modifier(modifier):
         modifier.node_group.interface_update(bpy.context)
 
 
-def update_all_node_groups():
+def update_all_node_groups(force=False):
     # get latest version nodes if they exist
     latest_nodes = {}
     for ng in bpy.data.node_groups:
@@ -247,7 +178,7 @@ def update_all_node_groups():
         if (
             ng.type == "GEOMETRY"
             and ng.name in ASSET_NODE_GROUPS
-            and is_latest_version(ng)
+            and (is_latest_version(ng) or force)
             and ng.library.filepath == ASSETS_FILE
         ):
             latest_nodes[ng.name] = ng
@@ -329,8 +260,12 @@ def update_scenario_replace_fillet_factor_2(mod):
     """
     fillet_method = get_modifier_value(mod, "Method")
     if fillet_method == "Distance (Fast)" or fillet_method == "Distance":
-        current_fillet, current_tension = get_modifier_values(mod, set(("Fillet", "Tension Offset")))
-        set_modifier_values(mod, {"Fillet": current_fillet / 2, "Tension Offset": current_tension / 2})
+        current_fillet, current_tension = get_modifier_values(
+            mod, set(("Fillet", "Tension Offset"))
+        )
+        set_modifier_values(
+            mod, {"Fillet": current_fillet / 2, "Tension Offset": current_tension / 2}
+        )
 
 
 def update_scenario_curve_preserve_combs_display(mod, version):
@@ -398,11 +333,11 @@ def update_scenario_connect_bezier_patch(mod, version):
         if not is_flat:
             try:
                 param_dict["Target Segment"] = side_map[
-                    get_modifier_value(mod, "Target Side")%4
+                    get_modifier_value(mod, "Target Side") % 4
                 ]
             except ValueError:
                 param_dict["Target Segment"] = side_map[
-                    get_modifier_value(mod, "Target Segment")%4
+                    get_modifier_value(mod, "Target Segment") % 4
                 ]
         # param_dict["Self Side"] = side_map[get_modifier_value(mod, "Side")] # apparently not needed
 
@@ -542,7 +477,7 @@ class SP_OT_report_outdated_nodes(bpy.types.Operator):
 class SP_OT_set_all_nodes_version(bpy.types.Operator):
     bl_idname = "object.sp_set_all_nodes_version"
     bl_label = "SP - Set All Nodes Version"
-    bl_description = "Report outdated nodes in the console"
+    bl_description = "Set non-versionned nodes to specified version"
     bl_options = {"REGISTER", "UNDO"}
 
     major: bpy.props.IntProperty(default=0)
@@ -591,7 +526,7 @@ class SP_OT_update_node_group(bpy.types.Operator):
         replaced = update_node_group(self.name)
         self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
         return {"FINISHED"}
-    
+
     def invoke(self, context, event):
         # call itself and run
         wm = context.window_manager
@@ -606,8 +541,14 @@ class SP_OT_update_all_node_groups(bpy.types.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
+    force: bpy.props.BoolProperty(
+        name="Force update",
+        description="Force every node group to update disregarding its version",
+        default=False,
+    )
+
     def execute(self, context):
-        replaced = update_all_node_groups()
+        replaced = update_all_node_groups(self.force)
         self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
         return {"FINISHED"}
 
@@ -631,12 +572,64 @@ class SP_OT_update_objects(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SP_OT_replace_node_group(bpy.types.Operator):
+    bl_idname = "object.sp_replace_node_group"
+    bl_label = "SP - Replace Node Group"
+    bl_description = (
+        "For updating old assets. Replaces all instance of a modifier with another"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    target_name: bpy.props.StringProperty(name="Target", description="", default="")
+    new_name: bpy.props.StringProperty(name="New", description="", default="")
+
+    def invoke(self, context, event):
+        # Populate the filtered node groups before opening the dialog
+        self.nodegroup_items.clear()
+        for ng in bpy.data.node_groups:
+            if ng.type == "GEOMETRY":
+                self.nodegroup_items.add().name = ng.name
+
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop_search(
+            self, "target_name", bpy.data, "node_groups", text="Target", icon="NODETREE"
+        )
+        layout.prop_search(
+            self, "new_name", bpy.data, "node_groups", text="New", icon="NODETREE"
+        )
+
+    def execute(self, context):
+        target_node_group_name = self.target_name
+        new_node_group_name = self.new_name
+
+        r = replace_all_instances_of_node_group_by_name(
+            target_node_group_name, new_node_group_name
+        )
+        if r >= 1:
+            self.report({"INFO"}, f"{r} node groups successfully replaced")
+        elif r == 0:
+            self.report({"INFO"}, f"{new_node_group_name} does not exist")
+        elif r == -1:
+            self.report({"INFO"}, f"{target_node_group_name} does not exist")
+        return {"FINISHED"}
+
+    # Display panel
+    def invoke(self, context, event):
+        # call itself and run
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+
 classes = [
     SP_OT_report_outdated_nodes,
     SP_OT_update_all_node_groups,
     SP_OT_update_node_group,
     SP_OT_update_objects,
     SP_OT_set_all_nodes_version,
+    SP_OT_replace_node_group,
 ]
 
 

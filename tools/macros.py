@@ -25,7 +25,6 @@ from ..common.asset_append import (
     append_multiple_node_groups,
 )
 from ..common.compound_utils import convert_compound_to_patches
-from ..common.versioning import replace_all_instances_of_node_group_by_name
 from .overlay_segment_selection import SELECTED_SEGMENTS
 
 
@@ -171,57 +170,6 @@ class SP_OT_update_modifiers(bpy.types.Operator):
         self.report({"INFO"}, "Not Implemented")
 
         return {"FINISHED"}
-
-
-class SP_OT_replace_node_group(bpy.types.Operator):
-    bl_idname = "object.sp_replace_node_group"
-    bl_label = "SP - Replace Node Group"
-    bl_description = (
-        "For updating old assets. Replaces all instance of a modifier with another"
-    )
-    bl_options = {"REGISTER", "UNDO"}
-
-    target_name: bpy.props.StringProperty(name="Target", description="", default="")
-    new_name: bpy.props.StringProperty(name="New", description="", default="")
-
-    def invoke(self, context, event):
-        # Populate the filtered node groups before opening the dialog
-        self.nodegroup_items.clear()
-        for ng in bpy.data.node_groups:
-            if ng.type == "GEOMETRY":
-                self.nodegroup_items.add().name = ng.name
-
-        return context.window_manager.invoke_props_dialog(self)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop_search(
-            self, "target_name", bpy.data, "node_groups", text="Target", icon="NODETREE"
-        )
-        layout.prop_search(
-            self, "new_name", bpy.data, "node_groups", text="New", icon="NODETREE"
-        )
-
-    def execute(self, context):
-        target_node_group_name = self.target_name
-        new_node_group_name = self.new_name
-
-        r = replace_all_instances_of_node_group_by_name(
-            target_node_group_name, new_node_group_name
-        )
-        if r >= 1:
-            self.report({"INFO"}, f"{r} node groups successfully replaced")
-        elif r == 0:
-            self.report({"INFO"}, f"{new_node_group_name} does not exist")
-        elif r == -1:
-            self.report({"INFO"}, f"{target_node_group_name} does not exist")
-        return {"FINISHED"}
-
-    # Display panel
-    def invoke(self, context, event):
-        # call itself and run
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
 
 
 class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
@@ -1571,7 +1519,6 @@ classes = [
     SP_OT_flip_normals,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_matcaps,
-    SP_OT_replace_node_group,
     SP_OT_scale_analysis,
     SP_OT_select_all,
     SP_OT_select_endpoints,

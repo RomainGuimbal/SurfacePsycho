@@ -2,8 +2,9 @@ import bpy
 from pathlib import Path
 import uuid
 import sys
-import types
-import importlib.util
+# import types
+# import importlib.util
+from packaging.version import Version
 
 from pathlib import Path
 import sys
@@ -11,12 +12,9 @@ import sys
 workspace_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(workspace_root))
 
-from common import enums, asset_list, versioning
+from common import enums, asset_list, version_utils
 
-VERSION = enums.VERSION
-
-# Extract what we need
-VERSION = enums.VERSION
+VERSION = Version(enums.VERSION_STR)
 ASSET_NODE_GROUPS_LEVEL_2 = asset_list.ASSET_NODE_GROUPS_LEVEL_2
 ASSET_NODE_GROUPS_BEZIER_PATCH = asset_list.ASSET_NODE_GROUPS_BEZIER_PATCH
 ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = asset_list.ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
@@ -25,8 +23,8 @@ ASSET_NODE_GROUPS_OTHER_SURFACES = asset_list.ASSET_NODE_GROUPS_OTHER_SURFACES
 ASSET_NODE_GROUPS_COMPOUND = asset_list.ASSET_NODE_GROUPS_COMPOUND
 ASSET_NODE_GROUPS_SHAPE_PRESETS = asset_list.ASSET_NODE_GROUPS_SHAPE_PRESETS
 ASSET_NODE_GROUPS = asset_list.ASSET_NODE_GROUPS
-set_nodes_version = versioning.set_nodes_version
-replace_duplicates = versioning.replace_duplicates
+set_nodes_version = version_utils.set_nodes_version
+replace_duplicates = version_utils.replace_duplicates
 
 FILE_PATH = Path(bpy.data.filepath)
 
