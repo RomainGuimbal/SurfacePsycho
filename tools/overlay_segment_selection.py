@@ -18,7 +18,7 @@ _HOVER_COLOR = (0.5, 0.5, 1.0, 0.6)
 _WHITE = (1.0, 1.0, 1.0, 1.0)
 
 # Selection: set of (obj_name, segment_id, position) tuples
-SELECTED_SEGMENTS = set()
+SELECTED_SEGMENTS = []
 
 # The segment id closest to the cursor on the hovered object, updated each draw
 _hovered_sid = None
@@ -189,12 +189,12 @@ class SP_OT_segment_select_click(bpy.types.Operator):
         key = (_hovered_object.name, _hovered_sid, _hovered_mid)
         if event.shift:
             if key in SELECTED_SEGMENTS:
-                SELECTED_SEGMENTS.discard(key)
+                SELECTED_SEGMENTS.remove(key)
             else:
-                SELECTED_SEGMENTS.add(key)
+                SELECTED_SEGMENTS.append(key)
         else:
             SELECTED_SEGMENTS.clear()
-            SELECTED_SEGMENTS.add(key)
+            SELECTED_SEGMENTS.append(key)
 
         if context.area:
             context.area.tag_redraw()
@@ -311,25 +311,26 @@ def draw_callback():
     gpu.state.depth_test_set("LESS_EQUAL")
 
 
-
 class SP_OT_overwrite_segment_selection(bpy.types.Operator):
     bl_idname = "view3d.sp_overwrite_segment_selection"
     bl_label = "SP - Overwrite Segment Selection"
     bl_options = {"REGISTER", "UNDO"}
 
-    select_string : bpy.props.StringProperty(
-        name="select_string"
-    )
+    select_string: bpy.props.StringProperty(name="select_string")
 
     def execute(self, context):
         SELECTED_SEGMENTS.clear()
         select_set = eval(self.select_string)
         for s in select_set:
-            SELECTED_SEGMENTS.add(s)
+            SELECTED_SEGMENTS.append(s)
         return {"FINISHED"}
 
 
-classes = [SP_OT_segment_update_mouse, SP_OT_segment_select_click, SP_OT_overwrite_segment_selection]
+classes = [
+    SP_OT_segment_update_mouse,
+    SP_OT_segment_select_click,
+    SP_OT_overwrite_segment_selection,
+]
 
 
 def register():

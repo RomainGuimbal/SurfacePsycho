@@ -46,6 +46,10 @@ for window in bpy.context.window_manager.windows:
                 area=area,
                 selected_objects=[
                     bpy.data.objects["Fill Patch"],
+                    bpy.data.objects["Bezier Patch"],
+                    bpy.data.objects["Bezier Patch.001"],
+                    bpy.data.objects["Bezier Patch.002"],
+                    bpy.data.objects["Bezier Patch.003"],
                     bpy.data.objects["Blend Patch.002"],
                 ],
             ):
