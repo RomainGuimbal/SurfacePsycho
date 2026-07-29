@@ -5,7 +5,7 @@ from packaging.version import Version
 from .asset_list import ASSET_NODE_GROUPS
 from .enums import SP_obj_type, MesherName
 from .asset_append import append_node_group
-from .enums import ASSETS_FILE
+from .enums import ASSETS_FILE, VERSION_STR
 from .modifier_utils import (
     add_modifier_asset,
     remove_modifier,
@@ -17,7 +17,7 @@ from .modifier_utils import (
     get_modifier_values,
 )
 from .version_utils import (
-    is_latest_version,
+    is_current_version,
     get_node_version,
     set_nodes_version,
     replace_node_group,
@@ -59,17 +59,12 @@ ALL_SP_ASSET_NODE_GROUPS_EVER = ASSET_NODE_GROUPS | set(OLD_TO_NEW_NODE_MAPPING.
 #####################
 
 
-def report_outdated_node_groups():
+def get_outdated_node_groups():
     # technically, if you are using an old version, this is not "outdated" but "unmatching current"
     outdated_node_groups = [
-        ng for ng in bpy.data.node_groups if not is_latest_version(ng)
+        ng for ng in bpy.data.node_groups if not is_current_version(ng)
     ]
-    if len(outdated_node_groups) > 0:
-        print("Outdated node groups found:")
-        for ng in outdated_node_groups:
-            print(f"- {ng.name} (version: {get_node_version(ng)})")
-    else:
-        print("All node groups are up to date.")
+    return outdated_node_groups
 
 
 def classify_strings_by_prefix(strings):
@@ -115,7 +110,7 @@ def update_node_group(name):
             ng.type == "GEOMETRY"
             and ng.name == new_name
             and ng.name in ASSET_NODE_GROUPS
-            and is_latest_version(ng)
+            and is_current_version(ng)
             and Path(ng.library.filepath).resolve() == ASSETS_FILE
         ):
             latest_node = ng
@@ -157,7 +152,7 @@ def update_modifier(modifier):
     name = remove_suffix(modifier.node_group.name)
     curr_node_group = modifier.node_group
     if name in ASSET_NODE_GROUPS:
-        if is_latest_version(curr_node_group):
+        if is_current_version(curr_node_group):
             return
 
         new_node_group = append_node_group(name)
@@ -182,7 +177,7 @@ def update_all_node_groups(force=False):
     for ng_name in to_treat_names:
         ng = bpy.data.node_groups[ng_name]
         if (
-            is_latest_version(ng)
+            is_current_version(ng)
             and ng.library
             and Path(ng.library.filepath).resolve() == ASSETS_FILE
         ):
@@ -190,7 +185,6 @@ def update_all_node_groups(force=False):
                 bpy.data.node_groups[ng_name].make_local()
             else:
                 latest_nodes[ng_name] = ng
-            
 
     # Make a unique id for each current node group
     snapshot = [
@@ -484,7 +478,19 @@ class SP_OT_report_outdated_nodes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        report_outdated_node_groups()
+        outdated = get_outdated_node_groups()
+        if len(outdated) > 0:
+            self.report(
+                {"INFO"},
+                f"{len(outdated)} node groups outdated. Check the console to see which ones",
+            )
+
+            print("Outdated node groups found:")
+            for out in outdated:
+                print(f"- {out.name} (version: {get_node_version(out)})")
+            print(f"Current version: {VERSION_STR}")
+        else:
+            self.report({"INFO"}, f"All node groups are up to date")
         return {"FINISHED"}
 
 
@@ -550,9 +556,7 @@ class SP_OT_update_node_group(bpy.types.Operator):
 class SP_OT_update_all_node_groups(bpy.types.Operator):
     bl_idname = "node.sp_update_all_node_groups"
     bl_label = "SP - Update All Node Groups"
-    bl_description = (
-        "Make sure each SP node group is the same as assets in current addon version"
-    )
+    bl_description = "Replaces outdated node groups. Warning : this is not a complete versionning, some changes may occure."
     bl_options = {"REGISTER", "UNDO"}
 
     force: bpy.props.BoolProperty(
@@ -560,6 +564,13 @@ class SP_OT_update_all_node_groups(bpy.types.Operator):
         description="Force every node group to update disregarding its version",
         default=False,
     )
+
+    @classmethod
+    def poll(cls, context):
+        for ng in bpy.data.node_groups:
+            if not is_current_version(ng):
+                return True
+        return False
 
     def execute(self, context):
         replaced = update_all_node_groups(self.force)

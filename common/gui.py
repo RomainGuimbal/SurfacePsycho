@@ -141,10 +141,10 @@ class SP_PT_EditPanel(bpy.types.Panel):
                 icon="MOD_EXPLODE",
             )
 
-            # Replace node group
+            # Update all file node groups
             col.operator(
-                "node.sp_replace_node_group",
-                text="Replace Node Group",
+                "node.sp_update_all_node_groups",
+                text="Update All Nodes",
                 icon="UV_SYNC_SELECT",
             )
 
@@ -370,5 +370,3 @@ def unregister():
 
     for c in classes[::-1]:
         bpy.utils.unregister_class(c)
-
-    

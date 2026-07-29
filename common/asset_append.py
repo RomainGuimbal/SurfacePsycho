@@ -1,6 +1,6 @@
 import bpy
 from .enums import ASSETS_FILE
-from .version_utils import is_latest_version
+from .version_utils import is_current_version
 
 
 def append_object_by_name(obj_name, context):  # for importing from the asset file
@@ -35,7 +35,7 @@ def _get_latest_loaded_node_group(asset_name: str):
     ng = bpy.data.node_groups.get(asset_name)
     if ng is None or ng.type != "GEOMETRY":
         return None
-    if is_latest_version(ng):
+    if is_current_version(ng):
         return ng
     return None
 

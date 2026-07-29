@@ -5,11 +5,21 @@ from packaging.version import Version
 
 
 def get_node_version(ng: bpy.types.NodeGroup):
-    return Version(ng["version"] if "version" in ng else "0.0.0")
+    """Returns None for non-SP node groups"""
+    if "sp_version" in ng :
+        return Version(ng["sp_version"])
+    elif ng.name.startswith("SP - "):
+        return Version("0.0.0")
+    else :
+        return None
 
 
-def is_latest_version(ng: bpy.types.NodeGroup):
-    return get_node_version(ng) >= Version(VERSION_STR)
+def is_current_version(ng: bpy.types.NodeGroup):
+    """Returns True for non-SP node groups"""
+    v = get_node_version(ng)
+    if v:
+        return v == Version(VERSION_STR)
+    return True
 
 
 def set_nodes_version(version=None):
@@ -18,7 +28,7 @@ def set_nodes_version(version=None):
         version = VERSION_STR
 
     for ng in bpy.data.node_groups:
-        ng["version"] = version
+        ng["sp_version"] = version
 
     print("Version set to " + version)
 
