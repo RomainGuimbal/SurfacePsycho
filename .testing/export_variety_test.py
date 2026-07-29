@@ -5,6 +5,8 @@ bpy.ops.wm.open_mainfile(
     filepath="c:/Users/romai/Documents/Projets/26 - Bezier Quest/Testing/TEST - Export variety.blend"
 )
 
+bpy.ops.node.sp_update_all_node_groups(force=True)
+
 for window in context.window_manager.windows:
     screen = window.screen
     for area in screen.areas:

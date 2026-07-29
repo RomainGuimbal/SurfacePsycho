@@ -20,6 +20,12 @@
     },
     {
       "name": "",
+      "task": "Test all",
+      "icon": "🧪",
+      "tooltip": "Test all"
+    },
+    {
+      "name": "",
       "task": "Build",
       "icon": "🚧",
       "tooltip": "Build a release"

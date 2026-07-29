@@ -565,12 +565,12 @@ class SP_OT_update_all_node_groups(bpy.types.Operator):
         default=False,
     )
 
-    @classmethod
-    def poll(cls, context):
-        for ng in bpy.data.node_groups:
-            if not is_current_version(ng):
-                return True
-        return False
+    # @classmethod # Cannot use force if there is poll
+    # def poll(cls, context):
+    #     for ng in bpy.data.node_groups:
+    #         if not is_current_version(ng):
+    #             return True
+    #     return False
 
     def execute(self, context):
         replaced = update_all_node_groups(self.force)

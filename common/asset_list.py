@@ -123,7 +123,7 @@ ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Copy Compound Nearest Edges",
     "SP - Trim Bezier Patches as Compound",
     "SP - Trim Bezier Patch",
-    # "SP - Text to Compound", # imported by shape presets
+    "SP - Text to Compound",
 }
 
 ASSET_NODE_GROUPS_SHAPE_PRESETS = {

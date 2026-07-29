@@ -270,11 +270,11 @@ path_other = "//../../SP - Other Primitives.blend"
 # COMPOUND
 path_compound = "//../../SP - Compound.blend"
 
-obj_compound = {"Compound", "Text Compound"}
-
 # SHAPES
 path_preset = "//../../SP - Shapes presets.blend"
 obj_preset = {
+    "Compound",
+    "Text Compound",
     "Quadratic Dome",
     "Cubic Dome",
     "Torus",
@@ -352,7 +352,6 @@ if __name__ == "__main__":
     append_by_name(path_curve_flat, obj_curve_flat, "objects")
     append_by_name(path_surf, obj_surf, "objects")
     append_by_name(path_nurbs, obj_nurbs, "objects")
-    append_by_name(path_compound, obj_compound, "objects")
     append_by_name(path_preset, obj_preset, "objects")
 
     print("\n______________________________________________________\n")
