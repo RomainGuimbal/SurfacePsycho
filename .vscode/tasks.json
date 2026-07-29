@@ -26,7 +26,10 @@
         },
         {
             "label": "Update and check assets",
-            "dependsOn": ["Update assets", "Open assets"],
+            "dependsOn": [
+                "Update assets",
+                "Open assets"
+            ],
             "dependsOrder": "sequence"
         },
         {
@@ -57,18 +60,6 @@
                 "${workspaceFolder}/..",
                 "--split-platforms",
                 "--verbose",
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "Print assets",
-            "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
-            "args": [
-                "--background",
-                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
-                "--python",
-                ".vscode/print_assets.py"
             ],
             "problemMatcher": []
         },
@@ -146,7 +137,7 @@
             "dependsOn": "curve type export"
         },
         {
-            "label": "variety export",
+            "label": "variety export intern",
             "type": "shell",
             "command": ".vscode/launch_blender_with_script.bat",
             "args": [
@@ -162,7 +153,26 @@
             "type": "shell",
             "command": "$file = Get-ChildItem 'C:/Users/romai/Documents/Projets/26 - Bezier Quest/Testing/TEST - Export variety*' | Sort-Object LastWriteTime | Select-Object -Last 1 -ExpandProperty FullName; & mayo $file",
             "problemMatcher": [],
-            "dependsOn": "variety export"
-        }
+            "dependsOn": "variety export intern"
+        },
+        {
+            "label": "Test macros",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--python",
+                ".testing/macros_test.py"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Test all",
+            "dependsOn": [
+                "Import primitives",
+                "Curve cases check",
+                "Export variety",
+                "Import complexe",
+            ]
+        },
     ],
 }

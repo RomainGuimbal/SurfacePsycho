@@ -5,11 +5,12 @@
     "python.testing.unittestArgs": [
         "-v",
         "-s",
-        "./testing",
+        "./.testing",
         "-p",
         "*test.py"
     ],
     "python.testing.pytestEnabled": false,
     "python.testing.unittestEnabled": true,
     "editor.inlineSuggest.enabled": false,
+    "inlineChat.defaultModel": "Qwen2.5-Coder:latest (ollama-models)",
 }
