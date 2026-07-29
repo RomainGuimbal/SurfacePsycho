@@ -190,6 +190,7 @@ def update_all_node_groups(force=False):
                 bpy.data.node_groups[ng_name].make_local()
             else:
                 latest_nodes[ng_name] = ng
+            
 
     # Make a unique id for each current node group
     snapshot = [
@@ -208,6 +209,7 @@ def update_all_node_groups(force=False):
         if name in ASSET_NODE_GROUPS and ng not in latest_nodes.values():
             if name not in latest_nodes.keys():
                 latest_nodes[name] = append_node_group(name, force=True)
+            ng.make_local()
             replace_node_group(ng, latest_nodes[name])
             bpy.data.node_groups.remove(ng)
             replaced += 1
@@ -217,6 +219,7 @@ def update_all_node_groups(force=False):
             new_name = OLD_TO_NEW_NODE_MAPPING[name]
             if new_name not in latest_nodes.keys():
                 latest_nodes[new_name] = append_node_group(new_name, force=True)
+            ng.make_local()
             replace_node_group(ng, latest_nodes[new_name])
             bpy.data.node_groups.remove(ng)
             replaced += 1
@@ -553,7 +556,7 @@ class SP_OT_update_all_node_groups(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     force: bpy.props.BoolProperty(
-        name="Force update",
+        name="Force",
         description="Force every node group to update disregarding its version",
         default=False,
     )
