@@ -719,26 +719,35 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
     return split_attr
 
 
-def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
-    # KNOWN TO FAIL ON SEVERAL CASES
-    # treat 0 case
-    last_zero = 0
-    try:
-        last_zero = index.index(1)
-    except ValueError:
-        # All zeros
-        pass
+def group_ids_cut_tail(vals: list[int]):
+    """Turns a list [0,0,0,2,2,3,3,-1,-1,-1,0,0,0,1,1]
+    into [0,2,3], [0,3,5,7], groups + index offsets, while ignoring -1 tail and mirror
+    """
+    if vals[0] == -1:
+        return  # No knot
 
+    offsets = [0]
+    curr_group = vals[0]
+    groups_ids = []
+
+    for i, v in enumerate(vals):
+        if v == -1:
+            groups_ids.append(curr_group)
+            offsets.append(i)
+            break
+        if v != curr_group:
+            groups_ids.append(curr_group)
+            offsets.append(i)
+            curr_group = v
+
+    return groups_ids, offsets
+
+
+def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
     split_attr = {}
-    start = 0
-    end = 0
-    for i in list(dict.fromkeys(index)):
-        if i == 0 and last_zero != 0:
-            end = last_zero
-        else:
-            end += index.count(i)
-        split_attr[i] = attribute[start:end]
-        start = end
+    groups_ids, offsets = group_ids_cut_tail(index)
+    for i,gr in enumerate(groups_ids):
+        split_attr[gr] = attribute[offsets[i]:offsets[i+1]]
     return split_attr
 
 
@@ -910,11 +919,12 @@ def create_collection(name, parent=None):
 
     return new_collection
 
+
 def selection_mean_point(selection):
     res = Vector()
-    for s in selection :
+    for s in selection:
         res += Vector(s[2])
-    return res/len(selection)
+    return res / len(selection)
 
 
 def print_vec_list(vec_list):
