@@ -286,7 +286,8 @@ obj_preset = {
     "Slab",
     "Frame",
     "Oblong Tube",
-    "Oblong Slab" "Revolution",
+    "Oblong Slab",
+    "Revolution",
 }
 coll_preset = {
     "Corner",

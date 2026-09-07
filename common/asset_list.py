@@ -63,7 +63,6 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Loft from Internal Curves",
     "SP - Loft",
     "SP - Offset Precisely",
-    "SP - Patch Normal to Side",
     "SP - Project Curve on Surface",
     "SP - Raise or Lower Degree Bezier Patch",
     "SP - Ruled Surface from Mesh Loop",
@@ -104,11 +103,13 @@ ASSET_NODE_GROUPS_OTHER_SURFACES = {
     "SP - Symmetrize",
     "SP - Square Fill",
     "SP - Compare Mesh",
+    "SP - Patch Normal to Side",
 }
 
 ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Compound Meshing",
     "SP - Extrude Compound",
+    "SP - Flip Compound Face",
     "SP - Intersect Bezier Patches",
     "SP - Interval Curves",
     "SP - NURBS to Bezier Patches",
@@ -124,6 +125,7 @@ ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Trim Bezier Patches as Compound",
     "SP - Trim Bezier Patch",
     "SP - Text to Compound",
+    "SP - Tubes Compound",
 }
 
 ASSET_NODE_GROUPS_SHAPE_PRESETS = {
@@ -132,7 +134,6 @@ ASSET_NODE_GROUPS_SHAPE_PRESETS = {
     "SP - Frame Compound",
     "SP - Oblong Extrusion Compound",
     "SP - Slab Compound",
-    "SP - Tubes Compound",
 }
 
 ASSET_NODE_GROUPS = (
