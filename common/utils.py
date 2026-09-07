@@ -724,7 +724,7 @@ def group_ids_cut_tail(vals: list[int]):
     into [0,2,3], [0,3,5,7], groups + index offsets, while ignoring -1 tail and mirror
     """
     if vals[0] == -1:
-        return  # No knot
+        return (), () # No knot
 
     offsets = [0]
     curr_group = vals[0]
