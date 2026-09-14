@@ -43,8 +43,8 @@ from OCP.TCollection import TCollection_HAsciiString
 class SP_Edge_export:
     def __init__(
         self,
-        cp_aligned_attrs: dict[str:list],
-        seg_aligned_attrs: dict[str:float],
+        cp_aligned_attrs: dict[str, list],
+        seg_aligned_attrs: dict[str, float],
         is2D=False,
         geom_surf=None,
         geom_plane=None,
@@ -52,7 +52,7 @@ class SP_Edge_export:
     ):
         self.vec_cp = cp_aligned_attrs["CP"]
         self.weight = cp_aligned_attrs["weight"]
-        self.gp_cp = []
+        self.gp_cp : gp_Pnt = []
         self.p_count = len(self.vec_cp)
         self.seg_aligned_attrs = seg_aligned_attrs
         self.cp_aligned_attrs = cp_aligned_attrs

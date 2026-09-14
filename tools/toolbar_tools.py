@@ -67,7 +67,7 @@ def _make_tool_class(mode, id_name):
     )
 
 
-_tool_classes = []
+_tool_classes : list[type] = []
 _endpoints_draw_handler = None
 _segment_draw_handler = None
 

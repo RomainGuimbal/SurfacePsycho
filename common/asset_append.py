@@ -55,7 +55,7 @@ def append_multiple_node_groups(
 ) -> list[bpy.types.NodeGroup]:
     to_append = []
     ids = []
-    already_present = [None] * len(ng_names)
+    already_present : list = [None] * len(ng_names)
 
     if force:
         to_append = ng_names

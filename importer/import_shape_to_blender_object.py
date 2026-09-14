@@ -544,7 +544,7 @@ def build_SP_cylinder(
     yaxis = gp_cylinder.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    zaxis_vec = np.cross(xaxis_vec, yaxis_vec)
+    zaxis_vec = xaxis_vec.cross(yaxis_vec)
 
     location = gp_cylinder.Location()
     loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
@@ -600,7 +600,7 @@ def build_SP_torus(
     yaxis = gp_torus.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    zaxis_vec = np.cross(xaxis_vec, yaxis_vec)
+    zaxis_vec = xaxis_vec.cross(yaxis_vec)
 
     location = gp_torus.Location()
     origin_vec = Vector(
@@ -659,7 +659,7 @@ def build_SP_sphere(
     yaxis = gp_sphere.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    zaxis_vec = Vector(np.cross(xaxis_vec, yaxis_vec))
+    zaxis_vec = xaxis_vec.cross(yaxis_vec)
 
     location = gp_sphere.Location()
     loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))

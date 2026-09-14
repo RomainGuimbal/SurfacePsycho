@@ -75,7 +75,7 @@ def sp_type_of_object(o: bpy.types.Object) -> SP_obj_type:
             if name in MesherName:
                 return SP_obj_type[MesherName(name).name]
     # Non SP
-    return None
+    return SP_obj_type.INVALID
 
 
 def read_attribute_by_name(object, name, len_attr=None) -> np.array:
@@ -719,16 +719,16 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
     return split_attr
 
 
-def group_ids_cut_tail(vals: list[int]):
+def group_ids_cut_tail(vals: list[int]) -> tuple[list[int], list[int]]:
     """Turns a list [0,0,0,2,2,3,3,-1,-1,-1,0,0,0,1,1]
     into [0,2,3], [0,3,5,7], groups + index offsets, while ignoring -1 tail and mirror
     """
     if vals[0] == -1:
-        return (), () # No knot
+        return [], []  # No knot
 
     offsets = [0]
     curr_group = vals[0]
-    groups_ids = []
+    groups_ids: list[int] = []
 
     for i, v in enumerate(vals):
         if v == -1:
@@ -743,11 +743,11 @@ def group_ids_cut_tail(vals: list[int]):
     return groups_ids, offsets
 
 
-def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
+def split_by_index_dict(index: list[int], attribute: list) -> dict[int, list]:
     split_attr = {}
     groups_ids, offsets = group_ids_cut_tail(index)
-    for i,gr in enumerate(groups_ids):
-        split_attr[gr] = attribute[offsets[i]:offsets[i+1]]
+    for i, gr in enumerate(groups_ids):
+        split_attr[gr] = attribute[offsets[i] : offsets[i + 1]]
     return split_attr
 
 

@@ -89,11 +89,11 @@ def read_step_file(filename, verbosity=True) -> TopAbs.TopAbs_SHAPE:
 
 def read_step_file_with_names_colors(
     filename,
-) -> dict[TopAbs.TopAbs_SHAPE : tuple[TDF.TDF_Label, Quantity.Quantity_Color]]:
+) -> dict[TopAbs.TopAbs_SHAPE, tuple[TDF.TDF_Label, Quantity.Quantity_Color]]:
     if not Path(filename).is_file():
         raise FileNotFoundError(f"{filename} not found.")
 
-    output_shapes = {}
+    output_shapes : dict[TopAbs.TopAbs_SHAP, tuple[TDF.TDF_Label, Quantity.Quantity_Color]] = {}
 
     # create an handle to a document
     doc = TDocStd_Document(TCollection_ExtendedString("pythonocc-doc-step-import"))
@@ -115,7 +115,7 @@ def read_step_file_with_names_colors(
     if status == IFSelect_RetDone:
         reader.Transfer(doc)
 
-    locs = []
+    locs: list[TopLoc_Location] = []
 
     def get_name(label: TDF_Label) -> str:
         """Extract name and format"""
@@ -173,7 +173,7 @@ def read_step_file_with_names_colors(
 
         # Add shape to output list
         if shape_disp not in output_shapes.keys():
-            output_shapes[shape_disp] = [get_name(lab), c]
+            output_shapes[shape_disp] = (get_name(lab), c)
 
         # Subshape level (face, wire... ?)
         for i in range(ls_subss.Length()):

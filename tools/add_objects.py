@@ -229,22 +229,8 @@ class SP_OT_add_compound(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        poly, mesher = append_multiple_node_groups(
-            [
-                "SP - Poly to Compound",
-                SP_obj_type.COMPOUND.mesher_name,
-            ]
-        )
-
+        mesher = append_node_group(SP_obj_type.COMPOUND.mesher_name)
         bm = bmesh.new()
-        bmesh.ops.create_icosphere(
-            bm,
-            subdivisions=0,
-            radius=0.125,
-            matrix=Matrix(),
-            calc_uvs=False,
-        )
-
         if context.mode != "OBJECT":
             bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action="DESELECT")
@@ -255,8 +241,6 @@ class SP_OT_add_compound(bpy.types.Operator):
 
         obj = bpy.data.objects.new("Compound", me)
         context.collection.objects.link(obj)
-
-        add_modifier_asset_from_node_group(obj, poly)
 
         add_modifier_asset_from_node_group(
             obj,

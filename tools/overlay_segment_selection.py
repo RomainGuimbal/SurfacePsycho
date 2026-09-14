@@ -18,13 +18,13 @@ _HOVER_COLOR = (0.5, 0.5, 1.0, 0.6)
 _WHITE = (1.0, 1.0, 1.0, 1.0)
 
 # Selection: set of (obj_name, segment_id, position) tuples
-SELECTED_SEGMENTS = []
+SELECTED_SEGMENTS : list[tuple] = []
 
 # The segment id closest to the cursor on the hovered object, updated each draw
 _hovered_sid = None
 _hovered_mid = None  # median vertex of the boundary vertices of the hovered segment
 
-_addon_keymaps = []
+_addon_keymaps : list[tuple] = []
 
 
 def get_boundary_edge_data(obj, depsgraph):

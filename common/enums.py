@@ -50,11 +50,12 @@ class SP_obj_type(IntEnum):
     EMPTY = 12
     COMPOUND = 13
     OTHER_SURFACE = 14
+    INVALID = -1
 
     @property
     def mesher_name(self) -> "MesherName":
         """Get corresponding MesherName."""
-        return MesherName[self.name] if self.name in MesherName.keys() else None
+        return MesherName[self.name] if self.name in MesherName.keys() else MesherName.INVALID
 
 
 GEOM_TO_SP_TYPE = {
@@ -85,6 +86,7 @@ class MesherName(StrEnum):
     OFFSET_SURFACE = ""
     CURVE = "SP - Curve Meshing"
     COMPOUND = "SP - Compound Meshing"
+    INVALID = ""
 
     @classmethod
     def keys(self):

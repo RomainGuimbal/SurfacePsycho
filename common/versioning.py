@@ -48,7 +48,7 @@ OLD_TO_NEW_NODE_MAPPING = {
 }
 
 # Reversed mapping
-NEW_TO_OLD_NODE_MAPPING = {}
+NEW_TO_OLD_NODE_MAPPING: dict[str, list[str]] = {}
 for k, v in OLD_TO_NEW_NODE_MAPPING.items():
     NEW_TO_OLD_NODE_MAPPING[v] = NEW_TO_OLD_NODE_MAPPING.get(v, []) + [k]
 
@@ -520,15 +520,6 @@ class SP_OT_update_node_group(bpy.types.Operator):
     name: bpy.props.StringProperty(name="Node Group", description="", default="")
 
     def invoke(self, context, event):
-        # Populate the filtered node groups before opening the dialog
-        self.nodegroup_items.clear()
-        for ng in bpy.data.node_groups:
-            if (
-                ng.type == "GEOMETRY"
-                and remove_suffix(ng.name) in ALL_SP_ASSET_NODE_GROUPS_EVER
-            ):
-                self.nodegroup_items.add().name = ng.name
-
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
@@ -546,11 +537,6 @@ class SP_OT_update_node_group(bpy.types.Operator):
         replaced = update_node_group(self.name)
         self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        # call itself and run
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
 
 
 class SP_OT_update_all_node_groups(bpy.types.Operator):
@@ -609,12 +595,6 @@ class SP_OT_replace_node_group(bpy.types.Operator):
     new_name: bpy.props.StringProperty(name="New", description="", default="")
 
     def invoke(self, context, event):
-        # Populate the filtered node groups before opening the dialog
-        self.nodegroup_items.clear()
-        for ng in bpy.data.node_groups:
-            if ng.type == "GEOMETRY":
-                self.nodegroup_items.add().name = ng.name
-
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
@@ -640,12 +620,6 @@ class SP_OT_replace_node_group(bpy.types.Operator):
         elif r == -1:
             self.report({"INFO"}, f"{target_node_group_name} does not exist")
         return {"FINISHED"}
-
-    # Display panel
-    def invoke(self, context, event):
-        # call itself and run
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
 
 
 classes = [

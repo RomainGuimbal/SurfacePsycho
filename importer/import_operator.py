@@ -46,7 +46,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
     #     default=True
     # )
 
-    def is_step_file(self):
+    def _is_step_file(self):
         path = self.filepath.lower() if self.filepath else None
         return (path.endswith(".step") or path.endswith(".stp")) if path else True
 
@@ -167,7 +167,7 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         layout.prop(self, "trims_on")
 
         row = layout.row()
-        row.enabled = self.is_step_file()  # gray out if not .step
+        row.enabled = self._is_step_file()  # gray out if not .step
         # row.prop(self, "materials_on")
 
         layout.prop(self, "scale")
