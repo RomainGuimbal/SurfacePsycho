@@ -646,13 +646,15 @@ def set_seg_resolution(resolution: int, context):
         for m in reversed(o.modifiers):
             if m.type == "NODES" and m.node_group and m.node_group.name in MesherName:
                 try:
+                    u_res = get_modifier_value(m, "Resolution U")
+                    v_res = get_modifier_value(m, "Resolution V")
                     o_resolution = math.ceil(
-                        math.sqrt(m["Resolution U"] ** 2 + m["Resolution V"] ** 2)
+                        math.sqrt(u_res** 2 + v_res** 2)
                     )
-                except KeyError:
+                except ValueError:
                     try:
-                        o_resolution = m["Resolution"]
-                    except KeyError:
+                        o_resolution = get_modifier_value(m, "Resolution")
+                    except ValueError:
                         print("Resolution not found")
                 break
 
