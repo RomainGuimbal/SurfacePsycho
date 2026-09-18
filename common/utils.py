@@ -205,7 +205,7 @@ def add_bool_attribute(
         att = mesh.attributes[name]
     else:
         att = mesh.attributes[name]
-        current_vals = np.empty(len(mesh.vertices), dtype=bool)
+        current_vals = np.empty(len(mesh.vertices), dtype=np.bool_)
         att.data.foreach_get("value", current_vals)
 
     # support values too short
