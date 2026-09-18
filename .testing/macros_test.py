@@ -8,10 +8,10 @@ bpy.ops.node.sp_update_all_node_groups(force=True)
 
 # Fill case 1: square
 selection_overwrite = (
-    '{("Bezier Patch", 1, (np.float32(-0.37130672), np.float32(3.1189058), np.float32(1.2833786))),'
+    '[("Bezier Patch", 1, (np.float32(-0.37130672), np.float32(3.1189058), np.float32(1.2833786))),'
     + '("Bezier Patch.002", 0, (np.float32(1.6607821), np.float32(1.8928198), np.float32(0.97165424))),'
     + '("Bezier Patch.003", 0, (np.float32(-2.8770835), np.float32(2.6169577), np.float32(1.1849936))),'
-    + '("Bezier Patch.001", 3, (np.float32(-0.79149824), np.float32(1.6621662), np.float32(0.8193401)),)}'
+    + '("Bezier Patch.001", 3, (np.float32(-0.79149824), np.float32(1.6621662), np.float32(0.8193401)),)]'
 )
 bpy.ops.view3d.sp_overwrite_segment_selection(select_string=selection_overwrite)
 bpy.ops.object.sp_fill()
@@ -20,20 +20,22 @@ bpy.ops.object.sp_fill()
 # TODO
 
 # Blend
-selection_overwrite = "{('Bezier Patch.005', 3, (np.float32(-2.7637966), np.float32(-5.555288), np.float32(1.7750013))), ('Bezier Patch.004', 1, (np.float32(-0.761457), np.float32(-4.9268675), np.float32(1.962445)))}"
+selection_overwrite = "[('Bezier Patch.005', 3, (np.float32(-2.7637966), np.float32(-5.555288), np.float32(1.7750013))), ('Bezier Patch.004', 1, (np.float32(-0.761457), np.float32(-4.9268675), np.float32(1.962445)))]"
 bpy.ops.view3d.sp_overwrite_segment_selection(select_string=selection_overwrite)
 bpy.ops.object.sp_blend_surfaces()
 
 # Blend to trim
-selection_overwrite = "{('Bezier Patch.006', 10, (np.float32(7.7224364), np.float32(-5.020566), np.float32(2.143711))), ('Bezier Patch.006', 7, (np.float32(6.6942716), np.float32(-3.6591058), np.float32(2.1192327)))}"
-bpy.ops.view3d.sp_overwrite_segment_selection(select_string=selection_overwrite)
-bpy.ops.object.sp_blend_surfaces()
-
-# Blend with flat
-selection_overwrite = "{('Bezier Patch.006', 1, (np.float32(6.370086), np.float32(-3.2677135), np.float32(2.1362743))), ('FlatPatch', 3, (np.float32(4.7985315), np.float32(-2.9041471), np.float32(1.967834)))}"
+selection_overwrite = "[('Bezier Patch.006', 10, (np.float32(7.7224364), np.float32(-5.020566), np.float32(2.143711))), ('Bezier Patch.006', 7, (np.float32(6.6942716), np.float32(-3.6591058), np.float32(2.1192327)))]"
 bpy.ops.view3d.sp_overwrite_segment_selection(select_string=selection_overwrite)
 bpy.ops.object.sp_blend_surfaces(
-    invert=True, tension1=-1.0, continuity1="G3", continuity2="G0"
+    tension1=-0.3, continuity1="G2", tension2=0.6, continuity2="G2"
+)
+
+# Blend with flat
+selection_overwrite = "[('FlatPatch', 3, (np.float32(4.7985315), np.float32(-2.9041471), np.float32(1.967834))), ('Bezier Patch.006', 1, (np.float32(6.370086), np.float32(-3.2677135), np.float32(2.1362743)))]"
+bpy.ops.view3d.sp_overwrite_segment_selection(select_string=selection_overwrite)
+bpy.ops.object.sp_blend_surfaces(
+    invert=True, tension1=-1, continuity1="G3", tension2=-0.3, continuity2="G3"
 )
 
 # Flip normal
