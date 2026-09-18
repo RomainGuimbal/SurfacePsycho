@@ -234,7 +234,7 @@ def get_node_names_all_versions(curr_name):
 
 def sp_type_of_outdated_objects(o):
     type = sp_type_of_object(o)
-    if type is None:
+    if type is SP_obj_type.INVALID:
         for m in reversed(o.modifiers):
             if m.type == "NODES" and m.node_group and m.show_viewport:
                 name = remove_suffix(m.node_group.name)
@@ -386,7 +386,7 @@ def update_object(obj):
     Apply every update scenario to the object
     """
     type = sp_type_of_outdated_objects(obj)
-    if type is None:
+    if type is SP_obj_type.INVALID:
         print(f"{obj.name} is not a SurfacePsycho object")
         return None
 

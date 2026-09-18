@@ -661,7 +661,7 @@ def compound_to_topods(
         type = sp_type_of_object(o_new)
 
         # skip nested compounds for the moment
-        if type != SP_obj_type.COMPOUND:
+        if type != SP_obj_type.COMPOUND and type != SP_obj_type.INVALID:
             sh = blender_object_simple_to_topods_shape(
                 new_depsgraph,
                 o_new,
@@ -812,7 +812,7 @@ def blender_object_simple_to_topods_shape(
     ob = object.evaluated_get(depsgraph)
 
     match sp_type:
-        case None:
+        case SP_obj_type.INVALID:
             pass
         case SP_obj_type.CONE:
             shape = cone_face_to_topods(ob, scale)
@@ -871,7 +871,7 @@ def blender_instance_to_topods_instance(  # Instancing is supported only for com
 
     for o in ins_obj:
         sp_type = sp_type_of_object(o)
-        if sp_type not in (None, SP_obj_type.EMPTY, SP_obj_type.INSTANCE):
+        if sp_type not in (SP_obj_type.INVALID, SP_obj_type.EMPTY, SP_obj_type.INSTANCE):
             if o in obj_shapes.keys():
                 shape = obj_shapes[o]
             elif not o.hide_viewport:
@@ -980,7 +980,7 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
     for o in objects:
         type = sp_type_of_object(o)
 
-        if type is None:
+        if type is SP_obj_type.INVALID :
             continue
 
         # Check modifiers warnings
