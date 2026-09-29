@@ -1549,7 +1549,7 @@ class SP_OT_loft(bpy.types.Operator):
         row.prop(self, "method", expand=True)
 
     def invoke(self, context, event):
-        self.obj_loc = selection_mean_point(SELECTED_SEGMENTS)
+        self.obj_loc = selection_mean_point(SELECTED_SEGMENTS).copy()
         self.s_list = list(SELECTED_SEGMENTS)[:8]
 
         if len(self.s_list) < 2:
