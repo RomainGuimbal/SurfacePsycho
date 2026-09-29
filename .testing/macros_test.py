@@ -66,3 +66,8 @@ bpy.ops.view3d.sp_overwrite_segment_selection(select_string=selection_overwrite)
 bpy.ops.object.sp_extract_segment()
 
 # Isoparam
+
+
+
+# Copy/rebuild complex segment
+

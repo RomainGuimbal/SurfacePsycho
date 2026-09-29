@@ -648,9 +648,7 @@ def set_seg_resolution(resolution: int, context):
                 try:
                     u_res = get_modifier_value(m, "Resolution U")
                     v_res = get_modifier_value(m, "Resolution V")
-                    o_resolution = math.ceil(
-                        math.sqrt(u_res** 2 + v_res** 2)
-                    )
+                    o_resolution = math.ceil(math.sqrt(u_res**2 + v_res**2))
                 except ValueError:
                     try:
                         o_resolution = get_modifier_value(m, "Resolution")
@@ -1527,6 +1525,76 @@ class SP_OT_fill(bpy.types.Operator):
             return {"CANCELLED"}
 
 
+class SP_OT_loft(bpy.types.Operator):
+    bl_idname = "object.sp_loft"
+    bl_label = "SP - Loft"
+    bl_options = {"REGISTER", "UNDO"}
+
+    method: bpy.props.EnumProperty(
+        name="Method",
+        default="Chordal",
+        items=[
+            ("Even", "Even", "Segments are placed evenly in parametric space"),
+            ("Chordal", "Chordal", "Parametrization adapts to edges distance"),
+        ],
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        col = layout.column()
+        row = col.row()
+        row.prop(self, "method", expand=True)
+
+    def invoke(self, context, event):
+        self.obj_loc = selection_mean_point(SELECTED_SEGMENTS)
+        self.s_list = list(SELECTED_SEGMENTS)[:8]
+
+        if len(self.s_list) < 2:
+            self.report({"INFO"}, "Select at least 2 segments")
+            return {"CANCELLED"}
+        if len(self.s_list) > 8:
+            self.report({"WARNING"}, "Maximum 8 segments supported. Rest is ignored")
+
+        
+        return self.execute(context)
+
+    def execute(self, context):
+
+        loft_ng, meshing_ng = append_multiple_node_groups(
+            ["SP - Loft", SP_obj_type.BEZIER_SURFACE.mesher_name]
+        )
+
+        # Create the patch
+        mesh = bpy.data.meshes.new("Loft Patch")
+        mesh.from_pydata([Vector((0, 0, 0))], [], [])
+        loft_object = bpy.data.objects.new("Loft Patch", mesh)
+        loft_object.location = self.obj_loc
+        context.collection.objects.link(loft_object)
+
+        add_modifier_asset_from_node_group(
+            loft_object,
+            loft_ng,
+            {"Method": self.method}
+            | {
+                "Target " + str(i + 1): context.scene.objects[s[0]]
+                for i, s in enumerate(self.s_list)
+            }
+            | {"Segment " + str(i + 1): s[1] for i, s in enumerate(self.s_list)},
+        )
+        add_modifier_asset_from_node_group(
+            loft_object,
+            meshing_ng,
+            pin=True,
+        )
+        loft_object.select_set(True)
+        context.view_layer.objects.active = loft_object
+        SELECTED_SEGMENTS.clear()
+        return {"FINISHED"}
+
+
 classes = [
     SP_OT_add_curvature_analysis,
     SP_OT_add_isoparam,
@@ -1540,6 +1608,7 @@ classes = [
     SP_OT_extract_segment,
     SP_OT_fill,
     SP_OT_flip_normals,
+    SP_OT_loft,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_matcaps,
     SP_OT_scale_analysis,

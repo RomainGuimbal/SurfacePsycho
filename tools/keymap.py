@@ -14,6 +14,7 @@ OBJ_KEYMAP = (
     ("object.sp_extract_segment", {"type": "E", "value": "PRESS"}, None),
     # ("wm.call_menu_pie", {"type": "F", "value": "PRESS", "shift": True}, None),
     ("object.sp_fill", {"type": "F", "value": "PRESS"}, None),
+    ("object.sp_loft", {"type": "L", "value": "PRESS"}, None),
     (
         "object.sp_toggle_control_geom",
         {"type": "F", "value": "PRESS", "shift": True},
