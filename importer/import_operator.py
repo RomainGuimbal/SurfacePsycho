@@ -51,12 +51,15 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         return (path.endswith(".step") or path.endswith(".stp")) if path else True
 
     def execute(self, context):
+        print("Initializing import...")
+
         self.t0 = time.time()
         self.batch_size = 300
         self.created_object_count = 0
         self.total_count = 0
         self.object_data = []
         self.status = "Gathering shape data..."
+        self.prev_status = ""
 
         # Show wait cursor
         context.window.cursor_set("WAIT")
@@ -125,6 +128,9 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
     def modal(self, context, event):
         if event.type == "TIMER":
+            if self.status != self.prev_status:
+                print(self.status)
+            self.prev_status = self.status
             return self.process_batch(context)
         elif event.type == "ESC":
             context.window_manager.progress_end()
