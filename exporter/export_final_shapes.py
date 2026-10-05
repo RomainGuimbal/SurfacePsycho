@@ -3,21 +3,6 @@ import numpy as np
 import math
 import warnings
 from mathutils import Vector
-from ..common.enums import SP_obj_type
-from ..common.utils import (
-    read_attribute_by_name,
-    vec_grid_to_step_cartesian,
-    float_list_to_tcolstd_H_2d,
-    sp_type_of_object,
-    split_by_index,
-    blender_matrix_to_gp_trsf,
-    shape_list_to_compound,
-    shells_to_solids,
-    get_patch_knot_and_mult,
-)
-from ..common.compound_utils import (
-    convert_compound_to_patches,
-)
 from OCP.TColgp import TColgp_Array2OfPnt
 from OCP.BRepBuilderAPI import (
     BRepBuilderAPI_GTransform,
@@ -60,9 +45,24 @@ from OCP.StepData import StepData_Logical, StepData_Factors
 from OCP.StepToGeom import StepToGeom
 from OCP.TCollection import TCollection_HAsciiString
 
+from ..common.enums import SP_obj_type
+from ..common.utils import (
+    read_attribute_by_name,
+    vec_grid_to_step_cartesian,
+    float_list_to_tcolstd_H_2d,
+    sp_type_of_object,
+    split_by_index,
+    blender_matrix_to_gp_trsf,
+    shape_list_to_compound,
+    shells_to_solids,
+    get_patch_knot_and_mult,
+)
+from ..common.compound_utils import convert_compound_to_patches
+
 from .export_edge import SP_Edge_export
 from .export_wire import SP_Wire_export
 from .export_contour import SP_Contour_export
+from .export_colors import set_exported_face_color, SHAPE_TOOL, COLOR_TOOL
 
 ##############################
 ##  Brep from SP entities   ##
@@ -672,9 +672,7 @@ def compound_to_topods(
             )
             comp_shapes.append(sh)
         else:
-            warnings.warn(
-                f"Nested Compounds are ignored. {o_new.name} skipped"
-            )
+            warnings.warn(f"Nested Compounds are ignored. {o_new.name} skipped")
 
         # Unlink
         bpy.context.collection.objects.unlink(o_new)
@@ -691,6 +689,7 @@ def compound_to_topods(
 
 
 def mirror_topods_shape(o, shape, scale=1000):
+    """Returns a list of mirrored shapes including the original one"""
     shape_list = [shape]
 
     loc, rot, _ = o.matrix_world.decompose()
@@ -840,6 +839,22 @@ def blender_object_simple_to_topods_shape(
     # Mirror
     shape_list_mirrored = mirror_topods_shape(object, shape, scale)
 
+    # Set face(s) color
+    if sp_type in [
+        SP_obj_type.CONE,
+        SP_obj_type.SPHERE,
+        SP_obj_type.CYLINDER,
+        SP_obj_type.TORUS,
+        SP_obj_type.BEZIER_SURFACE,
+        SP_obj_type.BSPLINE_SURFACE,
+        SP_obj_type.PLANE,
+        SP_obj_type.SURFACE_OF_REVOLUTION,
+        SP_obj_type.SURFACE_OF_EXTRUSION,
+    ]:
+        color = object.color
+        for s in shape_list_mirrored:
+            set_exported_face_color(s, color, SHAPE_TOOL, COLOR_TOOL)
+
     # Sew
     if sew:
         compound = sew_shapes(shape_list_mirrored, sew_tolerance)
@@ -871,7 +886,11 @@ def blender_instance_to_topods_instance(  # Instancing is supported only for com
 
     for o in ins_obj:
         sp_type = sp_type_of_object(o)
-        if sp_type not in (SP_obj_type.INVALID, SP_obj_type.EMPTY, SP_obj_type.INSTANCE):
+        if sp_type not in (
+            SP_obj_type.INVALID,
+            SP_obj_type.EMPTY,
+            SP_obj_type.INSTANCE,
+        ):
             if o in obj_shapes.keys():
                 shape = obj_shapes[o]
             elif not o.hide_viewport:
@@ -913,7 +932,7 @@ def blender_instance_to_topods_instance(  # Instancing is supported only for com
         # #     builder.Add(comp, swd_nested)
         # #     is_nested=True
 
-    if len(to_sew_shape_list)==0:
+    if len(to_sew_shape_list) == 0:
         return
 
     # each collection instance is sewed separately
@@ -980,7 +999,7 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
     for o in objects:
         type = sp_type_of_object(o)
 
-        if type is SP_obj_type.INVALID :
+        if type is SP_obj_type.INVALID:
             continue
 
         # Check modifiers warnings
@@ -1062,10 +1081,6 @@ def gather_export_shapes(
 ) -> TopoDS_Compound:
     depsgraph = context.evaluated_depsgraph_get()
 
-    # import cProfile
-    # profiler = cProfile.Profile()
-    # profiler.enable()
-
     # Gather objects
     objects = ShapeHierarchy_export(
         context, use_selection, scale, sew, sew_tolerance, depsgraph
@@ -1078,9 +1093,6 @@ def gather_export_shapes(
     separated_shapes_list = make_shapes_from_objects(
         objects, depsgraph, scale, sew, sew_tolerance
     )
-
-    # profiler.disable()
-    # profiler.dump_stats("profile_output.prof")
 
     if len(separated_shapes_list) > 0:
         root_compound = shape_list_to_compound(separated_shapes_list)
