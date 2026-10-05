@@ -10,7 +10,7 @@ from .import_shape_to_blender_object import (
     import_face_nodegroups,
     process_object_data_of_shape,
 )
-from .import_reader import read_cad
+from .import_reader import read_cad, ImportHierarchy
 from bpy.props import (
     StringProperty,
     BoolProperty,
@@ -40,11 +40,11 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         description="Import faces with their trim contours",
         default=True,
     )
-    # materials_on: BoolProperty(
-    #     name="Materials",
-    #     description="Set materials according to STEP colors",
-    #     default=True
-    # )
+    materials_on: BoolProperty(
+        name="Materials",
+        description="Set materials according to STEP colors",
+        default=True
+    )
 
     def _is_step_file(self):
         path = self.filepath.lower() if self.filepath else None
@@ -64,53 +64,64 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         # Show wait cursor
         context.window.cursor_set("WAIT")
 
-        # Initialize your CAD import data
-        root_shape = read_cad(self.filepath)  # , self.materials_on)
-        root_name = Path(self.filepath).stem
-        shape_hierarchy = ShapeHierarchy(root_shape, root_name)
+        # --- VizTracer Block ---
 
-        # Collect shapes to process
-        shapes_args = []
-        if self.faces_on:
-            import_face_nodegroups(shape_hierarchy)
-            shapes_args.extend(
-                [
-                    (shape, name, color, collection, False)
-                    for shape, name, color, collection in shape_hierarchy.faces
-                ]
-            )
-        if self.curves_on:
-            append_node_group(SP_obj_type.CURVE.mesher_name)
-            shapes_args.extend(
-                [
-                    (shape, name, color, collection, True)
-                    for shape, name, color, collection in shape_hierarchy.edges
-                ]
-            )
-        if len(shapes_args) == 0:
-            self.report({"WARNING"}, "No shapes to import")
-            return {"CANCELLED"}
+        from viztracer import VizTracer
 
-        # Create object data
-        for s in shapes_args:
-            shape, name, color, collection, iscurve = s
-            ob_data = process_object_data_of_shape(
-                shape,
-                name,
-                color,
-                collection,
-                self.trims_on,
-                self.scale,
-                self.resolution,
-                iscurve,
-            )
-            if ob_data != {}:
-                self.object_data.append(ob_data)
+        with VizTracer(
+            output_file="/tmp/blender_trace.json",
+            tracer_entries=3000000,
+            min_duration=5,
+        ) as tracer:
 
-        self.total_count = len(self.object_data)
+            # Initialize your CAD import data
+            root_shape = read_cad(self.filepath)
+            if self.materials_on : 
+                shape_hierarchy = ImportHierarchy(self.filepath)
+            else :
+                root_name = Path(self.filepath).stem
+                shape_hierarchy = ShapeHierarchy(root_shape, root_name)
 
-        # profiler.disable()
-        # profiler.print_stats()
+            # Collect shapes to process
+            shapes_args = []
+            if self.faces_on:
+                import_face_nodegroups(shape_hierarchy)
+                shapes_args.extend(
+                    [
+                        (shape, name, color, collection, False)
+                        for shape, name, color, collection in shape_hierarchy.faces
+                    ]
+                )
+            if self.curves_on:
+                append_node_group(SP_obj_type.CURVE.mesher_name)
+                shapes_args.extend(
+                    [
+                        (shape, name, color, collection, True)
+                        for shape, name, color, collection in shape_hierarchy.edges
+                    ]
+                )
+            if len(shapes_args) == 0:
+                self.report({"WARNING"}, "No shapes to import")
+                return {"CANCELLED"}
+
+            # Create object data
+            for s in shapes_args:
+                shape, name, color, collection, iscurve = s
+                ob_data = process_object_data_of_shape(
+                    shape,
+                    name,
+                    color,
+                    collection,
+                    self.trims_on,
+                    self.scale,
+                    self.resolution,
+                    iscurve,
+                )
+                if ob_data != {}:
+                    self.object_data.append(ob_data)
+
+            self.total_count = len(self.object_data)
+
 
         # Setup modal operation
         self._timer = context.window_manager.event_timer_add(0.1, window=context.window)

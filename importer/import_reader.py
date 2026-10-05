@@ -27,18 +27,15 @@ from OCP.XCAFDoc import (
 
 from ..common.utils import create_collection
 
-def read_cad(filepath, import_colors=True):
+
+def read_cad_simple(filepath):
     # STEP
     file_path = Path(filepath)
     if file_path.suffix.lower() in [".step", ".stp"]:
-
-        # if import_colors:
-        #     all_file_shapes_dic = read_step_file_with_names_colors(filepath)
-        # else:
         root_shape = read_step_file(filepath)
 
     # IGES
-    elif file_path.suffix in [".igs", ".iges", ".IGES", ".IGS"]:
+    elif file_path.suffix.lower() in [".igs", ".iges"]:
         iges_reader = IGESControl_Reader()
         status = iges_reader.ReadFile(filepath)
         if status != IFSelect_RetDone:
@@ -50,11 +47,6 @@ def read_cad(filepath, import_colors=True):
         warnings.warn("No shape in file")
 
     return root_shape
-
-
-######################################################
-# Step import adapted from python OCC Extends module #
-######################################################
 
 
 def read_step_file(filename, verbosity=True) -> TopAbs.TopAbs_SHAPE:
@@ -87,184 +79,43 @@ def read_step_file(filename, verbosity=True) -> TopAbs.TopAbs_SHAPE:
     return root_shape
 
 
-def read_step_file_with_names_colors(
-    filename,
-) -> dict[TopAbs.TopAbs_SHAPE, tuple[TDF.TDF_Label, Quantity.Quantity_Color]]:
-    if not Path(filename).is_file():
-        raise FileNotFoundError(f"{filename} not found.")
+def get_label_name(label):
+    """Return the name of a TDF_Label as a string, fallback to EntryDumpToString or Tag if needed."""
 
-    output_shapes : dict[TopAbs.TopAbs_SHAP, tuple[TDF.TDF_Label, Quantity.Quantity_Color]] = {}
+    # Try to use name label if available
+    name_attr = TDataStd_Name()
+    if label.FindAttribute(TDataStd_Name.GetID_s(), name_attr):
+        return name_attr.Get().ToExtString()
 
-    # create an handle to a document
-    doc = TDocStd_Document(TCollection_ExtendedString("pythonocc-doc-step-import"))
+    # Fallback: use EntryDumpToString or Tag
+    if hasattr(label, "EntryDumpToString"):
+        return label.EntryDumpToString()
+    elif hasattr(label, "Tag"):
+        return str(label.Tag())
+    else:
+        return str(label)
 
-    # Get root assembly
-    shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
-    color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
-    # layer_tool = XCAFDoc_DocumentTool_LayerTool(doc.Main())
-    # mat_tool = XCAFDoc_DocumentTool_MaterialTool(doc.Main())
 
-    reader = STEPCAFControl_Reader()
-    reader.SetColorMode(True)
-    # reader.SetLayerMode(True)
-    reader.SetNameMode(True)
-    # reader.SetMatMode(True)
-    # reader.SetGDTMode(True)
+def rgb_from_label(self, lab):
+    """
+    Args:
+        lab: shape label
+    """
+    # default color = pink
+    c = Quantity_Color(1.0, 0.0, 1.0, Quantity_TOC_RGB)
 
-    status = reader.ReadFile(filename)
-    if status == IFSelect_RetDone:
-        reader.Transfer(doc)
+    shape = self.shape_tool.GetShape_s(lab)
 
-    locs: list[TopLoc_Location] = []
+    # Overwrites each type
+    c_surf_exists = self.color_tool.GetColor(shape, XCAFDoc_ColorSurf, c)
+    if not c_surf_exists:
+        c_curv_exists = self.color_tool.GetColor(shape, XCAFDoc_ColorCurv, c)
+        if not c_curv_exists:
+            c_gen_exists = self.color_tool.GetColor(shape, XCAFDoc_ColorGen, c)
+            if not c_gen_exists:
+                return (1.0, 1.0, 1.0)
 
-    def get_name(label: TDF_Label) -> str:
-        """Extract name and format"""
-        name = ""
-        std_name = TDataStd_Name()
-        if label.FindAttribute(TDataStd_Name.GetID_s(), std_name):
-            name = TCollection_AsciiString(std_name.Get()).ToCString()
-        # Remove characters that cause ocp_vscode to fail
-        clean_name = "".join(ch for ch in name if unicodedata.category(ch)[0] != "C")
-        return clean_name.translate(str.maketrans(" .()", "____"))
-
-    def _add_shape_from_label(lab, ls_subss):
-        """
-        Args :
-            lab : shape label
-            ls_subss : label sequence of shape. For face colors
-        """
-
-        # Get unpositionned shape from label
-        shape = shape_tool.GetShape_s(lab)
-
-        # Absolute position of shape
-        loc = TopLoc_Location()
-        for l in locs:
-            loc = loc.Multiplied(l)
-
-        # Color
-        c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
-        color_set = False
-
-        # if color Instance exists for our shape, add it to color_tool
-        if (
-            color_tool.GetInstanceColor(shape, XCAFDoc_ColorGen, c)
-            or color_tool.GetInstanceColor(shape, XCAFDoc_ColorSurf, c)
-            or color_tool.GetInstanceColor(shape, XCAFDoc_ColorCurv, c)
-        ):
-            color_tool.SetInstanceColor(shape, XCAFDoc_ColorGen, c)
-            color_tool.SetInstanceColor(shape, XCAFDoc_ColorSurf, c)
-            color_tool.SetInstanceColor(shape, XCAFDoc_ColorCurv, c)
-            color_set = True
-
-        # if no color Instance, look for standard color
-        if not color_set:
-            if (
-                color_tool.GetColor(shape, XCAFDoc_ColorGen, c)
-                or color_tool.GetColor(shape, XCAFDoc_ColorSurf, c)
-                or color_tool.GetColor(shape, XCAFDoc_ColorCurv, c)
-            ):
-                color_tool.SetInstanceColor(shape, XCAFDoc_ColorGen, c)
-                color_tool.SetInstanceColor(shape, XCAFDoc_ColorSurf, c)
-                color_tool.SetInstanceColor(shape, XCAFDoc_ColorCurv, c)
-
-        # Moving the shape to its location
-        shape_disp = BRepBuilderAPI_Transform(shape, loc.Transformation()).Shape()
-
-        # Add shape to output list
-        if shape_disp not in output_shapes.keys():
-            output_shapes[shape_disp] = (get_name(lab), c)
-
-        # Subshape level (face, wire... ?)
-        for i in range(ls_subss.Length()):
-            lab_subs = ls_subss.Value(i + 1)
-            shape_sub = shape_tool.GetShape_s(lab_subs)
-
-            c = Quantity_Color(0.5, 0.5, 0.5, Quantity_TOC_RGB)  # default color
-            color_set = False
-            if (
-                color_tool.GetInstanceColor(shape_sub, XCAFDoc_ColorGen, c)
-                or color_tool.GetInstanceColor(shape_sub, XCAFDoc_ColorSurf, c)
-                or color_tool.GetInstanceColor(shape_sub, XCAFDoc_ColorCurv, c)
-            ):
-                color_tool.SetInstanceColor(shape_sub, XCAFDoc_ColorGen, c)
-                color_tool.SetInstanceColor(shape_sub, XCAFDoc_ColorSurf, c)
-                color_tool.SetInstanceColor(shape_sub, XCAFDoc_ColorCurv, c)
-                color_set = True
-
-            if not color_set:
-                if (
-                    XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorGen, c)
-                    or XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorSurf, c)
-                    or XCAFDoc_ColorTool.GetColor(shape, XCAFDoc_ColorCurv, c)
-                ):
-                    color_tool.SetInstanceColor(shape, XCAFDoc_ColorGen, c)
-                    color_tool.SetInstanceColor(shape, XCAFDoc_ColorSurf, c)
-                    color_tool.SetInstanceColor(shape, XCAFDoc_ColorCurv, c)
-
-            shape_to_disp = BRepBuilderAPI_Transform(
-                shape_sub, loc.Transformation()
-            ).Shape()
-
-            # position the subshape to display
-            if shape_to_disp not in output_shapes.keys():
-                output_shapes[shape_to_disp] = [get_name(lab_subs), c]
-
-    def _get_sub_shapes(lab, loc):
-        """
-        Recursive
-        Args:
-           lab (TDF_Label): label of parent shape
-        """
-        # "l" means TDF_Label
-        # "ls" means TDF_LabelSequence
-        # "subss" means sub shape
-        ls_subss = TDF_LabelSequence()
-        shape_tool.GetSubShapes_s(lab, ls_subss)
-        ls_comps = TDF_LabelSequence()
-        shape_tool.GetComponents_s(lab, ls_comps)
-
-        # parent_name = get_name(lab)
-        # print("Name :", parent_name)
-
-        # Several sub shapes -> Recurse
-        if shape_tool.IsAssembly_s(lab):
-            ls_components = TDF_LabelSequence()
-            shape_tool.GetComponents_s(lab, ls_components)
-            for i in range(ls_components.Length()):
-                l_comp = ls_components.Value(i + 1)
-                if shape_tool.IsReference_s(l_comp):
-                    label_reference = TDF_Label()
-                    shape_tool.GetReferredShape(l_comp, label_reference)
-                    # Overrite location with parent location
-                    loc = shape_tool.GetLocation_s(l_comp)
-                    locs.append(loc)
-                    # print(">>>>")
-                    # lvl += 1
-                    _get_sub_shapes(label_reference, loc)
-                    # lvl -= 1
-                    # print("<<<<")
-                    locs.pop()
-
-        # Single sub shape
-        elif shape_tool.IsSimpleShape_s(lab):
-            _add_shape_from_label(lab, ls_subss)
-
-    def _get_shapes():
-        """Get all shapes from the document"""
-
-        # Get root labels
-        labels = TDF_LabelSequence()
-        shape_tool.GetFreeShapes(labels)
-        print(f"\nNumber of shapes at root :{labels.Length()}\n")
-
-        # Get sub shapes recursively
-        for i in range(labels.Length()):
-            root_item = labels.Value(i + 1)
-            _get_sub_shapes(root_item, None)
-
-    _get_shapes()
-    return output_shapes
+    return (c.Red(), c.Green(), c.Blue())
 
 
 class ImportHierarchy:
@@ -322,110 +173,126 @@ class ImportHierarchy:
 
         self.reader = step_reader
 
+    def _add_hierarchy_level(self, lab, hierarchy, parent_col) -> None:
+        """Edits the hierarchy of _get_sub_hierarchy"""
 
-    def _add_shape_from_label(lab, ls_subss):
-        pass
-        # match shape.ShapeType():
-        #     case TopAbs.TopAbs_COMPOUND:
-        #         hierarchy[parent_col] = []
-        #         new_collection = create_collection("Compound", parent_col)
-        #         iterator = TopoDS_Iterator(shape)
-        #         while iterator.More():
-        #             hierarchy[parent_col].append(
-        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
-        #             )
-        #             iterator.Next()
+        ls_components = TDF_LabelSequence()
+        self.shape_tool.GetComponents_s(lab, ls_components)
 
-        #     case TopAbs.TopAbs_COMPSOLID:
-        #         hierarchy[parent_col] = []
-        #         new_collection = create_collection("CompSolid", parent_col)
-        #         iterator = TopoDS_Iterator(shape)
-        #         while iterator.More():
-        #             hierarchy[parent_col].append(
-        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
-        #             )
-        #             iterator.Next()
+        hierarchy[parent_col] = []
+        new_collection = create_collection("Solid", parent_col)
 
-        #     case TopAbs.TopAbs_SOLID:
-        #         hierarchy[parent_col] = []
-        #         new_collection = create_collection("Solid", parent_col)
-        #         iterator = TopoDS_Iterator(shape)
-        #         while iterator.More():
-        #             hierarchy[parent_col].append(
-        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
-        #             )
-        #             iterator.Next()
+        for i in range(ls_components.Length()):
+            l_comp = ls_components.Value(i + 1)
+            if self.shape_tool.IsReference_s(l_comp):
 
-        #     case TopAbs.TopAbs_SHELL:
-        #         hierarchy[parent_col] = []
-        #         new_collection = create_collection("Shell", parent_col)
-        #         iterator = TopoDS_Iterator(shape)
-        #         while iterator.More():
-        #             hierarchy[parent_col].append(
-        #                 self.create_shape_hierarchy(iterator.Value(), new_collection)
-        #             )
-        #             iterator.Next()
+                label_reference = TDF_Label()
+                self.shape_tool.GetReferredShape(l_comp, label_reference)
+                # Overwrite location with parent location
+                loc = self.shape_tool.GetLocation_s(l_comp)
+                self.locs.append(loc)
+                hierarchy[parent_col].append(
+                    self._get_sub_hierarchy(label_reference, loc, new_collection)
+                )
+                self.locs.pop()
+
+    def _get_name_and_color():
+        # Overwrites each type
+        c_gen_exists = self.color_tool.GetColor(shape, XCAFDoc_ColorGen, color)
+        c_surf_exists = self.color_tool.GetColor(shape, XCAFDoc_ColorSurf, color)
+        c_curv_exists = False  # self.color_tool.GetColor(shape, XCAFDoc_ColorCurv, color) Supposed to be a fallback but overwrite't
+
+        if c_gen_exists or c_surf_exists or c_curv_exists:
+            iscolorset = True
+            # Color priority (1/type) is the same as CAD assistant material tree display
+            colortype = c_gen_exists * 1 + c_surf_exists * 2 + c_curv_exists * 3
+
+        return name, color, colortype, iscolorset
+
+    def _get_sub_shape(self, lab, parent_col, loc):
+        """Recurse until single SP object"""
+
+        hierarchy = {}
+
+        shape = self.shape_tool.GetShape_s(lab)
+        match shape.ShapeType():
+            # The following order is important (Face > Wire > Edge)
+            case TopAbs.TopAbs_FACE:
+                face = TopoDS.Face_s(shape)
+                hierarchy["Face"] = face
+                color = rgb_from_label(lab)
+                name = get_label_name(lab)
+                self.faces.append((face, name, color, parent_col))
+
+            case TopAbs.TopAbs_WIRE:
+                wire = TopoDS.Wire_s(shape)
+                hierarchy["Wire"] = wire
+                name, color = "temp", 0  # get_shape_name_and_color(wire, self.doc)
+                self.edges.append((wire, name, color, parent_col))
+
+            case TopAbs.TopAbs_EDGE:
+                edge = TopoDS.Edge_s(shape)
+                hierarchy["Edge"] = edge
+                name, color = "temp", 0  # get_shape_name_and_color(edge, self.doc)
+                self.edges.append((edge, name, color, parent_col))
+
+            # case TopAbs.TopAbs_FACE:  # must be before wire and edge
+            #     face = TopoDS.Face_s(shape)
+            #     hierarchy["Face"] = face
+            #     self.faces.append((face, name, color, parent_col))
+
+            # case TopAbs.TopAbs_WIRE:  # must be before edge
+            #     wire = TopoDS.Wire_s(shape)
+            #     hierarchy["Wire"] = wire
+            #     self.edges.append((wire, name, color, parent_col))
+
+            # case TopAbs.TopAbs_EDGE:
+            #     edge = TopoDS.Edge_s(shape)
+            #     hierarchy["Edge"] = edge
+            #     self.edges.append((edge, name, color, parent_col))
+
+            case _:
+                type_name = shape.ShapeType().ShapeTypeToString_s()
+                type_name = type_name[0].upper() + type_name[:1].lower()
+
+                hierarchy[parent_col] = []
+
+                lab_seq_subss = TDF_LabelSequence()
+                self.shape_tool.GetSubShapes_s(lab, lab_seq_subss)
+
+                new_collection = self.create_collection(type_name, parent_col)
+                # iterator = TopoDS_Iterator(shape)
+                # while iterator.More():
+                #     new_lab =
+                #     hierarchy[parent_col].append(
+                #         _add_shape_from_label(iterator.Value(), new_collection, new_lab, loc)
+                #     )
+                #     iterator.Next()
+
+        return hierarchy
 
     def _get_sub_hierarchy(self, lab, parent_col):
         """
         Recursive
         Args:
            lab (TDF_Label): label of parent shape
+
+        "subss" means sub shape
         """
 
+        # current level hierarchy
         hierarchy = {}
-    
-        # "l" means TDF_Label
-        # "ls" means TDF_LabelSequence
-        # "subss" means sub shape
-        ls_subss = TDF_LabelSequence()
-        self.shape_tool.GetSubShapes_s(lab, ls_subss)
-        # ls_comps = TDF_LabelSequence()
-        # self.shape_tool.GetComponents_s(lab, ls_comps)
 
-        # Several sub shapes -> Recurse
+        # Assembly, Recurse until simple shape
         if self.shape_tool.IsAssembly_s(lab):
-            ls_components = TDF_LabelSequence()
-            self.shape_tool.GetComponents_s(lab, ls_components)
+            self._add_hierarchy_level(lab, hierarchy, parent_col)
 
-            hierarchy[parent_col] = []
-            new_collection = create_collection("Solid", parent_col)
-
-            for i in range(ls_components.Length()):
-                l_comp = ls_components.Value(i + 1)
-                if self.shape_tool.IsReference_s(l_comp):
-
-                    label_reference = TDF_Label()
-                    self.shape_tool.GetReferredShape(l_comp, label_reference)
-                    # Overrite location with parent location
-                    loc = self.shape_tool.GetLocation_s(l_comp)
-                    self.locs.append(loc)
-                    hierarchy[parent_col].append(self._get_sub_hierarchy(label_reference, loc, new_collection))
-                    self.locs.pop()
-
-        # Single sub shape
+        # Simple shape, Recurses too but one level deeper until face/edge/wire level
         elif self.shape_tool.IsSimpleShape_s(lab):
-            self._add_shape_from_label(lab, ls_subss)
-
-    
+            new_collection = self.create_collection("TODO", parent_col)
+            hierarchy[parent_col].append(self._get_sub_shape(new_collection, lab))
 
         return hierarchy
-
-#     case TopAbs.TopAbs_FACE:  # must be before wire and edge
-#         face = TopoDS.Face_s(shape)
-#         hierarchy["Face"] = face
-#         self.faces.append((face, name, color, parent_col))
-
-#     case TopAbs.TopAbs_WIRE:  # must be before edge
-#         wire = TopoDS.Wire_s(shape)
-#         hierarchy["Wire"] = wire
-#         self.edges.append((wire, name, color, parent_col))
-
-#     case TopAbs.TopAbs_EDGE:
-#         edge = TopoDS.Edge_s(shape)
-#         hierarchy["Edge"] = edge
-#         self.edges.append((edge, name, color, parent_col))
-
 
 
 # ###########################
