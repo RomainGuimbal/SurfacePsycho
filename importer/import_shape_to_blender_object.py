@@ -1212,66 +1212,49 @@ class ShapeHierarchy:
 
     def create_shape_hierarchy(self, shape, parent_col):
         """Recursive"""
-        
+
         hierarchy = {}
+
+        def _process_container(type_name: str):
+            hierarchy[parent_col] = []
+            new_collection = self.create_collection(type_name, parent_col)
+            iterator = TopoDS_Iterator(shape)
+            while iterator.More():
+                hierarchy[parent_col].append(
+                    self.create_shape_hierarchy(iterator.Value(), new_collection)
+                )
+                iterator.Next()
 
         match shape.ShapeType():
             case TopAbs.TopAbs_COMPOUND:
-                hierarchy[parent_col] = []
-                new_collection = self.create_collection("Compound", parent_col)
-                iterator = TopoDS_Iterator(shape)
-                while iterator.More():
-                    hierarchy[parent_col].append(
-                        self.create_shape_hierarchy(iterator.Value(), new_collection)
-                    )
-                    iterator.Next()
+                _process_container("Compound")
 
             case TopAbs.TopAbs_COMPSOLID:
-                hierarchy[parent_col] = []
-                new_collection = self.create_collection("CompSolid", parent_col)
-                iterator = TopoDS_Iterator(shape)
-                while iterator.More():
-                    hierarchy[parent_col].append(
-                        self.create_shape_hierarchy(iterator.Value(), new_collection)
-                    )
-                    iterator.Next()
+                _process_container("CompSolid")
 
             case TopAbs.TopAbs_SOLID:
-                hierarchy[parent_col] = []
-                new_collection = self.create_collection("Solid", parent_col)
-                iterator = TopoDS_Iterator(shape)
-                while iterator.More():
-                    hierarchy[parent_col].append(
-                        self.create_shape_hierarchy(iterator.Value(), new_collection)
-                    )
-                    iterator.Next()
+                _process_container("Solid")
 
             case TopAbs.TopAbs_SHELL:
-                hierarchy[parent_col] = []
-                new_collection = self.create_collection("Shell", parent_col)
-                iterator = TopoDS_Iterator(shape)
-                while iterator.More():
-                    hierarchy[parent_col].append(
-                        self.create_shape_hierarchy(iterator.Value(), new_collection)
-                    )
-                    iterator.Next()
+                _process_container("Shell")
 
-            case TopAbs.TopAbs_FACE:  # must be before wire and edge
+            # The following order is important (Face > Wire > Edge)
+            case TopAbs.TopAbs_FACE:
                 face = TopoDS.Face_s(shape)
                 hierarchy["Face"] = face
-                name, color = "temp", 0 # get_shape_name_and_color(face, self.doc)
+                name, color = "temp", 0  # get_shape_name_and_color(face, self.doc)
                 self.faces.append((face, name, color, parent_col))
 
-            case TopAbs.TopAbs_WIRE:  # must be before edge
+            case TopAbs.TopAbs_WIRE:
                 wire = TopoDS.Wire_s(shape)
                 hierarchy["Wire"] = wire
-                name, color = "temp", 0 # get_shape_name_and_color(wire, self.doc)
+                name, color = "temp", 0  # get_shape_name_and_color(wire, self.doc)
                 self.edges.append((wire, name, color, parent_col))
 
             case TopAbs.TopAbs_EDGE:
                 edge = TopoDS.Edge_s(shape)
                 hierarchy["Edge"] = edge
-                name, color = "temp", 0 # get_shape_name_and_color(edge, self.doc)
+                name, color = "temp", 0  # get_shape_name_and_color(edge, self.doc)
                 self.edges.append((edge, name, color, parent_col))
 
         return hierarchy
@@ -1358,7 +1341,7 @@ def process_object_data_of_shape(
 def create_blender_object(object_data):
     if object_data == {}:
         return False
-    
+
     from ..common.modifier_utils import add_modifier_asset
 
     mesh = bpy.data.meshes.new(object_data["name"])
