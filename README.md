@@ -29,25 +29,14 @@ SurfacePsycho is close to able to do complete STEP/IGES import, and for the firs
 
 ---
 
-## Get started
-[Install and Setup](https://github.com/RomainGuimbal/SurfacePsycho/wiki/1.-Install-and-Setup)
+## [Get started](https://github.com/RomainGuimbal/SurfacePsycho/wiki/1.-Install-and-Setup)
+
+## [Learn](https://github.com/RomainGuimbal/SurfacePsycho/wiki)
+
+## [News](https://blenderartists.org/t/surfacepsycho-addon-project/1487629)
+
+## [Discord](https://discord.gg/mzTmXUUwS)
 
 ---
 
-## Learn
-[Github Wiki](https://github.com/RomainGuimbal/SurfacePsycho/wiki)
-
----
-
-## News
-Follow the news from the [BlenderArtists thread](https://blenderartists.org/t/surfacepsycho-addon-project/1487629)
-
----
-
-## Community
-Get helped, give feedback, contribute and share your creations on the [Discord](https://discord.gg/mzTmXUUwS)
-
----
-
-## ❤️ Donate
-Visit [🌀 **THE GREAT DONATION PORTAL** 🌀](https://romainguimbal.github.io/sp-donation/sp-donation.html). It's magical, it accelerates the project !
+## [🌀 **GREAT DONATION PORTAL** 🌀](https://romainguimbal.github.io/sp-donation/sp-donation.html)
