@@ -32,8 +32,6 @@ SurfacePsycho is close to able to do complete STEP/IGES import, and for the firs
 ## Get started
 [Install and Setup](https://github.com/RomainGuimbal/SurfacePsycho/wiki/1.-Install-and-Setup)
 
-[Blender Extension page](https://extensions.blender.org/add-ons/surfacepsycho/)
-
 ---
 
 ## Learn
