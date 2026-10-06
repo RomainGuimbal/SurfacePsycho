@@ -1,4 +1,3 @@
-
 from mathutils import Vector
 from collections import Counter
 from ..common.utils import (
@@ -8,6 +7,7 @@ from ..common.utils import (
     rebound_UV,
 )
 from .export_wire import SP_Wire_export
+
 
 class SP_Contour_export:
     def __init__(
@@ -183,11 +183,11 @@ class SP_Contour_export:
         wires = self.wires_dict
         outer_wire = None
         inner_wires = []
-        for k in wires.keys():
+        for k, v in wires.items():
             if k > 0:
-                inner_wires.append(wires[k].get_topods_wire())
+                inner_wires.append(v.get_topods_wire())
             elif k < 0:
-                outer_wire = wires[k].get_topods_wire()
+                outer_wire = v.get_topods_wire()
         if outer_wire == None:
             raise Exception("No outer wire found")
 

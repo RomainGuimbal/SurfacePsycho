@@ -147,30 +147,30 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_update_modifiers(bpy.types.Operator):
-    bl_idname = "object.sp_update_modifiers"
-    bl_label = "SP - Update Modifiers"
-    bl_options = {"REGISTER", "UNDO"}
+# class SP_OT_update_modifiers(bpy.types.Operator):
+#     bl_idname = "object.sp_update_modifiers"
+#     bl_label = "SP - Update Modifiers"
+#     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        old_new_pairs = {}
-        for node_group in bpy.data.node_groups:
-            if node_group.type == "GEOMETRY" and node_group.name[:5] == "SP - ":
-                print(node_group.name)
-                if node_group not in old_new_pairs.keys():
-                    old_new_pairs[node_group] = None
-        print("\n")
-        names = []
-        for p in old_new_pairs.keys():
-            names.append(p.name)
-            print(p.name)
+#     def execute(self, context):
+#         old_new_pairs = {}
+#         for node_group in bpy.data.node_groups:
+#             if node_group.type == "GEOMETRY" and node_group.name[:5] == "SP - ":
+#                 print(node_group.name)
+#                 if node_group not in old_new_pairs.keys():
+#                     old_new_pairs[node_group] = None
+#         print("\n")
+#         names = []
+#         for p in old_new_pairs.keys():
+#             names.append(p.name)
+#             print(p.name)
 
-        new_ng = append_multiple_node_groups(names)
+#         new_ng = append_multiple_node_groups(names)
 
-        # TODO
-        self.report({"INFO"}, "Not Implemented")
+#         # TODO
+#         self.report({"INFO"}, "Not Implemented")
 
-        return {"FINISHED"}
+#         return {"FINISHED"}
 
 
 class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
@@ -1624,7 +1624,7 @@ classes = [
     SP_OT_toggle_exact_normals,
     SP_OT_toggle_endpoints,
     SP_OT_toggle_trim_contour_belonging,
-    SP_OT_update_modifiers,
+    # SP_OT_update_modifiers,
     SP_Props_Group,
     SP_OT_disable_exact_normals,
     SP_OT_enable_exact_normals,
