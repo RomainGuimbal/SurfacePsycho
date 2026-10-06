@@ -3,12 +3,7 @@ import bpy
 import numpy as np
 from mathutils import Vector, Matrix
 import bmesh
-from ..common.enums import (
-    SP_obj_type,
-    MESHER_NAMES,
-    ADDON_PREF_KEY,
-    ASSETS_PATH,
-)
+from ..common.enums import SP_obj_type, ADDON_PREF_KEY, ASSETS_PATH, MesherName, MESHERS
 from ..common.utils import (
     sp_type_of_object,
     read_attribute_by_name,
@@ -17,28 +12,20 @@ from ..common.utils import (
     set_segment_type,
     add_bool_attribute,
     flip_node_socket_bool,
+    selection_mean_point,
 )
 from ..common.modifier_utils import (
-    add_sp_modifier,
+    add_modifier_asset,
     change_node_socket_value,
-    change_GN_modifier_settings,
-    add_sp_modifier_from_node_group,
+    set_modifier_values,
+    add_modifier_asset_from_node_group,
+    get_modifier_value,
 )
 from ..common.asset_append import (
     append_object_by_name,
     append_multiple_node_groups,
 )
 from ..common.compound_utils import convert_compound_to_patches
-from ..common.versioning import (
-    replace_all_instances_of_node_group_by_name,
-    report_outdated_node_groups,
-    remove_suffix,
-    update_all_node_groups,
-    update_node_group,
-    ALL_SP_ASSET_NODE_GROUPS_EVER,
-    update_object,
-)
-from bpy.types import UILayout
 from .overlay_segment_selection import SELECTED_SEGMENTS
 
 
@@ -49,13 +36,13 @@ class SP_OT_add_library(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return ASSETS_PATH not in [
+        return str(ASSETS_PATH) not in [
             a.path for a in context.preferences.filepaths.asset_libraries
         ]
 
     def execute(self, context):
         # create lib
-        asset_lib_path = ASSETS_PATH
+        asset_lib_path = str(ASSETS_PATH)
         paths = [a.path for a in context.preferences.filepaths.asset_libraries]
         if asset_lib_path not in paths:
             bpy.ops.preferences.asset_library_add(directory=asset_lib_path)
@@ -79,7 +66,11 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
         first_obj_found = False
         for o in objects:
             for m in o.modifiers:
-                if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+                if (
+                    m.type == "NODES"
+                    and m.node_group
+                    and m.node_group.name[:5] == "SP - "
+                ):
                     for it in m.node_group.interface.items_tree:
                         if (
                             it.name
@@ -94,8 +85,10 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
                             input_id = it.identifier
                             if not first_obj_found:
                                 first_obj_found = True
-                                toggle_side = not m[input_id]
-                            m[input_id] = toggle_side
+                                toggle_side = not getattr(
+                                    m.properties.inputs, input_id
+                                ).value
+                            getattr(m.properties.inputs, input_id).value = toggle_side
                     m.node_group.interface_update(context)
         return {"FINISHED"}
 
@@ -178,57 +171,6 @@ class SP_OT_update_modifiers(bpy.types.Operator):
         self.report({"INFO"}, "Not Implemented")
 
         return {"FINISHED"}
-
-
-class SP_OT_replace_node_group(bpy.types.Operator):
-    bl_idname = "object.sp_replace_node_group"
-    bl_label = "SP - Replace Node Group"
-    bl_description = (
-        "For updating old assets. Replaces all instance of a modifier with another"
-    )
-    bl_options = {"REGISTER", "UNDO"}
-
-    target_name: bpy.props.StringProperty(name="Target", description="", default="")
-    new_name: bpy.props.StringProperty(name="New", description="", default="")
-
-    def invoke(self, context, event):
-        # Populate the filtered node groups before opening the dialog
-        self.nodegroup_items.clear()
-        for ng in bpy.data.node_groups:
-            if ng.type == "GEOMETRY":
-                self.nodegroup_items.add().name = ng.name
-
-        return context.window_manager.invoke_props_dialog(self)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop_search(
-            self, "target_name", bpy.data, "node_groups", text="Target", icon="NODETREE"
-        )
-        layout.prop_search(
-            self, "new_name", bpy.data, "node_groups", text="New", icon="NODETREE"
-        )
-
-    def execute(self, context):
-        target_node_group_name = self.target_name
-        new_node_group_name = self.new_name
-
-        r = replace_all_instances_of_node_group_by_name(
-            target_node_group_name, new_node_group_name
-        )
-        if r >= 1:
-            self.report({"INFO"}, f"{r} node groups successfully replaced")
-        elif r == 0:
-            self.report({"INFO"}, f"{new_node_group_name} does not exist")
-        elif r == -1:
-            self.report({"INFO"}, f"{target_node_group_name} does not exist")
-        return {"FINISHED"}
-
-    # Display panel
-    def invoke(self, context, event):
-        # call itself and run
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
 
 
 class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
@@ -516,7 +458,11 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
                 bpy.ops.object.mode_set(mode="OBJECT")
 
             for m in o.modifiers:
-                if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+                if (
+                    m.type == "NODES"
+                    and m.node_group
+                    and m.node_group.name[:5] == "SP - "
+                ):
                     is_patch = True
                     break
 
@@ -568,14 +514,14 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
 
         # Add attributes
         add_bool_attribute(
-            obj,
+            obj.data,
             "Trim Contour",
-            np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
+            np.array([None] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
         )
         add_bool_attribute(
-            obj,
+            obj.data,
             "Endpoints",
-            np.array([False] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
+            np.array([None] * (len(obj.data.vertices) - 4) + [True] * 4, dtype=bool),
         )
 
 
@@ -622,7 +568,7 @@ def show_combs(self, context):
     objects = [ob for ob in context.selected_objects]
     for o in objects:
         for m in o.modifiers:
-            if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+            if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
                 if "Combs" in m.node_group.interface.items_tree.keys():
                     for it in m.node_group.interface.items_tree[
                         "Combs"
@@ -632,7 +578,7 @@ def show_combs(self, context):
                             and it.socket_type == "NodeSocketBool"
                         ):
                             input_id = it.identifier
-                            m[input_id] = self.combs_on
+                            getattr(m.properties.inputs, input_id).value = self.combs_on
                     m.node_group.interface_update(context)
                     break
 
@@ -641,14 +587,16 @@ def scale_combs(self, context):
     objects = [ob for ob in context.selected_objects]
     for o in objects:
         for m in o.modifiers:
-            if m.type == "NODES" and m.node_group.name[:5] == "SP - ":
+            if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
                 if "Combs" in m.node_group.interface.items_tree.keys():
                     for it in m.node_group.interface.items_tree[
                         "Combs"
                     ].interface_items:
                         if it.name == "Scale" and it.socket_type == "NodeSocketFloat":
                             input_id = it.identifier
-                            m[input_id] = self.combs_scale
+                            getattr(m.properties.inputs, input_id).value = (
+                                self.combs_scale
+                            )
                     m.node_group.interface_update(context)
                     break
 
@@ -696,15 +644,15 @@ def set_seg_resolution(resolution: int, context):
         # Get global resolution
         o_resolution = 16
         for m in reversed(o.modifiers):
-            if m.type == "NODES" and m.node_group.name in MESHER_NAMES:
+            if m.type == "NODES" and m.node_group and m.node_group.name in MesherName:
                 try:
-                    o_resolution = math.ceil(
-                        math.sqrt(m["Resolution U"] ** 2 + m["Resolution V"] ** 2)
-                    )
-                except KeyError:
+                    u_res = get_modifier_value(m, "Resolution U")
+                    v_res = get_modifier_value(m, "Resolution V")
+                    o_resolution = math.ceil(math.sqrt(u_res**2 + v_res**2))
+                except ValueError:
                     try:
-                        o_resolution = m["Resolution"]
-                    except KeyError:
+                        o_resolution = get_modifier_value(m, "Resolution")
+                    except ValueError:
                         print("Resolution not found")
                 break
 
@@ -759,9 +707,9 @@ def scale_analysis(self, context):
     for o in reversed(context.visible_objects):
         if o.type == "MESH":
             for m in o.modifiers:
-                if m.type == "NODES":
+                if m.type == "NODES" and m.node_group:
                     if m.node_group.name == "SP - Curvature Analysis":
-                        change_GN_modifier_settings(m, {"Scale": self.analysis_scale})
+                        set_modifier_values(m, {"Scale": self.analysis_scale})
                         break
             o.update_tag()
 
@@ -1006,11 +954,11 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         name="Continuity 1",
         default=3,
         items=[
-            ("0", "G0", "Positional Continuity", 0),
-            ("1", "G1", "Tangential Continuity", 1),
-            ("2", "G2", "Curvature Continuity", 2),
-            ("3", "G3", "Higher Order Continuity", 3),
-            ("4", "G4", "Maximum Continuity", 4),
+            ("G0", "G0", "Positional Continuity", 0),
+            ("G1", "G1", "Tangential Continuity", 1),
+            ("G2", "G2", "Curvature Continuity", 2),
+            ("G3", "G3", "Higher Order Continuity", 3),
+            ("G4", "G4", "Maximum Continuity", 4),
         ],
     )
 
@@ -1018,11 +966,11 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         name="Continuity 2",
         default=3,
         items=[
-            ("0", "G0", "Positional Continuity", 0),
-            ("1", "G1", "Tangential Continuity", 1),
-            ("2", "G2", "Curvature Continuity", 2),
-            ("3", "G3", "Higher Order Continuity", 3),
-            ("4", "G4", "Maximum Continuity", 4),
+            ("G0", "G0", "Positional Continuity", 0),
+            ("G1", "G1", "Tangential Continuity", 1),
+            ("G2", "G2", "Curvature Continuity", 2),
+            ("G3", "G3", "Higher Order Continuity", 3),
+            ("G4", "G4", "Maximum Continuity", 4),
         ],
     )
 
@@ -1070,11 +1018,11 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         context.collection.objects.link(blend_surf)
 
         blend_ng, meshing_ng = append_multiple_node_groups(
-            ["SP - Blend Surfaces", "SP - Bezier Patch Meshing"], True
+            ["SP - Blend Surfaces", "SP - Bezier Patch Meshing"]
         )
 
         # Add blend modifier
-        add_sp_modifier_from_node_group(
+        add_modifier_asset_from_node_group(
             blend_surf,
             blend_ng,
             {
@@ -1084,15 +1032,15 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
                 "Segment 2": segment_2,
                 "Auto": auto,
                 "Invert": self.invert,
-                "Continuity 1": int(self.continuity1),
-                "Continuity 2": int(self.continuity2),
+                "Continuity 1": self.continuity1,
+                "Continuity 2": self.continuity2,
                 "Tension 1": self.tension1,
                 "Tension 2": self.tension2,
             },
         )
 
         # Add meshing modifier
-        add_sp_modifier_from_node_group(blend_surf, meshing_ng)
+        add_modifier_asset_from_node_group(blend_surf, meshing_ng)
 
         # SELECTED_SEGMENTS.clear() can't do that otherwise last operator panel fails
 
@@ -1137,6 +1085,26 @@ class SP_OT_enable_exact_normals(bpy.types.Operator):
         for o in reversed(context.selected_objects):
             change_node_socket_value(
                 o, True, ["Exact Normals", "Exact Normal"], "NodeSocketBool", context
+            )
+        return {"FINISHED"}
+
+
+class SP_OT_toggle_exact_normals(bpy.types.Operator):
+    bl_idname = "object.sp_toggle_exact_normals"
+    bl_label = "SP - Toggle Exact Normals"
+    bl_description = "Toggle exact normals on selected surfaces"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        for m in context.object.modifiers:
+            if m.type == "NODES" and m.node_group and m.node_group.name in MESHERS:
+                try:
+                    val = get_modifier_value(m, "Exact Normals")
+                except Exception:
+                    val = get_modifier_value(m, "Exact Normal")
+        for o in reversed(context.selected_objects):
+            change_node_socket_value(
+                o, not val, ["Exact Normals", "Exact Normal"], "NodeSocketBool", context
             )
         return {"FINISHED"}
 
@@ -1199,8 +1167,8 @@ class SP_OT_mesh_to_compound(bpy.types.Operator):
     def execute(self, context):
         for o in context.selected_objects:
             if o.type == "MESH" and sp_type_of_object(o) == None:
-                add_sp_modifier(o, "SP - Poly to Compound", append=True)
-                add_sp_modifier(o, "SP - Compound Meshing", pin=True, append=True)
+                add_modifier_asset(o, "SP - Poly to Compound", append=True)
+                add_modifier_asset(o, "SP - Compound Meshing", pin=True, append=True)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1231,8 +1199,8 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
                 sp_surf = False
                 for m in o.modifiers:
                     if m.node_group.name in [
-                        MESHER_NAMES[SP_obj_type.BSPLINE_SURFACE],
-                        MESHER_NAMES[SP_obj_type.BEZIER_SURFACE],
+                        SP_obj_type.BSPLINE_SURFACE.mesher_name,
+                        SP_obj_type.BEZIER_SURFACE.mesher_name,
                     ]:
                         sp_surf = True
                         break
@@ -1240,10 +1208,10 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
                     continue
 
                 # Add modifier
-                add_sp_modifier(
+                add_modifier_asset(
                     o,
                     "SP - Curvature Analysis",
-                    {"Scale":context.scene.sp_properties.analysis_scale},
+                    {"Scale": context.scene.sp_properties.analysis_scale},
                     append=True,
                     pin=True,
                     render=False,
@@ -1284,7 +1252,7 @@ class SP_OT_add_matcaps(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        try :
+        try:
             return not context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps
         except KeyError:
             return False
@@ -1296,10 +1264,10 @@ class SP_OT_add_matcaps(bpy.types.Operator):
                 {"name": "SP matcap horizontal pixel-perfect-lines-3.png"},
                 {"name": "SP matcap horizontal shinny3.png"},
             ],
-            directory=ASSETS_PATH,
+            directory=str(ASSETS_PATH),
             type="MATCAP",
         )
-        try :
+        try:
             context.preferences.addons[ADDON_PREF_KEY].preferences.matcaps = True
         except KeyError:
             pass
@@ -1341,20 +1309,21 @@ class SP_OT_remove_matcaps(bpy.types.Operator):
         return {"FINISHED"}
 
 
-
-
 class SP_OT_extract_segment(bpy.types.Operator):
     bl_idname = "object.sp_extract_segment"
     bl_label = "SP - Extract Segment"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        copy_ng, meshing_ng = append_multiple_node_groups(
-            ["SP - Copy Geometry", MESHER_NAMES[SP_obj_type.CURVE]], True
-        )
-
         if len(SELECTED_SEGMENTS) == 0:
             return {"CANCELLED"}
+
+        bpy.ops.object.select_all(action="DESELECT")
+
+        copy_ng, meshing_ng = append_multiple_node_groups(
+            ["SP - Copy Geometry", SP_obj_type.CURVE.mesher_name]
+        )
+
         for segment in SELECTED_SEGMENTS:
             # Get target info
             target_obj = context.scene.objects[segment[0]]
@@ -1367,27 +1336,268 @@ class SP_OT_extract_segment(bpy.types.Operator):
             extracted_segment_object.location = Vector(segment[2])
             context.collection.objects.link(extracted_segment_object)
 
-            add_sp_modifier_from_node_group(
+            add_modifier_asset_from_node_group(
                 extracted_segment_object,
                 copy_ng,
                 {
                     "Target": target_obj,
-                    "Geometry": "Segment",
+                    "Target Shape": "Segment",
+                    "Auto": False,
                     "Target Segment": seg_id,
                 },
             )
-            add_sp_modifier_from_node_group(
+            add_modifier_asset_from_node_group(
                 extracted_segment_object,
                 meshing_ng,
                 {"Combs": True, "Resolution": 32},
+                pin=True,
+            )
+            extracted_segment_object.select_set(True)
+
+        context.view_layer.objects.active = extracted_segment_object
+        SELECTED_SEGMENTS.clear()
+        return {"FINISHED"}
+
+
+class SP_OT_add_isoparam(bpy.types.Operator):
+    bl_idname = "object.sp_add_isoparam"
+    bl_label = "SP - Add Isoparametric Curve"
+    bl_options = {"REGISTER", "UNDO"}
+
+    direction: bpy.props.EnumProperty(
+        name="Direction",
+        default="U",
+        items=[
+            ("U", "U", "U Direction"),
+            ("V", "V", "V Direction"),
+        ],
+    )
+
+    parameter: bpy.props.FloatProperty(
+        name="Parameter",
+        default=0.5,
+        soft_min=0.0,
+        soft_max=1.0,
+        precision=5,
+    )
+
+    iso_obj: None
+    iso_obj_name: None
+
+    x: None
+    iso_mod: None
+
+    def invoke(self, context, event):
+        if len(context.selected_objects) == 0:
+            return {"CANCELLED"}
+
+        patch_obj = context.object
+        if sp_type_of_object(patch_obj) not in [
+            SP_obj_type.BEZIER_SURFACE,
+            SP_obj_type.BSPLINE_SURFACE,
+        ]:
+            return {"CANCELLED"}
+
+        self.x = event.mouse_x
+
+        iso_ng, meshing_ng = append_multiple_node_groups(
+            ["SP - Isoparametric Curve", SP_obj_type.CURVE.mesher_name]
+        )
+
+        # Create the object
+        mesh = bpy.data.meshes.new("Isoparametric Curve")
+        mesh.from_pydata([Vector((0, 0, 0))], [], [])
+        iso_obj = bpy.data.objects.new("Isoparametric Curve", mesh)
+        iso_obj.location = patch_obj.location
+        context.collection.objects.link(iso_obj)
+
+        self.iso_mod = add_modifier_asset_from_node_group(
+            iso_obj,
+            iso_ng,
+            {
+                "Target Patch": patch_obj,
+                "Direction": self.direction,
+                "Parameter": self.parameter,
+            },
+        )
+        add_modifier_asset_from_node_group(
+            iso_obj,
+            meshing_ng,
+            {"Combs": True, "Resolution": 32},
+            pin=True,
+        )
+
+        self.iso_obj = iso_obj
+        self.iso_obj_name = iso_obj.name
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        if self.iso_obj_name not in bpy.data.objects:
+            return {"CANCELLED"}
+
+        if event.type == "MOUSEMOVE":
+            val = 0.5 + (event.mouse_x - self.x) / 500
+            if event.ctrl:
+                self.parameter = int(val * 10) / 10
+            else:
+                self.parameter = val
+            set_modifier_values(self.iso_mod, {"Parameter": self.parameter})
+            if context.area:
+                context.area.header_text_set(f"Parameter: {self.parameter:10.4f}")
+            self.iso_obj.update_tag()
+            context.view_layer.update()
+
+        if event.type == "MIDDLEMOUSE" and event.value == "PRESS":
+            if self.direction == "U":
+                self.direction = "V"
+            else:
+                self.direction = "U"
+
+            set_modifier_values(self.iso_mod, {"Direction": self.direction})
+            if context.area:
+                context.area.header_text_set(f"Direction: {self.direction}")
+                self.iso_obj.update_tag()
+                context.view_layer.update()
+            return {"RUNNING_MODAL"}
+
+        # Exit conditions
+        elif event.type in {"RIGHTMOUSE", "ESC"}:
+            if context.area:
+                context.area.header_text_set(None)
+            bpy.data.objects.remove(self.iso_obj, do_unlink=True)
+            return {"CANCELLED"}
+
+        elif event.type == "LEFTMOUSE":
+            if context.area:
+                context.area.header_text_set(None)
+            return {"FINISHED"}
+
+        return {"PASS_THROUGH"}
+
+
+class SP_OT_fill(bpy.types.Operator):
+    bl_idname = "object.sp_fill"
+    bl_label = "SP - Fill"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        # square fill
+        if len(SELECTED_SEGMENTS) == 4:
+            fill_ng, meshing_ng = append_multiple_node_groups(
+                ["SP - Square Fill", SP_obj_type.BEZIER_SURFACE.mesher_name]
             )
 
+            # Create the patch
+            mesh = bpy.data.meshes.new("Fill Patch")
+            mesh.from_pydata([Vector((0, 0, 0))], [], [])
+            fill_object = bpy.data.objects.new("Fill Patch", mesh)
+            fill_object.location = selection_mean_point(SELECTED_SEGMENTS)
+            context.collection.objects.link(fill_object)
+
+            s_list = list(SELECTED_SEGMENTS)
+
+            add_modifier_asset_from_node_group(
+                fill_object,
+                fill_ng,
+                {
+                    "Target 1": context.scene.objects[s_list[0][0]],
+                    "Target Segment 1": s_list[0][1],
+                    "Target 2": context.scene.objects[s_list[1][0]],
+                    "Target Segment 2": s_list[1][1],
+                    "Target 3": context.scene.objects[s_list[2][0]],
+                    "Target Segment 3": s_list[2][1],
+                    "Target 4": context.scene.objects[s_list[3][0]],
+                    "Target Segment 4": s_list[3][1],
+                },
+            )
+            add_modifier_asset_from_node_group(
+                fill_object,
+                meshing_ng,
+                pin=True,
+            )
+            fill_object.select_set(True)
+            context.view_layer.objects.active = fill_object
+            SELECTED_SEGMENTS.clear()
+            return {"FINISHED"}
+        else:
+            self.report({"INFO"}, "Select 4 segments")
+            return {"CANCELLED"}
+
+
+class SP_OT_loft(bpy.types.Operator):
+    bl_idname = "object.sp_loft"
+    bl_label = "SP - Loft"
+    bl_options = {"REGISTER", "UNDO"}
+
+    method: bpy.props.EnumProperty(
+        name="Method",
+        default="Chordal",
+        items=[
+            ("Even", "Even", "Segments are placed evenly in parametric space"),
+            ("Chordal", "Chordal", "Parametrization adapts to edges distance"),
+        ],
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        col = layout.column()
+        row = col.row()
+        row.prop(self, "method", expand=True)
+
+    def invoke(self, context, event):
+        self.obj_loc = selection_mean_point(SELECTED_SEGMENTS).copy()
+        self.s_list = list(SELECTED_SEGMENTS)[:8]
+
+        if len(self.s_list) < 2:
+            self.report({"INFO"}, "Select at least 2 segments")
+            return {"CANCELLED"}
+        if len(self.s_list) > 8:
+            self.report({"WARNING"}, "Maximum 8 segments supported. Rest is ignored")
+
+        
+        return self.execute(context)
+
+    def execute(self, context):
+
+        loft_ng, meshing_ng = append_multiple_node_groups(
+            ["SP - Loft", SP_obj_type.BEZIER_SURFACE.mesher_name]
+        )
+
+        # Create the patch
+        mesh = bpy.data.meshes.new("Loft Patch")
+        mesh.from_pydata([Vector((0, 0, 0))], [], [])
+        loft_object = bpy.data.objects.new("Loft Patch", mesh)
+        loft_object.location = self.obj_loc
+        context.collection.objects.link(loft_object)
+
+        add_modifier_asset_from_node_group(
+            loft_object,
+            loft_ng,
+            {"Method": self.method}
+            | {
+                "Target " + str(i + 1): context.scene.objects[s[0]]
+                for i, s in enumerate(self.s_list)
+            }
+            | {"Segment " + str(i + 1): s[1] for i, s in enumerate(self.s_list)},
+        )
+        add_modifier_asset_from_node_group(
+            loft_object,
+            meshing_ng,
+            pin=True,
+        )
+        loft_object.select_set(True)
+        context.view_layer.objects.active = loft_object
         SELECTED_SEGMENTS.clear()
         return {"FINISHED"}
 
 
 classes = [
     SP_OT_add_curvature_analysis,
+    SP_OT_add_isoparam,
     SP_OT_add_library,
     SP_OT_add_matcaps,
     SP_OT_add_oriented_empty,
@@ -1396,10 +1606,11 @@ classes = [
     SP_OT_blend_surfaces,
     SP_OT_explode_compound,
     SP_OT_extract_segment,
+    SP_OT_fill,
     SP_OT_flip_normals,
+    SP_OT_loft,
     SP_OT_psychopatch_to_bl_nurbs,
     SP_OT_remove_matcaps,
-    SP_OT_replace_node_group,
     SP_OT_scale_analysis,
     SP_OT_select_all,
     SP_OT_select_endpoints,
@@ -1410,6 +1621,7 @@ classes = [
     SP_OT_set_segment_type,
     SP_OT_set_spline,
     SP_OT_toggle_control_geom,
+    SP_OT_toggle_exact_normals,
     SP_OT_toggle_endpoints,
     SP_OT_toggle_trim_contour_belonging,
     SP_OT_update_modifiers,

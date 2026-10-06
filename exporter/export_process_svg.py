@@ -143,7 +143,7 @@ def new_svg_fill(
     if color_mode == "object":
         col_rgba = o.color
     elif color_mode == "material":
-        if len(o.material_slots) > 0 :
+        if len(o.material_slots) > 0 and o.material_slots[0].material:
             col_rgba = o.material_slots[0].material.diffuse_color
         else :
             col_rgba = o.color

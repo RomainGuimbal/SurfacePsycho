@@ -4,6 +4,15 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Open assets",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
+            ],
+            "problemMatcher": [],
+        },
+        {
             "label": "Update assets",
             "type": "shell",
             "command": ".vscode/launch_blender_with_script.bat",
@@ -11,9 +20,17 @@
                 "--background",
                 "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
                 "--python",
-                ".vscode/asset_importer.py"
+                ".vscode/update_asset_file.py"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "Update and check assets",
+            "dependsOn": [
+                "Update assets",
+                "Open assets"
+            ],
+            "dependsOrder": "sequence"
         },
         {
             "label": "Update assets FAST",
@@ -23,29 +40,9 @@
                 "--background",
                 "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
                 "--python",
-                ".vscode/asset_importer.py",
+                ".vscode/update_asset_file.py",
                 "--",
                 "--fast"
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "Import primitives",
-            "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
-            "args": [
-                "--python",
-                ".vscode/import_primitives.py"
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "Import complexe",
-            "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
-            "args": [
-                "--python",
-                ".vscode/import_complexe.py"
             ],
             "problemMatcher": []
         },
@@ -67,18 +64,6 @@
             "problemMatcher": []
         },
         {
-            "label": "Print assets",
-            "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
-            "args": [
-                "--background",
-                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
-                "--python",
-                ".vscode/print_assets.py"
-            ],
-            "problemMatcher": []
-        },
-        {   
             "label": "Start Blender",
             "type": "shell",
             "command": "${command:blender.start}",
@@ -88,17 +73,107 @@
             // ],
             "problemMatcher": []
         },
+        // {
+        //     "label": "Plot Profile",
+        //     "type": "shell",
+        //     "command": "python",
+        //     "args": [
+        //         "-m",
+        //         "snakeviz",
+        //         "profile_output.prof"
+        //     ],
+        //     "problemMatcher": []
+        // }
         {
-            "label": "Plot Profile",
+            "label": "Open Profile",
             "type": "shell",
-            "command": "python",
+            "command": "vizviewer",
             "args": [
-                "-m",
-                "snakeviz",
-                "profile_output.prof"
+                "C:/tmp/blender_trace.json"
             ],
             "problemMatcher": []
-        }
-        
-    ]
+        },
+        //-------------------------------------
+        //              TESTING
+        //-------------------------------------
+        // TODO "Test all"
+        {
+            "label": "Import primitives",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--python",
+                ".testing/import_primitives.py"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Import complexe",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--python",
+                ".testing/import_complexe.py"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "curve type export",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--background",
+                "--python",
+                ".testing/curve_type_export_test.py"
+            ],
+            "problemMatcher": [],
+            "hide": true
+        },
+        {
+            "label": "Curve cases check",
+            "type": "shell",
+            "command": "$file = Get-ChildItem 'C:/Users/romai/Documents/Projets/26 - Bezier Quest/Testing/TEST - curve types export*' | Sort-Object LastWriteTime | Select-Object -Last 1 -ExpandProperty FullName; & mayo $file",
+            "problemMatcher": [],
+            "dependsOn": "curve type export"
+        },
+        {
+            "label": "variety export intern",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--background",
+                "--python",
+                ".testing/export_variety_test.py"
+            ],
+            "problemMatcher": [],
+            "hide": true
+        },
+        {
+            "label": "Export variety",
+            "type": "shell",
+            "command": "$file = Get-ChildItem 'C:/Users/romai/Documents/Projets/26 - Bezier Quest/Testing/TEST - Export variety*' | Sort-Object LastWriteTime | Select-Object -Last 1 -ExpandProperty FullName; & mayo $file",
+            "problemMatcher": [],
+            "dependsOn": "variety export intern"
+        },
+        {
+            "label": "Test macros",
+            "type": "shell",
+            "command": ".vscode/launch_blender_with_script.bat",
+            "args": [
+                "--python",
+                ".testing/macros_test.py"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Test all",
+            "dependsOn": [
+                "Import primitives",
+                "Curve cases check",
+                "Export variety",
+                "Import complexe",
+                "Test macros"
+            ]
+        },
+    ],
 }

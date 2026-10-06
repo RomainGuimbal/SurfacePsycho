@@ -18,7 +18,7 @@ from ..common.utils import (
     override_attribute_dictionary,
     create_grid,
     curve_range_from_type,
-    get_shape_name_and_color,
+    # get_shape_name_and_color,
     get_face_sp_type,
     add_bool_attribute,
     add_int_attribute,
@@ -510,15 +510,15 @@ def generic_import_surface(
     if name == None:
         name = ob_name
 
-    if len(color) == 3:
-        color = list(color) + [1.0]
+    # if len(color) == 3:
+    #     color = list(color) + [1.0]
 
     object_data = {
         "mesh_data": mesh_data,
         "name": name,
         "collection": collection,
         "scale": scale,
-        "color": color,
+        # "color": color,
         "attrs": attrs,
         "modifier": modifier,
         "transform": transform,
@@ -544,7 +544,7 @@ def build_SP_cylinder(
     yaxis = gp_cylinder.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    zaxis_vec = np.cross(xaxis_vec, yaxis_vec)
+    zaxis_vec = xaxis_vec.cross(yaxis_vec)
 
     location = gp_cylinder.Location()
     loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
@@ -600,7 +600,7 @@ def build_SP_torus(
     yaxis = gp_torus.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    zaxis_vec = np.cross(xaxis_vec, yaxis_vec)
+    zaxis_vec = xaxis_vec.cross(yaxis_vec)
 
     location = gp_torus.Location()
     origin_vec = Vector(
@@ -659,7 +659,7 @@ def build_SP_sphere(
     yaxis = gp_sphere.YAxis().Direction()
     xaxis_vec = Vector([xaxis.X(), xaxis.Y(), xaxis.Z()])
     yaxis_vec = Vector([yaxis.X(), yaxis.Y(), yaxis.Z()])
-    zaxis_vec = Vector(np.cross(xaxis_vec, yaxis_vec))
+    zaxis_vec = xaxis_vec.cross(yaxis_vec)
 
     location = gp_sphere.Location()
     loc_vec = Vector((location.X() * scale, location.Y() * scale, location.Z() * scale))
@@ -958,8 +958,8 @@ def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
     if name == None:
         name = "STEP Curve"
 
-    if len(color) == 3:
-        color = list(color) + [1.0]
+    # if len(color) == 3:
+    #     color = list(color) + [1.0]
 
     modifier = (MesherName.CURVE, {"Resolution": resolution}, True)
 
@@ -979,7 +979,7 @@ def build_SP_curve(shape, name, color, collection, scale=0.001, resolution=16):
         "name": name,
         "collection": collection,
         "scale": scale,
-        "color": color,
+        # "color": color,
         "attrs": attrs,
         "modifier": modifier,
         "transform": Matrix(),
@@ -1005,8 +1005,8 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
     if name == None:
         name = "STEP FlatPatch"
 
-    if len(color) == 3:
-        color = list(color) + [1.0]
+    # if len(color) == 3:
+    #     color = list(color) + [1.0]
 
     modifier = (
         MesherName.PLANE,
@@ -1034,7 +1034,7 @@ def build_SP_flat(topods_face, name, color, collection, scale=0.001, resolution=
         "name": name,
         "collection": collection,
         "scale": scale,
-        "color": color,
+        # "color": color,
         "attrs": attrs,
         "modifier": modifier,
         "transform": Matrix(),
@@ -1186,17 +1186,16 @@ def build_SP_revolution(
 
 
 class ShapeHierarchy:
-    def __init__(self, shape, container_name, doc):
-        self.doc = doc
+    def __init__(self, root_shape, root_name):
         self.faces = []  # tuples (face, name, color, collection)
         self.edges = []  # tuples (edges, collection)
         self.hierarchy = {}
-        container_collection = self.create_collection(container_name)
-        self.hierarchy[container_collection] = []
-        iterator = TopoDS_Iterator(shape)
+        root_collection = self.create_collection(root_name)
+        self.hierarchy[root_collection] = []
+        iterator = TopoDS_Iterator(root_shape)
         while iterator.More():
-            self.hierarchy[container_collection].append(
-                self.create_shape_hierarchy(iterator.Value(), container_collection)
+            self.hierarchy[root_collection].append(
+                self.create_shape_hierarchy(iterator.Value(), root_collection)
             )
             iterator.Next()
 
@@ -1212,65 +1211,50 @@ class ShapeHierarchy:
         return new_collection
 
     def create_shape_hierarchy(self, shape, parent_col):
+        """Recursive"""
+
         hierarchy = {}
+
+        def _process_container(type_name: str):
+            hierarchy[parent_col] = []
+            new_collection = self.create_collection(type_name, parent_col)
+            iterator = TopoDS_Iterator(shape)
+            while iterator.More():
+                hierarchy[parent_col].append(
+                    self.create_shape_hierarchy(iterator.Value(), new_collection)
+                )
+                iterator.Next()
 
         match shape.ShapeType():
             case TopAbs.TopAbs_COMPOUND:
-                hierarchy[parent_col] = []
-                new_collection = self.create_collection("Compound", parent_col)
-                iterator = TopoDS_Iterator(shape)
-                while iterator.More():
-                    hierarchy[parent_col].append(
-                        self.create_shape_hierarchy(iterator.Value(), new_collection)
-                    )
-                    iterator.Next()
+                _process_container("Compound")
 
             case TopAbs.TopAbs_COMPSOLID:
-                hierarchy[parent_col] = []
-                new_collection = self.create_collection("CompSolid", parent_col)
-                iterator = TopoDS_Iterator(shape)
-                while iterator.More():
-                    hierarchy[parent_col].append(
-                        self.create_shape_hierarchy(iterator.Value(), new_collection)
-                    )
-                    iterator.Next()
+                _process_container("CompSolid")
 
             case TopAbs.TopAbs_SOLID:
-                hierarchy[parent_col] = []
-                new_collection = self.create_collection("Solid", parent_col)
-                iterator = TopoDS_Iterator(shape)
-                while iterator.More():
-                    hierarchy[parent_col].append(
-                        self.create_shape_hierarchy(iterator.Value(), new_collection)
-                    )
-                    iterator.Next()
+                _process_container("Solid")
 
             case TopAbs.TopAbs_SHELL:
-                hierarchy[parent_col] = []
-                new_collection = self.create_collection("Shell", parent_col)
-                iterator = TopoDS_Iterator(shape)
-                while iterator.More():
-                    hierarchy[parent_col].append(
-                        self.create_shape_hierarchy(iterator.Value(), new_collection)
-                    )
-                    iterator.Next()
+                _process_container("Shell")
 
-            case TopAbs.TopAbs_FACE:  # must be before wire and edge
+            # The following order is important (Face > Wire > Edge)
+            case TopAbs.TopAbs_FACE:
                 face = TopoDS.Face_s(shape)
                 hierarchy["Face"] = face
-                name, color = get_shape_name_and_color(face, self.doc)
+                name, color = "temp", 0  # get_shape_name_and_color(face, self.doc)
                 self.faces.append((face, name, color, parent_col))
 
-            case TopAbs.TopAbs_WIRE:  # must be before edge
+            case TopAbs.TopAbs_WIRE:
                 wire = TopoDS.Wire_s(shape)
                 hierarchy["Wire"] = wire
-                name, color = get_shape_name_and_color(wire, self.doc)
+                name, color = "temp", 0  # get_shape_name_and_color(wire, self.doc)
                 self.edges.append((wire, name, color, parent_col))
 
             case TopAbs.TopAbs_EDGE:
                 edge = TopoDS.Edge_s(shape)
                 hierarchy["Edge"] = edge
-                name, color = get_shape_name_and_color(edge, self.doc)
+                name, color = "temp", 0  # get_shape_name_and_color(edge, self.doc)
                 self.edges.append((edge, name, color, parent_col))
 
         return hierarchy
@@ -1286,7 +1270,7 @@ def import_face_nodegroups(shape_hierarchy):
         if ft not in face_encountered:
             face_encountered.add(ft)
             try:  # just to skip offset surfaces
-                to_import_ng_names.append(MesherName.GEOM_TO_SP_TYPE[ft])
+                to_import_ng_names.append(GEOM_TO_SP_TYPE[ft].mesher_name)
             except KeyError:
                 pass
 
@@ -1357,28 +1341,28 @@ def process_object_data_of_shape(
 def create_blender_object(object_data):
     if object_data == {}:
         return False
-    
-    from ..common.asset_append import add_sp_modifier
+
+    from ..common.modifier_utils import add_modifier_asset
 
     mesh = bpy.data.meshes.new(object_data["name"])
     mesh.from_pydata(*object_data["mesh_data"], False)
     ob = bpy.data.objects.new(object_data["name"], mesh)
     ob.matrix_world = object_data["transform"]
-    ob.color = object_data["color"]
+    # ob.color = object_data["color"]
 
     for name, att in object_data["attrs"].items():
         match att[0]:
             case _ if isinstance(att[0], bool):
-                add_bool_attribute(ob, name, np.array(att, dtype=bool))
+                add_bool_attribute(ob.data, name, np.array(att, dtype=bool))
             case _ if isinstance(att[0], int):
-                add_int_attribute(ob, name, att)
+                add_int_attribute(ob.data, name, att)
             case _ if isinstance(att[0], float):
-                add_float_attribute(ob, name, att)
+                add_float_attribute(ob.data, name, att)
             case _:
                 raise Exception("Attribute type issue")
 
     name, param, pin = object_data["modifier"]
-    add_sp_modifier(ob, name, param, pin)
+    add_modifier_asset(ob, name, param, pin)
 
     object_data["collection"].objects.link(ob)
     return True

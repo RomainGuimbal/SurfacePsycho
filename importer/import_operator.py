@@ -1,7 +1,8 @@
 import bpy
 import time
 
-from ..common.enums import SP_obj_type, MESHER_NAMES
+from pathlib import Path
+from ..common.enums import SP_obj_type
 from ..common.asset_append import append_node_group
 from .import_shape_to_blender_object import (
     ShapeHierarchy,
@@ -31,37 +32,45 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         default="*.step;*.stp;*.iges;*.igs", options={"HIDDEN"}, maxlen=255
     )
     faces_on: BoolProperty(name="Faces", description="Import Faces", default=True)
+    curves_on: BoolProperty(name="Curves", description="Import Curves", default=True)
+    scale: FloatProperty(name="Scale", default=0.001, precision=3)
+    resolution: IntProperty(name="Resolution", default=16, soft_min=6, soft_max=256)
     trims_on: BoolProperty(
         name="Trim Contours",
         description="Import faces with their trim contours",
         default=True,
     )
-    curves_on: BoolProperty(name="Curves", description="Import Curves", default=True)
-    scale: FloatProperty(name="Scale", default=0.001, precision=3)
-    resolution: IntProperty(name="Resolution", default=16, soft_min=6, soft_max=256)
+    # materials_on: BoolProperty(
+    #     name="Materials",
+    #     description="Set materials according to STEP colors",
+    #     default=True
+    # )
+
+    def _is_step_file(self):
+        path = self.filepath.lower() if self.filepath else None
+        return (path.endswith(".step") or path.endswith(".stp")) if path else True
 
     def execute(self, context):
+        print("Initializing import...")
+
         self.t0 = time.time()
         self.batch_size = 300
         self.created_object_count = 0
         self.total_count = 0
         self.object_data = []
         self.status = "Gathering shape data..."
+        self.prev_status = ""
 
         # Show wait cursor
         context.window.cursor_set("WAIT")
 
-        # import cProfile
-        # profiler = cProfile.Profile()
-        # profiler.enable()
-
         # Initialize your CAD import data
-        shape, doc, container_name = read_cad(self.filepath)
-        shape_hierarchy = ShapeHierarchy(shape, container_name, doc)
+        root_shape = read_cad(self.filepath)  # , self.materials_on)
+        root_name = Path(self.filepath).stem
+        shape_hierarchy = ShapeHierarchy(root_shape, root_name)
 
         # Collect shapes to process
         shapes_args = []
-
         if self.faces_on:
             import_face_nodegroups(shape_hierarchy)
             shapes_args.extend(
@@ -70,16 +79,14 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
                     for shape, name, color, collection in shape_hierarchy.faces
                 ]
             )
-
         if self.curves_on:
-            append_node_group(MESHER_NAMES[SP_obj_type.CURVE])
+            append_node_group(SP_obj_type.CURVE.mesher_name)
             shapes_args.extend(
                 [
                     (shape, name, color, collection, True)
                     for shape, name, color, collection in shape_hierarchy.edges
                 ]
             )
-
         if len(shapes_args) == 0:
             self.report({"WARNING"}, "No shapes to import")
             return {"CANCELLED"}
@@ -121,6 +128,9 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
     def modal(self, context, event):
         if event.type == "TIMER":
+            if self.status != self.prev_status:
+                print(self.status)
+            self.prev_status = self.status
             return self.process_batch(context)
         elif event.type == "ESC":
             context.window_manager.progress_end()
@@ -128,7 +138,6 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         return {"PASS_THROUGH"}
 
     def process_batch(self, context):
-
         # Create the object
         if self.created_object_count < self.total_count:
             for i in range(self.batch_size):
@@ -156,6 +165,19 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         self.status = f"{self.created_object_count}/{self.total_count} shapes imported"
 
         return {"PASS_THROUGH"}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "faces_on")
+        layout.prop(self, "curves_on")
+        layout.prop(self, "trims_on")
+
+        row = layout.row()
+        row.enabled = self._is_step_file()  # gray out if not .step
+        # row.prop(self, "materials_on")
+
+        layout.prop(self, "scale")
+        layout.prop(self, "resolution")
 
 
 classes = [

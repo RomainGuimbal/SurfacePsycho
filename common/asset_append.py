@@ -1,17 +1,12 @@
 import bpy
 from .enums import ASSETS_FILE
-from .version_utils import is_latest_version
-
-
-def remove_preview_image(ng: bpy.types.GeometryNodeTree):
-    if ng.preview:
-        ng.preview.image_size = [0, 0]
-        return True
-    return False
+from .version_utils import is_current_version
 
 
 def append_object_by_name(obj_name, context):  # for importing from the asset file
-    with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (
+    with bpy.data.libraries.load(
+        str(ASSETS_FILE), link=True, assets_only=True, pack=True
+    ) as (
         _,
         data_to,
     ):
@@ -33,63 +28,58 @@ def append_object_by_name(obj_name, context):  # for importing from the asset fi
         # Iterate through all objects and their geometry node modifiers
         for mod in o.modifiers:
             if mod.type == "NODES" and mod.node_group:
-                remove_preview_image(mod.node_group)
                 mod.node_group.asset_clear()
 
 
-def list_geometry_node_groups():
-    geometry_node_groups = []
+def _get_latest_loaded_node_group(asset_name: str):
+    ng = bpy.data.node_groups.get(asset_name)
+    if ng is None or ng.type != "GEOMETRY":
+        return None
+    if is_current_version(ng):
+        return ng
+    return None
 
-    for node_group in bpy.data.node_groups:
-        if node_group.type == "GEOMETRY":
-            geometry_node_groups.append(node_group.name)
-    return geometry_node_groups
 
-
-def append_node_group(asset_name, link=False, remove_asset_data=True):
-    if asset_name in list_geometry_node_groups():
-        ng = bpy.data.node_groups[asset_name]
-        if is_latest_version(ng):
+def append_node_group(asset_name, force=False):
+    if not force:
+        ng = _get_latest_loaded_node_group(asset_name)
+        if ng is not None:
             return ng
 
-    # Load the asset file
-    with bpy.data.libraries.load(ASSETS_FILE, link=link, assets_only=True) as (
-        data_from,
-        data_to,
-    ):
-        data_to.node_groups = [asset_name]
-
-    ng = data_to.node_groups[0]
-    if remove_asset_data:
-        remove_preview_image(ng)
-        ng.asset_clear()
-
-    return ng
+    node_groups = append_multiple_node_groups([asset_name], force)
+    return node_groups[0]
 
 
 def append_multiple_node_groups(
-    ng_names: list, remove_asset_data=True
+    ng_names: list, force=False
 ) -> list[bpy.types.NodeGroup]:
-    ng_list = list_geometry_node_groups()
-    to_append = ng_names.copy()
-    already_present = []
-    for asset_name in ng_names:
-        if asset_name in ng_list:
-            ng = bpy.data.node_groups[asset_name]
-            if is_latest_version(ng):
-                already_present.append(ng)
-                to_append.remove(asset_name)
+    to_append = []
+    ids = []
+    already_present : list = [None] * len(ng_names)
 
-    # Append the new node groups
-    with bpy.data.libraries.load(ASSETS_FILE, link=False, assets_only=True) as (
-        _,
-        data_to,
-    ):
-        data_to.node_groups = list(to_append)
+    if force:
+        to_append = ng_names
+        ids = list(range(len(to_append)))
+        # bpy.data.node_groups[].make_local
+    else:
+        for i, asset_name in enumerate(ng_names):
+            ng = _get_latest_loaded_node_group(asset_name)
+            if ng is not None:
+                already_present[i] = ng
+            else:
+                to_append.append(asset_name)
+                ids.append(i)
 
-    if remove_asset_data:
-        for ng in data_to.node_groups:
-            remove_preview_image(ng)
-            ng.asset_clear()
+    if to_append:
+        with bpy.data.libraries.load(
+            str(ASSETS_FILE), link=True, assets_only=True, pack=True
+        ) as (
+            _,
+            data_to,
+        ):
+            data_to.node_groups = list(to_append)
 
-    return list(data_to.node_groups) + already_present
+        for i, dt in enumerate(data_to.node_groups):
+            already_present[ids[i]] = dt
+
+    return already_present

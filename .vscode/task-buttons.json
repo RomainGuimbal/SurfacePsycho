@@ -8,7 +8,7 @@
     },
     {
       "name": "",
-      "task": "Update assets",
+      "task": "Update and check assets",
       "icon": "💎",
       "tooltip": "Update Assets"
     },
@@ -20,15 +20,21 @@
     },
     {
       "name": "",
+      "task": "Test all",
+      "icon": "🧪",
+      "tooltip": "Test all"
+    },
+    {
+      "name": "",
       "task": "Build",
       "icon": "🚧",
       "tooltip": "Build a release"
     },
     {
       "name": "",
-      "task": "Plot Profile",
+      "task": "Open Profile",
       "icon": "📊",
-      "tooltip": "Plot Profile"
+      "tooltip": "Open Profile"
     }
   ]
 }

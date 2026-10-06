@@ -13,7 +13,7 @@
 
 import bpy
 from .tools import macros
-from .common import gui, versioning
+from .common import versioning, gui
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):

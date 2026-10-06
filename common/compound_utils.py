@@ -1,7 +1,9 @@
 import bpy
 import numpy as np
-from .enums import SP_obj_type, MesherName
-from .modifier_utils import add_sp_modifier
+from .enums import SP_obj_type
+from .modifier_utils import add_modifier_asset
+from .utils import remove_suffix
+
 
 def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     """
@@ -33,7 +35,7 @@ def create_objects_from_instances(source_obj, depsgraph, suffix=""):
     return created_objects
 
 
-# Instance domain fails /!\
+#
 # def get_instance_patch_type(o, context):
 #     ob = o.evaluated_get(context.evaluated_depsgraph_get())
 #     data = np.zeros(len(attr.data), dtype=np.int32)
@@ -48,11 +50,13 @@ def create_objects_from_instances(source_obj, depsgraph, suffix=""):
 #     return data
 
 
-def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix="", resolution=16, ):
+def convert_compound_to_patches(
+    o, context, initial_depsgraph, objects_suffix="", resolution=16
+):
     # Find compound meshing modifier
     mod = None
     for m in reversed(o.modifiers):
-        if m.node_group.name[:-4] in ["SP - Compound Mes", "SP - Compound Meshing"]:
+        if remove_suffix(m.node_group.name) == "SP - Compound Meshing":
             mod = m
             break
 
@@ -82,7 +86,7 @@ def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix=""
             SP_obj_type.BEZIER_SURFACE,
             SP_obj_type.BSPLINE_SURFACE,
         ]:
-            add_sp_modifier(obj, "SP - Reorder Grid Index", append=False)
+            #     add_modifier_asset(obj, "SP - Reorder Grid Index", append=False)
             settings_dict = {
                 "Resolution U": resolution,
                 "Resolution V": resolution,
@@ -90,9 +94,9 @@ def convert_compound_to_patches(o, context, initial_depsgraph, objects_suffix=""
         if SP_obj_type(types[i]) == SP_obj_type.PLANE:
             settings_dict = {"Orient": True}
 
-        add_sp_modifier(
+        add_modifier_asset(
             obj,
-            MesherName.types[i],
+            SP_obj_type(types[i]).mesher_name,
             settings_dict,
             pin=True,
             append=False,

@@ -1,11 +1,27 @@
 import bpy
 from .asset_append import append_node_group
-from .enums import MESHER_NAMES
+from .enums import MesherName
+from .utils import remove_suffix
 
 
 def get_modifier_by_name(obj: bpy.types.Object, name):
     for m in obj.modifiers:
-        if m.type == name or (m.type == "NODES" and m.node_group.name == name):
+        if m.type == "NODES" and m.node_group and m.node_group.name == name:
+            return m
+    return None
+
+
+def get_modifier_by_names(obj: bpy.types.Object, names):
+    """For several name candidates"""
+    for m in obj.modifiers:
+        if m.type == "NODES" and m.node_group and m.node_group.name in names:
+            return m
+    return None
+
+
+def get_modifier_by_type(obj: bpy.types.Object, name):
+    for m in obj.modifiers:
+        if m.type == name:
             return m
     return None
 
@@ -31,7 +47,7 @@ def change_node_socket_value(
             for it in items_to_process:
                 input_id = it.identifier
                 # if input_id in m:  # Check existence before access
-                m[input_id] = value
+                getattr(m.properties.inputs, input_id).value = value
                 modifier_updated = True
 
             # Single interface update after all changes
@@ -39,27 +55,64 @@ def change_node_socket_value(
                 m.node_group.interface_update(context)
 
 
-def change_GN_modifier_settings(modifier, settings_dict):
+def set_modifier_values(modifier, settings_dict):
+    """
+    Only for GN node groups
+    """
     tree = modifier.node_group.interface.items_tree
     remaining = set(settings_dict.keys())
     for item in tree:
         if item.name in remaining and isinstance(
             item, bpy.types.NodeTreeInterfaceSocket
         ):
-            modifier[item.identifier] = settings_dict[item.name]
+            getattr(modifier.properties.inputs, item.identifier).value = settings_dict[
+                item.name
+            ]
             remaining.discard(item.name)
             if not remaining:
                 break
+
+
+def get_modifier_value(modifier, socket_name: str):
+    """
+    Only for GN node groups
+    """
+    tree = modifier.node_group.interface.items_tree
+    for item in tree:
+        if item.name == socket_name and isinstance(
+            item, bpy.types.NodeTreeInterfaceSocket
+        ):
+            return getattr(modifier.properties.inputs, item.identifier).value
+    raise ValueError(f"Socket '{socket_name}' not found in modifier '{modifier.name}'")
+
+
+def get_modifier_values(modifier, socket_names):
+    """
+    Only for GN node groups
+    """
+    vals = []
+    remaining = set(socket_names)
+    tree = modifier.node_group.interface.items_tree
+
+    for item in tree:
+        if item.name in socket_names and isinstance(
+            item, bpy.types.NodeTreeInterfaceSocket
+        ):
+            vals.append(getattr(modifier.properties.inputs, item.identifier).value)
+            remaining.discard(item.name)
+            if not remaining:
+                return vals
+    raise ValueError(f"Socket '{remaining}' not found in modifier '{modifier.name}'")
 
 
 def change_mod_settings_from_object(
     object: bpy.types.Object, modifier_name, settings_dict
 ):
     m = get_modifier_by_name(object, modifier_name)
-    change_GN_modifier_settings(m, settings_dict)
+    set_modifier_values(m, settings_dict)
 
 
-def add_sp_modifier(
+def add_modifier_asset(
     obj,
     asset_name: str,
     settings_dict={},
@@ -94,12 +147,12 @@ def add_sp_modifier(
         raise ValueError(f"Node group '{asset_name}' not found")
 
     # Change settings
-    change_GN_modifier_settings(modifier, settings_dict)
+    set_modifier_values(modifier, settings_dict)
 
     return modifier
 
 
-def add_sp_modifier_from_node_group(
+def add_modifier_asset_from_node_group(
     obj,
     node_group,
     settings_dict={},
@@ -127,14 +180,14 @@ def add_sp_modifier_from_node_group(
             m.use_pin_to_last = True
 
     # Change settings
-    change_GN_modifier_settings(modifier, settings_dict)
+    set_modifier_values(modifier, settings_dict)
 
     return modifier
 
 
 def remove_modifier(object, name: str):
     for m in object.modifiers:
-        if m.type == "NODES" and m.node_group.name == name:
+        if m.type == "NODES" and m.node_group and m.node_group.name == name:
             object.modifiers.remove(m)
             return True
         elif m.type == name:
@@ -145,40 +198,39 @@ def remove_modifier(object, name: str):
 
 def modifier_exists(object, name: str):
     for m in object.modifiers:
-        if m.type == "NODES" and m.node_group.name == name:
+        if m.type == "NODES" and m.node_group and m.node_group.name == name:
             return True
     return False
 
 
-def move_modifier_above_mesher(obj, name):
+def move_modifier_above_mesher(obj, modifier):
     mod_index = -1
     mesh_mod_index = -1
     mod_count = len(obj.modifiers)
 
     for i, m in enumerate(reversed(obj.modifiers)):
-        if m.type == "NODES":
-            if m.node_group.name == name:
-                mod_index = mod_count - 1 - i
-            elif m.node_group.name in MESHER_NAMES.values():
-                mesh_mod_index = mod_count - 1 - i
-        if mod_index>-1 and mesh_mod_index>-1:
+        if m == modifier:
+            mod_index = mod_count - 1 - i
+        elif m.type == "NODES" and remove_suffix(m.node_group.name) in MesherName:
+            mesh_mod_index = mod_count - 1 - i
+        if mod_index > -1 and mesh_mod_index > -1:
             break
-        
-    if mod_index==-1 or mesh_mod_index==-1:
-        raise Exception(f"Modifier \"{name}\" couldn't be moved")
+
+    if mesh_mod_index == -1:
+        raise Exception(f"Mesher modifier not found in object '{obj.name}'")
     elif mod_index <= mesh_mod_index:
-        return 
-    
-    obj.modifiers.move(mod_index, index=mesh_mod_index)
+        return
+
+    obj.modifiers.move(from_index=mod_index, to_index=mesh_mod_index)
 
 
 def has_socket_value(o, mod_name, socket_name, value):
     for m in o.modifiers:
-        if m.type == "NODES" and m.node_group.name == mod_name:
+        if m.type == "NODES" and m.node_group and m.node_group.name == mod_name:
             tree = m.node_group.interface.items_tree
             for item in tree:
                 if item.name == socket_name and isinstance(
                     item, bpy.types.NodeTreeInterfaceSocket
                 ):
-                    return m[item.identifier] == value
+                    return getattr(m.properties.inputs, item.identifier).value == value
     return False

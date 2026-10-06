@@ -10,7 +10,7 @@ draw_handler = None
 shader = None
 active_object = None
 active_group_name = None
-valid_tool_idnames = set()
+valid_tool_idnames : set[str]= set()
 POINT_SIZE = 15.0  # Change this to adjust point size
 
 

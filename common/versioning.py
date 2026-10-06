@@ -1,134 +1,70 @@
 import bpy
-from enum import Enum
-import re
-from .enums import ASSET_NODE_GROUPS, ADDON_PATH, SP_obj_type, MesherName
+import numpy as np
+from pathlib import Path
+from packaging.version import Version
+from .asset_list import ASSET_NODE_GROUPS
+from .enums import SP_obj_type, MesherName
 from .asset_append import append_node_group
-from .enums import ASSETS_FILE
+from .enums import ASSETS_FILE, VERSION_STR
 from .modifier_utils import (
-    add_sp_modifier,
+    add_modifier_asset,
     remove_modifier,
-    change_mod_settings_from_object,
     move_modifier_above_mesher,
+    get_modifier_by_name,
+    get_modifier_by_names,
+    set_modifier_values,
+    get_modifier_value,
+    get_modifier_values,
 )
-from .version_utils import is_latest_version, get_node_version
-from .utils import sp_type_of_object, has_contour
+from .version_utils import (
+    is_current_version,
+    get_node_version,
+    set_nodes_version,
+    replace_node_group,
+    replace_all_instances_of_node_group_by_name,
+)
+from .utils import sp_type_of_object, has_contour, remove_suffix
 
 #####################
 ## VERSIONING DATA ##
 #####################
 
 # Old nodes names
-OLD_NODE_MAPPING = {
+OLD_TO_NEW_NODE_MAPPING = {
     "SP - Trim 4 Sides": "SP - Crop or Extend Patch",
+    "SP - AOP Trim 4 sides": "SP - Crop or Extend Patch",
     "SP - Any Order Patch Meshing": "SP - Bezier Patch Meshing",
-    "SP - Combs": "",
     "SP - Continuities Curve": "SP - Connect Curve",
     "SP - Trim Range Any Order Curve": "SP - Crop or Extend Curve",
     "SP - AOP Continuities": "SP - Connect Bezier Patch",
     "SP - Fillet Flat Patch": "SP - Fillet Curve or FlatPatch",
     "SP - Raise or Lower Curve Order": "SP - Raise or Lower Curve Degree",
+    "SP - Extrude FlatPatch": "SP - Extrude Compound",
+    "SP - Plot Distance Between Curves": "SP - Distance Between Curves",
+    "SP - Bezier Curve Any Order": "SP - Curve Meshing",
+    "SP - AOP Continuities with Flat Patch": "SP - Connect Bezier Patch",
+    "SP - Blend Flat Patches": "SP - Blend Surfaces",
     # TODO FILL
 }
 
-# Old nodes params
-OLD_NODE_PARAMS = {
-    "connect": {"side": ((0, 1, 2, 3), (2, 3, 0, 1))}
-    # TODO FILL
-}
+# Reversed mapping
+NEW_TO_OLD_NODE_MAPPING: dict[str, list[str]] = {}
+for k, v in OLD_TO_NEW_NODE_MAPPING.items():
+    NEW_TO_OLD_NODE_MAPPING[v] = NEW_TO_OLD_NODE_MAPPING.get(v, []) + [k]
 
-ALL_SP_ASSET_NODE_GROUPS_EVER = ASSET_NODE_GROUPS | set(OLD_NODE_MAPPING.keys())
-
+ALL_SP_ASSET_NODE_GROUPS_EVER = ASSET_NODE_GROUPS | set(OLD_TO_NEW_NODE_MAPPING.keys())
 
 #####################
 ## VERSIONING CODE ##
 #####################
 
 
-def replace_all_instances_of_node_group_by_name(
-    target_node_group_name, new_node_group_name
-):
-    # Get the target node group
-    prefix, suffix = target_node_group_name[:-2], target_node_group_name[-2:]
-
-    if suffix == ".*":
-        pattern = rf"^{re.escape(prefix)}\.(\d{{3}}|\d{{3}}\.\d{{3}})$"
-        target_node_groups = [
-            ng for ng in bpy.data.node_groups if re.match(pattern, ng.name)
-        ]
-    else:
-        target_node_groups = [bpy.data.node_groups.get(target_node_group_name)]
-
-    # Get the new node group
-    new_node_group = bpy.data.node_groups.get(new_node_group_name)
-    if not new_node_group:
-        return 0  # New node group not found
-
-    if len(target_node_groups) > 0:
-        for t in target_node_groups:
-            if t and t != new_node_group:
-                # Replace the node group data
-                t.user_remap(new_node_group)
-
-                # Remove the old node group
-                bpy.data.node_groups.remove(t)
-
-        return len(target_node_groups)
-    else:
-        return -1
-
-
-def replace_node_group(target_node_group, new_node_group):
-    target_node_group.user_remap(new_node_group)
-
-
-def report_outdated_node_groups():
+def get_outdated_node_groups():
     # technically, if you are using an old version, this is not "outdated" but "unmatching current"
     outdated_node_groups = [
-        ng for ng in bpy.data.node_groups if not is_latest_version(ng)
+        ng for ng in bpy.data.node_groups if not is_current_version(ng)
     ]
-    if len(outdated_node_groups) > 0:
-        print("Outdated node groups found:")
-        for ng in outdated_node_groups:
-            print(f"- {ng.name} (version: {get_node_version(ng)})")
-    else:
-        print("All node groups are up to date.")
-
-
-def set_nodes_version(version=None):
-    # get version from toml file
-    if version is None:
-        path = ADDON_PATH + "/blender_manifest.toml"
-        with open(path, "r") as f:
-            for line in f:
-                if line.startswith("version"):
-                    version = line.split('"')[1]
-                    break
-
-    for ng in bpy.data.node_groups:
-        ng["version"] = version
-
-    print("version set to " + version)
-
-
-def replace_duplicates():
-
-    #############################
-    #         DANGER            #
-    # May remove different node #
-    #   groups with same name   #
-    #############################
-
-    duplicated_list = []
-    for ng in bpy.data.node_groups:
-        if ng.name[-4] == ".":
-            duplicated_list.append(ng.name[:-4])
-            # print(ng.name)
-    duplicated_groups = set(duplicated_list)
-
-    for d in duplicated_groups:
-        replaced = replace_all_instances_of_node_group_by_name(d + ".*", d)
-        if replaced <= 0:
-            print(f"No instances of {d}.* found")
+    return outdated_node_groups
 
 
 def classify_strings_by_prefix(strings):
@@ -157,20 +93,16 @@ def highest_suffix_of_each_object_name(names):
     return last_string
 
 
-def remove_suffix(data_block_name):
-    if re.match(r"[.]\d*$", data_block_name):
-        return data_block_name[:-4]
-    else:
-        return data_block_name
-
-
 def update_node_group(name):
+    """
+    At bpy.data level. Replaces all instances
+    """
     # check if name is outdated
     new_name = name
-    if remove_suffix(name) in OLD_NODE_MAPPING.keys():
-        new_name = OLD_NODE_MAPPING[name]
+    if remove_suffix(name) in OLD_TO_NEW_NODE_MAPPING:
+        new_name = OLD_TO_NEW_NODE_MAPPING[name]
 
-    # get latest version if it exists
+    # Get latest version if it exists
     latest_node = None
     for ng in bpy.data.node_groups:
         # assumes latest version never has suffix
@@ -178,8 +110,8 @@ def update_node_group(name):
             ng.type == "GEOMETRY"
             and ng.name == new_name
             and ng.name in ASSET_NODE_GROUPS
-            and is_latest_version(ng)
-            and ng.library.filepath == ASSETS_FILE
+            and is_current_version(ng)
+            and Path(ng.library.filepath).resolve() == ASSETS_FILE
         ):
             latest_node = ng
             break
@@ -200,7 +132,7 @@ def update_node_group(name):
             ng.type == "GEOMETRY"
             and ng_name == name
             and ng != latest_node
-            and (ng_name in ASSET_NODE_GROUPS or ng_name in OLD_NODE_MAPPING.keys())
+            and (ng_name in ASSET_NODE_GROUPS or ng_name in OLD_TO_NEW_NODE_MAPPING)
         ):
             if latest_node is None:
                 latest_node = append_node_group(new_name)
@@ -216,18 +148,43 @@ def update_node_group(name):
     return replaced
 
 
-def update_all_node_groups():
+def update_modifier(modifier):
+    name = remove_suffix(modifier.node_group.name)
+    curr_node_group = modifier.node_group
+    if name in ASSET_NODE_GROUPS:
+        if is_current_version(curr_node_group):
+            return
+
+        new_node_group = append_node_group(name)
+        modifier.node_group = new_node_group
+        modifier.node_group.interface_update(bpy.context)
+
+    if name in OLD_TO_NEW_NODE_MAPPING.keys():
+        new_name = OLD_TO_NEW_NODE_MAPPING[name]
+        new_node_group = append_node_group(new_name)
+        modifier.node_group = new_node_group
+        modifier.node_group.interface_update(bpy.context)
+
+
+def update_all_node_groups(force=False):
     # get latest version nodes if they exist
     latest_nodes = {}
-    for ng in bpy.data.node_groups:
-        # assumes latest version never has suffix
+    # assumes latest version never has suffix
+    file_ng_names = set(ng.name for ng in bpy.data.node_groups if ng.type == "GEOMETRY")
+    all_sp_ng_names = set(ASSET_NODE_GROUPS)
+    to_treat_names = file_ng_names.intersection(all_sp_ng_names)
+
+    for ng_name in to_treat_names:
+        ng = bpy.data.node_groups[ng_name]
         if (
-            ng.type == "GEOMETRY"
-            and ng.name in ASSET_NODE_GROUPS
-            and is_latest_version(ng)
-            and ng.library.filepath == ASSETS_FILE
+            is_current_version(ng)
+            and ng.library
+            and Path(ng.library.filepath).resolve() == ASSETS_FILE
         ):
-            latest_nodes[ng.name] = ng
+            if force:
+                bpy.data.node_groups[ng_name].make_local()
+            else:
+                latest_nodes[ng_name] = ng
 
     # Make a unique id for each current node group
     snapshot = [
@@ -242,16 +199,21 @@ def update_all_node_groups():
         ng = bpy.data.node_groups.get(n, lib)
         name = remove_suffix(ng.name)
 
+        # Old with same name
         if name in ASSET_NODE_GROUPS and ng not in latest_nodes.values():
             if name not in latest_nodes.keys():
-                latest_nodes[name] = append_node_group(name)
+                latest_nodes[name] = append_node_group(name, force=True)
+            ng.make_local()
             replace_node_group(ng, latest_nodes[name])
             bpy.data.node_groups.remove(ng)
             replaced += 1
-        elif name in OLD_NODE_MAPPING.keys():
-            new_name = OLD_NODE_MAPPING[name]
+
+        # Old with different name
+        elif name in OLD_TO_NEW_NODE_MAPPING.keys():
+            new_name = OLD_TO_NEW_NODE_MAPPING[name]
             if new_name not in latest_nodes.keys():
-                latest_nodes[new_name] = append_node_group(new_name)
+                latest_nodes[new_name] = append_node_group(new_name, force=True)
+            ng.make_local()
             replace_node_group(ng, latest_nodes[new_name])
             bpy.data.node_groups.remove(ng)
             replaced += 1
@@ -264,91 +226,244 @@ def update_all_node_groups():
     return replaced
 
 
+def get_node_names_all_versions(curr_name):
+    list = [curr_name]
+    list.extend(NEW_TO_OLD_NODE_MAPPING.get(curr_name, []))
+    return list
+
+
+def sp_type_of_outdated_objects(o):
+    type = sp_type_of_object(o)
+    if type is SP_obj_type.INVALID:
+        for m in reversed(o.modifiers):
+            if m.type == "NODES" and m.node_group and m.show_viewport:
+                name = remove_suffix(m.node_group.name)
+                # endswith is not very clean but ok
+                if name.endswith("Meshing") and name in OLD_TO_NEW_NODE_MAPPING.keys():
+                    type = SP_obj_type[MesherName(OLD_TO_NEW_NODE_MAPPING[name]).name]
+                    break
+    return type
+
+
 #####################
 #     SCENARIOS     #
 #####################
+def update_scenario_deprecate_contour_fit(m, object, version):
+    set_modifier_values(m, {"Scaling Method": "UV"})
+    if version < Version("0.10.0"):
+        if has_contour(object):
+            conv_mod = add_modifier_asset(
+                object,
+                "SP - Convert Contour",
+                {"Conversion": "Fit to UV"},
+                pin=False,
+                append=True,
+            )
+            move_modifier_above_mesher(object, conv_mod)
 
 
-def scenario_branching(obj, condition, scenario1, scenario2=None):
-    if condition(obj):
-        scenario1.run(obj)
-    elif scenario2 != None:
-        scenario2.run(obj)
-
-class ReplaceActionFunc(Enum):
-    UPDATE_MOD = None
-    ADD_MOD = add_sp_modifier
-    REMOVE_MOD = remove_modifier
-    CHANGE_MOD_VAL = change_mod_settings_from_object
-    MOD_EXISTS = None
-    MOVE_MOD = None
-    MOVE_ABOVE_MESHER = move_modifier_above_mesher
-    CONDITION = scenario_branching
+def update_scenario_replace_fillet_factor_2(mod):
+    """
+    Old fillets with fast method where 2 times 2 short with straight edges.
+    """
+    fillet_method = get_modifier_value(mod, "Method")
+    if fillet_method == "Distance (Fast)" or fillet_method == "Distance":
+        current_fillet, current_tension = get_modifier_values(
+            mod, set(("Fillet", "Tension Offset"))
+        )
+        set_modifier_values(
+            mod, {"Fillet": current_fillet / 2, "Tension Offset": current_tension / 2}
+        )
 
 
-class ReplaceAction:
-    def __init__(self, func, *args):
-        self.function = func
-        self.args = args
-
-    def __add__(self, action):
-        return ReplaceScenario().add(self).add(action)
-
-    def run(self, object):
-        self.function(object, *self.args)
+def update_scenario_curve_preserve_combs_display(mod, version):
+    if version < Version("0.9.0"):
+        if get_modifier_value(mod, "Enable"):
+            update_modifier(mod)
+            set_modifier_values(mod, {"Combs": True})
 
 
-class ReplaceScenario:
-    def __init__(self):
-        self.actions = []
-
-    def add(self, *args):
-        if type(args[0]) == ReplaceAction:
-            self.actions.append(args[0])
-        else:
-            self.actions.append(ReplaceAction(*args))
-        return self
-
-    def insert(self, action, index):
-        self.actions.insert(index, action)
-
-    def __add__(self, scenario):
-        self.actions.extend(scenario.actions)
-        return self
-
-    def run(self, object):
-        for a in self.actions:
-            a.run(object)
+def upgrade_vertex_group_endpoints(obj):
+    vg = obj.vertex_groups["Endpoints"]
+    indices = [
+        v.index
+        for v in obj.data.vertices
+        if (vg.index in [vg.group for vg in v.groups])
+        and v.groups[vg.index].weight > 0.6
+    ]
+    obj.vertex_groups.remove(vg)
+    att = obj.data.attributes.new(name="Endpoints", type="BOOLEAN", domain="POINT")
+    values = np.full(len(obj.data.vertices), False, dtype=bool)
+    for i in indices:
+        values[i] = True
+    att.data.foreach_set("value", values)
 
 
-# Deprecate contour fit
-deprecate_contour_fit_option = ReplaceScenario()
-deprecate_contour_fit_option.add(
-    ReplaceActionFunc.CHANGE_MOD_VAL, MesherName.BEZIER_SURFACE, {"Scaling Method": 1}
-)
-deprecate_contour_fit_option.add(  # only add converter if trim exists
-    ReplaceActionFunc.CONDITION,
-    has_contour,
-    ReplaceScenario()
-    .add(
-        ReplaceActionFunc.ADD_MOD,
-        "SP - Convert Contour",
-        {},
-        False,
-        True,  # append if not already
-    )
-    .add(ReplaceActionFunc.MOVE_ABOVE_MESHER, "SP - Convert Contour")
-)
-# deprecate_contour_fit_option.add(ReplaceActionFunc.UPDATE_MOD, MesherName.BEZIER_SURFACE, {}, True)
+def update_scenario_switch_resolutions(mod, version):
+    if version < Version("0.9.0"):
+        u = get_modifier_value(mod, "Resolution U")
+        v = get_modifier_value(mod, "Resolution V")
+        set_modifier_values(mod, {"Resolution U": v, "Resolution V": u})
+
+
+def update_scenario_loft_segment(mod):
+    tree = mod.node_group.interface.items_tree
+
+    # Because of a mistake, "Segment" is also the name of 2 sockets in 0.9 loft
+    seg_sockets_count = sum([item.name.startswith("Segment") for item in tree])
+    if seg_sockets_count > 1:
+        update_modifier(mod)
+        return
+
+    try:
+        segment = get_modifier_value(mod, "Segment")
+    except ValueError:
+        update_modifier(mod)
+        return
+
+    update_modifier(mod)
+    new_tree = mod.node_group.interface.items_tree
+    for item in new_tree:
+        if item.name.startswith("Segment") and isinstance(
+            item, bpy.types.NodeTreeInterfaceSocketInt
+        ):
+            getattr(mod.properties.inputs, item.identifier).value = segment
+
+
+def update_scenario_connect_bezier_patch(mod, version):
+    if version < Version("0.9.0"):  # cannot know :(
+        param_dict = {}
+
+        is_flat = mod.node_group.name.endswith("Flat Patch")
+
+        # Side shift
+        side_map = {0: 2, 1: 3, 2: 0, 3: 1}
+        if not is_flat:
+            try:
+                param_dict["Target Segment"] = side_map[
+                    get_modifier_value(mod, "Target Side") % 4
+                ]
+            except ValueError:
+                param_dict["Target Segment"] = side_map[
+                    get_modifier_value(mod, "Target Segment") % 4
+                ]
+        # param_dict["Self Side"] = side_map[get_modifier_value(mod, "Side")] # apparently not needed
+
+        # Continuity checkboxes
+        try:
+            g1, g2, g3, g4 = get_modifier_values(mod, set(("G1", "G2", "G3", "G4")))
+            continuity = (
+                "G4" if g4 else "G3" if g3 else "G2" if g2 else "G1" if g1 else "G0"
+            )
+            param_dict["Continuity"] = continuity
+        except ValueError:
+            pass
+
+        # Target reasign
+        if is_flat:
+            param_dict["Target"] = get_modifier_value(mod, "Flat Patch Target")
+
+        update_modifier(mod)
+        set_modifier_values(mod, param_dict)
+        return
+    update_modifier(mod)
+
+
+def common_to_all_non_plane_surfaces(m, name, mesher_names, obj, version):
+    if name in mesher_names:
+        update_scenario_deprecate_contour_fit(m, obj, version)
+        update_scenario_switch_resolutions(m, version)
+
+
+# TODO ?
+# - def update_scenario_patch_combs_to_isoparams(mod)(also do the operator for fast isoparam)
+# - def update_scenario_remove_standalone_modifier_combs(["SP - Combs Any Order Curve", "SP - Combs"])
+# - flip face if blend surface
 
 
 def update_object(obj):
-    type = sp_type_of_object(obj)
-    match type:
-        case SP_obj_type.BEZIER_SURFACE:
-            deprecate_contour_fit_option.run(obj)
-        case _:
-            pass
+    """
+    Apply every update scenario to the object
+    """
+    type = sp_type_of_outdated_objects(obj)
+    if type is SP_obj_type.INVALID:
+        print(f"{obj.name} is not a SurfacePsycho object")
+        return None
+
+    if "Endpoints" in obj.vertex_groups.keys():
+        upgrade_vertex_group_endpoints(obj)
+
+    mesher_names = get_node_names_all_versions(str(type.mesher_name))
+
+    # Declare before loop for performances
+    fillet_names = get_node_names_all_versions("SP - Fillet Curve or FlatPatch")
+    loft_names = get_node_names_all_versions("SP - Loft")
+    connect_bezier_names = get_node_names_all_versions("SP - Connect Bezier Patch")
+
+    # To ckeck : what happen on non SP modifiers (but sp object)
+    for m in obj.modifiers:
+        if m.type == "NODES" and m.node_group:
+            name = remove_suffix(m.node_group.name)
+            version = get_node_version(m.node_group)
+            match type:
+                case SP_obj_type.PLANE:
+                    if name in fillet_names:
+                        update_scenario_replace_fillet_factor_2(m)
+                    update_modifier(m)
+                case SP_obj_type.CYLINDER:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.CONE:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.SPHERE:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.TORUS:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.BEZIER_SURFACE:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    if name in connect_bezier_names:
+                        update_scenario_connect_bezier_patch(m, version)
+                    elif name in loft_names:
+                        update_scenario_loft_segment(m)
+                    else:
+                        update_modifier(m)
+                case SP_obj_type.BSPLINE_SURFACE:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.SURFACE_OF_REVOLUTION:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.SURFACE_OF_EXTRUSION:
+                    common_to_all_non_plane_surfaces(
+                        m, name, mesher_names, obj, version
+                    )
+                    update_modifier(m)
+                case SP_obj_type.CURVE:
+                    if name in mesher_names:
+                        update_scenario_curve_preserve_combs_display(m, version)
+                    else:  # To skip update modifier which has to be inside the scenario
+                        if name in fillet_names:
+                            update_scenario_replace_fillet_factor_2(m)
+                        update_modifier(m)
+                case SP_obj_type.COMPOUND:
+                    update_modifier(m)
 
 
 #####################
@@ -363,14 +478,26 @@ class SP_OT_report_outdated_nodes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        report_outdated_node_groups()
+        outdated = get_outdated_node_groups()
+        if len(outdated) > 0:
+            self.report(
+                {"INFO"},
+                f"{len(outdated)} node groups outdated. Check the console to see which ones",
+            )
+
+            print("Outdated node groups found:")
+            for out in outdated:
+                print(f"- {out.name} (version: {get_node_version(out)})")
+            print(f"Current version: {VERSION_STR}")
+        else:
+            self.report({"INFO"}, f"All node groups are up to date")
         return {"FINISHED"}
 
 
 class SP_OT_set_all_nodes_version(bpy.types.Operator):
     bl_idname = "object.sp_set_all_nodes_version"
     bl_label = "SP - Set All Nodes Version"
-    bl_description = "Report outdated nodes in the console"
+    bl_description = "Set non-versionned nodes to specified version"
     bl_options = {"REGISTER", "UNDO"}
 
     major: bpy.props.IntProperty(default=0)
@@ -383,7 +510,7 @@ class SP_OT_set_all_nodes_version(bpy.types.Operator):
 
 
 class SP_OT_update_node_group(bpy.types.Operator):
-    bl_idname = "object.sp_update_node_group"
+    bl_idname = "node.sp_update_node_group"
     bl_label = "SP - Update Node Group"
     bl_description = (
         "Make sure specified node group is the same as in current addon version"
@@ -393,15 +520,6 @@ class SP_OT_update_node_group(bpy.types.Operator):
     name: bpy.props.StringProperty(name="Node Group", description="", default="")
 
     def invoke(self, context, event):
-        # Populate the filtered node groups before opening the dialog
-        self.nodegroup_items.clear()
-        for ng in bpy.data.node_groups:
-            if (
-                ng.type == "GEOMETRY"
-                and remove_suffix(ng.name) in ALL_SP_ASSET_NODE_GROUPS_EVER
-            ):
-                self.nodegroup_items.add().name = ng.name
-
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
@@ -420,22 +538,28 @@ class SP_OT_update_node_group(bpy.types.Operator):
         self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        # call itself and run
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
 
 class SP_OT_update_all_node_groups(bpy.types.Operator):
-    bl_idname = "object.sp_update_all_node_groups"
+    bl_idname = "node.sp_update_all_node_groups"
     bl_label = "SP - Update All Node Groups"
-    bl_description = (
-        "Make sure each SP node group is the same as assets in current addon version"
-    )
+    bl_description = "Replaces outdated node groups. Warning : this is not a complete versionning, some changes may occure."
     bl_options = {"REGISTER", "UNDO"}
 
+    force: bpy.props.BoolProperty(
+        name="Force",
+        description="Force every node group to update disregarding its version",
+        default=False,
+    )
+
+    # @classmethod # Cannot use force if there is poll
+    # def poll(cls, context):
+    #     for ng in bpy.data.node_groups:
+    #         if not is_current_version(ng):
+    #             return True
+    #     return False
+
     def execute(self, context):
-        replaced = update_all_node_groups()
+        replaced = update_all_node_groups(self.force)
         self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
         return {"FINISHED"}
 
@@ -446,9 +570,55 @@ class SP_OT_update_objects(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        # from viztracer import VizTracer
+
+        # with VizTracer(
+        #     output_file="/tmp/blender_trace.json",
+        #     tracer_entries=3000000,
+        #     min_duration=5,
+        # ) as tracer:
         for o in context.selected_objects:
             update_object(o)
 
+        return {"FINISHED"}
+
+
+class SP_OT_replace_node_group(bpy.types.Operator):
+    bl_idname = "node.sp_replace_node_group"
+    bl_label = "SP - Replace Node Group"
+    bl_description = (
+        "For updating old assets. Replaces all instance of a modifier with another"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    target_name: bpy.props.StringProperty(name="Target", description="", default="")
+    new_name: bpy.props.StringProperty(name="New", description="", default="")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop_search(
+            self, "target_name", bpy.data, "node_groups", text="Target", icon="NODETREE"
+        )
+        layout.prop_search(
+            self, "new_name", bpy.data, "node_groups", text="New", icon="NODETREE"
+        )
+
+    def execute(self, context):
+        target_node_group_name = self.target_name
+        new_node_group_name = self.new_name
+
+        r = replace_all_instances_of_node_group_by_name(
+            target_node_group_name, new_node_group_name
+        )
+        if r >= 1:
+            self.report({"INFO"}, f"{r} node groups successfully replaced")
+        elif r == 0:
+            self.report({"INFO"}, f"{new_node_group_name} does not exist")
+        elif r == -1:
+            self.report({"INFO"}, f"{target_node_group_name} does not exist")
         return {"FINISHED"}
 
 
@@ -458,6 +628,7 @@ classes = [
     SP_OT_update_node_group,
     SP_OT_update_objects,
     SP_OT_set_all_nodes_version,
+    SP_OT_replace_node_group,
 ]
 
 

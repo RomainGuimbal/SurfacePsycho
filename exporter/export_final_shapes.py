@@ -64,7 +64,6 @@ from .export_edge import SP_Edge_export
 from .export_wire import SP_Wire_export
 from .export_contour import SP_Contour_export
 
-
 ##############################
 ##  Brep from SP entities   ##
 ##############################
@@ -644,7 +643,9 @@ def empty_to_topods(o, scale=1000):
     return topods_plane
 
 
-def compound_to_topods(o, context, initial_depsgraph, scale=1000, sew=True, sew_tolerance=1e-1):
+def compound_to_topods(
+    o, context, initial_depsgraph, scale=1000, sew=True, sew_tolerance=1e-1
+):
     new_objects = convert_compound_to_patches(
         o, context, initial_depsgraph, objects_suffix="_export", resolution=1
     )
@@ -659,15 +660,21 @@ def compound_to_topods(o, context, initial_depsgraph, scale=1000, sew=True, sew_
     for o_new in new_objects:
         type = sp_type_of_object(o_new)
 
-        sh = blender_object_to_topods_shapes(
-            new_depsgraph,
-            o_new,
-            type,
-            scale=scale,
-            sew=sew,
-            sew_tolerance=sew_tolerance,
-        )
-        comp_shapes.append(sh)
+        # skip nested compounds for the moment
+        if type != SP_obj_type.COMPOUND and type != SP_obj_type.INVALID:
+            sh = blender_object_simple_to_topods_shape(
+                new_depsgraph,
+                o_new,
+                type,
+                scale=scale,
+                sew=sew,
+                sew_tolerance=sew_tolerance,
+            )
+            comp_shapes.append(sh)
+        else:
+            warnings.warn(
+                f"Nested Compounds are ignored. {o_new.name} skipped"
+            )
 
         # Unlink
         bpy.context.collection.objects.unlink(o_new)
@@ -782,6 +789,7 @@ class ShapeHierarchy_export:
         self.objects = self.create_shape_hierarchy(context.scene.collection)
 
     def create_shape_hierarchy(self, parent_col):
+        """Recursive"""
         objs = []
 
         for child in parent_col.children:
@@ -798,13 +806,13 @@ class ShapeHierarchy_export:
         return objs
 
 
-def blender_object_to_topods_shapes(
+def blender_object_simple_to_topods_shape(
     depsgraph, object, sp_type, scale=1000, sew=True, sew_tolerance=1e-1
 ):
     ob = object.evaluated_get(depsgraph)
 
     match sp_type:
-        case None:
+        case SP_obj_type.INVALID:
             pass
         case SP_obj_type.CONE:
             shape = cone_face_to_topods(ob, scale)
@@ -863,13 +871,20 @@ def blender_instance_to_topods_instance(  # Instancing is supported only for com
 
     for o in ins_obj:
         sp_type = sp_type_of_object(o)
-        if sp_type not in (None, SP_obj_type.EMPTY, SP_obj_type.INSTANCE):
+        if sp_type not in (SP_obj_type.INVALID, SP_obj_type.EMPTY, SP_obj_type.INSTANCE):
             if o in obj_shapes.keys():
                 shape = obj_shapes[o]
             elif not o.hide_viewport:
-                shape = blender_object_to_topods_shapes(
-                    depsgraph, o, sp_type, scale, sew, sew_tolerance
-                )
+                # skip compounds for the moment
+                if sp_type != SP_obj_type.COMPOUND:
+                    shape = blender_object_simple_to_topods_shape(
+                        depsgraph, o, sp_type, scale, sew, sew_tolerance
+                    )
+                else:
+                    warnings.warn(
+                        f"Compounds inside instances are ignored. {o.name} skipped"
+                    )
+                    continue
 
             if instance_ob.scale == Vector((1.0, 1.0, 1.0)):
                 trsf = blender_matrix_to_gp_trsf(instance_ob.matrix_world, scale)
@@ -898,6 +913,9 @@ def blender_instance_to_topods_instance(  # Instancing is supported only for com
         # #     builder.Add(comp, swd_nested)
         # #     is_nested=True
 
+    if len(to_sew_shape_list)==0:
+        return
+
     # each collection instance is sewed separately
     swd = sew_shapes(to_sew_shape_list, sew_tolerance)
 
@@ -909,7 +927,7 @@ def blender_instance_to_topods_instance(  # Instancing is supported only for com
     solids = shells_to_solids(swd)
     if len(solids) > 1:
         return shape_list_to_compound(solids)
-    return 
+    return solids[0]
 
 
 def sew_shapes(shape_list, tolerance=1e-1):
@@ -925,31 +943,63 @@ def sew_shapes(shape_list, tolerance=1e-1):
     return aSew.SewedShape()
 
 
+# TODO : make recursive
+# def blender_object_to_topods(self, type):
+#      """ Standard recursive treatment for shapes """
+#      match type:
+#             case SP_obj_type.INSTANCE:
+#                 # handled separately because doesn't mirrors or sew
+#                 self.instances_obj.append(o)
+#             case SP_obj_type.EMPTY:
+#                 # handled separately because empty don't sew
+#                 self.empties_obj.append(o)
+#             case SP_obj_type.COMPOUND:
+#                 # handled separately to not create multiple times the same instanced shape
+#                 shape = compound_to_topods(o, context, depsgraph, scale, sew, sew_tolerance)
+#                 self.compounds.append(shape)
+#                 self.pair_obj_shape[o] = shape
+#             case _:
+#                 shape = blender_object_simple_to_topods_shape(
+#                     depsgraph,
+#                     o,
+#                     type,
+#                     scale,
+#                     sew,
+#                     sew_tolerance,
+#                 )
+#                 self.shapes.append(shape)
+#                 self.pair_obj_shape[o] = shape
+
+
 def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance):
     shapes, empties_obj, compounds, instances_obj = [], [], [], []
-    object_shapes = {}  # {object: shape} for instances to reuse already created shapes
+    pair_obj_shape = {}  # {object: shape} for instances to reuse already created shapes
     separated_shapes_list = []
     context = bpy.context
 
     for o in objects:
         type = sp_type_of_object(o)
 
-        if type is None:
+        if type is SP_obj_type.INVALID :
             continue
-        
+
         # Check modifiers warnings
         has_error = False
         for m in reversed(o.modifiers):
-            if m.type == "NODES":
+            if m.type == "NODES" and m.node_group:
                 for w in m.node_warnings:
-                    if w.type == 'ERROR':
-                        warnings.warn(f"\"{o.name}\" skipped due to error on \"{m.name}\" modifier")
+                    if w.type == "ERROR":
+                        warnings.warn(
+                            f'"{o.name}" skipped due to error on "{m.name}" modifier'
+                        )
                         has_error = True
                         break
-                    elif w.type == 'WARNING':
-                        warnings.warn(f"\"{o.name}\" has a warning on \"{m.name}\" modifier")
+                    elif w.type == "WARNING":
+                        warnings.warn(
+                            f'"{o.name}" has a warning on "{m.name}" modifier'
+                        )
                         break
-                else: # if no break occurred
+                else:  # if no break occurred
                     continue
                 break
         if has_error:
@@ -960,15 +1010,17 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
                 # handled separately because doesn't mirrors or sew
                 instances_obj.append(o)
             case SP_obj_type.EMPTY:
-                # handled separately because compounds don't sew
+                # handled separately because empty don't sew
                 empties_obj.append(o)
             case SP_obj_type.COMPOUND:
                 # handled separately to not create multiple times the same instanced shape
-                shape = compound_to_topods(o, context, depsgraph, scale, sew, sew_tolerance)
+                shape = compound_to_topods(
+                    o, context, depsgraph, scale, sew, sew_tolerance
+                )
                 compounds.append(shape)
-                object_shapes[o] = shape
+                pair_obj_shape[o] = shape
             case _:
-                shape = blender_object_to_topods_shapes(
+                shape = blender_object_simple_to_topods_shape(
                     depsgraph,
                     o,
                     type,
@@ -977,7 +1029,7 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
                     sew_tolerance,
                 )
                 shapes.append(shape)
-                object_shapes[o] = shape
+                pair_obj_shape[o] = shape
 
     # Sew isolated shapes
     if len(shapes) > 0:
@@ -993,7 +1045,7 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
     instances_shapes = []
     for ins in instances_obj:
         ins_shape = blender_instance_to_topods_instance(
-            ins, object_shapes, scale, sew, sew_tolerance, depsgraph
+            ins, pair_obj_shape, scale, sew, sew_tolerance, depsgraph
         )
         if ins_shape is not None:
             instances_shapes.append(ins_shape)

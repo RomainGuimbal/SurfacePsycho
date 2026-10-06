@@ -1,11 +1,12 @@
-import bmesh
 import bpy
+import bmesh
 import numpy as np
-from mathutils import Vector, Matrix, Quaternion
+import re
 import math
+from mathutils import Vector, Matrix, Quaternion
 from typing import List, Tuple
 
-from .enums import SP_obj_type, MESHER_NAMES, GEOM_TO_SP_TYPE
+from .enums import SP_obj_type, MesherName, GEOM_TO_SP_TYPE
 
 from OCP.BRep import BRep_Builder
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
@@ -67,15 +68,14 @@ def sp_type_of_object(o: bpy.types.Object) -> SP_obj_type:
         else:
             return SP_obj_type.EMPTY
 
-    # Standard
+    # Others
     for m in reversed(o.modifiers):
-        if m.type == "NODES" and m.node_group:
-            for k, v in MESHER_NAMES.items():
-                if v == m.node_group.name[:-4] or v == m.node_group.name:
-                    return k
-
+        if m.type == "NODES" and m.node_group and m.show_viewport:
+            name = remove_suffix(m.node_group.name)
+            if name in MesherName:
+                return SP_obj_type[MesherName(name).name]
     # Non SP
-    return None
+    return SP_obj_type.INVALID
 
 
 def read_attribute_by_name(object, name, len_attr=None) -> np.array:
@@ -144,8 +144,10 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
             modifier_updated = False
             for it in items_to_process:
                 input_id = it.identifier
-                # if input_id in m:  # Check existence before access
-                m[input_id] = not m[input_id]
+                # if input_id in m:  # Check existence before access ?
+                getattr(m.properties.inputs, input_id).value = not getattr(
+                    m.properties.inputs, input_id
+                ).value
                 modifier_updated = True
 
             # Single interface update after all changes
@@ -153,13 +155,13 @@ def flip_node_socket_bool(ob: bpy.types.Object, potential_names, context):
                 m.node_group.interface_update(context)
 
 
-def add_float_attribute(object: bpy.types.Object, name, values, fallback_value=0.0):
-    if name not in object.data.attributes:
-        object.data.attributes.new(name=name, type="FLOAT", domain="POINT")
-        object.data.update()
+def add_float_attribute(mesh: bpy.types.Mesh, name, values, fallback_value=0.0):
+    if name not in mesh.attributes:
+        mesh.attributes.new(name=name, type="FLOAT", domain="POINT")
+        mesh.update()
 
-    length_diff = len(object.data.vertices) - len(values)
-    att = object.data.attributes[name]
+    length_diff = len(mesh.vertices) - len(values)
+    att = mesh.attributes[name]
 
     if length_diff == 0:
         att.data.foreach_set("value", values)
@@ -167,19 +169,19 @@ def add_float_attribute(object: bpy.types.Object, name, values, fallback_value=0
         values.extend([fallback_value] * length_diff)
         att.data.foreach_set("value", values)
     elif length_diff < 0:
-        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
+        print(f"Error : {len(values)} values on {len(mesh.vertices)} vertices")
         return False
 
     return True
 
 
-def add_int_attribute(object: bpy.types.Object, name, values, fallback_value=0):
-    if name not in object.data.attributes:
-        object.data.attributes.new(name=name, type="INT", domain="POINT")
-        object.data.update()
+def add_int_attribute(mesh: bpy.types.Mesh, name, values, fallback_value=0):
+    if name not in mesh.attributes:
+        mesh.attributes.new(name=name, type="INT", domain="POINT")
+        mesh.update()
 
-    length_diff = len(object.data.vertices) - len(values)
-    att = object.data.attributes[name]
+    length_diff = len(mesh.vertices) - len(values)
+    att = mesh.attributes[name]
 
     if length_diff == 0:
         att.data.foreach_set("value", values)
@@ -187,36 +189,42 @@ def add_int_attribute(object: bpy.types.Object, name, values, fallback_value=0):
         values.extend([fallback_value] * length_diff)
         att.data.foreach_set("value", values)
     elif length_diff < 0:
-        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
+        print(f"Error : {len(values)} values on {len(mesh.vertices)} vertices")
         return False
 
     return True
 
 
 def add_bool_attribute(
-    object: bpy.types.Object, name, values: np.ndarray, fallback_value=False
+    mesh: bpy.types.Mesh, name, values: np.ndarray, fallback_value=False
 ):
-    if name not in object.data.attributes:
-        object.data.attributes.new(name=name, type="BOOLEAN", domain="POINT")
-        object.data.update()
+    current_vals = None
+    if name not in mesh.attributes:
+        mesh.attributes.new(name=name, type="BOOLEAN", domain="POINT")
+        mesh.update()
+        att = mesh.attributes[name]
+    else:
+        att = mesh.attributes[name]
+        current_vals = np.empty(len(mesh.vertices), dtype=np.bool_)
+        att.data.foreach_get("value", current_vals)
 
-    length_diff = len(object.data.vertices) - len(values)
-    att = object.data.attributes[name]
-
-    if length_diff == 0:
-        att.data.foreach_set("value", values)
-    elif length_diff > 0:
+    # support values too short
+    length_diff = len(mesh.vertices) - len(values)
+    if length_diff > 0:
         values = np.concatenate(
             [values, np.full(length_diff, fallback_value, dtype=bool)]
         )
-        att.data.foreach_set("value", values)
     elif length_diff < 0:
-        print(f"Error : {len(values)} values on {len(object.data.vertices)} vertices")
+        print(f"Error : {len(values)} values on {len(mesh.vertices)} vertices")
         return False
 
+    if current_vals is not None:
+        values = np.logical_or(values, current_vals)
+    att.data.foreach_set("value", values)
     return True
 
 
+# TODO atomize
 def set_attribute(context, att_name, value, fallback_type):
     objs = context.objects_in_mode
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -245,7 +253,7 @@ def set_attribute(context, att_name, value, fallback_type):
         for i, v in enumerate(o.data.vertices):
             if v.select:
                 values[i] = value
-                # To improve one day to change all verts between endpoints
+                # TODO improve : change all verts between endpoints
 
         # Set new
         att.data.foreach_set("value", values)
@@ -278,6 +286,19 @@ def toggle_bool_attribute(o, att_name):
             if value == None:
                 value = not values[i]
             values[i] = value
+
+    # Set new
+    att.data.foreach_set("value", values)
+    return True
+
+
+def fill_bool_attribute(mesh: bpy.types.Mesh, att: bpy.types.Attribute, value: bool):
+    # Get attribute
+    if att.data_type != "BOOLEAN":
+        return False
+
+    # Init values
+    values = [value] * len(mesh.vertices)
 
     # Set new
     att.data.foreach_set("value", values)
@@ -511,26 +532,6 @@ def blender_to_gp_quaternion(rot: Quaternion):
     return gp_Quaternion(rot[0], rot[1], rot[2], rot[3])
 
 
-def get_shape_name_and_color(shape, doc):
-    name = None
-    color = (0.8, 0.8, 0.8)
-    if doc != None:
-        # Get shape label
-        label = TDF_Label()
-        if XCAFDoc_DocumentTool.ShapeTool_GetID(doc).FindShape(shape, label):
-            # Get name
-            name_attr = TDataStd_Name()
-            if label.FindAttribute(TDataStd_Name.GetID_(), name_attr):
-                name = name_attr.Get().PrintToString()
-
-            # Get color
-            color_tool = XCAFDoc_DocumentTool.ColorTool_(doc.Main())
-            color = Quantity_Color()
-            if color_tool.GetColor(shape, XCAFDoc_ColorGen, color):
-                color = (color.Red(), color.Green(), color.Blue())
-    return name, color
-
-
 def to_hex(color):
     hexcol = ""
     for c in color[0:3]:
@@ -718,26 +719,35 @@ def split_by_index(index: list[int], attribute: list) -> list[list]:
     return split_attr
 
 
-def split_by_index_dict(index: list[int], attribute: list) -> dict[list]:
-    # KNOWN TO FAIL ON SEVERAL CASES
-    # treat 0 case
-    last_zero = 0
-    try:
-        last_zero = index.index(1)
-    except ValueError:
-        # All zeros
-        pass
+def group_ids_cut_tail(vals: list[int]) -> tuple[list[int], list[int]]:
+    """Turns a list [0,0,0,2,2,3,3,-1,-1,-1,0,0,0,1,1]
+    into [0,2,3], [0,3,5,7], groups + index offsets, while ignoring -1 tail and mirror
+    """
+    if vals[0] == -1:
+        return [], []  # No knot
 
+    offsets = [0]
+    curr_group = vals[0]
+    groups_ids: list[int] = []
+
+    for i, v in enumerate(vals):
+        if v == -1:
+            groups_ids.append(curr_group)
+            offsets.append(i)
+            break
+        if v != curr_group:
+            groups_ids.append(curr_group)
+            offsets.append(i)
+            curr_group = v
+
+    return groups_ids, offsets
+
+
+def split_by_index_dict(index: list[int], attribute: list) -> dict[int, list]:
     split_attr = {}
-    start = 0
-    end = 0
-    for i in list(dict.fromkeys(index)):
-        if i == 0 and last_zero != 0:
-            end = last_zero
-        else:
-            end += index.count(i)
-        split_attr[i] = attribute[start:end]
-        start = end
+    groups_ids, offsets = group_ids_cut_tail(index)
+    for i, gr in enumerate(groups_ids):
+        split_attr[gr] = attribute[offsets[i] : offsets[i + 1]]
     return split_attr
 
 
@@ -887,5 +897,37 @@ def get_patch_knot_and_mult(
     return uknot, vknot, umult, vmult
 
 
-def has_contour(obj): #simple version
+def has_contour(obj: bpy.types.Object):  # simple version
     return "Trim Contour" in obj.data.attributes.keys()
+
+
+def remove_suffix(data_block_name):
+    if re.match(r".*[.]\d*$", data_block_name):
+        return data_block_name[:-4]
+    else:
+        return data_block_name
+
+
+def create_collection(name, parent=None):
+    new_collection = bpy.data.collections.new(name)
+
+    # If no parent, link to scene collection
+    if parent is None:
+        bpy.context.scene.collection.children.link(new_collection)
+    else:
+        parent.children.link(new_collection)
+
+    return new_collection
+
+
+def selection_mean_point(selection):
+    res = Vector()
+    for s in selection:
+        res += Vector(s[2])
+    return res / len(selection)
+
+
+def print_vec_list(vec_list):
+    for v in vec_list:
+        print(f"{v[0]:5.3f} {v[1]:5.3f} {v[2]:5.3f}")
+    print("\n")
