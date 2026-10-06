@@ -37,6 +37,4 @@ SurfacePsycho is close to able to do complete STEP/IGES import, and for the firs
 
 ## [Discord](https://discord.gg/mzTmXUUwS)
 
----
-
 ## [🌀 **GREAT DONATION PORTAL** 🌀](https://romainguimbal.github.io/sp-donation/sp-donation.html)
