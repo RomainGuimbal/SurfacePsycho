@@ -37,8 +37,6 @@ SurfacePsycho is close to able to do complete STEP/IGES import, and for the firs
 ## Learn
 [Github Wiki](https://github.com/RomainGuimbal/SurfacePsycho/wiki)
 
-[Demos and Tutorials Youtube Playlist](https://youtube.com/playlist?list=PLsTbL26zgwpI6m0qrpZZFmrgf3PaFzuiq&si=pNqACniIKLDcSQMT)
-
 ---
 
 ## News
