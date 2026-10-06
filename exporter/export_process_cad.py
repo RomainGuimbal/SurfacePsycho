@@ -4,7 +4,7 @@ from OCP.IGESControl import IGESControl_Writer
 from OCP.Interface import Interface_Static
 from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
 
-from .export_final_shapes import gather_export_shapes
+from .export_final_shapes import GatherExportShapes
 
 
 def export_step(
@@ -15,7 +15,9 @@ def export_step(
     sew,
     sew_tolerance,
 ):
-    brep_shapes = gather_export_shapes(context, use_selection, scale, sew, sew_tolerance)
+    brep_shapes = GatherExportShapes().get_root(
+        context, use_selection, scale, sew, sew_tolerance
+    )
     if brep_shapes is not None:
         write_step_file(brep_shapes, filepath, application_protocol="AP203")
         return True
@@ -31,7 +33,9 @@ def export_iges(
     sew,
     sew_tolerance,
 ):
-    brep_shapes = gather_export_shapes(context, use_selection, scale, sew, sew_tolerance)
+    brep_shapes = GatherExportShapes().get_root(
+        context, use_selection, scale, sew, sew_tolerance
+    )
     if brep_shapes is not None:
         write_iges_file(brep_shapes, filepath)
         return True
@@ -44,26 +48,26 @@ def export_iges(
 #####################################
 
 
-def write_step_file(a_shape, filename, application_protocol="AP203"):
+def write_step_file(container_shape, filename, application_protocol="AP203"):
     """exports a shape to a STEP file
-    a_shape: the topods_shape to export (a compound, a solid etc.)
+    container_shape: the topods_shape to export (a compound, a solid etc.)
     filename: the filename
     application protocol: "AP203" or "AP214IS" or "AP242DIS"
     """
     # a few checks
-    if a_shape.IsNull():
-        raise AssertionError(f"Shape {a_shape} is null.")
+    if container_shape.IsNull():
+        raise AssertionError(f"Shape {container_shape} is null.")
     if application_protocol not in ["AP203", "AP214IS", "AP242DIS"]:
         raise AssertionError(
             f"application_protocol must be either AP203 or AP214IS. You passed {application_protocol}."
         )
-    
+
     # creates and initialise the step exporter
     step_writer = STEPControl_Writer()
     Interface_Static.SetCVal_s("write.step.schema", application_protocol)
 
     # transfer shapes and write file
-    step_writer.Transfer(a_shape, STEPControl_AsIs)
+    step_writer.Transfer(container_shape, STEPControl_AsIs)
     status = step_writer.Write(filename)
 
     if status != IFSelect_RetDone:
@@ -77,21 +81,21 @@ def write_step_file(a_shape, filename, application_protocol="AP203"):
 #####################################
 
 
-def write_iges_file(a_shape, filename):
+def write_iges_file(container_shape, filename):
     """exports a shape to a STEP file
-    a_shape: the topods_shape to export (a compound, a solid etc.)
+    container_shape: the topods_shape to export (a compound, a solid etc.)
     filename: the filename
     application protocol: "AP203" or "AP214"
     """
     path = Path(filename)
     # a few checks
-    if a_shape.IsNull():
+    if container_shape.IsNull():
         raise AssertionError("Shape is null.")
     if path.is_file():
         print(f"Warning: {filename} already exists and will be replaced")
     # creates and initialise the step exporter
     iges_writer = IGESControl_Writer()
-    iges_writer.AddShape(a_shape)
+    iges_writer.AddShape(container_shape)
     status = iges_writer.Write(filename)
 
     if status != IFSelect_RetDone:

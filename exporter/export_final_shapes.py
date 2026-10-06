@@ -62,7 +62,20 @@ from ..common.compound_utils import convert_compound_to_patches
 from .export_edge import SP_Edge_export
 from .export_wire import SP_Wire_export
 from .export_contour import SP_Contour_export
-from .export_colors import set_exported_face_color, SHAPE_TOOL, COLOR_TOOL
+
+from OCP.TopAbs import TopAbs_FACE
+from OCP.TDocStd import TDocStd_Document
+from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB
+from OCP.XCAFApp import XCAFApp_Application
+from OCP.XCAFDoc import (
+    XCAFDoc_DocumentTool,
+    XCAFDoc_ColorSurf,
+)
+from OCP.UnitsMethods import (
+    UnitsMethods_LengthUnit_Millimeter,
+)
+from OCP.TCollection import TCollection_ExtendedString
+from OCP.TopoDS import TopoDS
 
 ##############################
 ##  Brep from SP entities   ##
@@ -644,7 +657,7 @@ def empty_to_topods(o, scale=1000):
 
 
 def compound_to_topods(
-    o, context, initial_depsgraph, scale=1000, sew=True, sew_tolerance=1e-1
+    self, o, context, initial_depsgraph, scale=1000, sew=True, sew_tolerance=1e-1
 ):
     new_objects = convert_compound_to_patches(
         o, context, initial_depsgraph, objects_suffix="_export", resolution=1
@@ -662,7 +675,7 @@ def compound_to_topods(
 
         # skip nested compounds for the moment
         if type != SP_obj_type.COMPOUND and type != SP_obj_type.INVALID:
-            sh = blender_object_simple_to_topods_shape(
+            sh = self.blender_object_simple_to_topods_shape(
                 new_depsgraph,
                 o_new,
                 type,
@@ -788,7 +801,11 @@ class ShapeHierarchy_export:
         self.objects = self.create_shape_hierarchy(context.scene.collection)
 
     def create_shape_hierarchy(self, parent_col):
-        """Recursive"""
+        """
+        Recursive
+        Is it using this hierarchy yet ?
+        More explications required
+        """
         objs = []
 
         for child in parent_col.children:
@@ -805,8 +822,8 @@ class ShapeHierarchy_export:
         return objs
 
 
-def blender_object_simple_to_topods_shape(
-    depsgraph, object, sp_type, scale=1000, sew=True, sew_tolerance=1e-1
+def _blender_object_simple_to_topods_shape(
+    self, depsgraph, object, sp_type, scale=1000, sew=True, sew_tolerance=1e-1
 ):
     ob = object.evaluated_get(depsgraph)
 
@@ -853,7 +870,7 @@ def blender_object_simple_to_topods_shape(
     ]:
         color = object.color
         for s in shape_list_mirrored:
-            set_exported_face_color(s, color, SHAPE_TOOL, COLOR_TOOL)
+            self.set_exported_face_color(s, color)
 
     # Sew
     if sew:
@@ -864,9 +881,12 @@ def blender_object_simple_to_topods_shape(
     return compound
 
 
-def blender_instance_to_topods_instance(  # Instancing is supported only for compounds in reality
-    instance_ob, obj_shapes, scale, sew, sew_tolerance, depsgraph
+def _blender_instance_to_topods_instance(
+    self, instance_ob, obj_shapes, scale, sew, sew_tolerance, depsgraph
 ):
+    """
+    Instancing is only supported for compounds in reality
+    """
     if instance_ob.scale.x < 0 or instance_ob.scale.y < 0 or instance_ob.scale.z < 0:
         warnings.warn("Negative scale not supported on instances")
 
@@ -896,7 +916,7 @@ def blender_instance_to_topods_instance(  # Instancing is supported only for com
             elif not o.hide_viewport:
                 # skip compounds for the moment
                 if sp_type != SP_obj_type.COMPOUND:
-                    shape = blender_object_simple_to_topods_shape(
+                    shape = self.blender_object_simple_to_topods_shape(
                         depsgraph, o, sp_type, scale, sew, sew_tolerance
                     )
                 else:
@@ -990,7 +1010,9 @@ def sew_shapes(shape_list, tolerance=1e-1):
 #                 self.pair_obj_shape[o] = shape
 
 
-def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance):
+def _make_shapes_from_objects(
+    self, objects: list, depsgraph, scale, sew, sew_tolerance
+):
     shapes, empties_obj, compounds, instances_obj = [], [], [], []
     pair_obj_shape = {}  # {object: shape} for instances to reuse already created shapes
     separated_shapes_list = []
@@ -1039,7 +1061,7 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
                 compounds.append(shape)
                 pair_obj_shape[o] = shape
             case _:
-                shape = blender_object_simple_to_topods_shape(
+                shape = self.blender_object_simple_to_topods_shape(
                     depsgraph,
                     o,
                     type,
@@ -1063,7 +1085,7 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
     # Make instances
     instances_shapes = []
     for ins in instances_obj:
-        ins_shape = blender_instance_to_topods_instance(
+        ins_shape = self.blender_instance_to_topods_instance(
             ins, pair_obj_shape, scale, sew, sew_tolerance, depsgraph
         )
         if ins_shape is not None:
@@ -1076,27 +1098,60 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
     return separated_shapes_list
 
 
-def gather_export_shapes(
-    context, use_selection: bool, scale=1000, sew: bool = True, sew_tolerance=1e-1
-) -> TopoDS_Compound:
-    depsgraph = context.evaluated_depsgraph_get()
+class GatherExportShapes:
+    def __init__(self):
+        # Colors are initialized even for IGES because it is a small minority of exports
+        app = XCAFApp_Application.GetApplication_s()
+        doc = TDocStd_Document(TCollection_ExtendedString("XmlXCAF"))
+        app.NewDocument(TCollection_ExtendedString("MDTV-XCAF"), doc)
 
-    # Gather objects
-    objects = ShapeHierarchy_export(
-        context, use_selection, scale, sew, sew_tolerance, depsgraph
-    ).objects
+        # Scale
+        XCAFDoc_DocumentTool.SetLengthUnit_s(doc, 1, UnitsMethods_LengthUnit_Millimeter)
 
-    if len(objects) == 0:
-        return None
+        self.shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
+        self.color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
 
-    # Make shapes from objects
-    separated_shapes_list = make_shapes_from_objects(
-        objects, depsgraph, scale, sew, sew_tolerance
-    )
+    make_shapes_from_objects = _make_shapes_from_objects
+    blender_instance_to_topods_instance = _blender_instance_to_topods_instance
+    blender_object_simple_to_topods_shape = _blender_object_simple_to_topods_shape
 
-    if len(separated_shapes_list) > 0:
-        root_compound = shape_list_to_compound(separated_shapes_list)
-    else:
-        return None
+    def set_exported_face_color(self, topoFace, rgb_color):
+        print(topoFace.IsNull())
+        # assert topoFace.IsNull()
+        # Init XCAF face
+        label = self.shape_tool.AddShape(topoFace, False)
 
-    return root_compound
+        color = Quantity_Color(
+            rgb_color[0], rgb_color[1], rgb_color[2], Quantity_TOC_RGB
+        )
+        self.color_tool.SetColor(label, color, XCAFDoc_ColorSurf)
+
+    def get_root(
+        self,
+        context,
+        use_selection: bool,
+        scale=1000,
+        sew: bool = True,
+        sew_tolerance=1e-1,
+    ) -> TopoDS_Compound:
+        depsgraph = context.evaluated_depsgraph_get()
+
+        # Gather objects
+        objects = ShapeHierarchy_export(
+            context, use_selection, scale, sew, sew_tolerance, depsgraph
+        ).objects
+
+        if len(objects) == 0:
+            return None
+
+        # Make shapes from objects
+        separated_shapes_list = self.make_shapes_from_objects(
+            objects, depsgraph, scale, sew, sew_tolerance
+        )
+
+        if len(separated_shapes_list) > 0:
+            root_compound = shape_list_to_compound(separated_shapes_list)
+        else:
+            return None
+
+        return root_compound
