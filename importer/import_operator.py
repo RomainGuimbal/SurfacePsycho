@@ -51,8 +51,6 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         return (path.endswith(".step") or path.endswith(".stp")) if path else True
 
     def execute(self, context):
-        print("Initializing import...")
-
         self.t0 = time.time()
         self.batch_size = 300
         self.created_object_count = 0
@@ -60,6 +58,9 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
         self.object_data = []
         self.status = "Gathering shape data..."
         self.prev_status = ""
+        
+        print(self.status)
+        bpy.context.workspace.status_text_set_internal(self.status)
 
         # Show wait cursor
         context.window.cursor_set("WAIT")
@@ -109,32 +110,35 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
 
         self.total_count = len(self.object_data)
 
-        # profiler.disable()
-        # profiler.print_stats()
+        wm=context.window_manager
 
         # Setup modal operation
-        self._timer = context.window_manager.event_timer_add(0.1, window=context.window)
-        context.window_manager.modal_handler_add(self)
+        self._timer = wm.event_timer_add(0.1, window=context.window)
+        wm.modal_handler_add(self)
 
         # Initialize tracking
         self.objects_created = 0
         self.status = "Starting object creation..."
+        bpy.context.workspace.status_text_set_internal(self.status)
 
         # Setup progress bar
-        context.window_manager.progress_begin(0, self.total_count)
+        wm.progress_begin(0, self.total_count)
         context.window.cursor_set("DEFAULT")
 
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
         if event.type == "TIMER":
+            bpy.context.workspace.status_text_set_internal(self.status)
             if self.status != self.prev_status:
                 print(self.status)
             self.prev_status = self.status
             return self.process_batch(context)
         elif event.type == "ESC":
+            bpy.context.workspace.status_text_set_internal(None)
             context.window_manager.progress_end()
             return {"CANCELLED"}
+        
         return {"PASS_THROUGH"}
 
     def process_batch(self, context):
@@ -143,13 +147,16 @@ class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
             for i in range(self.batch_size):
                 create_blender_object(self.object_data[self.created_object_count])
                 self.created_object_count += 1
+
                 if self.created_object_count >= self.total_count:
+                    bpy.context.workspace.status_text_set_internal(None)
                     context.window_manager.progress_end()
                     print(f"Import '{self.filepath}': {time.time() - self.t0:.3f}s")
                     return {"FINISHED"}
         else:
             context.window_manager.progress_end()
             print(f"Import '{self.filepath}': {time.time() - self.t0:.3f}s")
+
             return {"FINISHED"}
 
         # Report progress
