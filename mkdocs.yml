@@ -10,5 +10,7 @@ theme:
     accent: pink
     primary: indigo
     scheme: slate
+  logo: Images/favicon.svg
+  favicon: Images/favicon.svg
 plugins:
   - search
