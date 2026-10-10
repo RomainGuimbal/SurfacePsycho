@@ -1,0 +1,14 @@
+site_name: SurfacePsycho Documentation
+site_url: https://https://romainguimbal.github.io/surface-psycho/documentation
+site_dir: C:/Users/romai/Documents/Projets/15 - romainguimbal.github.io/surface-psycho/documentation
+
+theme:
+  name: material
+  features:
+    - navigation.footer
+  palette:
+    accent: pink
+    primary: indigo
+    scheme: slate
+plugins:
+  - search
