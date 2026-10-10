@@ -114,7 +114,7 @@ ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Copy Compound Nearest Shapes",
     "SP - Extrude Compound",
     "SP - Flip Compound Face",
-    "SP - Intersect Bezier Patches",
+    "SP - Patch-Patch Intersection Curves",
     "SP - Interval Curves",
     "SP - NURBS to Bezier Patches",
     "SP - Pipe Compound",
@@ -127,14 +127,12 @@ ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Trim Bezier Patch",
     "SP - Trim Bezier Patches as Compound",
     "SP - Tubes Compound",
-}
-
-ASSET_NODE_GROUPS_SHAPE_PRESETS = {
     "SP - Cylinder Compound",
     "SP - Disc CP",
     "SP - Frame Compound",
     "SP - Oblong Extrusion Compound",
     "SP - Slab Compound",
+    "SP - Cable Compound",
 }
 
 ASSET_NODE_GROUPS = (
@@ -144,5 +142,4 @@ ASSET_NODE_GROUPS = (
     | ASSET_NODE_GROUPS_NURBS_PATCH
     | ASSET_NODE_GROUPS_OTHER_SURFACES
     | ASSET_NODE_GROUPS_COMPOUND
-    | ASSET_NODE_GROUPS_SHAPE_PRESETS
 )

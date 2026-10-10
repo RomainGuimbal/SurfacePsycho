@@ -21,7 +21,6 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = asset_list.ASSET_NODE_GROUPS_CURVE_AND_F
 ASSET_NODE_GROUPS_NURBS_PATCH = asset_list.ASSET_NODE_GROUPS_NURBS_PATCH
 ASSET_NODE_GROUPS_OTHER_SURFACES = asset_list.ASSET_NODE_GROUPS_OTHER_SURFACES
 ASSET_NODE_GROUPS_COMPOUND = asset_list.ASSET_NODE_GROUPS_COMPOUND
-ASSET_NODE_GROUPS_SHAPE_PRESETS = asset_list.ASSET_NODE_GROUPS_SHAPE_PRESETS
 ASSET_NODE_GROUPS = asset_list.ASSET_NODE_GROUPS
 set_nodes_version = version_utils.set_nodes_version
 replace_duplicates = version_utils.replace_duplicates
@@ -288,6 +287,7 @@ obj_preset = {
     "Oblong Tube",
     "Oblong Slab",
     "Revolution",
+    "Cable",
 }
 coll_preset = {
     "Corner",
@@ -345,7 +345,6 @@ if __name__ == "__main__":
     append_by_name(path_nurbs, ASSET_NODE_GROUPS_NURBS_PATCH, "node_groups")
     append_by_name(path_other, ASSET_NODE_GROUPS_OTHER_SURFACES, "node_groups")
     append_by_name(path_compound, ASSET_NODE_GROUPS_COMPOUND, "node_groups")
-    append_by_name(path_preset, ASSET_NODE_GROUPS_SHAPE_PRESETS, "node_groups")
 
     print(f"{RESET}\n______________________________________________________\n")
     print("Appending Objects..")
