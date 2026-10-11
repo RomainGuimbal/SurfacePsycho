@@ -5,7 +5,7 @@ Add SP objects from the add menu `shift+A > Surface`, `shift+A > Curve` or from 
 
 ## What they are 
 * Under the hood SurfacePsycho compatible objects are simply Blender objects which stores the right attributes. a
-* Most of the time, it is a mesh object with a [Meshing Modifier](../Workflow/Modifers.md/#meshing-modifiers)
+* Most of the time, it is a mesh object with a [Meshing Modifier](../Workflow/Modifers.md#meshing-modifiers)
 * The meshing modifier provides the attributes required for the exporter to read and for interaction between objects
 * New SP objects can be made from scratch by adding a _meshing modifier_ to any mesh
 

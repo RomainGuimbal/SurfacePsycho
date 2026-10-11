@@ -2,21 +2,16 @@
 
 ## Usage
 To non destructively edit SP objects : 
-* Drag and drop modifiers from the asset library onto the object to edit
-* Reorder them to your liking (top one is applied first)
-* Set their parameters
+* Drag and drop a modifier from the asset library onto the object to edit or search for it in the modifier list
+* Reorder the stack to your liking (top one is applied first)
+* Set its parameters
 
-
-## Modifiers order
-* The meshing modifier should stay last (bottom) except for the following modifiers which must be after: 
+## Meshing Modifiers
+Each SP object must have a Meshing modifiers to be evaluated as a STEP shape.
+There is one for each object type ([see object types](../Workflow/SP-Objects.md#types)).
+The meshing modifier must be the last one editing the shape. Modifiers before the meshing modifier act on the control geometry. Some modifiers are however made to come after :
    - Mirror
-   - Curvature Analysis
-   - Continuity Analysis
-   - Plot Distance from Mesh
-   - Distance Between Curves
    - Any other viewer/analysis modifier
-
-* Modifiers before the meshing modifier act on the control geometry
 
 
 ## Compatible default Blender modifiers
