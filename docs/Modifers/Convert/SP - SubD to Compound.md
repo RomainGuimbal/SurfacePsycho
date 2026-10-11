@@ -2,7 +2,7 @@
 
 ## Usage of SubD to Compound
 ### Ingredients
-- 1 SP Compound object (cf. [Compound object](https://github.com/RomainGuimbal/SurfacePsycho/wiki/2.-SP-Objects#compound))
+- 1 SP Compound object (cf. [Compound object](../../Workflow/SP-Objects.md#compound))
 - 1 SubD to Compound modifier
 
 ### Directions
@@ -12,7 +12,7 @@
 - Adjust the subdivision level
 - ~~Serve warm, with a glass of white wine~~
 
-> If you want to edit individual patches, use [explode compound](https://github.com/RomainGuimbal/SurfacePsycho/wiki/Explode-Compound)
+> If you want to edit individual patches, use [explode compound](../../Workflow/Explode-Compound.md)
 
 > To improve editing speed, you can temporarily uncheck _Compute_ and disable _Compound Meshing_. It is then equivalent to the standard Subdivision Surface modifier.
 

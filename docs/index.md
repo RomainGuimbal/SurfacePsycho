@@ -10,35 +10,28 @@
 - Tools and Workflow level 1 > Tools and Workflow other levels
 - Tools and Workflow level 1 > Modifiers
 -->
-> This documentation is incomplete. If you have any knowledge with the add-on, please join the [Discord↗️](https://discord.gg/zUmFejwV8G) to help on the writing.
+
+## Install 
+1. In ``Edit > Preferences > Get Extentions`` Search for "Surface Psycho", click Install.
+
+2. In `Edit > Preferences > Add-ons > SurfacePsycho` click `Add assets path`
+
+[More details on installation and setup here](./10-Install-and-Setup.md)
+
+## Start designing
+
+1. Add a SurfacePsycho object : ``Shift``+``A`` > `Surface`, or ``Shift``+``A`` > `Curve` and select one in the bottom section. [Understand what SP objects are here](./Workflow/SP-Objects.md)
+
+1. ``Tab`` to get in edit mode. SP objects are simply mesh objects with specific attributes. You can move and add points for destructive editing. [More details here](./Workflow/Destructive-editing.md)
+
+2. Add modifiers for non-destructive editing. If you have setup the library correctly, SP modifiers should appear in the modifier list under ``SurfacePsycho`` sub-menu. [More details here](./Workflow/Modifers.md)
+
+## Export your design
+Export selected SurfacePsycho objects as STEP files with `N panel > SurfacePsycho > Quick export` (saved in current .blend folder). [More details here](./30-Import-and-Export.md)
 
 ---
-
-
-### Install 
-In ``Edit > Preferences > Get Extentions`` Search for "Surface Psycho", click Install.
-Then in `Preferences > Add-ons > SurfacePsycho` click `Add assets path`
-> [More details on instalation and setup here](./Install-and-Setup.md)
-
-### Start designing
-
-- First add a SurfacePsycho object : ``Shift``+``A`` > `Surface`, or ``Shift``+``A`` > `Curve` and select one in the bottom section. 
-> [More details here](./Tools%20and%20Workflow/SP-Objects.md)
-
-- ``Tab`` to get in edit mode. SP objects are simply mesh objects with specific attributes. You can move and add points for destructive editing.
-> [More details here](./Tools%20and%20Workflow/Destructive-editing.md)
-
-- Add modifiers for non-destructive editing. If you have setup the library correctly, SP modifiers should appear in the modifier list under ``SurfacePsycho`` sub-menu.
-> [More details on modifiers here](./Tools%20and%20Workflow/Modifers.md)
-
-### Import and Export
-- Export you selected SurfacePsycho objects as .step with `File > Export > SurfacePsycho STEP (.step)`  
-
-- Similarly, import any CAD file with `File > Import > SurfacePsycho CAD (.step, .iges)`
->[More info on I/O here](./Import-and-Export.md)
-
----
-* [Keymap](./Tools%20and%20Workflow/Keymap.md) 
+* [Keymap](./Workflow/Keymap.md) 
 * [Video Demos and Tutorials](https://www.youtube.com/playlist?list=PLsTbL26zgwpI6m0qrpZZFmrgf3PaFzuiq)
 * [Sample Files](https://github.com/RomainGuimbal/SurfacePsycho-Sample-Files)
-* [About](./About.md)
+
+> This documentation is incomplete. If you have any knowledge with the add-on, please join the [Discord↗️](https://discord.gg/zUmFejwV8G) to help on the writing.

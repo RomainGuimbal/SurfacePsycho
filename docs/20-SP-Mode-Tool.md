@@ -12,4 +12,4 @@ The enabled, it gives you several overlays and shortcuts to speedup your workflo
 - In Edit mode, vertices tagged as Endpoints are shown with a black square.
 
 ## Keymap
-A specific [keymap](https://github.com/RomainGuimbal/SurfacePsycho/wiki/6.-Keymap) is toggled by the tool. It tries to minimize overlaps with Blender default keys you usually need for surface editing.
+A specific [keymap](./Workflow/Keymap.md) is toggled by the tool. It tries to minimize overlaps with Blender default keys you usually need for surface editing.

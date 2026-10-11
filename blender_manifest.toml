@@ -7,7 +7,7 @@ tagline = "Precision Surface Design"
 maintainer = "Romain Guimbal"
 type = "add-on"
 
-website = "https://github.com/RomainGuimbal/SurfacePsycho/wiki"
+website = "https://https://romainguimbal.github.io/surface-psycho/documentation"
 
 tags = ["Modeling", "Import-Export", "Geometry Nodes", "Add Curve"]
 
