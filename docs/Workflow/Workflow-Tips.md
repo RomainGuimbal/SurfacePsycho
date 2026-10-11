@@ -1,3 +1,5 @@
+# Workflow-tips
+
 ## Duplicate-Apply
 * When some functions you need don't exist, you often want to manually edit the control grid. Since you don't want to lose your modifier stack here is a helpful pattern : 
 1. Duplicate the modifier you want to apply (`Shift+D`)

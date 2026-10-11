@@ -1,9 +1,11 @@
-# Usage of SubD to Compound
-## Ingredients
+# SP - SubD to Compound
+
+## Usage of SubD to Compound
+### Ingredients
 - 1 SP Compound object (cf. [Compound object](https://github.com/RomainGuimbal/SurfacePsycho/wiki/2.-SP-Objects#compound))
 - 1 SubD to Compound modifier
 
-## Directions
+### Directions
 - Add the modifier to the Compound object
 - Make sure it is above the _Compound Meshing_ modifier
 - Any mesh you create inside the compound object is now subdivided smoothly and converted to Bezier patches

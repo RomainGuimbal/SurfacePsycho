@@ -1,3 +1,5 @@
+# Procedural modeling
+
 ## Must know
 1. Every SP object can support your own GeometryNodes modifiers, but each object is limited to a single shape except for [Compounds](https://github.com/RomainGuimbal/SurfacePsycho/wiki/2.-SP-Objects#compound). Make a compound to start: `Shift+A`>`Surface`>`Compound`
 1. Add a GeometryNodes modifier to it (necessarily on top of the compound meshing modifier), create a new node group and edit the node tree.

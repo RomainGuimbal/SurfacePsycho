@@ -1,17 +1,22 @@
-<!-- # MkDocs commands
+# Quick start
+<!-- MkDocs commands
 * `mkdocs serve` - Start the live-reloading docs server.
 * `mkdocs build` - Build the documentation site.
 -->
 
-![Logo](https://github.com/user-attachments/assets/e92c81d4-ac95-4550-91e7-323b978ba21f)
-
+<!-- Doc structure and page dependency
+">" means page redirection toward
+- Quick start > Tools and Workflow level 1
+- Tools and Workflow level 1 > Tools and Workflow other levels
+- Tools and Workflow level 1 > Modifiers
+-->
 > This documentation is incomplete. If you have any knowledge with the add-on, please join the [Discord↗️](https://discord.gg/zUmFejwV8G) to help on the writing.
 
 ---
-## Quick start
+
 
 ### Install 
-``Preferences > Get Extentions > Search for "Surface Psycho"``, click Install.
+In ``Edit > Preferences > Get Extentions`` Search for "Surface Psycho", click Install.
 Then in `Preferences > Add-ons > SurfacePsycho` click `Add assets path`
 > [More details on instalation and setup here](./Install-and-Setup.md)
 
@@ -30,7 +35,7 @@ Then in `Preferences > Add-ons > SurfacePsycho` click `Add assets path`
 - Export you selected SurfacePsycho objects as .step with `File > Export > SurfacePsycho STEP (.step)`  
 
 - Similarly, import any CAD file with `File > Import > SurfacePsycho CAD (.step, .iges)`
->[More info on I/O here](./Tools%20and%20Workflow/Import-and-Export.md)
+>[More info on I/O here](./Import-and-Export.md)
 
 ---
 * [Keymap](./Tools%20and%20Workflow/Keymap.md) 

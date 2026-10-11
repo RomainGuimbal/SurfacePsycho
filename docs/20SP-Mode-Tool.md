@@ -1,3 +1,5 @@
+# SP Mode Tool
+
 <img width="auto" height="300" alt="image" src="https://github.com/user-attachments/assets/fb0f7bda-5ae2-4a27-a7bc-4f00c7f40f31" />
 
 From the left tool bar in `Object mode` and `Edit mode`, you can activate the `SP Mode Tool`
