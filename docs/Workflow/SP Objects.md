@@ -16,7 +16,7 @@ Add SP objects from the add menu `shift+A > Surface`, `shift+A > Curve` or from 
 | Curve | ![Curve Icon](https://github.com/RomainGuimbal/SurfacePsycho/assets/39882829/4cbfc44b-4549-4b42-be13-9b7c9bb7d6d8) | Compound | ![Compound Icon](https://github.com/user-attachments/assets/b08f5587-98c9-47c9-a4a3-58221e801c02) | Others | ICON TO ADD |
 
 ## Curve
-A curve object contains a single _wire_. Requires a [Curve Meshing modifier](../Modifers/Shape/Meshing/SP%20-%20Curve%20Meshing.md). Default Blender curves cannot be exported with SP directly, but they can be converted with [SP - Copy Internal Curve](../Modifers/Utility/SP%20-%20Copy-Internal-Curve.md).
+A curve object contains a single _wire_. Requires a [Curve Meshing modifier](../Modifers/Shape/Meshing/SP%20-%20Curve%20Meshing.md). Default Blender curves cannot be exported with SP directly, but they can be converted with [SP - Copy Internal Curve](../Modifers/Utility/SP%20-%20Copy%20Internal%20Curve.md).
 
 ## FlatPatch
 Planar surfaces built from a set of _wires_. Theses wires are flatten to either the object XY plane or to mean plane if *Orient* option is enabled. Requires a [FlatPatch Meshing modifier](../Modifers/Shape/Meshing/SP%20-%20FlatPatch%20Meshing.md)

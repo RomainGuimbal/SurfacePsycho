@@ -12,7 +12,7 @@
 - Adjust the subdivision level
 - ~~Serve warm, with a glass of white wine~~
 
-> If you want to edit individual patches, use [explode compound](../../Workflow/Explode-Compound.md)
+> If you want to edit individual patches, use [explode compound](../../Workflow/Explode%20Compound.md)
 
 > To improve editing speed, you can temporarily uncheck _Compute_ and disable _Compound Meshing_. It is then equivalent to the standard Subdivision Surface modifier.
 
