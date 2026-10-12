@@ -5,10 +5,12 @@
 -->
 
 <!-- Doc structure and page dependency
-">" means page redirection toward
+
 - Quick start > Tools and Workflow level 1
 - Tools and Workflow level 1 > Tools and Workflow other levels
 - Tools and Workflow level 1 > Modifiers
+(">" meaning page redirection toward)
+Ideally every modifier is linked as a workflow feature
 -->
 
 ## Install 

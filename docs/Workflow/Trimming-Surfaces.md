@@ -1,13 +1,16 @@
 # Trimming Surfaces
 
 ## Manual Trimming
-### Add Trim Contour
-To quickly add a trim contour use the following button in the SP N panel :
+### Add a Trim Contour
+To quickly add a trim contour `N Panel > SurfacePsycho > Edit > Trim Contour > Add` :
+![Assign geometry to trim contour from panel](<../Images/assign trim.jpg>)
 
-<img width="300" height="auto" alt="add trim contour button" src="https://github.com/user-attachments/assets/a189f075-67a8-4b4e-93e7-08789733a384"/>
+### Edit it
+Trim contours in SurfacePsycho are defined with the [wire system](./Editing-Wires.md). The wires are projected over the X-Y plane of the object (X represents U, Y represents V). The trim contour is simply some geometry marked as such. 
 
-### Edit Trim Contour
-Trim contours in SurfacePsycho are defined with the [wire system](./Editing-Wires.md). The wires are projected over the X-Y plane of the object. The X axis represents the U axis and Y the V axis.
+To mark or unmark some, `N Panel > SurfacePsycho > Edit > Trim Contour > Toggle`. 
+
+The ``Select`` button allows you to view what is already assigned.
 
 ## Non-Destructive Trimming
-Modifiers such as ``SP - Trim Bezier Patch`` or ``SP - Trim Bezier Surface from Projected Wires`` are trimming the surface they act on.
+Trimming surfaces can be automated by modifiers of the trim category. Note that [SP - Crop or Extend Patch](../Modifers/Trim/SP%20-%20Crop-or-Extend-Patch.md) acts on the control points of the surface and not on its trim contour.
