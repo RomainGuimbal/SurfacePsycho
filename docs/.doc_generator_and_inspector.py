@@ -81,15 +81,14 @@ def print_files_with_fewer_than_4_lines(root=DOC_ROOT, min_lines=4):
 
 
 def derive_title_from_filename(path):
-    """Derive a human-readable title from a markdown file name.
-
+    """
     Strips the extension and any leading numbering like '10-' or '80-',
     then replaces '-' and '_' separators with spaces.
     '80-Compatibility and Upgrade.md' -> 'Compatibility and Upgrade'
     """
     stem = Path(path).stem
-    stem = re.sub(r"^\d+[-_.\s]+", "", stem)  # leading numbering ('10-', '80_', ...)
-    title = re.sub(r"[-_]+", " ", stem).strip()
+    title = re.sub(r"^\d+[-_.\s]+", "", stem)  # leading numbering ('10-', '80_', ...)
+    # title = re.sub(r"[-_]+", " ", stem).strip()
     return title
 
 
@@ -151,5 +150,5 @@ def add_missing_titles(root=DOC_ROOT):
     return modified
 
 
-# print_files_with_fewer_than_4_lines()
-add_missing_titles()
+print_files_with_fewer_than_4_lines()
+# add_missing_titles()

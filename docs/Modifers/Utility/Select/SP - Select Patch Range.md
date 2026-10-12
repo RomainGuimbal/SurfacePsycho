@@ -1,2 +1,2 @@
-# SP   Select Patch Range
+# SP - Select Patch Range
 

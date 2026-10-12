@@ -1,4 +1,4 @@
-# SP   Conical Meshing
+# SP - Conical Meshing
 
 `MODIFIER` `MESHING`
 

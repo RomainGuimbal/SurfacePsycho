@@ -1,2 +1,2 @@
-# SP   Interval Curves
+# SP - Interval Curves
 

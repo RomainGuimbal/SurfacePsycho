@@ -1,2 +1,2 @@
-# SP   NURBS to Bezier Curve or FlatPatch
+# SP - NURBS to Bezier Curve or FlatPatch
 

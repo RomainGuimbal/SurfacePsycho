@@ -1,4 +1,4 @@
-# SP   Cylindrical Meshing
+# SP - Cylindrical Meshing
 
 `MODIFIER` `MESHING`
 

@@ -1,4 +1,4 @@
-# SP   Curve Meshing
+# SP - Curve Meshing
 
 `MODIFIER` `MESHING`
 

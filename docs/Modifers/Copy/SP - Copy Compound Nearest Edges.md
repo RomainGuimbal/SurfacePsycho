@@ -1,2 +1,2 @@
-# SP   Copy Compound Nearest Edges
+# SP - Copy Compound Nearest Edges
 

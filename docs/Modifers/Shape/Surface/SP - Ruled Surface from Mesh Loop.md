@@ -1,2 +1,2 @@
-# SP   Ruled Surface from Mesh Loop
+# SP - Ruled Surface from Mesh Loop
 

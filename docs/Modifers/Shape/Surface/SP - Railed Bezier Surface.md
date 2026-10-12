@@ -1,2 +1,2 @@
-# SP   Railed Bezier Surface
+# SP - Railed Bezier Surface
 

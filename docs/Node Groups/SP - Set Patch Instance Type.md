@@ -1,4 +1,4 @@
-# SP   Set Patch Instance Type
+# SP - Set Patch Instance Type
 
 `Node-Group`
 

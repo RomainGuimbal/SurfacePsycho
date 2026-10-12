@@ -1,4 +1,4 @@
-# SP   Surface of Extrusion Meshing
+# SP - Surface of Extrusion Meshing
 
 `MODIFIER` `MESHING`
 

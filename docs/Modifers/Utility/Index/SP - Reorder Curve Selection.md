@@ -1,2 +1,2 @@
-# SP   Reorder Curve Selection
+# SP - Reorder Curve Selection
 

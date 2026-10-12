@@ -1,2 +1,2 @@
-# SP   Cylinder Compound
+# SP - Cylinder Compound
 

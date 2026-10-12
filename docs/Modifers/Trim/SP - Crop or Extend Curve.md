@@ -1,3 +1,3 @@
-# SP   Crop or Extend Curve
+# SP - Crop or Extend Curve
 
 Changes the parameter range of any curve.

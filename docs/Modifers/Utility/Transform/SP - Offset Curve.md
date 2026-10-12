@@ -1,2 +1,2 @@
-# SP   Offset Curve
+# SP - Offset Curve
 

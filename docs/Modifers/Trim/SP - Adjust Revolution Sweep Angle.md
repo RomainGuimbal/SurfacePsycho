@@ -1,2 +1,2 @@
-# SP   Adjust Revolution Sweep Angle
+# SP - Adjust Revolution Sweep Angle
 

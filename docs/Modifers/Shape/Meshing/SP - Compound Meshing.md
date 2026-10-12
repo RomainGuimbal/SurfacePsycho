@@ -1,4 +1,4 @@
-# SP   Compound Meshing
+# SP - Compound Meshing
 
 SP - Compound Meshing
 `MODIFIER` `MESHING`

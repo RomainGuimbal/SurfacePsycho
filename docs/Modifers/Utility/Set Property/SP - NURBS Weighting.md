@@ -1,2 +1,2 @@
-# SP   NURBS Weighting
+# SP - NURBS Weighting
 

@@ -1,2 +1,2 @@
-# SP   Copy Compound Nearest Shapes
+# SP - Copy Compound Nearest Shapes
 

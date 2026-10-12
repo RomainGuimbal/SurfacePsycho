@@ -1,2 +1,2 @@
-# SP   Gradient Map
+# SP - Gradient Map
 

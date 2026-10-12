@@ -1,4 +1,4 @@
-# SP   Spherical Meshing
+# SP - Spherical Meshing
 
 `MODIFIER` `MESHING`
 

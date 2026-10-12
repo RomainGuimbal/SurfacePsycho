@@ -1,3 +1,3 @@
-# SP   Set Segment Type
+# SP - Set Segment Type
 
 `Node-Group`

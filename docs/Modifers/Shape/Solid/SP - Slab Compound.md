@@ -1,2 +1,2 @@
-# SP   Slab Compound
+# SP - Slab Compound
 

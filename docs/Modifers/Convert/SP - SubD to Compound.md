@@ -2,7 +2,7 @@
 
 ## Usage of SubD to Compound
 ### Ingredients
-- 1 SP Compound object (cf. [Compound object](../../Workflow/SP-Objects.md#compound))
+- 1 SP Compound object (cf. [Compound object](../../Workflow/SP%20Objects.md#compound))
 - 1 SubD to Compound modifier
 
 ### Directions

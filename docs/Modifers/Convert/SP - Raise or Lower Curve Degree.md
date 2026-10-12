@@ -1,2 +1,2 @@
-# SP   Raise or Lower Curve Degree
+# SP - Raise or Lower Curve Degree
 

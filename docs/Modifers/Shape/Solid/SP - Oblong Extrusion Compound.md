@@ -1,2 +1,2 @@
-# SP   Oblong Extrusion Compound
+# SP - Oblong Extrusion Compound
 

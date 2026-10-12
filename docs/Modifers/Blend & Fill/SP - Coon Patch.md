@@ -1,4 +1,4 @@
-# SP   Coon Patch
+# SP - Coon Patch
 
 `MODIFIER`
 

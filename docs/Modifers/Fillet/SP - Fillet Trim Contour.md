@@ -1,2 +1,2 @@
-# SP   Fillet Trim Contour
+# SP - Fillet Trim Contour
 

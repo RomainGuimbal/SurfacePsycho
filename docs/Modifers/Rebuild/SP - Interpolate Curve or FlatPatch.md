@@ -1,2 +1,2 @@
-# SP   Interpolate Curve or FlatPatch
+# SP - Interpolate Curve or FlatPatch
 

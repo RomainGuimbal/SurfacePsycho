@@ -1,4 +1,4 @@
-# SP   Fillet Polyline with Circles
+# SP - Fillet Polyline with Circles
 
 Allows to create circular arcs to round corners of Curve or Flat Patch wires. It is currently limited to straight segments and ignores all the segments types.
 

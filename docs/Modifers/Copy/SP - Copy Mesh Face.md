@@ -1,2 +1,2 @@
-# SP   Copy Mesh Face
+# SP - Copy Mesh Face
 

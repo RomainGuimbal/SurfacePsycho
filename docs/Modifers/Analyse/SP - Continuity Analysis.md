@@ -1,4 +1,4 @@
-# SP   Continuity Analysis
+# SP - Continuity Analysis
 
 A modifier used to plot the continuities error. Used to do manual continuity match as showcased in the following tutorial.
 The modifier must be placed after the mesher.

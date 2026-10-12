@@ -1,2 +1,2 @@
-# SP   Trim Bezier Patch
+# SP - Trim Bezier Patch
 

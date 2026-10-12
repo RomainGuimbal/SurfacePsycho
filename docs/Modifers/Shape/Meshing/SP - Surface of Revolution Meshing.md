@@ -1,4 +1,4 @@
-# SP   Surface of Revolution Meshing
+# SP - Surface of Revolution Meshing
 
 `MODIFIER` `MESHING`
 

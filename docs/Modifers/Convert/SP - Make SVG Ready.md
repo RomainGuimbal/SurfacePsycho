@@ -1,2 +1,2 @@
-# SP   Make SVG Ready
+# SP - Make SVG Ready
 

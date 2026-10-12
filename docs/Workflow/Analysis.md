@@ -9,7 +9,7 @@ For surfaces, there is a specific modifier: [SP - Curvature Analysis](../Modifer
 <!-- TODO : Alt + change param... -->
 
 #### Matcaps
-To register the matcaps shiped with the addon, go to `Edit > Preferences > Add-ons > SurfacePsycho > Psycho Matcaps` and click `Add`. They will appear in the matcap list. For better analysis, increase surfaces resolutions, enable ``Exact Normals`` and EEVEE's `high quality normals` ([More info here](./Exact-Normals.md)).
+To register the matcaps shiped with the addon, go to `Edit > Preferences > Add-ons > SurfacePsycho > Psycho Matcaps` and click `Add`. They will appear in the matcap list. For better analysis, increase surfaces resolutions, enable ``Exact Normals`` and EEVEE's `high quality normals` ([More info here](./Exact%20Normals.md)).
 
 ## Analyse Distances Between Curves
 Use [SP - Plot Distance Between Curve](../Modifers/Analyse/SP%20-%20Plot%20Distance%20Between%20Curves.md)

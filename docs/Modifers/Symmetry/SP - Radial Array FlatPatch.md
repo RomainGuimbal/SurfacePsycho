@@ -1,2 +1,2 @@
-# SP   Radial Array FlatPatch
+# SP - Radial Array FlatPatch
 

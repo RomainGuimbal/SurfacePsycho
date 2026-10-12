@@ -1,2 +1,2 @@
-# SP   Curvature Analysis
+# SP - Curvature Analysis
 

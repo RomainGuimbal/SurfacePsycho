@@ -1,2 +1,2 @@
-# SP   Set Edge Length
+# SP - Set Edge Length
 

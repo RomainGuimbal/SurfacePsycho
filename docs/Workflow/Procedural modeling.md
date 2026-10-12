@@ -1,7 +1,7 @@
 # Procedural modeling
 
 ## Must know
-1. Every SP object can support your own GeometryNodes modifiers, but each object is limited to a single shape except for [Compounds](../Workflow/SP-Objects.md#compound). Make a compound to start: `Shift+A`>`Surface`>`Compound`
+1. Every SP object can support your own GeometryNodes modifiers, but each object is limited to a single shape except for [Compounds](../Workflow/SP%20Objects.md#compound). Make a compound to start: `Shift+A`>`Surface`>`Compound`
 2. Add a GeometryNodes modifier to it (necessarily on top of the compound meshing modifier), create a new node group and edit the node tree.
 3. GeometryNodes compatible with SP must have the following :
    - The **output** must be made only of instances with a shape type attribute (on the instance domain).

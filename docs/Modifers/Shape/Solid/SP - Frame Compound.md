@@ -1,2 +1,2 @@
-# SP   Frame Compound
+# SP - Frame Compound
 

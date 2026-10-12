@@ -1,4 +1,4 @@
-# SP   Reorder Grid Index
+# SP - Reorder Grid Index
 
 `MODIFIER` `TOOL`
 

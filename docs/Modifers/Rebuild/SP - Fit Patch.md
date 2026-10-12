@@ -1,2 +1,2 @@
-# SP   Fit Patch
+# SP - Fit Patch
 

@@ -1,2 +1,2 @@
-# SP   Inset FlatPatch
+# SP - Inset FlatPatch
 

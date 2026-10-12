@@ -1,2 +1,2 @@
-# SP   Reproject Ellipse Arcs Ends
+# SP - Reproject Ellipse Arcs Ends
 

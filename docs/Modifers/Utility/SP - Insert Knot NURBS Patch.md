@@ -1,2 +1,2 @@
-# SP   Insert Knot NURBS Patch
+# SP - Insert Knot NURBS Patch
 

@@ -1,2 +1,2 @@
-# SP   Fillet Curve or FlatPatch
+# SP - Fillet Curve or FlatPatch
 

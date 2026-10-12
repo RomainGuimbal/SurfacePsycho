@@ -1,2 +1,2 @@
-# SP   Add Shape to Compound
+# SP - Add Shape to Compound
 

@@ -1,2 +1,2 @@
-# SP   Sample Curve Per Degree
+# SP - Sample Curve Per Degree
 

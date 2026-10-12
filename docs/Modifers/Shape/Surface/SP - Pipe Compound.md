@@ -1,2 +1,2 @@
-# SP   Pipe Compound
+# SP - Pipe Compound
 

@@ -28,10 +28,10 @@ Your typical Non-Uniform-Rational-B-Spline. Requires a [NURBS Patch Meshing modi
 Single span NURBS patch. The 2 reason for the separation is that they are faster and simpler to work with. As a consequence a lot of algorithm are implemented on them at first, and ported to NURBS later. Requires a [Bezier Patch Meshing modifier](../Modifers/Shape/Meshing/SP%20-%20Bezier%20Patch%20Meshing.md)
 
 ## Compound
-An object containing several SP shapes. Can be used for [procedural modeling](../Workflow/Procedural-modeling.md). Requires a [Compound Meshing modifier](../Modifers/Shape/Meshing/SP%20-%20Compound%20Meshing.md)
+An object containing several SP shapes. Can be used for [procedural modeling](../Workflow/Procedural%20modeling.md). Requires a [Compound Meshing modifier](../Modifers/Shape/Meshing/SP%20-%20Compound%20Meshing.md)
 
 ## Wire
-A single chain of vertices (open or closed) used to represent a chain of segments. To edit them see [Editing-Wires](./Editing-Wires.md)
+A single chain of vertices (open or closed) used to represent a chain of segments. To edit them see [Editing Wires](./Destructive%20editing.md#edit-wires)
 
 ## Segments
 Represent patch edges, or any curve piece with a single geometrical definition. A modifier which has a segment target can take it from any patch or curve.

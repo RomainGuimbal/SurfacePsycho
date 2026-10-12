@@ -1,2 +1,2 @@
-# SP   Resample Selection
+# SP - Resample Selection
 

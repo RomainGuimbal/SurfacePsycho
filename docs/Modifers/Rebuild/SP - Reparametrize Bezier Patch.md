@@ -1,2 +1,2 @@
-# SP   Reparametrize Bezier Patch
+# SP - Reparametrize Bezier Patch
 

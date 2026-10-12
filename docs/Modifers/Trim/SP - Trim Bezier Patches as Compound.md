@@ -1,2 +1,2 @@
-# SP   Trim Bezier Patches as Compound
+# SP - Trim Bezier Patches as Compound
 

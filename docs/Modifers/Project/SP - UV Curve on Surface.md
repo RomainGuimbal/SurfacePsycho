@@ -1,2 +1,2 @@
-# SP   UV Curve on Surface
+# SP - UV Curve on Surface
 

@@ -1,4 +1,4 @@
-# SP   FlatPatch Meshing
+# SP - FlatPatch Meshing
 
 `MODIFIER` `MESHING`
 

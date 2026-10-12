@@ -8,7 +8,7 @@ To non destructively edit SP objects :
 
 ## Meshing Modifiers
 Each SP object must have a Meshing modifiers to be evaluated as a STEP shape.
-There is one for each object type ([see object types](../Workflow/SP-Objects.md#types)).
+There is one for each object type ([see object types](../Workflow/SP%20Objects.md#types)).
 The meshing modifier must be the last one editing the shape. Modifiers before the meshing modifier act on the control geometry. Some modifiers are however made to come after :
    - Mirror
    - Any other viewer/analysis modifier

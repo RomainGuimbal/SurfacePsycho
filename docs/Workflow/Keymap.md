@@ -1,7 +1,7 @@
 # Keymap
 <!-- Useful Regex expression (?<=Ctrl|Shift|Alt|(?<![a-zA-Z])[a-zA-Z]) +| +(?=Ctrl|Shift|Alt|[a-zA-Z](?![a-zA-Z])) -->
 
-The keymap is only active when the [SP Mode Tool](./SP-Mode.md) in the left toolbar is active
+The keymap is only active when the [SP Mode Tool](./SP%20Mode.md) in the left toolbar is active
 
 <!-- Commented out = Default shortcut we don't want to override -->
 ____

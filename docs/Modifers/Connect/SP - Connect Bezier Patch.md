@@ -1,4 +1,4 @@
-# SP   Connect Bezier Patch
+# SP - Connect Bezier Patch
 
 Modifier to connect one side of the current patch to one side of a target patch.
 

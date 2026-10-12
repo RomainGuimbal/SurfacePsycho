@@ -1,4 +1,4 @@
-# SP   Crown Curve
+# SP - Crown Curve
 
 Minimal intuitive controls to create clean planar curves.
 

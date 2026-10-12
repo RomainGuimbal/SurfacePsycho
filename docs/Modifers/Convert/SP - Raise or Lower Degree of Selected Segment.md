@@ -1,2 +1,2 @@
-# SP   Raise or Lower Degree of Selected Segment
+# SP - Raise or Lower Degree of Selected Segment
 

@@ -1,3 +1,3 @@
-# SP   Disc CP
+# SP - Disc CP
 
 `Procedural` `Shape` `Node`

@@ -1,4 +1,4 @@
-# SP   NURBS Patch Meshing
+# SP - NURBS Patch Meshing
 
 `MODIFIER` `MESHING`
 

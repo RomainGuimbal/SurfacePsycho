@@ -1,2 +1,2 @@
-# SP   Flip Compound Face
+# SP - Flip Compound Face
 

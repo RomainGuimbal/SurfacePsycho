@@ -1,2 +1,2 @@
-# SP   Intersect Bezier Patches
+# SP - Intersect Bezier Patches
 

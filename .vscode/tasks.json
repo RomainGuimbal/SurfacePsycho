@@ -175,5 +175,10 @@
                 "Test macros"
             ]
         },
+        // { never worked
+        //     "label": "Print TODO Documentation",
+        //     python -c "import runpy; m = runpy.run_path(r'c:\Users\romai\Documents\Projets\26 - Bezier Quest\surfacepsycho\docs\.doc_generator_and_inspector.py');"
+
+        // }
     ],
 }
