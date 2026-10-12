@@ -1,8 +1,13 @@
 # Sample Files
+Discover how users use SurfacePsycho !
 
-[Bulldozer](https://github.com/RomainGuimbal/SurfacePsycho-Sample-Files/blob/main/Bulldozer%20R.Guimbal%20b5.2-sp0.10.3.blend)
+[Damen Stan Tender boat by Pafurijaz](https://github.com/RomainGuimbal/SurfacePsycho-Sample-Files/blob/main/SP%20-%20Damen_Stan_Tender_1905-updated%20Pafurijaz%20b5.2%20sp0.10.4.blend)
 
-## Add your file
+[Bulldozer by Romain Guimbal](https://github.com/RomainGuimbal/SurfacePsycho-Sample-Files/blob/main/Bulldozer%20R.Guimbal%20b5.2-sp0.10.3.blend)
+
+[Trimmed Cube by Romain Guimbal](https://github.com/RomainGuimbal/SurfacePsycho-Sample-Files/blob/main/Trimmed%20cube%20R.Guimbal%20b5.2-sp0.10.3.blend) (from tutorial [here](https://www.youtube.com/watch?v=461V_nBkp50&list=PLsTbL26zgwpI6m0qrpZZFmrgf3PaFzuiq&index=9))
+
+## Add your file to the list
 All your .blend files using SurfacePsycho are welcome. The goal is for new users to understand the logic, so the cleaner is the file the better, however do what you can,  something is better than nothing so there is a high tolerance for the mess.
 Please put the add-on's version and Blender's version in the file name (e.g. "My spaceship v3 final final sp0.10.4-b5.2.blend")
 

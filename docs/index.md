@@ -34,6 +34,6 @@ Export selected SurfacePsycho objects as STEP files with `N panel > SurfacePsych
 ---
 * [Keymap](./Workflow/Keymap.md) 
 * [Video Demos and Tutorials](https://www.youtube.com/playlist?list=PLsTbL26zgwpI6m0qrpZZFmrgf3PaFzuiq)
-* [Sample Files](https://github.com/RomainGuimbal/SurfacePsycho-Sample-Files)
+* [Sample Files](./30_Sample%20files.md)
 
 > This documentation is incomplete. If you have any knowledge with the add-on, please join the [Discord↗️](https://discord.gg/zUmFejwV8G) to help on the writing.

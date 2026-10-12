@@ -1,9 +1,7 @@
 # Install and Setup
 
 ## Install
-### Get it from the official [Extension platform↗️](https://extensions.blender.org/add-ons/surfacepsycho/) 
-
-Or search for "Surface Psycho" directly in your Blender user preferences
+In ``Edit > Preferences > Get Extentions`` Search for "Surface Psycho" and click ``Install``.
 
 ## Setup
 
