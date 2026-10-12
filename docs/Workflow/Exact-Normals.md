@@ -1,3 +1,5 @@
+# Exact Normals
+
 By default SP doesn't calculate accurate normals on NURBS and Bezier patches because it has a significant performance cost. However you can switch it on per object, from the N panel or from the meshing modifier. Most the difference is on boundaries.
 > For further quality you can enable [EEVEE high quality normals](https://docs.blender.org/manual/en/5.0/render/eevee/render_settings/performance.html#bpy-types-rendersettings-use-high-quality-normals)
 

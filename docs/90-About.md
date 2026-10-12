@@ -23,4 +23,4 @@ Feed and discussion :
 Helping directly on the core development is extremely appreciated but can get advanced very fast. However you can also use SurfacePsycho primitives and operations to make your own tools and share them with everyone. There is a lot of areas where all the component are there but the end-user tool haven't be made by lack of time.
 
 ## Donate
-Great donation portal : https://romainguimbal.github.io/sp-donation/sp-donation.html
+[Visit the great donation portal](https://romainguimbal.github.io/sp-donation/sp-donation.html)

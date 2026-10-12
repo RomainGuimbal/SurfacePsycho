@@ -1,3 +1,5 @@
+# SP   Fillet Polyline with Circles
+
 Allows to create circular arcs to round corners of Curve or Flat Patch wires. It is currently limited to straight segments and ignores all the segments types.
 
 To control the radius per corner, you can use the built-in bevel weight, however, you need to assign it manually to the factor field. Do so by using the `Input Attribute Toggle` button at the right of the field.

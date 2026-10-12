@@ -23,7 +23,7 @@ The ancestor of step. Here because it costs nothing. Essentially like STEP but w
 ### .SVG
 `File > Export > SurfacePsycho SVG (.svg)` 
 Implemented to allow designers to make logo and UI's directly on the product surface.
-Since svg only support straight lines and cubic beziers, objects must have the following modifier for conversion [SP - Make SVG Ready](./Modifers/Convert/SP - Make SVG Ready.md) 
+Since svg only support straight lines and cubic beziers, objects must have the following modifier for conversion [SP - Make SVG Ready](../Modifers/Convert/SP - Make SVG Ready.md) 
 
 
 > Note : All the other native exporters are also supported but will export standard meshes

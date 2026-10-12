@@ -29,7 +29,7 @@ Ideally every modifier is linked as a workflow feature
 2. Add modifiers for non-destructive editing. If you have setup the library correctly, SP modifiers should appear in the modifier list under ``SurfacePsycho`` sub-menu. [More details here](./Workflow/Modifers.md)
 
 ## Export your design
-Export selected SurfacePsycho objects as STEP files with `N panel > SurfacePsycho > Quick export` (saved in current .blend folder). [More details here](./30-Import-and-Export.md)
+Export selected SurfacePsycho objects as STEP files with `N panel > SurfacePsycho > Quick export` (saved in current .blend folder). [More details here](./Workflow/Import-and-Export.md)
 
 ---
 * [Keymap](./Workflow/Keymap.md) 

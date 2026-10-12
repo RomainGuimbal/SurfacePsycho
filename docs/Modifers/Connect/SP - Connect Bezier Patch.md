@@ -1,3 +1,5 @@
+# SP   Connect Bezier Patch
+
 Modifier to connect one side of the current patch to one side of a target patch.
 
 <img src="https://github.com/user-attachments/assets/7c4c691e-7a23-41f9-a48e-3825f3ba8716" height="400">
