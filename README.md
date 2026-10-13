@@ -28,7 +28,7 @@ In addition you can export any 2D shape as .SVG for a complete integration of th
 SurfacePsycho is close to able to do complete STEP/IGES import, and for the first time ever in any software I know, importing a .STEP gives you direct editing access to the shapes : No more dead surfaces !
 
 ---
-## [Documentation](https://https://romainguimbal.github.io/surface-psycho/documentation)
+## [Documentation](https://romainguimbal.github.io/surface-psycho/documentation/)
 
 ## [News](https://blenderartists.org/t/surfacepsycho-addon-project/1487629)
 
