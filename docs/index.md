@@ -1,3 +1,5 @@
+![Cover](<Images/0.10 cover 16_9 alt.jpg>)
+
 # Quick start
 <!-- MkDocs commands
 * `mkdocs serve` - Start the live-reloading docs server.
