@@ -42,6 +42,7 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Set Segment Type",
     "SP - Split Curve",
     "SP - Switch Curve Direction",
+    "SP - Trim Curve with Curve",
     # "SP - Bezier Circlular Arc",
     # "SP - Compose FlatPatch From Sides",
 }
@@ -71,6 +72,8 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Select Patch Range",
     "SP - Trim Bezier Surface from Projected Wires",
     "SP - UV Curve on Surface",
+    "SP - Side Aligned Reparametrize",
+    "SP - Shrinkwrap Bezier Patch",
 }
 
 ASSET_NODE_GROUPS_NURBS_PATCH = {

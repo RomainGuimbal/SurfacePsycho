@@ -88,6 +88,7 @@ ____
 ## V
 <!-- `V`: -->
 ## W
+<!-- ``Shfit``+`W` : wire from selected segments -->
 <!-- `W`: Context Menu (for right click select people) -->
 ## X
 <!-- >`X`: Delete -->

@@ -17,7 +17,7 @@ A wire is a chain of segments. To create one, in mesh editing you need to create
 ### Segment pie menu
 Some properties are more accessible with `Shift + F` pie menu, the shortcut only works if the [SP Mode](./SP%20Mode.md) is enabled (in edit mode).
 
-![Capture d’écran 2025-12-07 153019](https://github.com/user-attachments/assets/1560f084-a594-472a-b2ff-c0790ddb618d)
+![Segment pie menu](../Images/segment-pie-menu.jpg)
 
 ### Split into segments
 For your wire to have several segment, each segment must be delimited by `Endpoints`. 

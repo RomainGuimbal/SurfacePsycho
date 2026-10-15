@@ -23,7 +23,8 @@ Once a new version of the add-on is installed, four operators allows you to upgr
 
 ### Replace Node Group
 `SP - Replace Node Group` gives additional freedom : you can replace any group by any other globaly in the file. Note it will not perform versionning actions.
-<img src="https://github.com/user-attachments/assets/355c96b0-7f07-4186-b21a-75af1fb085b9" width= 400>
+
+![alt text](Images/replace-nodegroup.jpg)
 
 > #### Example 
 >
