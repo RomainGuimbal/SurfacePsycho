@@ -1,7 +1,8 @@
 import bpy
 import bmesh
-from mathutils import Matrix
 import numpy as np
+from mathutils import Matrix
+from bpy.types import Operator
 from ..common.enums import SP_obj_type
 from ..common.utils import create_grid_mesh, fill_bool_attribute
 from ..common.asset_append import (
@@ -15,7 +16,7 @@ from ..common.modifier_utils import (
 )
 
 
-class SP_OT_add_NURBS_patch(bpy.types.Operator):
+class SP_OT_add_NURBS_patch(Operator):
     bl_idname = "object.sp_add_nurbs_patch"
     bl_label = "SP - Add NURBS PsychoPatch"
     bl_options = {"REGISTER", "UNDO"}
@@ -88,7 +89,7 @@ class SP_OT_add_NURBS_patch(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_add_bezier_patch(bpy.types.Operator):
+class SP_OT_add_bezier_patch(Operator):
     bl_idname = "object.sp_add_bezier_patch"
     bl_label = "SP - Add Bezier Patch"
     bl_options = {"REGISTER", "UNDO"}
@@ -145,7 +146,7 @@ class SP_OT_add_bezier_patch(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_add_flat_patch(bpy.types.Operator):
+class SP_OT_add_flat_patch(Operator):
     bl_idname = "object.sp_add_flat_patch"
     bl_label = "SP - Add flat PsychoPatch"
     bl_options = {"REGISTER", "UNDO"}
@@ -186,7 +187,7 @@ class SP_OT_add_flat_patch(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_add_curve(bpy.types.Operator):
+class SP_OT_add_curve(Operator):
     bl_idname = "object.sp_add_curve"
     bl_label = "SP - Add PsychoCurve"
     bl_options = {"REGISTER", "UNDO"}
@@ -223,7 +224,7 @@ class SP_OT_add_curve(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_add_compound(bpy.types.Operator):
+class SP_OT_add_compound(Operator):
     bl_idname = "object.sp_add_compound"
     bl_label = "SP - Add PsychoCompound"
     bl_options = {"REGISTER", "UNDO"}

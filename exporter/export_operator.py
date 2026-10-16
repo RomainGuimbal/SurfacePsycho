@@ -15,12 +15,11 @@ from bpy.props import (
     FloatProperty,
     IntProperty,
 )
-from bpy_extras.io_utils import (
-    ExportHelper,
-)
+from bpy_extras.io_utils import ExportHelper
+from bpy.types import Operator
 
 
-class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
+class SP_OT_ExportStep(Operator, ExportHelper):
     bl_idname = "wm.sp_step_export"
     bl_label = "Export STEP"
     filename_ext = ".step"
@@ -62,7 +61,7 @@ class SP_OT_ExportStep(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
 
-class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
+class SP_OT_ExportIges(Operator, ExportHelper):
     bl_idname = "wm.sp_iges_export"
     bl_label = "Export IGES"
     filename_ext = ".iges"
@@ -98,7 +97,7 @@ class SP_OT_ExportIges(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
 
-class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
+class SP_OT_ExportSvg(Operator, ExportHelper):
     bl_idname = "wm.sp_svg_export"
     bl_label = "Export SVG"
 
@@ -165,7 +164,7 @@ class SP_OT_ExportSvg(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
 
-class SP_OT_QuickExport(bpy.types.Operator):
+class SP_OT_QuickExport(Operator):
     bl_idname = "wm.sp_quick_export"
     bl_label = "SP - Quick export"
     bl_options = {"REGISTER", "UNDO"}
@@ -213,21 +212,24 @@ class SP_OT_QuickExport(bpy.types.Operator):
 
         filename = f"{blendname} {date_str} ({next_number}).step"
         pathstr = str(export_dir / filename)
-        
+
         # Export
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             export_isdone = export_step(context, pathstr, True, 1000, True, 1e-1)
-            
+
             if export_isdone:
                 if len(w) > 0:
                     for warning in w:
-                        self.report({"WARNING"}, str(warning.message) + ". " + f"Exported at {pathstr}")
+                        self.report(
+                            {"WARNING"},
+                            str(warning.message) + ". " + f"Exported at {pathstr}",
+                        )
                 else:
                     self.report({"INFO"}, f"Step file exported at {pathstr}")
             else:
                 self.report({"INFO"}, "No SurfacePsycho Objects selected")
-        
+
         print(f"Export: {time.time() - self.t0:.3f}s")
         return {"FINISHED"}
 

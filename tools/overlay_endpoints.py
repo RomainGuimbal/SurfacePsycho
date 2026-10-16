@@ -1,9 +1,10 @@
 import bpy
 import bmesh
 import gpu
+import numpy as np
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
-import numpy as np
+from bpy.types import Operator
 
 # Global variables
 draw_handler = None
@@ -92,9 +93,9 @@ def draw_callback():
     gpu.state.blend_set('NONE')
 
 
-class MESH_OT_vertex_attribute_overlay(bpy.types.Operator):
+class SP_OT_vertex_attribute_overlay(Operator):
     """Toggle vertex attribute overlay visualization"""
-    bl_idname = "mesh.vertex_attribute_overlay"
+    bl_idname = "mesh.sp_vertex_attribute_overlay"
     bl_label = "Vertex Attribute Overlay"
     bl_options = {'REGISTER', 'UNDO'}
     
@@ -138,7 +139,7 @@ class MESH_OT_vertex_attribute_overlay(bpy.types.Operator):
 
 
 def register():
-    bpy.utils.register_class(MESH_OT_vertex_attribute_overlay)
+    bpy.utils.register_class(SP_OT_vertex_attribute_overlay)
 
 
 def unregister():
@@ -149,4 +150,4 @@ def unregister():
         active_object = None
         active_group_name = None
 
-    bpy.utils.unregister_class(MESH_OT_vertex_attribute_overlay)
+    bpy.utils.unregister_class(SP_OT_vertex_attribute_overlay)

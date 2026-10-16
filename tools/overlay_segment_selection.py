@@ -1,9 +1,10 @@
 ﻿import bpy
 import gpu
+import numpy as np
+from bpy.types import Operator
 from gpu_extras.batch import batch_for_shader
 from bpy_extras import view3d_utils
 from mathutils import Vector
-import numpy as np
 
 shader = None
 active_tool_idname = ""  # set by toolbar_tools
@@ -89,7 +90,7 @@ def get_boundary_edge_data(obj, depsgraph):
     return boundary_verts_by_seg, midpoints
 
 
-class SP_OT_segment_update_mouse(bpy.types.Operator):
+class SP_OT_segment_update_mouse(Operator):
     """Internal: records mouse position for the segment ID overlay."""
 
     bl_idname = "view3d.segment_update_mouse"
@@ -165,7 +166,7 @@ class SP_OT_segment_update_mouse(bpy.types.Operator):
         return {"PASS_THROUGH"}
 
 
-class SP_OT_segment_select_click(bpy.types.Operator):
+class SP_OT_segment_select_click(Operator):
     bl_idname = "view3d.segment_select_click"
     bl_description = "Toggle segment selection for hovered segment"
     bl_label = "Segment Select Click"
@@ -311,7 +312,7 @@ def draw_callback():
     gpu.state.depth_test_set("LESS_EQUAL")
 
 
-class SP_OT_overwrite_segment_selection(bpy.types.Operator):
+class SP_OT_overwrite_segment_selection(Operator):
     bl_idname = "view3d.sp_overwrite_segment_selection"
     bl_label = "SP - Overwrite Segment Selection"
     bl_options = {"REGISTER", "UNDO"}

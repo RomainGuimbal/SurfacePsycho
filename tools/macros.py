@@ -1,8 +1,10 @@
 import math
 import bpy
 import numpy as np
-from mathutils import Vector, Matrix
 import bmesh
+
+from bpy.types import Operator
+from mathutils import Vector, Matrix
 from ..common.enums import SP_obj_type, ADDON_PREF_KEY, ASSETS_PATH, MesherName, MESHERS
 from ..common.utils import (
     sp_type_of_object,
@@ -29,7 +31,7 @@ from ..common.compound_utils import convert_compound_to_patches
 from .overlay_segment_selection import SELECTED_SEGMENTS
 
 
-class SP_OT_add_library(bpy.types.Operator):
+class SP_OT_add_library(Operator):
     bl_idname = "wm.sp_add_library"
     bl_label = "SP - Add Library"
     bl_options = {"REGISTER", "UNDO"}
@@ -55,7 +57,7 @@ class SP_OT_add_library(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_toggle_control_geom(bpy.types.Operator):
+class SP_OT_toggle_control_geom(Operator):
     bl_idname = "object.sp_toggle_control_geom"
     bl_label = "SP - Toggle Control Geom"
     bl_options = {"REGISTER", "UNDO"}
@@ -93,7 +95,7 @@ class SP_OT_toggle_control_geom(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_select_all(bpy.types.Operator):
+class SP_OT_select_all(Operator):
     bl_idname = "object.sp_select_all"
     bl_label = "SP - Select All Visible"
     bl_description = "Select all visible SP objects"
@@ -107,7 +109,7 @@ class SP_OT_select_all(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_select_visible_curves(bpy.types.Operator):
+class SP_OT_select_visible_curves(Operator):
     bl_idname = "object.sp_select_visible_curves"
     bl_label = "SP - Select Visible Curves"
     bl_description = "Select Visible Curves"
@@ -121,7 +123,7 @@ class SP_OT_select_visible_curves(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_select_visible_surfaces(bpy.types.Operator):
+class SP_OT_select_visible_surfaces(Operator):
     bl_idname = "object.sp_select_visible_surfaces"
     bl_label = "SP - Select Visible Surfaces"
     bl_description = "Select Visible Surfaces"
@@ -147,7 +149,7 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# class SP_OT_update_modifiers(bpy.types.Operator):
+# class SP_OT_update_modifiers(Operator):
 #     bl_idname = "object.sp_update_modifiers"
 #     bl_label = "SP - Update Modifiers"
 #     bl_options = {"REGISTER", "UNDO"}
@@ -173,7 +175,7 @@ class SP_OT_select_visible_surfaces(bpy.types.Operator):
 #         return {"FINISHED"}
 
 
-class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
+class SP_OT_psychopatch_to_bl_nurbs(Operator):
     bl_idname = "object.sp_psychopatch_to_bl_nurbs"
     bl_label = "SP - Convert Psychopatches to internal NURBS"
     bl_options = {"REGISTER", "UNDO"}
@@ -294,7 +296,7 @@ class SP_OT_psychopatch_to_bl_nurbs(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
+class SP_OT_bl_nurbs_to_psychopatch(Operator):
     bl_idname = "object.sp_bl_nurbs_to_psychopatch"
     bl_label = "SP - Convert internal NURBS to Psychopatches"
     bl_options = {"REGISTER", "UNDO"}
@@ -357,7 +359,7 @@ class SP_OT_bl_nurbs_to_psychopatch(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_toggle_endpoints(bpy.types.Operator):
+class SP_OT_toggle_endpoints(Operator):
     """Mark or unmark selected vertices as endpoint depending on the active vertex"""
 
     bl_idname = "mesh.sp_toggle_endpoints"
@@ -383,7 +385,7 @@ class SP_OT_toggle_endpoints(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_select_endpoints(bpy.types.Operator):
+class SP_OT_select_endpoints(Operator):
     """Select vertices marked as segment ends"""
 
     bl_idname = "mesh.sp_select_endpoints"
@@ -399,7 +401,7 @@ class SP_OT_select_endpoints(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_set_segment_type(bpy.types.Operator):
+class SP_OT_set_segment_type(Operator):
     """Mark segment type for selection"""
 
     bl_idname = "mesh.sp_set_segment_type"
@@ -436,7 +438,7 @@ class SP_OT_set_segment_type(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_add_trim_contour(bpy.types.Operator):
+class SP_OT_add_trim_contour(Operator):
     bl_idname = "mesh.sp_add_trim_contour"
     bl_label = "SP - Add Trim Contour"
     bl_description = "Add a trim contour to selected patch"
@@ -525,7 +527,7 @@ class SP_OT_add_trim_contour(bpy.types.Operator):
         )
 
 
-class SP_OT_toggle_trim_contour_belonging(bpy.types.Operator):
+class SP_OT_toggle_trim_contour_belonging(Operator):
     bl_idname = "mesh.sp_toggle_trim_contour_belonging"
     bl_label = "SP - Toggle Trim Contour Belonging"
     bl_description = "Toggle selection as part of the patch trim contour"
@@ -548,7 +550,7 @@ class SP_OT_toggle_trim_contour_belonging(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_select_trim_contour(bpy.types.Operator):
+class SP_OT_select_trim_contour(Operator):
     """Select vertices marked as segment ends"""
 
     bl_idname = "mesh.sp_select_trim_contour"
@@ -767,7 +769,7 @@ class SP_Props_Group(bpy.types.PropertyGroup):
     )
 
 
-class SP_OT_set_segment_degree(bpy.types.Operator):
+class SP_OT_set_segment_degree(Operator):
     bl_idname = "object.sp_set_segment_degree"
     bl_label = "SP - Set Segment Degree"
     bl_options = {"REGISTER", "UNDO"}
@@ -813,7 +815,7 @@ class SP_OT_set_segment_degree(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
-class SP_OT_set_spline(bpy.types.Operator):
+class SP_OT_set_spline(Operator):
     bl_idname = "mesh.sp_set_spline"
     bl_label = "SP - Set Spline"
     bl_options = {"REGISTER", "UNDO"}
@@ -875,7 +877,7 @@ class SP_OT_set_spline(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_add_oriented_empty(bpy.types.Operator):
+class SP_OT_add_oriented_empty(Operator):
     bl_idname = "object.sp_add_oriented_empty"
     bl_label = "SP - Add Oriented Empty"
     bl_description = "Add oriented empty from 3 vertices"
@@ -939,7 +941,7 @@ class SP_OT_add_oriented_empty(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_blend_surfaces(bpy.types.Operator):
+class SP_OT_blend_surfaces(Operator):
     bl_idname = "object.sp_blend_surfaces"
     bl_label = "SP - Blend Surfaces"
     bl_description = "Add a blend surface between the selected surfaces"
@@ -1063,7 +1065,7 @@ class SP_OT_blend_surfaces(bpy.types.Operator):
         col.prop(self, "tension2")
 
 
-class SP_OT_flip_normals(bpy.types.Operator):
+class SP_OT_flip_normals(Operator):
     bl_idname = "object.sp_flip_normals"
     bl_label = "SP - Flip Normals"
     bl_description = "Flip normals of selected surfaces"
@@ -1075,7 +1077,7 @@ class SP_OT_flip_normals(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_enable_exact_normals(bpy.types.Operator):
+class SP_OT_enable_exact_normals(Operator):
     bl_idname = "object.sp_enable_exact_normals"
     bl_label = "SP - Enable Exact Normals"
     bl_description = "Enable exact normals on selected surfaces"
@@ -1089,7 +1091,7 @@ class SP_OT_enable_exact_normals(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_toggle_exact_normals(bpy.types.Operator):
+class SP_OT_toggle_exact_normals(Operator):
     bl_idname = "object.sp_toggle_exact_normals"
     bl_label = "SP - Toggle Exact Normals"
     bl_description = "Toggle exact normals on selected surfaces"
@@ -1109,7 +1111,7 @@ class SP_OT_toggle_exact_normals(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_disable_exact_normals(bpy.types.Operator):
+class SP_OT_disable_exact_normals(Operator):
     bl_idname = "object.sp_disable_exact_normals"
     bl_label = "SP - Disable Exact Normals"
     bl_description = "Disable exact normals on selected surfaces"
@@ -1123,7 +1125,7 @@ class SP_OT_disable_exact_normals(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_explode_compound(bpy.types.Operator):
+class SP_OT_explode_compound(Operator):
     bl_idname = "object.sp_explode_compound"
     bl_label = "SP - Explode Compound"
     bl_description = "Convert selected compounds to individual patches"
@@ -1156,7 +1158,7 @@ class SP_OT_explode_compound(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_mesh_to_compound(bpy.types.Operator):
+class SP_OT_mesh_to_compound(Operator):
     bl_idname = "object.sp_mesh_to_compound"
     bl_label = "SP - Mesh to Compound"
     bl_description = (
@@ -1185,7 +1187,7 @@ class SP_OT_mesh_to_compound(bpy.types.Operator):
         layout.label(text="Proceed anyway ?")
 
 
-class SP_OT_add_curvature_analysis(bpy.types.Operator):
+class SP_OT_add_curvature_analysis(Operator):
     bl_idname = "object.sp_add_curvature_analysis"
     bl_label = "SP - Add Curvature Analysis"
     bl_description = "Add curvature analysis modifier to selected surfaces"
@@ -1231,7 +1233,7 @@ class SP_OT_add_curvature_analysis(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_scale_analysis(bpy.types.Operator):
+class SP_OT_scale_analysis(Operator):
     bl_idname = "object.sp_scale_analysis"
     bl_label = "SP - Scale Curvature Analysis"
     bl_description = "Scale curvature analysis color range of visible surfaces"
@@ -1244,7 +1246,7 @@ class SP_OT_scale_analysis(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_add_matcaps(bpy.types.Operator):
+class SP_OT_add_matcaps(Operator):
     bl_idname = "wm.sp_add_matcaps"
     bl_label = "SP - Add Matcaps"
     bl_description = "Add Psycho Matcaps"
@@ -1274,7 +1276,7 @@ class SP_OT_add_matcaps(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_remove_matcaps(bpy.types.Operator):
+class SP_OT_remove_matcaps(Operator):
     bl_idname = "wm.sp_remove_matcaps"
     bl_label = "SP - Remove Matcaps"
     bl_description = "Remove Psycho Matcaps"
@@ -1309,7 +1311,7 @@ class SP_OT_remove_matcaps(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_extract_segment(bpy.types.Operator):
+class SP_OT_extract_segment(Operator):
     bl_idname = "object.sp_extract_segment"
     bl_label = "SP - Extract Segment"
     bl_options = {"REGISTER", "UNDO"}
@@ -1359,7 +1361,7 @@ class SP_OT_extract_segment(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_add_isoparam(bpy.types.Operator):
+class SP_OT_add_isoparam(Operator):
     bl_idname = "object.sp_add_isoparam"
     bl_label = "SP - Add Isoparametric Curve"
     bl_options = {"REGISTER", "UNDO"}
@@ -1476,7 +1478,7 @@ class SP_OT_add_isoparam(bpy.types.Operator):
         return {"PASS_THROUGH"}
 
 
-class SP_OT_fill(bpy.types.Operator):
+class SP_OT_fill(Operator):
     bl_idname = "object.sp_fill"
     bl_label = "SP - Fill"
     bl_options = {"REGISTER", "UNDO"}
@@ -1525,7 +1527,7 @@ class SP_OT_fill(bpy.types.Operator):
             return {"CANCELLED"}
 
 
-class SP_OT_loft(bpy.types.Operator):
+class SP_OT_loft(Operator):
     bl_idname = "object.sp_loft"
     bl_label = "SP - Loft"
     bl_options = {"REGISTER", "UNDO"}
@@ -1558,7 +1560,6 @@ class SP_OT_loft(bpy.types.Operator):
         if len(self.s_list) > 8:
             self.report({"WARNING"}, "Maximum 8 segments supported. Rest is ignored")
 
-        
         return self.execute(context)
 
     def execute(self, context):

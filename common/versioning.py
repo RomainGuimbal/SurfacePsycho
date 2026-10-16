@@ -2,6 +2,7 @@ import bpy
 import numpy as np
 from pathlib import Path
 from packaging.version import Version
+from bpy.types import Operator
 from .asset_list import ASSET_NODE_GROUPS
 from .enums import SP_obj_type, MesherName
 from .asset_append import append_node_group
@@ -471,7 +472,7 @@ def update_object(obj):
 #####################
 
 
-class SP_OT_report_outdated_nodes(bpy.types.Operator):
+class SP_OT_report_outdated_nodes(Operator):
     bl_idname = "object.sp_report_outdated_nodes"
     bl_label = "SP - Report Outdated Nodes"
     bl_description = "Report outdated nodes in the console"
@@ -494,7 +495,7 @@ class SP_OT_report_outdated_nodes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_set_all_nodes_version(bpy.types.Operator):
+class SP_OT_set_all_nodes_version(Operator):
     bl_idname = "object.sp_set_all_nodes_version"
     bl_label = "SP - Set All Nodes Version"
     bl_description = "Set non-versionned nodes to specified version"
@@ -509,7 +510,7 @@ class SP_OT_set_all_nodes_version(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_update_node_group(bpy.types.Operator):
+class SP_OT_update_node_group(Operator):
     bl_idname = "node.sp_update_node_group"
     bl_label = "SP - Update Node Group"
     bl_description = (
@@ -539,7 +540,7 @@ class SP_OT_update_node_group(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_update_all_node_groups(bpy.types.Operator):
+class SP_OT_update_all_node_groups(Operator):
     bl_idname = "node.sp_update_all_node_groups"
     bl_label = "SP - Update All Node Groups"
     bl_description = "Replaces outdated node groups. Warning : this is not a complete versionning, some changes may occure."
@@ -564,7 +565,7 @@ class SP_OT_update_all_node_groups(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_update_objects(bpy.types.Operator):
+class SP_OT_update_objects(Operator):
     bl_idname = "object.sp_update_objects"
     bl_label = "SP - Update Objects"
     bl_options = {"REGISTER", "UNDO"}
@@ -583,7 +584,7 @@ class SP_OT_update_objects(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SP_OT_replace_node_group(bpy.types.Operator):
+class SP_OT_replace_node_group(Operator):
     bl_idname = "node.sp_replace_node_group"
     bl_label = "SP - Replace Node Group"
     bl_description = (

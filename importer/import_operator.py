@@ -1,6 +1,7 @@
 import bpy
 import time
 
+from bpy.types import Operator
 from pathlib import Path
 from ..common.enums import SP_obj_type
 from ..common.asset_append import append_node_group
@@ -22,7 +23,7 @@ from bpy_extras.io_utils import (
 )
 
 
-class SP_OT_ImportCAD(bpy.types.Operator, ImportHelper):
+class SP_OT_ImportCAD(Operator, ImportHelper):
     bl_idname = "object.sp_cad_import"
     bl_label = "Import CAD"
     bl_options = {"REGISTER", "UNDO"}
