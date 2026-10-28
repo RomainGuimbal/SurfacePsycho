@@ -1,33 +1,34 @@
 import math
+
+import bmesh  # type: ignore
 import bpy
 import numpy as np
-import bmesh
+from bpy.types import Operator  # type: ignore
+from mathutils import Matrix, Vector  # type: ignore
 
-from bpy.types import Operator
-from mathutils import Vector, Matrix
-from ..common.enums import SP_obj_type, ADDON_PREF_KEY, ASSETS_PATH, MesherName, MESHERS
-from ..common.utils import (
-    sp_type_of_object,
-    read_attribute_by_name,
-    toggle_bool_attribute,
-    select_by_attriute,
-    set_segment_type,
-    add_bool_attribute,
-    flip_node_socket_bool,
-    selection_mean_point,
-)
-from ..common.modifier_utils import (
-    add_modifier_asset,
-    change_node_socket_value,
-    set_modifier_values,
-    add_modifier_asset_from_node_group,
-    get_modifier_value,
-)
 from ..common.asset_append import (
-    append_object_by_name,
     append_multiple_node_groups,
+    append_object_by_name,
 )
 from ..common.compound_utils import convert_compound_to_patches
+from ..common.enums import ADDON_PREF_KEY, ASSETS_PATH, MESHERS, MesherName, SP_obj_type
+from ..common.modifier_utils import (
+    add_modifier_asset,
+    add_modifier_asset_from_node_group,
+    change_node_socket_value,
+    get_modifier_value,
+    set_modifier_values,
+)
+from ..common.utils import (
+    add_bool_attribute,
+    flip_node_socket_bool,
+    read_attribute_by_name,
+    select_by_attriute,
+    selection_mean_point,
+    set_segment_type,
+    sp_type_of_object,
+    toggle_bool_attribute,
+)
 from .overlay_segment_selection import SELECTED_SEGMENTS
 
 
@@ -570,37 +571,39 @@ def show_combs(self, context):
     objects = [ob for ob in context.selected_objects]
     for o in objects:
         for m in o.modifiers:
-            if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
-                if "Combs" in m.node_group.interface.items_tree.keys():
-                    for it in m.node_group.interface.items_tree[
-                        "Combs"
-                    ].interface_items:
-                        if (
-                            it.name in ["Combs", "U", "V"]
-                            and it.socket_type == "NodeSocketBool"
-                        ):
-                            input_id = it.identifier
-                            getattr(m.properties.inputs, input_id).value = self.combs_on
-                    m.node_group.interface_update(context)
-                    break
+            if (
+                m.type == "NODES"
+                and m.node_group
+                and m.node_group.name[:5] == "SP - "
+                and "Combs" in m.node_group.interface.items_tree
+            ):
+                for it in m.node_group.interface.items_tree["Combs"].interface_items:
+                    if (
+                        it.name in ["Combs", "U", "V"]
+                        and it.socket_type == "NodeSocketBool"
+                    ):
+                        input_id = it.identifier
+                        getattr(m.properties.inputs, input_id).value = self.combs_on
+                m.node_group.interface_update(context)
+                break
 
 
 def scale_combs(self, context):
     objects = [ob for ob in context.selected_objects]
     for o in objects:
         for m in o.modifiers:
-            if m.type == "NODES" and m.node_group and m.node_group.name[:5] == "SP - ":
-                if "Combs" in m.node_group.interface.items_tree.keys():
-                    for it in m.node_group.interface.items_tree[
-                        "Combs"
-                    ].interface_items:
-                        if it.name == "Scale" and it.socket_type == "NodeSocketFloat":
-                            input_id = it.identifier
-                            getattr(m.properties.inputs, input_id).value = (
-                                self.combs_scale
-                            )
-                    m.node_group.interface_update(context)
-                    break
+            if (
+                m.type == "NODES"
+                and m.node_group
+                and m.node_group.name[:5] == "SP - "
+                and "Combs" in m.node_group.interface.items_tree
+            ):
+                for it in m.node_group.interface.items_tree["Combs"].interface_items:
+                    if it.name == "Scale" and it.socket_type == "NodeSocketFloat":
+                        input_id = it.identifier
+                        getattr(m.properties.inputs, input_id).value = self.combs_scale
+                m.node_group.interface_update(context)
+                break
 
 
 def set_seg_degree_from_active_prop(self, context):
@@ -709,10 +712,13 @@ def scale_analysis(self, context):
     for o in reversed(context.visible_objects):
         if o.type == "MESH":
             for m in o.modifiers:
-                if m.type == "NODES" and m.node_group:
-                    if m.node_group.name == "SP - Curvature Analysis":
-                        set_modifier_values(m, {"Scale": self.analysis_scale})
-                        break
+                if (
+                    m.type == "NODES"
+                    and m.node_group
+                    and m.node_group.name == "SP - Curvature Analysis"
+                ):
+                    set_modifier_values(m, {"Scale": self.analysis_scale})
+                    break
             o.update_tag()
 
 
@@ -990,10 +996,6 @@ class SP_OT_blend_surfaces(Operator):
     )
 
     def execute(self, context):
-        # import cProfile
-        # profiler = cProfile.Profile()
-        # profiler.enable()
-
         auto = True
         segment_1 = 0
         segment_2 = 0
@@ -1009,7 +1011,6 @@ class SP_OT_blend_surfaces(Operator):
             surf1 = context.selected_objects[0]
             surf2 = context.selected_objects[1]
         else:
-            # profiler.disable()
             return {"CANCELLED"}
         loc = surf1.location / 2 + surf2.location / 2
 
@@ -1045,9 +1046,6 @@ class SP_OT_blend_surfaces(Operator):
         add_modifier_asset_from_node_group(blend_surf, meshing_ng)
 
         # SELECTED_SEGMENTS.clear() can't do that otherwise last operator panel fails
-
-        # profiler.disable()
-        # profiler.dump_stats("profile_output.prof")
         return {"FINISHED"}
 
     def draw(self, context):
@@ -1102,7 +1100,7 @@ class SP_OT_toggle_exact_normals(Operator):
             if m.type == "NODES" and m.node_group and m.node_group.name in MESHERS:
                 try:
                     val = get_modifier_value(m, "Exact Normals")
-                except Exception:
+                except KeyError:
                     val = get_modifier_value(m, "Exact Normal")
         for o in reversed(context.selected_objects):
             change_node_socket_value(

@@ -1,8 +1,9 @@
-import bpy
 from pathlib import Path
-from . import overlay_endpoints
-from . import overlay_segment_selection
-from .keymap import OBJ_KEYMAP, EDIT_KEYMAP
+
+import bpy
+
+from . import overlay_endpoints, overlay_segment_selection
+from .keymap import EDIT_KEYMAP, OBJ_KEYMAP
 
 _ICON_NAME = "ops.generic.surface_psycho"
 _custom_icon_value = None
@@ -13,7 +14,7 @@ def _load_custom_icon():
     icon_path = Path(__file__).parent.parent / "icons" / (_ICON_NAME + ".dat")
     try:
         _custom_icon_value = bpy.app.icons.new_triangles_from_file(str(icon_path))
-        from bl_ui.space_toolsystem_common import _icon_cache
+        from bl_ui.space_toolsystem_common import _icon_cache  # type: ignore
 
         _icon_cache[_ICON_NAME] = _custom_icon_value
     except Exception as e:
@@ -25,7 +26,7 @@ def _unload_custom_icon():
     global _custom_icon_value
     if _custom_icon_value:
         bpy.app.icons.release(_custom_icon_value)
-        from bl_ui.space_toolsystem_common import _icon_cache
+        from bl_ui.space_toolsystem_common import _icon_cache  # type: ignore
 
         _icon_cache.pop(_ICON_NAME, None)
     _custom_icon_value = None
@@ -76,7 +77,6 @@ _msgbus_owner = object()
 
 def _on_tool_changed():
     remove_draw_handler()
-    return None
 
 
 def _subscribe_to_tool():

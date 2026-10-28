@@ -1,30 +1,31 @@
+from pathlib import Path
+
 import bpy
 import numpy as np
-from pathlib import Path
+from bpy.types import Operator  # type: ignore
 from packaging.version import Version
-from bpy.types import Operator
-from .asset_list import ASSET_NODE_GROUPS
-from .enums import SP_obj_type, MesherName
+
 from .asset_append import append_node_group
-from .enums import ASSETS_FILE, VERSION_STR
+from .asset_list import ASSET_NODE_GROUPS
+from .enums import ASSETS_FILE, VERSION_STR, MesherName, SP_obj_type
 from .modifier_utils import (
     add_modifier_asset,
-    remove_modifier,
-    move_modifier_above_mesher,
-    get_modifier_by_name,
-    get_modifier_by_names,
-    set_modifier_values,
+    # get_modifier_by_name,
+    # get_modifier_by_names,
     get_modifier_value,
     get_modifier_values,
+    move_modifier_above_mesher,
+    # remove_modifier,
+    set_modifier_values,
 )
+from .utils import has_contour, remove_suffix, sp_type_of_object
 from .version_utils import (
-    is_current_version,
     get_node_version,
-    set_nodes_version,
-    replace_node_group,
+    is_current_version,
     replace_all_instances_of_node_group_by_name,
+    replace_node_group,
+    set_nodes_version,
 )
-from .utils import sp_type_of_object, has_contour, remove_suffix
 
 #####################
 ## VERSIONING DATA ##
@@ -88,7 +89,7 @@ def classify_strings_by_prefix(strings):
 def highest_suffix_of_each_object_name(names):
     classified_objects = classify_strings_by_prefix(names)
     last_string = []
-    for key, value in classified_objects.items():
+    for value in classified_objects.values():
         if value:
             last_string += [value[-1]]
     return last_string
@@ -160,7 +161,7 @@ def update_modifier(modifier):
         modifier.node_group = new_node_group
         modifier.node_group.interface_update(bpy.context)
 
-    if name in OLD_TO_NEW_NODE_MAPPING.keys():
+    if name in OLD_TO_NEW_NODE_MAPPING:
         new_name = OLD_TO_NEW_NODE_MAPPING[name]
         new_node_group = append_node_group(new_name)
         modifier.node_group = new_node_group
@@ -171,7 +172,7 @@ def update_all_node_groups(force=False):
     # get latest version nodes if they exist
     latest_nodes = {}
     # assumes latest version never has suffix
-    file_ng_names = set(ng.name for ng in bpy.data.node_groups if ng.type == "GEOMETRY")
+    file_ng_names = {ng.name for ng in bpy.data.node_groups if ng.type == "GEOMETRY"}
     all_sp_ng_names = set(ASSET_NODE_GROUPS)
     to_treat_names = file_ng_names.intersection(all_sp_ng_names)
 
@@ -202,7 +203,7 @@ def update_all_node_groups(force=False):
 
         # Old with same name
         if name in ASSET_NODE_GROUPS and ng not in latest_nodes.values():
-            if name not in latest_nodes.keys():
+            if name not in latest_nodes:
                 latest_nodes[name] = append_node_group(name, force=True)
             ng.make_local()
             replace_node_group(ng, latest_nodes[name])
@@ -210,9 +211,9 @@ def update_all_node_groups(force=False):
             replaced += 1
 
         # Old with different name
-        elif name in OLD_TO_NEW_NODE_MAPPING.keys():
+        elif name in OLD_TO_NEW_NODE_MAPPING:
             new_name = OLD_TO_NEW_NODE_MAPPING[name]
-            if new_name not in latest_nodes.keys():
+            if new_name not in latest_nodes:
                 latest_nodes[new_name] = append_node_group(new_name, force=True)
             ng.make_local()
             replace_node_group(ng, latest_nodes[new_name])
@@ -240,7 +241,7 @@ def sp_type_of_outdated_objects(o):
             if m.type == "NODES" and m.node_group and m.show_viewport:
                 name = remove_suffix(m.node_group.name)
                 # endswith is not very clean but ok
-                if name.endswith("Meshing") and name in OLD_TO_NEW_NODE_MAPPING.keys():
+                if name.endswith("Meshing") and name in OLD_TO_NEW_NODE_MAPPING:
                     type = SP_obj_type[MesherName(OLD_TO_NEW_NODE_MAPPING[name]).name]
                     break
     return type
@@ -251,16 +252,15 @@ def sp_type_of_outdated_objects(o):
 #####################
 def update_scenario_deprecate_contour_fit(m, object, version):
     set_modifier_values(m, {"Scaling Method": "UV"})
-    if version < Version("0.10.0"):
-        if has_contour(object):
-            conv_mod = add_modifier_asset(
-                object,
-                "SP - Convert Contour",
-                {"Conversion": "Fit to UV"},
-                pin=False,
-                append=True,
-            )
-            move_modifier_above_mesher(object, conv_mod)
+    if version < Version("0.10.0") and has_contour(object):
+        conv_mod = add_modifier_asset(
+            object,
+            "SP - Convert Contour",
+            {"Conversion": "Fit to UV"},
+            pin=False,
+            append=True,
+        )
+        move_modifier_above_mesher(object, conv_mod)
 
 
 def update_scenario_replace_fillet_factor_2(mod):
@@ -270,7 +270,7 @@ def update_scenario_replace_fillet_factor_2(mod):
     fillet_method = get_modifier_value(mod, "Method")
     if fillet_method == "Distance (Fast)" or fillet_method == "Distance":
         current_fillet, current_tension = get_modifier_values(
-            mod, set(("Fillet", "Tension Offset"))
+            mod, {"Fillet", "Tension Offset"}
         )
         set_modifier_values(
             mod, {"Fillet": current_fillet / 2, "Tension Offset": current_tension / 2}
@@ -278,10 +278,9 @@ def update_scenario_replace_fillet_factor_2(mod):
 
 
 def update_scenario_curve_preserve_combs_display(mod, version):
-    if version < Version("0.9.0"):
-        if get_modifier_value(mod, "Enable"):
-            update_modifier(mod)
-            set_modifier_values(mod, {"Combs": True})
+    if version < Version("0.9.0") and get_modifier_value(mod, "Enable"):
+        update_modifier(mod)
+        set_modifier_values(mod, {"Combs": True})
 
 
 def upgrade_vertex_group_endpoints(obj):
@@ -352,7 +351,7 @@ def update_scenario_connect_bezier_patch(mod, version):
 
         # Continuity checkboxes
         try:
-            g1, g2, g3, g4 = get_modifier_values(mod, set(("G1", "G2", "G3", "G4")))
+            g1, g2, g3, g4 = get_modifier_values(mod, {"G1", "G2", "G3", "G4"})
             continuity = (
                 "G4" if g4 else "G3" if g3 else "G2" if g2 else "G1" if g1 else "G0"
             )
@@ -389,9 +388,9 @@ def update_object(obj):
     type = sp_type_of_outdated_objects(obj)
     if type is SP_obj_type.INVALID:
         print(f"{obj.name} is not a SurfacePsycho object")
-        return None
+        return
 
-    if "Endpoints" in obj.vertex_groups.keys():
+    if "Endpoints" in obj.vertex_groups:
         upgrade_vertex_group_endpoints(obj)
 
     mesher_names = get_node_names_all_versions(str(type.mesher_name))
@@ -491,7 +490,7 @@ class SP_OT_report_outdated_nodes(Operator):
                 print(f"- {out.name} (version: {get_node_version(out)})")
             print(f"Current version: {VERSION_STR}")
         else:
-            self.report({"INFO"}, f"All node groups are up to date")
+            self.report({"INFO"}, "All node groups are up to date")
         return {"FINISHED"}
 
 
@@ -536,7 +535,7 @@ class SP_OT_update_node_group(Operator):
 
     def execute(self, context):
         replaced = update_node_group(self.name)
-        self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
+        self.report({"INFO"}, "Replaced " + str(replaced) + " node groups")
         return {"FINISHED"}
 
 
@@ -561,7 +560,7 @@ class SP_OT_update_all_node_groups(Operator):
 
     def execute(self, context):
         replaced = update_all_node_groups(self.force)
-        self.report({"INFO"}, f"Replaced " + str(replaced) + " node groups")
+        self.report({"INFO"}, "Replaced " + str(replaced) + " node groups")
         return {"FINISHED"}
 
 

@@ -1,25 +1,24 @@
-import bpy
 import time
-
-from bpy.types import Operator
 from pathlib import Path
-from ..common.enums import SP_obj_type
+
+import bpy
+from bpy.props import (  # type: ignore
+    BoolProperty,
+    FloatProperty,
+    IntProperty,
+    StringProperty,
+)
+from bpy.types import Operator  # type: ignore
+from bpy_extras.io_utils import ImportHelper  # type: ignore
+
 from ..common.asset_append import append_node_group
+from ..common.enums import SP_obj_type
+from .import_reader import read_cad
 from .import_shape_to_blender_object import (
     ShapeHierarchy,
     create_blender_object,
     import_face_nodegroups,
     process_object_data_of_shape,
-)
-from .import_reader import read_cad
-from bpy.props import (
-    StringProperty,
-    BoolProperty,
-    FloatProperty,
-    IntProperty,
-)
-from bpy_extras.io_utils import (
-    ImportHelper,
 )
 
 
@@ -49,7 +48,7 @@ class SP_OT_ImportCAD(Operator, ImportHelper):
 
     def _is_step_file(self):
         path = self.filepath.lower() if self.filepath else None
-        return (path.endswith(".step") or path.endswith(".stp")) if path else True
+        return (path.endswith((".step", ".stp"))) if path else True
 
     def execute(self, context):
         self.t0 = time.time()
@@ -59,7 +58,7 @@ class SP_OT_ImportCAD(Operator, ImportHelper):
         self.object_data = []
         self.status = "Gathering shape data..."
         self.prev_status = ""
-        
+
         print(self.status)
         bpy.context.workspace.status_text_set_internal(self.status)
 
@@ -111,7 +110,7 @@ class SP_OT_ImportCAD(Operator, ImportHelper):
 
         self.total_count = len(self.object_data)
 
-        wm=context.window_manager
+        wm = context.window_manager
 
         # Setup modal operation
         self._timer = wm.event_timer_add(0.1, window=context.window)
@@ -139,7 +138,7 @@ class SP_OT_ImportCAD(Operator, ImportHelper):
             bpy.context.workspace.status_text_set_internal(None)
             context.window_manager.progress_end()
             return {"CANCELLED"}
-        
+
         return {"PASS_THROUGH"}
 
     def process_batch(self, context):

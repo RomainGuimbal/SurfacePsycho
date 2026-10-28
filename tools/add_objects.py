@@ -1,19 +1,19 @@
+import bmesh  # type: ignore
 import bpy
-import bmesh
 import numpy as np
-from mathutils import Matrix
-from bpy.types import Operator
-from ..common.enums import SP_obj_type
-from ..common.utils import create_grid_mesh, fill_bool_attribute
+from bpy.types import Operator  # type: ignore
+
 from ..common.asset_append import (
-    append_object_by_name,
     append_multiple_node_groups,
     append_node_group,
+    # append_object_by_name,
 )
+from ..common.enums import SP_obj_type
 from ..common.modifier_utils import (
     add_modifier_asset,
     add_modifier_asset_from_node_group,
 )
+from ..common.utils import create_grid_mesh, fill_bool_attribute
 
 
 class SP_OT_add_NURBS_patch(Operator):
