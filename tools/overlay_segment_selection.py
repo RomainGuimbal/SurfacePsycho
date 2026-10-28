@@ -1,10 +1,10 @@
 ﻿import bpy
-import gpu
+import gpu  # type: ignore
 import numpy as np
-from bpy.types import Operator
-from gpu_extras.batch import batch_for_shader
-from bpy_extras import view3d_utils
-from mathutils import Vector
+from bpy.types import Operator  # type: ignore
+from bpy_extras import view3d_utils  # type: ignore
+from gpu_extras.batch import batch_for_shader  # type: ignore
+from mathutils import Vector  # type: ignore
 
 shader = None
 active_tool_idname = ""  # set by toolbar_tools

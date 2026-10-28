@@ -189,7 +189,7 @@ def append_by_name(path, asset_names, asset_type="node_groups"):
             try:
                 catalog_name = catalogs_id_name_pairs[catalog_id]
             except KeyError:
-                print(f"{item.name} has invalid catalog id {str(catalog_id)}")
+                print(f"{item.name} is not in a catalog")
                 continue
             assign_asset_to_catalog(item.name, catalog_name)
 

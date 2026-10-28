@@ -12,8 +12,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+
+from .common import gui, versioning
 from .tools import macros
-from .common import versioning, gui
 
 
 class SP_AddonPreferences(bpy.types.AddonPreferences):
