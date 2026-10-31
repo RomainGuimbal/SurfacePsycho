@@ -2,6 +2,7 @@ import bpy
 from .asset_append import append_node_group
 from .enums import MesherName
 from .utils import remove_suffix
+from .enums import MESHERS
 
 
 def get_modifier_by_name(obj: bpy.types.Object, name):
@@ -22,6 +23,18 @@ def get_modifier_by_names(obj: bpy.types.Object, names):
 def get_modifier_by_type(obj: bpy.types.Object, name):
     for m in obj.modifiers:
         if m.type == name:
+            return m
+    return None
+
+
+def get_mesher_modifier(obj: bpy.types.Object):
+    for m in reversed(obj.modifiers):
+        if (
+            m.type == "NODES"
+            and m.node_group
+            and m.node_group.name in MESHERS
+            and m.show_viewport
+        ):
             return m
     return None
 

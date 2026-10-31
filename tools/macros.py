@@ -8,6 +8,7 @@ from mathutils import Matrix, Vector  # type: ignore
 
 from ..common.asset_append import (
     append_multiple_node_groups,
+    append_node_group,
     append_object_by_name,
 )
 from ..common.compound_utils import convert_compound_to_patches
@@ -15,6 +16,7 @@ from ..common.enums import ADDON_PREF_KEY, ASSETS_PATH, MESHERS, MesherName, SP_
 from ..common.modifier_utils import (
     add_modifier_asset,
     add_modifier_asset_from_node_group,
+    change_mod_settings_from_object,
     change_node_socket_value,
     get_modifier_value,
     set_modifier_values,
@@ -1002,11 +1004,10 @@ class SP_OT_blend_surfaces(Operator):
 
         if len(SELECTED_SEGMENTS) >= 2:
             auto = False
-            selected_list = list(SELECTED_SEGMENTS)
-            surf1 = context.scene.objects[selected_list[0][0]]
-            surf2 = context.scene.objects[selected_list[1][0]]
-            segment_1 = selected_list[0][1]
-            segment_2 = selected_list[1][1]
+            surf1 = context.scene.objects[SELECTED_SEGMENTS[0][0]]
+            surf2 = context.scene.objects[SELECTED_SEGMENTS[1][0]]
+            segment_1 = SELECTED_SEGMENTS[0][1]
+            segment_2 = SELECTED_SEGMENTS[1][1]
         elif len(context.selected_objects) >= 2:
             surf1 = context.selected_objects[0]
             surf2 = context.selected_objects[1]
@@ -1061,6 +1062,136 @@ class SP_OT_blend_surfaces(Operator):
         row.prop(self, "continuity2", expand=True)
         col.prop(self, "tension1")
         col.prop(self, "tension2")
+
+
+class SP_OT_Connect(Operator):
+    bl_idname = "object.sp_connect"
+    bl_label = "SP - Connect"
+    bl_description = "Connects first selected shape to second one"
+    bl_options = {"REGISTER", "UNDO"}
+
+    invert: bpy.props.BoolProperty(
+        name="Invert",
+        default=False,
+    )
+
+    continuity: bpy.props.EnumProperty(
+        name="Continuity 1",
+        default=3,
+        items=[
+            ("G0", "G0", "Positional Continuity", 0),
+            ("G1", "G1", "Tangential Continuity", 1),
+            ("G2", "G2", "Curvature Continuity", 2),
+            ("G3", "G3", "Higher Order Continuity", 3),
+            ("G4", "G4", "Maximum Continuity", 4),
+        ],
+    )
+
+    tension: bpy.props.FloatProperty(
+        name="Tension 1",
+        default=1.0,
+        soft_min=0.0,
+        soft_max=10.0,
+    )
+
+    def execute(self, context):
+        # Common
+        if len(SELECTED_SEGMENTS) < 2:
+            return {"CANCELED"}
+
+        self_side = 0
+        target_segment = 0
+
+        if len(SELECTED_SEGMENTS) >= 2:
+            auto = False
+            self_obj = context.scene.objects[SELECTED_SEGMENTS[0][0]]
+            target_obj = context.scene.objects[SELECTED_SEGMENTS[1][0]]
+
+            self_side = SELECTED_SEGMENTS[0][1]
+            target_segment = SELECTED_SEGMENTS[1][1]
+        elif len(context.selected_objects) >= 2:
+            auto = True
+            self_obj = context.selected_objects[0]
+            target_obj = context.selected_objects[1]
+        else:
+            return {"CANCELLED"}
+
+        # TODO : Warning at cyclic dependency : do you want to link-duplicate the target and hide the original ?
+
+        # Shape type
+        self_type = sp_type_of_object(self_obj)
+        target_type = sp_type_of_object(target_obj)
+
+        match self_type:
+            case SP_obj_type.BEZIER_SURFACE:
+                connect_ng = append_node_group("SP - Connect Bezier Patch")
+                add_modifier_asset_from_node_group(
+                    self_obj,
+                    connect_ng,
+                    {
+                        "Target": target_obj,
+                        "Target Segment": target_segment,
+                        "Self Side": self_side,
+                        "Auto": auto,
+                        "Invert": self.invert,
+                        "Continuity": self.continuity,
+                        "Tension": self.tension,
+                    },
+                )
+            case SP_obj_type.CURVE:
+                if target_type == SP_obj_type.CURVE:
+                    connect_ng = append_node_group("SP - Connect Curve")
+                    add_modifier_asset_from_node_group(
+                        self_obj,
+                        connect_ng,
+                        {
+                            "Target": target_obj,
+                            "Target Segment": target_segment,
+                            "Auto": auto,
+                            "Switch End Target Segment": self.invert,
+                            "Switch End": bool(self_side % 2),
+                            "Continuity": self.continuity,
+                            "Tension": self.tension,
+                        },
+                    )
+            case SP_obj_type.PLANE:
+                if target_type == SP_obj_type.PLANE:
+                    connect_ng = append_node_group("SP - Connect Flat Patch")
+                    add_modifier_asset_from_node_group(
+                        self_obj,
+                        connect_ng,
+                        {
+                            "Target": target_obj,
+                            "Target Segment": target_segment,
+                            "Self Segment": self_side,
+                            "Auto": auto,
+                            "Switch": self.invert,
+                        },
+                    )
+
+                    # Make sure orient is enabled on both patches
+                    plane_mesher = SP_obj_type.PLANE.mesher_name
+                    change_mod_settings_from_object(
+                        self_obj, plane_mesher, {"Orient": True}
+                    )
+                    change_mod_settings_from_object(
+                        target_obj, plane_mesher, {"Orient": True}
+                    )
+
+            ## TODO add all cases
+
+        return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        col = layout.column()
+        col.prop(self, "invert")
+        row = col.row()
+        row.prop(self, "continuity", expand=True)
+        col.prop(self, "tension")
 
 
 class SP_OT_flip_normals(Operator):
@@ -1495,20 +1626,18 @@ class SP_OT_fill(Operator):
             fill_object.location = selection_mean_point(SELECTED_SEGMENTS)
             context.collection.objects.link(fill_object)
 
-            s_list = list(SELECTED_SEGMENTS)
-
             add_modifier_asset_from_node_group(
                 fill_object,
                 fill_ng,
                 {
-                    "Target 1": context.scene.objects[s_list[0][0]],
-                    "Target Segment 1": s_list[0][1],
-                    "Target 2": context.scene.objects[s_list[1][0]],
-                    "Target Segment 2": s_list[1][1],
-                    "Target 3": context.scene.objects[s_list[2][0]],
-                    "Target Segment 3": s_list[2][1],
-                    "Target 4": context.scene.objects[s_list[3][0]],
-                    "Target Segment 4": s_list[3][1],
+                    "Target 1": context.scene.objects[SELECTED_SEGMENTS[0][0]],
+                    "Target Segment 1": SELECTED_SEGMENTS[0][1],
+                    "Target 2": context.scene.objects[SELECTED_SEGMENTS[1][0]],
+                    "Target Segment 2": SELECTED_SEGMENTS[1][1],
+                    "Target 3": context.scene.objects[SELECTED_SEGMENTS[2][0]],
+                    "Target Segment 3": SELECTED_SEGMENTS[2][1],
+                    "Target 4": context.scene.objects[SELECTED_SEGMENTS[3][0]],
+                    "Target Segment 4": SELECTED_SEGMENTS[3][1],
                 },
             )
             add_modifier_asset_from_node_group(
@@ -1550,7 +1679,7 @@ class SP_OT_loft(Operator):
 
     def invoke(self, context, event):
         self.obj_loc = selection_mean_point(SELECTED_SEGMENTS).copy()
-        self.s_list = list(SELECTED_SEGMENTS)[:8]
+        self.s_list = SELECTED_SEGMENTS[:8]
 
         if len(self.s_list) < 2:
             self.report({"INFO"}, "Select at least 2 segments")
@@ -1603,6 +1732,7 @@ classes = [
     SP_OT_add_trim_contour,
     SP_OT_bl_nurbs_to_psychopatch,
     SP_OT_blend_surfaces,
+    SP_OT_Connect,
     SP_OT_explode_compound,
     SP_OT_extract_segment,
     SP_OT_fill,
