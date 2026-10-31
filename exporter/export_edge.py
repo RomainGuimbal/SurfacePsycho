@@ -1,43 +1,43 @@
-from ..common.enums import SP_segment_type
-from ..common.utils import (
-    gp_list_to_arrayofpnt,
-    vec_list_to_gp_pnt2d,
-    vec_list_to_step_cartesian2d,
-    vec_list_to_step_cartesian,
-    float_list_to_tcolstd_H,
-    knot_tcol_from_att,
-    print_vec_list,
-)
-from .export_ellipse import gp_Elips_from_3_points, gp_Elips2d_from_3_points
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
-from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.GC import (
     GC_MakeArcOfCircle,
-    GC_MakeSegment,
-    GC_MakeCircle,
     GC_MakeArcOfEllipse,
+    GC_MakeCircle,
     GC_MakeEllipse,
+    GC_MakeSegment,
 )
 from OCP.GCE2d import (
-    GCE2d_MakeSegment,
     GCE2d_MakeArcOfCircle,
-    GCE2d_MakeCircle,
     GCE2d_MakeArcOfEllipse,
+    GCE2d_MakeCircle,
     GCE2d_MakeEllipse,
+    GCE2d_MakeSegment,
 )
 from OCP.Geom import Geom_BezierCurve
 from OCP.Geom2d import Geom2d_BezierCurve
 from OCP.GeomAdaptor import GeomAdaptor_Surface
 from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
-from OCP.gp import gp_Pnt, gp_Dir, gp_Ax2, gp_Pnt2d, gp_Vec
+from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt, gp_Pnt2d, gp_Vec
+from OCP.StepData import StepData_Factors, StepData_Logical
 from OCP.StepGeom import (
-    StepGeom_BSplineCurveWithKnotsAndRationalBSplineCurve,
     StepGeom_BSplineCurveForm,
+    StepGeom_BSplineCurveWithKnotsAndRationalBSplineCurve,
     StepGeom_KnotType,
 )
-from OCP.StepData import StepData_Logical, StepData_Factors
 from OCP.StepToGeom import StepToGeom
 from OCP.TCollection import TCollection_HAsciiString
+
+from ..common.enums import SP_segment_type
+from ..common.utils import (
+    float_list_to_tcolstd_H,
+    gp_list_to_arrayofpnt,
+    knot_tcol_from_att,
+    # print_vec_list,
+    vec_list_to_gp_pnt2d,
+    vec_list_to_step_cartesian,
+    vec_list_to_step_cartesian2d,
+)
+from .export_ellipse import gp_Elips2d_from_3_points, gp_Elips_from_3_points
 
 
 class SP_Edge_export:
@@ -89,7 +89,7 @@ class SP_Edge_export:
                 self.gp_cp = [gp_Pnt(v[0], v[1], v[2]) for v in self.vec_cp]
 
     def _get_type(self):
-        if "type" in self.seg_aligned_attrs.keys():
+        if "type" in self.seg_aligned_attrs:
             return SP_segment_type(self.seg_aligned_attrs["type"])
         else:
             raise ValueError("Missing segment type")
@@ -284,5 +284,6 @@ class SP_Edge_export:
         if not builder.IsDone():
             raise RuntimeError(f"Edge creation failed with error: {builder.Error()}")
         edge = builder.Edge()
+        # from OCP.BRepCheck import BRepCheck_Analyzer
         # assert BRepCheck_Analyzer(edge).IsValid()
         self.topods_edge = edge
