@@ -70,30 +70,32 @@ from .export_contour import SP_Contour_export
 
 
 # Generic face builder
-def geom_to_topods_face(geom_surf, outer_wire=None, inner_wires=[]):
+def geom_to_topods_face(geom_surf, outer_wire=None, inner_wires=None):
     # Make face
     if outer_wire == None:
         makeface = BRepBuilderAPI_MakeFace(geom_surf, 1e-6)
-        return makeface.Face()
+        face = makeface.Face()
     else:
         makeface = BRepBuilderAPI_MakeFace(geom_surf, outer_wire, False)  # ,1e-6)
 
-    # Add inner wires (holes)
-    for inner_wire in inner_wires:
-        makeface.Add(inner_wire)
+        # Add inner wires (holes)
+        if inner_wires is not None :
+            for inner_wire in inner_wires:
+                makeface.Add(inner_wire)
 
-    # Build the face
-    makeface.Build()
+        # Build the face
+        makeface.Build()
+        if not makeface.IsDone():
+            raise ValueError(f"Failed to build face {makeface.Error()}")
 
-    if not makeface.IsDone():
-        raise ValueError(f"Failed to build face {makeface.Error()}")
+        fix = ShapeFix_Face(makeface.Face())
+        fix.Perform()
+        face = fix.Face()
 
-    # makeface.Add(trim_wire)#.Reversed())
-    face = makeface.Face()
-    fix = ShapeFix_Face(face)
-    fix.Perform()
+    if face is None or face.IsNull():
+        raise ValueError("Null face")
 
-    return fix.Face()
+    return face
 
 
 # Bezier face
@@ -235,7 +237,7 @@ def NURBS_face_to_topods(ob, scale=1000):
 def cone_face_to_topods(ob, scale=1000):
     # Get attr
     origin, dir1, dir2 = read_attribute_by_name(ob, "axis3_cone", 3)
-    semi_angle, radius = read_attribute_by_name(ob, "angle_radius", 2)
+    semi_angle, radius, face_length = read_attribute_by_name(ob, "angle_radius", 3)
     radius *= scale
     origin *= scale
 
@@ -245,7 +247,7 @@ def cone_face_to_topods(ob, scale=1000):
         gp_Dir(*dir1),
         gp_Dir(*dir2),
     )
-    geom_surf = Geom_ConicalSurface(axis3, semi_angle, 0.0)
+    geom_surf = Geom_ConicalSurface(axis3, semi_angle, radius)
 
     # Build trim contour
     contour = SP_Contour_export(
@@ -256,7 +258,7 @@ def cone_face_to_topods(ob, scale=1000):
         "IsPeriodic_trim_contour",
         is2D=True,
         geom_surf=geom_surf,
-        scale=(1, 2),
+        scale=(1, face_length*scale)
     )
 
     # Create topods face
@@ -672,9 +674,7 @@ def compound_to_topods(
             )
             comp_shapes.append(sh)
         else:
-            warnings.warn(
-                f"Nested Compounds are ignored. {o_new.name} skipped"
-            )
+            warnings.warn(f"Nested Compounds are ignored. {o_new.name} skipped")
 
         # Unlink
         bpy.context.collection.objects.unlink(o_new)
@@ -871,7 +871,11 @@ def blender_instance_to_topods_instance(  # Instancing is supported only for com
 
     for o in ins_obj:
         sp_type = sp_type_of_object(o)
-        if sp_type not in (SP_obj_type.INVALID, SP_obj_type.EMPTY, SP_obj_type.INSTANCE):
+        if sp_type not in (
+            SP_obj_type.INVALID,
+            SP_obj_type.EMPTY,
+            SP_obj_type.INSTANCE,
+        ):
             if o in obj_shapes.keys():
                 shape = obj_shapes[o]
             elif not o.hide_viewport:
@@ -913,7 +917,7 @@ def blender_instance_to_topods_instance(  # Instancing is supported only for com
         # #     builder.Add(comp, swd_nested)
         # #     is_nested=True
 
-    if len(to_sew_shape_list)==0:
+    if len(to_sew_shape_list) == 0:
         return
 
     # each collection instance is sewed separately
@@ -980,7 +984,7 @@ def make_shapes_from_objects(objects: list, depsgraph, scale, sew, sew_tolerance
     for o in objects:
         type = sp_type_of_object(o)
 
-        if type is SP_obj_type.INVALID :
+        if type is SP_obj_type.INVALID:
             continue
 
         # Check modifiers warnings

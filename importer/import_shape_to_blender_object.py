@@ -70,20 +70,22 @@ class SP_Curve_no_edge_import:
         self.knot = []
         self.knot_extension = []
 
-        curve_type = get_geom_adapt_curve_type(adaptor_curve)
+        self.type = get_geom_adapt_curve_type(adaptor_curve)
         self.isclosed = adaptor_curve.IsClosed()
 
-        match curve_type:
+        match self.type:
             case GeomAbs.GeomAbs_Line:
                 self.line(adaptor_curve)
-            case GeomAbs.GeomAbs_BezierCurve:
-                self.bezier(adaptor_curve)
-            case GeomAbs.GeomAbs_BSplineCurve:
-                self.bspline(adaptor_curve)
             case GeomAbs.GeomAbs_Circle:
                 self.circle(adaptor_curve)
             case GeomAbs.GeomAbs_Ellipse:
                 self.ellipse(adaptor_curve)
+            # case GeomAbs.GeomAbs_Hyperbola:
+            #     self.hyperbola(adaptor_curve)
+            case GeomAbs.GeomAbs_BezierCurve:
+                self.bezier(adaptor_curve)
+            case GeomAbs.GeomAbs_BSplineCurve:
+                self.bspline(adaptor_curve)
             case _:
                 self.unsupported_curve(adaptor_curve)
 
@@ -283,8 +285,11 @@ class SP_Curve_no_edge_import:
         else:
             self.verts = gp_pnt_to_blender_vec_list(gp_pnt_poles)
 
+    # def hyperbola(self, edge_adaptor):
+    #     self.unsupported_curve(edge_adaptor)
+    
     def unsupported_curve(self, adaptor_curve):
-        print(f"Unsupported curve type: {self.curve_type}. Expect inaccurate results")
+        print(f"Unsupported curve type: {self.type}. Expect inaccurate results")
         start_point = adaptor_curve.Value(adaptor_curve.FirstParameter())
         end_point = adaptor_curve.Value(adaptor_curve.LastParameter())
         gp_pnt_poles = [start_point, end_point]
