@@ -20,7 +20,7 @@ with TreeBuilder("SP - Covariance 3D", arrange=None, clear=True) as tree:
 # structure — see TreeBuilder.layout_snapshot).
 tree.layout_snapshot = {
     "Group Input": ("NodeGroupInput", (-299.69, 0.0), None, ()),
-    "Group Output": ("NodeGroupOutput", (267.26, 79.97), None, (("xy", "Math.006", "Value"), ("xz", "Math.009", "Value"), ("x²", "Math.003", "Value"), ("yz", "Math.010", "Value"), ("y²", "Math.007", "Value"), ("z²", "Math.011", "Value"), )),
+    "Group Output": ("NodeGroupOutput", (306.61, 44.8), None, (("xy", "Math.006", "Value"), ("xz", "Math.009", "Value"), ("x²", "Math.003", "Value"), ("yz", "Math.010", "Value"), ("y²", "Math.007", "Value"), ("z²", "Math.011", "Value"), )),
     "Math.003": ("ShaderNodeMath", (83.9, 70.45), None, (("Value", "Separate XYZ.001", "X"), ("Value#1", "Separate XYZ.001", "X"), )),
     "Math.006": ("ShaderNodeMath", (83.9, 36.57), None, (("Value", "Separate XYZ.001", "X"), ("Value#1", "Separate XYZ.001", "Y"), )),
     "Math.007": ("ShaderNodeMath", (83.9, -31.19), None, (("Value", "Separate XYZ.001", "Y"), ("Value#1", "Separate XYZ.001", "Y"), )),

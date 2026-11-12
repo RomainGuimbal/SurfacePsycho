@@ -6,10 +6,10 @@ with TreeBuilder("Menger curvature", arrange=None, clear=True) as tree:
     p2 = tree.inputs.vector("P2", (0.0, 0.0, 0.0), min_value=-10_000.0, max_value=10_000.0)
     menger_curvature = tree.outputs.float("Menger curvature")
 
-    reroute = g.Reroute(input=center).props(width=19.0)
-    reroute_1 = g.Reroute(input=p1).props(width=19.0)
-    reroute_2 = g.Reroute(input=p2).props(width=19.0)
-    reroute_3 = g.Reroute(input=center).props(width=19.0)
+    reroute = g.Reroute(input=center).props(width=100.0)
+    reroute_1 = g.Reroute(input=p1).props(width=100.0)
+    reroute_2 = g.Reroute(input=p2).props(width=100.0)
+    reroute_3 = g.Reroute(input=center).props(width=100.0)
     math_1 = (reroute_1.o.output.distance(reroute_3) * reroute_3.o.output.distance(reroute_2)).props(hide=True)
     (
         (p1 - reroute).cross(p2 - reroute).length() * 2.0 / (math_1 * reroute_1.o.output.distance(reroute_2)).props(hide=True)

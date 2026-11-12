@@ -8,7 +8,7 @@ with TreeBuilder("List Switch", arrange=None, clear=True) as tree:
     output = tree.outputs.float("Output", description="Output list with evaluated field values")
 
     index = g.Index().props(width=100.0, hide=True)
-    switch_1 = switch[index].props(hide=True).switch.float(false[index].props(hide=True), true[index].props(hide=True))
+    switch_1 = g.GetListItem.boolean(switch, index).props(hide=True).o.value.switch.float(g.GetListItem.float(false, index).props(hide=True), g.GetListItem.float(true, index).props(hide=True))
     g.FieldToList(count=count, items={"Output": switch_1}) >> output
 
 # Restore authored node names and positions (matched by tree

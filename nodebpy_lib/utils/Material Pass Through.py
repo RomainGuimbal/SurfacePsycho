@@ -7,7 +7,7 @@ with TreeBuilder("Material Pass Through", arrange=None, clear=True) as tree:
     output = tree.outputs.geometry("Output")
 
     separate_components = g.SeparateComponents(geom_to_paint).props(width=140.0, hide_outputs=["Curve", "Grease Pencil", "Point Cloud", "Volume", "Instances"])
-    reroute = g.Reroute(input=separate_components.o.mesh).props(width=19.0)
+    reroute = g.Reroute(input=separate_components.o.mesh).props(width=9.5)
     remove_named_attribute = ((painted_geom >> g.SeparateComponents()).props(width=140.0, hide_outputs=["Curve", "Grease Pencil", "Point Cloud", "Volume", "Instances"]) >> g.RemoveNamedAttribute(pattern_mode="Wildcard", name="*")).props(width=170.0, warning_propagation="NONE")
     capture = g.CaptureAttribute.point(geometry=remove_named_attribute)
     value = capture.items.boolean(True, "Value")

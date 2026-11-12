@@ -19,21 +19,21 @@ with TreeBuilder("SP - Rebuild Wire Knot", arrange=None, clear=True) as tree:
     repeat_zone.output.node.inspection_index = 1
     output_1 = repeat_zone.items.geometry(capture.o.geometry, "Output")
     compare = g.Compare.integer.equal((repeat_zone.iteration + segment_offset).props(hide=True), knot_segment).props(hide=True)
-    filter_list = multiplicity.filter(compare).props(hide=True)
-    filter_list_1 = knot.filter(compare).props(hide=True)
+    filter_list = g.FilterList.integer(multiplicity, compare).props(hide=True)
+    filter_list_1 = g.FilterList.float(knot, compare).props(hide=True)
     reroute = g.Reroute(input=output_1.current).props(width=19.0)
-    compare_1 = g.Compare.integer.equal(g.Reroute(input=filter_list_1).props(width=19.0).o.output.list_length().props(hide=True), 0).props(hide=True)
+    list_length = g.Reroute(input=filter_list_1.o.selection).props(width=19.0).o.output.list_length().props(hide=True)
     reroute_1 = g.Reroute(input=capture.o.geometry).props(width=19.0)
     reroute_2 = g.Reroute(input=repeat_zone.iteration).props(width=19.0)
     sample_index = g.SampleIndex.point.integer(reroute_1, count_per_segment_1.output, reroute_2).props(hide=True)
     integer_math = (sample_index.o.value - 1).props(hide=True)
     with g.Frame():
         index_1 = g.Index().props(hide=True)
-        get_list_item = filter_list_1[index_1].props(hide=True)
-        get_list_item_1 = filter_list[index_1].props(hide=True)
+        get_list_item = filter_list_1.o.selection[index_1].props(hide=True)
+        get_list_item_1 = filter_list.o.selection[index_1].props(hide=True)
         integer_math_1 = (index_1.o.index + integer_math).props(hide=True)
-        get_list_item_2 = filter_list_1[integer_math_1].props(hide=True)
-        get_list_item_3 = filter_list[integer_math_1].props(hide=True)
+        get_list_item_2 = filter_list_1.o.selection[integer_math_1].props(hide=True)
+        get_list_item_3 = filter_list.o.selection[integer_math_1].props(hide=True)
     sample_index_1 = g.SampleIndex.point.integer(reroute_1, p_count_accumulate_1.output, (reroute_2.o.output - 1).props(hide=True)).props(hide=True)
     integer_math_2 = g.Index().props(hide=True).o.index - sample_index_1
     reroute_3 = g.Reroute(input=(index >= sample_index_1) & (index < (integer_math + sample_index_1).props(hide=True))).props(width=19.0)
@@ -41,7 +41,8 @@ with TreeBuilder("SP - Rebuild Wire Knot", arrange=None, clear=True) as tree:
     string_1 = g.String("Knot").props(label="Knot Name")
     string_2 = g.String("Multiplicity").props(label="Multiplicity Name")
     store_named_attribute = (((g.StoreNamedAttribute.point.float(reroute, reroute_3, string_1, get_list_item.point.at(integer_math_2).props(hide=True)).props(width=140.0, hide=True) >> g.StoreNamedAttribute.point.float(selection=reroute_3, name=g.JoinStrings((string_1, string)), value=get_list_item_2.point.at(integer_math_2).props(hide=True))).props(width=140.0, hide=True) >> g.StoreNamedAttribute.point.integer(selection=reroute_3, name=string_2, value=get_list_item_1.point.at(integer_math_2).props(hide=True))).props(width=140.0, hide=True) >> g.StoreNamedAttribute.point.integer(selection=reroute_3, name=g.JoinStrings((string_2, string)), value=get_list_item_3.point.at(integer_math_2).props(hide=True))).props(width=140.0, hide=True)
-    compare_1.o.result.switch.geometry(store_named_attribute, reroute) >> output_1.next
+    switch = g.Compare.integer.equal(list_length, 0).props(hide=True).o.result.switch.geometry(store_named_attribute, reroute)
+    switch >> output_1.next
 
     output_1.result >> output
 

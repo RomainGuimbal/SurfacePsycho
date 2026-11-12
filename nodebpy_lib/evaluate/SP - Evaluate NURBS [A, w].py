@@ -16,9 +16,9 @@ with TreeBuilder("SP - Evaluate NURBS [A, w]", arrange=None, clear=True) as tree
     basis_1 = capture.items.float(basis, "Basis")
     index = g.Index()
     integer_math = g.Index().o.index * cp_count
-    reroute = g.Reroute(input=parametric_space_geom).props(width=9.5)
-    reroute_1 = g.Reroute(input=capture.o.geometry).props(width=9.5)
-    reroute_2 = g.Reroute(input=t_index).props(width=9.5)
+    reroute = g.Reroute(input=parametric_space_geom).props(width=19.0)
+    reroute_1 = g.Reroute(input=capture.o.geometry).props(width=19.0)
+    reroute_2 = g.Reroute(input=t_index).props(width=19.0)
     sample_index = g.SampleIndex.point.float(reroute_1, basis_1.output.point.total(reroute_2), integer_math)
     sample_index_1 = g.SampleIndex.point.float(reroute, sample_index, index)
     vector_math = g.SampleIndex.point.vector(control_geom, g.Position(), cp_index).o.value * basis_1.output

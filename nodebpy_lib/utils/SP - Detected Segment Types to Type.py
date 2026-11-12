@@ -9,12 +9,12 @@ with TreeBuilder("SP - Detected Segment Types to Type", arrange=None, clear=True
     segment_type = tree.outputs.integer("Segment Type")
 
     with g.Frame():
-        _reroute = g.Reroute().props(label="0 Bezier", width=19.0)
-        _reroute_1 = g.Reroute().props(label="1 Nurbs", width=19.0)
-        _reroute_2 = g.Reroute().props(label="2 Circle Arc", width=19.0)
-        _reroute_3 = g.Reroute().props(label="3 Circle", width=19.0)
-        _reroute_4 = g.Reroute().props(label="4 Ellipse Arc", width=19.0)
-        _reroute_5 = g.Reroute().props(label="5 Ellipse", width=19.0)
+        _reroute = g.Reroute().props(label="0 Bezier", width=9.5)
+        _reroute_1 = g.Reroute().props(label="1 Nurbs", width=9.5)
+        _reroute_2 = g.Reroute().props(label="2 Circle Arc", width=9.5)
+        _reroute_3 = g.Reroute().props(label="3 Circle", width=9.5)
+        _reroute_4 = g.Reroute().props(label="4 Ellipse Arc", width=9.5)
+        _reroute_5 = g.Reroute().props(label="5 Ellipse", width=9.5)
     switch = is_ellipse_arc.switch.integer(is_circle.switch.integer(is_arc.switch.integer(is_nurbs.switch.integer(true=1), 2), 3), 4)
     is_ellipse.switch.integer(switch, 5) >> segment_type
 

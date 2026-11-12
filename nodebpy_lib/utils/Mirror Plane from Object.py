@@ -6,7 +6,7 @@ with TreeBuilder("Mirror Plane from Object", arrange=None, clear=True) as tree:
     normal = tree.outputs.vector("Normal", subtype="XYZ")
     location = tree.outputs.vector("Location")
 
-    object_info = g.ObjectInfo(object=object, transform_space="RELATIVE")
+    object_info = g.ObjectInfo(object=object, as_instance=True, transform_space="RELATIVE")
     (
         g.IndexSwitch.vector(axis, ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))).o.output.transform_direction(object_info.o.transform)
         >> normal
@@ -21,5 +21,5 @@ tree.layout_snapshot = {
     "Group Output": ("NodeGroupOutput", (312.02, 40.79), None, (("Location", "Object Info.001", "Location"), ("Normal", "Transform Direction", "Direction"), )),
     "Index Switch": ("GeometryNodeIndexSwitch", (-239.92, -52.11), None, (("Index", "Group Input", "Axis"), )),
     "Object Info.001": ("GeometryNodeObjectInfo", (-249.05, 173.62), None, (("Object", "Group Input", "Object"), )),
-    "Transform Direction": ("FunctionNodeTransformDirection", (58.95, -15.56), None, (("Direction", "Index Switch", "Output"), ("Transform", "Object Info.001", "Transform"), )),
+    "Transform Direction": ("FunctionNodeTransformDirection", (61.71, 169.08), None, (("Direction", "Index Switch", "Output"), ("Transform", "Object Info.001", "Transform"), )),
 }

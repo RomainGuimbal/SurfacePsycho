@@ -10,7 +10,7 @@ with TreeBuilder("Argmax", arrange=None, clear=True, is_modifier=True) as tree:
     capture = g.CaptureAttribute.point(geometry=geometry)
     index = capture.items.integer(g.Index(), "Index")
     attribute_1 = capture.items.float(attribute, "Attribute")
-    integer_math = point_count - 1
+    integer_math = (point_count - 1).props(hide=True)
     sort_elements = capture.o.geometry >> g.SortElements.point(sort_weight=attribute)
     sample_index = g.SampleIndex.point.integer(sort_elements, index.output, integer_math).props(hide=True)
     sample_index_1 = g.SampleIndex.point.float(sort_elements, attribute_1.output, integer_math).props(hide=True)

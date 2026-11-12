@@ -11,7 +11,7 @@ with TreeBuilder("SP - Transpose Matrix [List]", arrange=None, clear=True) as tr
     index = g.Index()
     integer_math = (((index.o.index % m).props(label="U", hide=True) * n).props(hide=True) + (index.o.index // m).props(hide=True)).props(hide=True)
     (
-        g.FieldToList(count=(m * n).props(hide=True), items={"Value": matrix[integer_math]})
+        g.FieldToList(count=(m * n).props(hide=True), items={"Value": g.GetListItem.float(matrix, integer_math)})
         >> matrix_1
     )
 

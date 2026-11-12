@@ -18,6 +18,6 @@ tree.layout_snapshot = {
     "Group Input": ("NodeGroupInput", (-361.59, 0.0), None, ()),
     "Group Output": ("NodeGroupOutput", (416.45, -7.76), None, (("Distance", "Math", "Value"), ("Signed Distance", "Vector Math", "Value"), )),
     "Math": ("ShaderNodeMath", (222.5, -72.86), None, (("Value", "Vector Math", "Value"), )),
-    "Vector Math": ("ShaderNodeVectorMath", (37.65, 18.54), None, (("Vector", "Group Input", "Plane Normal"), ("Vector#1", "Vector Math.001", "Vector"), )),
+    "Vector Math": ("ShaderNodeVectorMath", (51.22, 29.4), None, (("Vector", "Group Input", "Plane Normal"), ("Vector#1", "Vector Math.001", "Vector"), )),
     "Vector Math.001": ("ShaderNodeVectorMath", (-156.86, -81.54), None, (("Vector", "Group Input", "Point"), ("Vector#1", "Group Input", "Plane Point"), )),
 }

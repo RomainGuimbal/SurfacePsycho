@@ -5,11 +5,11 @@ with TreeBuilder("SP - Avoid sharp twist", arrange=None, clear=True) as tree:
     vector = tree.inputs.vector("Vector", (0.0, 0.0, 0.0))
     vector_1 = tree.outputs.vector("Vector")
 
-    reroute = g.Reroute(input=vector).props(width=9.5)
+    reroute = g.Reroute(input=vector).props(width=19.0)
     accumulate_field = g.AccumulateField.point.integer(reroute.o.output.dot(vector.point.at(g.Index().o.index - 1)) < 0.0)
-    boolean_math = (g.Reroute(input=enable).props(width=9.5).o.output & accumulate_field.o.leading % 2.0).props(hide=True)
+    boolean_math = (g.Reroute(input=enable).props(width=19.0).o.output & accumulate_field.o.leading % 2.0).props(hide=True)
     (
-        g.Reroute(input=reroute.o.output).props(width=9.5).o.output * boolean_math.switch.float(1.0, -1.0)
+        g.Reroute(input=reroute.o.output).props(width=19.0).o.output * boolean_math.switch.float(1.0, -1.0)
         >> vector_1
     )
 
