@@ -1,6 +1,6 @@
 from nodebpy import geometry as g, TreeBuilder
 
-with TreeBuilder("8 Number Wire", arrange=None, clear=True) as tree:
+with TreeBuilder("8 Number Wire", arrange="sugiyama", clear=True) as tree:
     geometry = tree.outputs.geometry("Geometry")
 
     index = g.Index()
@@ -11,14 +11,3 @@ with TreeBuilder("8 Number Wire", arrange=None, clear=True) as tree:
     viewer.items.integer(index, "Index")
 
     set_position >> geometry
-
-# Restore authored node names and positions (matched by tree
-# structure — see TreeBuilder.layout_snapshot).
-tree.layout_snapshot = {
-    "Group Output": ("NodeGroupOutput", (542.32, 10.34), None, (("Geometry", "Set Position", "Geometry"), )),
-    "Index": ("GeometryNodeInputIndex", (-202.91, 91.74), None, ()),
-    "Index Switch": ("GeometryNodeIndexSwitch", (81.3, -3.16), None, (("Index", "Index", "Index"), )),
-    "Mesh Circle": ("GeometryNodeMeshCircle", (80.54, 129.33), None, ()),
-    "Set Position": ("GeometryNodeSetPosition", (344.62, 38.66), None, (("Geometry", "Mesh Circle", "Mesh"), ("Position", "Index Switch", "Output"), )),
-    "Viewer": ("GeometryNodeViewer", (547.44, 140.2), None, (("Geometry", "Set Position", "Geometry"), ("Index", "Index", "Index"), )),
-}
