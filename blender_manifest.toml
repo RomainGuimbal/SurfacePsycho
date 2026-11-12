@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "surfacepsycho"
-version = "0.10.4"
+version = "0.10.95"
 name = "Surface Psycho"
 tagline = "Precision Surface Design"
 maintainer = "Romain Guimbal"
@@ -11,7 +11,7 @@ website = "https://https://romainguimbal.github.io/surface-psycho/documentation"
 
 tags = ["Modeling", "Import-Export", "Geometry Nodes", "Add Curve"]
 
-blender_version_min = "5.2.0"
+blender_version_min = "5.3.0"
 
 license = ["SPDX:GPL-3.0-or-later"]
 
@@ -37,6 +37,7 @@ paths_exclude_pattern = [
   "/.github/",
   "/.testing/",
   "/docs/",
+  "nodebpy_lib",
   "/*.zip",
   "*.blend1",
   ".gitignore",
