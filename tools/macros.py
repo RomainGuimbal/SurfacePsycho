@@ -1723,6 +1723,51 @@ class SP_OT_loft(Operator):
         return {"FINISHED"}
 
 
+class SP_OT_SegmentsToWire(Operator):
+    bl_idname = "object.sp_segments_to_wire"
+    bl_label = "SP - Segments to Wire"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        if len(SELECTED_SEGMENTS) == 0:
+            return {"CANCELLED"}
+        target_objects = [context.scene.objects[seg[0]] for seg in SELECTED_SEGMENTS]
+        target_segments = [seg[1] for seg in SELECTED_SEGMENTS]
+        target_positions = [Vector(seg[2]) for seg in SELECTED_SEGMENTS]
+
+        loc = Vector()
+        for tp in target_positions:
+            loc += tp
+        loc /= len(target_positions)
+
+        mesh = bpy.data.meshes.new("Curve")
+        mesh.from_pydata([Vector((0, 0, 0))], [], [])
+        obj = bpy.data.objects.new("Curve", mesh)
+        obj.location = loc
+        context.collection.objects.link(obj)
+
+        copy_ng, meshing_ng = append_multiple_node_groups(
+            ["SP - Copy Geometry", "SP - Curve Meshing"]
+        )
+
+        for i in range(len(target_objects)):
+            add_modifier_asset_from_node_group(
+                obj,
+                copy_ng,
+                {
+                    "Target": target_objects[i],
+                    "Target Segment": target_segments[i],
+                    "Target Shape": "Segment",
+                    "Keep Existing": True,
+                    "Auto": False,
+                    "Merge": True,
+                },
+            )
+        add_modifier_asset_from_node_group(obj, meshing_ng)
+
+        return {"FINISHED"}
+
+
 classes = [
     SP_OT_add_curvature_analysis,
     SP_OT_add_isoparam,
@@ -1758,6 +1803,7 @@ classes = [
     SP_OT_disable_exact_normals,
     SP_OT_enable_exact_normals,
     SP_OT_mesh_to_compound,
+    SP_OT_SegmentsToWire,
 ]
 
 

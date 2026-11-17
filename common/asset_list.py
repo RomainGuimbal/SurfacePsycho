@@ -51,7 +51,7 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Bezier Patch Meshing",
     "SP - Bezier Segment Through Segment",
     "SP - Blend Surfaces",
-    "SP - Bump Surface",
+    "SP - Crown Surface",
     "SP - Connect Bezier Patch",
     "SP - Convert Flat Patch to Bezier Patch",
     "SP - Coon Patch",
@@ -74,6 +74,7 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - UV Curve on Surface",
     "SP - Side Aligned Reparametrize",
     "SP - Shrinkwrap Bezier Patch",
+    "SP - Trim Patch with Segment",
 }
 
 ASSET_NODE_GROUPS_NURBS_PATCH = {

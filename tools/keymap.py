@@ -1,3 +1,5 @@
+# Sync with docs\Workflow\Keymap.md
+
 OBJ_KEYMAP = (
     (
         "view3d.segment_select_click",

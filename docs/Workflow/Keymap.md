@@ -25,14 +25,12 @@ ____
 `Ctrl`+`B`: Blend
 <!-- `Ctrl+B`: Fillet ?-->
 ## C
-<!-- `C`: Connect ? or A for align-->
-<!-- `C`: Crop ? or T for generic trim tool-->
-
-<!-- `Ctrl`+`C`: Copy
--->
+`C`: Connect <!-- or A for align ? -->
+<!-- ``Shift``+`C`: Crop ? or T for generic trim tool-->
+<!-- `Ctrl`+`C`: Copy-->
 
 ## D
-<!-- `D`: Degree change -->
+<!-- `D`: Degree change. And resample ? -->
 ## E
 `E`: Extract segment
 ## F
