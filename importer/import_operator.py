@@ -23,7 +23,7 @@ from .import_shape_to_blender_object import (
 
 
 class SP_OT_ImportCAD(Operator, ImportHelper):
-    bl_idname = "object.sp_cad_import"
+    bl_idname = "wm.sp_cad_import"
     bl_label = "Import CAD"
     bl_options = {"REGISTER", "UNDO"}
 

@@ -1,0 +1,800 @@
+- id: SP - Connect Surface
+  category: connect
+  tags:
+    - connect
+    - surface
+    - bezier surface
+  status: untested
+  Comment: null
+- id: SP - Connect Curve
+  category: connect
+  tags:
+    - connect
+    - curve
+  status: untested
+- id: SP - Reorder Grid Index
+  category: utility
+  tags:
+    - utility
+    - index
+    - level 2
+  status: untested
+- id: SP - Fit Curve
+  category: rebuild
+  tags:
+    - rebuild
+    - curve
+    - flat patch
+  status: untested
+- id: SP - Reorder Curve Index
+  category: utility
+  tags:
+    - utility
+    - index
+    - curve
+    - flat patch
+  status: null
+- id: SP - Oblong Wire
+  category: shape
+  tags:
+    - shape
+    - curve & wire
+    - curve
+    - flat patch
+  status: null
+- id: SP - Split Curve
+  category: utility
+  tags:
+    - utility
+    - split
+    - curve
+    - flat patch
+  status: null
+- id: SP - NURBS to Bezier Curve or FlatPatch
+  category: convert
+  tags:
+    - convert
+    - curve
+    - flat patch
+  status: null
+- id: SP - Raise or Lower Curve Degree
+  category: convert
+  tags:
+    - convert
+    - curve
+    - flat patch
+  status: null
+- id: SP - Reproject Ellipse Arcs Ends
+  category: utility
+  tags:
+    - utility
+    - curve
+    - flat patch
+  status: null
+- id: SP - Crop or Extend Curve
+  category: trim
+  tags:
+    - trim
+    - curve
+    - flat patch
+  status: null
+- id: SP - Interval Curve
+  category: shape
+  tags:
+    - shape
+    - curve & wire
+    - curve
+    - flat patch
+  status: null
+- id: SP - Copy Internal Curve
+  category: copy
+  tags:
+    - copy
+    - curve
+    - flat patch
+  status: null
+- id: SP - Trim Curve with Curve
+  category: null
+  tags:
+    - curve
+    - flat patch
+  status: null
+- id: SP - Continuities between Segments
+  category: utility
+  tags:
+    - utility
+    - curve
+    - flat patch
+  status: null
+- id: SP - Make Parallel to Flat Patch
+  category: utility
+  tags:
+    - utility
+    - curve
+    - flat patch
+  status: null
+- id: SP - Radial Array FlatPatch
+  category: symmetry
+  tags:
+    - symmetry
+    - curve
+    - flat patch
+  status: null
+- id: SP - Convert Circles and Ellipses to Splines
+  category: convert
+  tags:
+    - convert
+    - curve
+    - flat patch
+  status: null
+- id: SP - Interpolate Curve or FlatPatch
+  category: rebuild
+  tags:
+    - rebuild
+    - curve
+    - flat patch
+  status: null
+- id: SP - Resample Selection
+  category: rebuild
+  tags:
+    - rebuild
+    - curve
+    - flat patch
+  status: null
+- id: SP - Switch Curve Direction
+  category: convert
+  tags:
+    - convert
+    - curve
+    - flat patch
+  status: null
+- id: SP - Fillet Polyline with Circles
+  category: fillet
+  tags:
+    - fillet
+    - curve
+    - flat patch
+  status: null
+- id: SP - Set Segment Type
+  category: null
+  tags:
+    - curve
+    - flat patch
+  status: null
+- id: SP - Plot Curve Torsion
+  category: analyse
+  tags:
+    - analyse
+    - curve
+    - flat patch
+  status: null
+- id: SP - Sample Curve Per Degree
+  category: rebuild
+  tags:
+    - rebuild
+    - curve
+    - flat patch
+  status: null
+- id: SP - Edge Offset of Flat Patch
+  category: trim
+  tags:
+    - trim
+    - curve
+    - flat patch
+  status: null
+- id: SP - Make SVG Ready
+  category: convert
+  tags:
+    - convert
+    - curve
+    - flat patch
+  status: null
+- id: SP - Crown Curve
+  category: shape
+  tags:
+    - shape
+    - curve & wire
+    - curve
+    - flat patch
+  status: null
+- id: SP - Offset Curve
+  category: utility
+  tags:
+    - utility
+    - transform
+    - curve
+    - flat patch
+  status: null
+- id: SP - Curve Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - curve
+    - flat patch
+  status: null
+- id: SP - Multi Split Curve
+  category: utility
+  tags:
+    - utility
+    - split
+    - curve
+    - flat patch
+  status: null
+- id: SP - Fillet Curve or FlatPatch
+  category: fillet
+  tags:
+    - fillet
+    - curve
+    - flat patch
+  status: null
+- id: SP - Plot Distance Between Curves
+  category: analyse
+  tags:
+    - analyse
+    - curve
+    - flat patch
+  status: null
+- id: SP - Set Edge Length
+  category: utility
+  tags:
+    - utility
+    - curve
+    - flat patch
+  status: null
+- id: SP - Raise or Lower Degree of Selected Segment
+  category: convert
+  tags:
+    - convert
+    - curve
+    - flat patch
+  status: null
+- id: SP - Blend Curve
+  category: blend & fill
+  tags:
+    - blend & fill
+    - curve
+    - flat patch
+  status: null
+- id: SP - Copy Mesh Face
+  category: copy
+  tags:
+    - copy
+    - curve
+    - flat patch
+  status: null
+- id: SP - FlatPatch Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - curve
+    - flat patch
+  status: null
+- id: SP - Reorder Curve Selection
+  category: utility
+  tags:
+    - utility
+    - index
+    - curve
+    - flat patch
+  status: null
+- id: SP - Maths Function Segment
+  category: shape
+  tags:
+    - shape
+    - curve & wire
+    - curve
+    - flat patch
+  status: null
+- id: SP - Inset FlatPatch
+  category: trim
+  tags:
+    - trim
+    - curve
+    - flat patch
+  status: null
+- id: SP - Loft
+  category: blend & fill
+  tags:
+    - blend & fill
+    - bezier surface
+  status: null
+- id: SP - Project Curve on Surface
+  category: project
+  tags:
+    - project
+    - bezier surface
+  status: null
+- id: SP - Gradient Map
+  category: utility
+  tags:
+    - utility
+    - select
+    - bezier surface
+  status: null
+- id: SP - Select Patch Range
+  category: utility
+  tags:
+    - utility
+    - select
+    - bezier surface
+  status: null
+- id: SP - Bezier Patch Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - bezier surface
+  status: null
+- id: SP - Crown Surface
+  category: null
+  tags:
+    - bezier surface
+  status: null
+- id: SP - Fillet Trim Contour
+  category: fillet
+  tags:
+    - fillet
+    - bezier surface
+  status: null
+- id: SP - Coon Patch
+  category: blend & fill
+  tags:
+    - blend & fill
+    - bezier surface
+  status: null
+- id: SP - Ruled Surface from Mesh Loop
+  category: shape
+  tags:
+    - shape
+    - surface
+    - bezier surface
+  status: null
+- id: SP - Loft from Internal Curves
+  category: blend & fill
+  tags:
+    - blend & fill
+    - bezier surface
+  status: null
+- id: SP - Bezier Segment Through Segment
+  category: connect
+  tags:
+    - connect
+    - bezier surface
+  status: null
+- id: SP - Offset Precisely
+  category: utility
+  tags:
+    - utility
+    - transform
+    - bezier surface
+  status: null
+- id: SP - Side Aligned Reparametrize
+  category: null
+  tags:
+    - bezier surface
+  status: null
+- id: SP - Trim Bezier Surface from Projected Wires
+  category: trim
+  tags:
+    - trim
+    - bezier surface
+  status: null
+- id: SP - Connect Bezier Patch
+  category: connect
+  tags:
+    - connect
+    - bezier surface
+  status: null
+- id: SP - UV Curve on Surface
+  category: project
+  tags:
+    - project
+    - bezier surface
+  status: null
+- id: SP - Blend Surfaces
+  category: blend & fill
+  tags:
+    - blend & fill
+    - bezier surface
+  status: null
+- id: SP - Shrinkwrap Bezier Patch
+  category: null
+  tags:
+    - bezier surface
+  status: null
+- id: SP - Crop Patch to Point
+  category: trim
+  tags:
+    - trim
+    - bezier surface
+  status: null
+- id: SP - Raise or Lower Degree Bezier Patch
+  category: convert
+  tags:
+    - convert
+    - bezier surface
+  status: null
+- id: SP - Displace Bezier Patch Control Grid
+  category: utility
+  tags:
+    - utility
+    - transform
+    - bezier surface
+  status: null
+- id: SP - Railed Bezier Surface
+  category: shape
+  tags:
+    - shape
+    - surface
+    - bezier surface
+  status: null
+- id: SP - Convert Flat Patch to Bezier Patch
+  category: convert
+  tags:
+    - convert
+    - bezier surface
+  status: null
+- id: SP - Trim Patch with Segment
+  category: null
+  tags:
+    - bezier surface
+  status: null
+- id: SP - Flatten Patch Side
+  category: utility
+  tags:
+    - utility
+    - bezier surface
+  status: null
+- id: SP - Flatten Patch
+  category: utility
+  tags:
+    - utility
+    - transform
+    - bezier surface
+  status: null
+- id: SP - Reparametrize Bezier Patch
+  category: rebuild
+  tags:
+    - rebuild
+    - bezier surface
+  status: null
+- id: SP - Set Knot NURBS Patch
+  category: utility
+  tags:
+    - utility
+    - set property
+    - nurbs surface
+  status: null
+- id: SP - Continuity Analysis
+  category: analyse
+  tags:
+    - analyse
+    - nurbs surface
+  status: null
+- id: SP - Curvature Analysis
+  category: analyse
+  tags:
+    - analyse
+    - nurbs surface
+  status: null
+- id: SP - Convert Contour
+  category: convert
+  tags:
+    - convert
+    - nurbs surface
+  status: null
+- id: SP - Interpolate Patch
+  category: rebuild
+  tags:
+    - rebuild
+    - nurbs surface
+  status: null
+- id: SP - NURBS Weighting
+  category: utility
+  tags:
+    - utility
+    - set property
+    - nurbs surface
+  status: null
+- id: SP - Fit Patch
+  category: rebuild
+  tags:
+    - rebuild
+    - nurbs surface
+  status: null
+- id: SP - Sweep
+  category: blend & fill
+  tags:
+    - blend & fill
+    - nurbs surface
+  status: null
+- id: SP - Insert Knot NURBS Patch
+  category: utility
+  tags:
+    - utility
+    - nurbs surface
+  status: null
+- id: SP - Crop or Extend Patch
+  category: trim
+  tags:
+    - trim
+    - nurbs surface
+  status: null
+- id: SP - NURBS Patch Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - nurbs surface
+  status: null
+- id: SP - Plot Distance from Mesh
+  category: analyse
+  tags:
+    - analyse
+    - surface
+  status: null
+- id: SP - Copy Geometry
+  category: copy
+  tags:
+    - copy
+    - surface
+  status: null
+- id: SP - Compare Mesh
+  category: analyse
+  tags:
+    - analyse
+    - surface
+  status: null
+- id: SP - Surface of Revolution Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - surface
+  status: null
+- id: SP - Symmetrize
+  category: symmetry
+  tags:
+    - symmetry
+    - surface
+  status: null
+- id: SP - Isoparametric Curve
+  category: shape
+  tags:
+    - shape
+    - curve & wire
+    - surface
+  status: null
+- id: SP - Surface of Extrusion Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - surface
+  status: null
+- id: SP - Spherical Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - surface
+  status: null
+- id: SP - Adjust Revolution Sweep Angle
+  category: trim
+  tags:
+    - trim
+    - surface
+    - surface of revolution
+  status: null
+- id: SP - Connect Flat Patch
+  category: connect
+  tags:
+    - connect
+    - surface
+  status: null
+- id: SP - Conical Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - surface
+  status: null
+- id: SP - Toroidal Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - surface
+  status: null
+- id: SP - Patch Normal to Side
+  category: shape
+  tags:
+    - shape
+    - surface
+  status: null
+- id: SP - Cylindrical Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - surface
+  status: null
+- id: SP - Fill Patch
+  category: blend & fill
+  tags:
+    - blend & fill
+    - surface
+  status: null
+- id: SP - Square Fill
+  category: blend & fill
+  tags:
+    - blend & fill
+    - surface
+  status: null
+- id: SP - Transform UVMap
+  category: utility
+  tags:
+    - utility
+    - transform
+    - surface
+  status: null
+- id: SP - Cylinder Compound
+  category: shape
+  tags:
+    - shape
+    - solid
+    - compound
+  status: null
+- id: SP - Tubes Compound
+  category: shape
+  tags:
+    - shape
+    - solid
+    - compound
+  status: null
+- id: SP - Pipe Compound
+  category: shape
+  tags:
+    - shape
+    - surface
+    - compound
+  status: null
+- id: SP - Slab Compound
+  category: shape
+  tags:
+    - shape
+    - solid
+    - compound
+  status: null
+- id: SP - Trim Bezier Patch
+  category: trim
+  tags:
+    - trim
+    - compound
+  status: null
+- id: SP - Set Patch Instance Type
+  category: null
+  tags:
+    - compound
+  status: null
+- id: SP - Extrude Compound
+  category: shape
+  tags:
+    - shape
+    - compound
+  status: null
+- id: SP - Copy Compound Nearest Edges
+  category: copy
+  tags:
+    - copy
+    - compound
+  status: null
+- id: SP - SubD to Compound
+  category: convert
+  tags:
+    - convert
+    - compound
+  status: null
+- id: SP - Patch-Patch Intersection Curves
+  category: null
+  tags:
+    - compound
+  status: null
+- id: SP - Trim Bezier Patch as Compound
+  category: trim
+  tags:
+    - trim
+    - compound
+  status: null
+- id: SP - Poly to Compound
+  category: convert
+  tags:
+    - convert
+    - compound
+  status: null
+- id: SP - Flip Compound Face
+  category: utility
+  tags:
+    - utility
+    - compound
+  status: null
+- id: SP - NURBS to Bezier Patch
+  category: convert
+  tags:
+    - convert
+    - compound
+  status: null
+- id: SP - Cable Compound
+  category: null
+  tags:
+    - compound
+  status: null
+- id: SP - Compound Meshing
+  category: shape
+  tags:
+    - shape
+    - meshing
+    - compound
+  status: null
+- id: SP - Copy Compound Nearest Shapes
+  category: copy
+  tags:
+    - copy
+    - compound
+  status: null
+- id: SP - Text to Compound
+  category: shape
+  tags:
+    - shape
+    - compound
+  status: null
+- id: SP - Oblong Extrusion Compound
+  category: shape
+  tags:
+    - shape
+    - solid
+    - compound
+  status: null
+- id: SP - Split to Patches
+  category: convert
+  tags:
+    - convert
+    - compound
+  status: null
+- id: SP - Disc CP
+  category: shape
+  tags:
+    - shape
+    - curve & wire
+    - compound
+  status: null
+- id: SP - Interval Curves
+  category: shape
+  tags:
+    - shape
+    - curve & wire
+    - compound
+  status: null
+- id: SP - Add Shape to Compound
+  category: utility
+  tags:
+    - utility
+    - compound
+  status: null
+- id: SP - Profile Revolution Compound
+  category: shape
+  tags:
+    - shape
+    - surface
+    - compound
+  status: null
+- id: SP - Frame Compound
+  category: shape
+  tags:
+    - shape
+    - solid
+    - compound
+  status: null
+- {}
