@@ -1,800 +1,800 @@
 - id: SP - Connect Surface
-  category: connect
+  catalog: connect
   tags:
     - connect
     - surface
     - bezier surface
-  status: untested
+  testing-status: none
   Comment: null
 - id: SP - Connect Curve
-  category: connect
+  catalog: connect
   tags:
     - connect
     - curve
-  status: untested
+  testing-status: none
 - id: SP - Reorder Grid Index
-  category: utility
+  catalog: utility
   tags:
     - utility
     - index
     - level 2
-  status: untested
+  testing-status: none
 - id: SP - Fit Curve
-  category: rebuild
+  catalog: rebuild
   tags:
     - rebuild
     - curve
     - flat patch
-  status: untested
+  testing-status: none
 - id: SP - Reorder Curve Index
-  category: utility
+  catalog: utility
   tags:
     - utility
     - index
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Oblong Wire
-  category: shape
+  catalog: shape
   tags:
     - shape
     - curve & wire
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Split Curve
-  category: utility
+  catalog: utility
   tags:
     - utility
     - split
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - NURBS to Bezier Curve or FlatPatch
-  category: convert
+  catalog: convert
   tags:
     - convert
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Raise or Lower Curve Degree
-  category: convert
+  catalog: convert
   tags:
     - convert
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Reproject Ellipse Arcs Ends
-  category: utility
+  catalog: utility
   tags:
     - utility
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Crop or Extend Curve
-  category: trim
+  catalog: trim
   tags:
     - trim
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Interval Curve
-  category: shape
+  catalog: shape
   tags:
     - shape
     - curve & wire
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Copy Internal Curve
-  category: copy
+  catalog: copy
   tags:
     - copy
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Trim Curve with Curve
-  category: null
+  catalog: null
   tags:
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Continuities between Segments
-  category: utility
+  catalog: utility
   tags:
     - utility
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Make Parallel to Flat Patch
-  category: utility
+  catalog: utility
   tags:
     - utility
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Radial Array FlatPatch
-  category: symmetry
+  catalog: symmetry
   tags:
     - symmetry
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Convert Circles and Ellipses to Splines
-  category: convert
+  catalog: convert
   tags:
     - convert
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Interpolate Curve or FlatPatch
-  category: rebuild
+  catalog: rebuild
   tags:
     - rebuild
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Resample Selection
-  category: rebuild
+  catalog: rebuild
   tags:
     - rebuild
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Switch Curve Direction
-  category: convert
+  catalog: convert
   tags:
     - convert
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Fillet Polyline with Circles
-  category: fillet
+  catalog: fillet
   tags:
     - fillet
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Set Segment Type
-  category: null
+  catalog: null
   tags:
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Plot Curve Torsion
-  category: analyse
+  catalog: analyse
   tags:
     - analyse
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Sample Curve Per Degree
-  category: rebuild
+  catalog: rebuild
   tags:
     - rebuild
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Edge Offset of Flat Patch
-  category: trim
+  catalog: trim
   tags:
     - trim
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Make SVG Ready
-  category: convert
+  catalog: convert
   tags:
     - convert
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Crown Curve
-  category: shape
+  catalog: shape
   tags:
     - shape
     - curve & wire
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Offset Curve
-  category: utility
+  catalog: utility
   tags:
     - utility
     - transform
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Curve Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Multi Split Curve
-  category: utility
+  catalog: utility
   tags:
     - utility
     - split
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Fillet Curve or FlatPatch
-  category: fillet
+  catalog: fillet
   tags:
     - fillet
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Plot Distance Between Curves
-  category: analyse
+  catalog: analyse
   tags:
     - analyse
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Set Edge Length
-  category: utility
+  catalog: utility
   tags:
     - utility
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Raise or Lower Degree of Selected Segment
-  category: convert
+  catalog: convert
   tags:
     - convert
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Blend Curve
-  category: blend & fill
+  catalog: blend & fill
   tags:
     - blend & fill
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Copy Mesh Face
-  category: copy
+  catalog: copy
   tags:
     - copy
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - FlatPatch Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Reorder Curve Selection
-  category: utility
+  catalog: utility
   tags:
     - utility
     - index
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Maths Function Segment
-  category: shape
+  catalog: shape
   tags:
     - shape
     - curve & wire
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Inset FlatPatch
-  category: trim
+  catalog: trim
   tags:
     - trim
     - curve
     - flat patch
-  status: null
+  testing-status: none
 - id: SP - Loft
-  category: blend & fill
+  catalog: blend & fill
   tags:
     - blend & fill
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Project Curve on Surface
-  category: project
+  catalog: project
   tags:
     - project
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Gradient Map
-  category: utility
+  catalog: utility
   tags:
     - utility
     - select
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Select Patch Range
-  category: utility
+  catalog: utility
   tags:
     - utility
     - select
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Bezier Patch Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Crown Surface
-  category: null
+  catalog: null
   tags:
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Fillet Trim Contour
-  category: fillet
+  catalog: fillet
   tags:
     - fillet
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Coon Patch
-  category: blend & fill
+  catalog: blend & fill
   tags:
     - blend & fill
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Ruled Surface from Mesh Loop
-  category: shape
+  catalog: shape
   tags:
     - shape
     - surface
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Loft from Internal Curves
-  category: blend & fill
+  catalog: blend & fill
   tags:
     - blend & fill
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Bezier Segment Through Segment
-  category: connect
+  catalog: connect
   tags:
     - connect
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Offset Precisely
-  category: utility
+  catalog: utility
   tags:
     - utility
     - transform
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Side Aligned Reparametrize
-  category: null
+  catalog: null
   tags:
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Trim Bezier Surface from Projected Wires
-  category: trim
+  catalog: trim
   tags:
     - trim
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Connect Bezier Patch
-  category: connect
+  catalog: connect
   tags:
     - connect
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - UV Curve on Surface
-  category: project
+  catalog: project
   tags:
     - project
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Blend Surfaces
-  category: blend & fill
+  catalog: blend & fill
   tags:
     - blend & fill
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Shrinkwrap Bezier Patch
-  category: null
+  catalog: null
   tags:
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Crop Patch to Point
-  category: trim
+  catalog: trim
   tags:
     - trim
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Raise or Lower Degree Bezier Patch
-  category: convert
+  catalog: convert
   tags:
     - convert
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Displace Bezier Patch Control Grid
-  category: utility
+  catalog: utility
   tags:
     - utility
     - transform
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Railed Bezier Surface
-  category: shape
+  catalog: shape
   tags:
     - shape
     - surface
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Convert Flat Patch to Bezier Patch
-  category: convert
+  catalog: convert
   tags:
     - convert
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Trim Patch with Segment
-  category: null
+  catalog: null
   tags:
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Flatten Patch Side
-  category: utility
+  catalog: utility
   tags:
     - utility
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Flatten Patch
-  category: utility
+  catalog: utility
   tags:
     - utility
     - transform
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Reparametrize Bezier Patch
-  category: rebuild
+  catalog: rebuild
   tags:
     - rebuild
     - bezier surface
-  status: null
+  testing-status: none
 - id: SP - Set Knot NURBS Patch
-  category: utility
+  catalog: utility
   tags:
     - utility
     - set property
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - Continuity Analysis
-  category: analyse
+  catalog: analyse
   tags:
     - analyse
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - Curvature Analysis
-  category: analyse
+  catalog: analyse
   tags:
     - analyse
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - Convert Contour
-  category: convert
+  catalog: convert
   tags:
     - convert
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - Interpolate Patch
-  category: rebuild
+  catalog: rebuild
   tags:
     - rebuild
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - NURBS Weighting
-  category: utility
+  catalog: utility
   tags:
     - utility
     - set property
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - Fit Patch
-  category: rebuild
+  catalog: rebuild
   tags:
     - rebuild
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - Sweep
-  category: blend & fill
+  catalog: blend & fill
   tags:
     - blend & fill
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - Insert Knot NURBS Patch
-  category: utility
+  catalog: utility
   tags:
     - utility
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - Crop or Extend Patch
-  category: trim
+  catalog: trim
   tags:
     - trim
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - NURBS Patch Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - nurbs surface
-  status: null
+  testing-status: none
 - id: SP - Plot Distance from Mesh
-  category: analyse
+  catalog: analyse
   tags:
     - analyse
     - surface
-  status: null
+  testing-status: none
 - id: SP - Copy Geometry
-  category: copy
+  catalog: copy
   tags:
     - copy
     - surface
-  status: null
+  testing-status: none
 - id: SP - Compare Mesh
-  category: analyse
+  catalog: analyse
   tags:
     - analyse
     - surface
-  status: null
+  testing-status: none
 - id: SP - Surface of Revolution Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - surface
-  status: null
+  testing-status: none
 - id: SP - Symmetrize
-  category: symmetry
+  catalog: symmetry
   tags:
     - symmetry
     - surface
-  status: null
+  testing-status: none
 - id: SP - Isoparametric Curve
-  category: shape
+  catalog: shape
   tags:
     - shape
     - curve & wire
     - surface
-  status: null
+  testing-status: none
 - id: SP - Surface of Extrusion Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - surface
-  status: null
+  testing-status: none
 - id: SP - Spherical Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - surface
-  status: null
+  testing-status: none
 - id: SP - Adjust Revolution Sweep Angle
-  category: trim
+  catalog: trim
   tags:
     - trim
     - surface
     - surface of revolution
-  status: null
+  testing-status: none
 - id: SP - Connect Flat Patch
-  category: connect
+  catalog: connect
   tags:
     - connect
     - surface
-  status: null
+  testing-status: none
 - id: SP - Conical Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - surface
-  status: null
+  testing-status: none
 - id: SP - Toroidal Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - surface
-  status: null
+  testing-status: none
 - id: SP - Patch Normal to Side
-  category: shape
+  catalog: shape
   tags:
     - shape
     - surface
-  status: null
+  testing-status: none
 - id: SP - Cylindrical Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - surface
-  status: null
+  testing-status: none
 - id: SP - Fill Patch
-  category: blend & fill
+  catalog: blend & fill
   tags:
     - blend & fill
     - surface
-  status: null
+  testing-status: none
 - id: SP - Square Fill
-  category: blend & fill
+  catalog: blend & fill
   tags:
     - blend & fill
     - surface
-  status: null
+  testing-status: none
 - id: SP - Transform UVMap
-  category: utility
+  catalog: utility
   tags:
     - utility
     - transform
     - surface
-  status: null
+  testing-status: none
 - id: SP - Cylinder Compound
-  category: shape
+  catalog: shape
   tags:
     - shape
     - solid
     - compound
-  status: null
+  testing-status: none
 - id: SP - Tubes Compound
-  category: shape
+  catalog: shape
   tags:
     - shape
     - solid
     - compound
-  status: null
+  testing-status: none
 - id: SP - Pipe Compound
-  category: shape
+  catalog: shape
   tags:
     - shape
     - surface
     - compound
-  status: null
+  testing-status: none
 - id: SP - Slab Compound
-  category: shape
+  catalog: shape
   tags:
     - shape
     - solid
     - compound
-  status: null
+  testing-status: none
 - id: SP - Trim Bezier Patch
-  category: trim
+  catalog: trim
   tags:
     - trim
     - compound
-  status: null
+  testing-status: none
 - id: SP - Set Patch Instance Type
-  category: null
+  catalog: null
   tags:
     - compound
-  status: null
+  testing-status: none
 - id: SP - Extrude Compound
-  category: shape
+  catalog: shape
   tags:
     - shape
     - compound
-  status: null
+  testing-status: none
 - id: SP - Copy Compound Nearest Edges
-  category: copy
+  catalog: copy
   tags:
     - copy
     - compound
-  status: null
+  testing-status: none
 - id: SP - SubD to Compound
-  category: convert
+  catalog: convert
   tags:
     - convert
     - compound
-  status: null
+  testing-status: none
 - id: SP - Patch-Patch Intersection Curves
-  category: null
+  catalog: null
   tags:
     - compound
-  status: null
+  testing-status: none
 - id: SP - Trim Bezier Patch as Compound
-  category: trim
+  catalog: trim
   tags:
     - trim
     - compound
-  status: null
+  testing-status: none
 - id: SP - Poly to Compound
-  category: convert
+  catalog: convert
   tags:
     - convert
     - compound
-  status: null
+  testing-status: none
 - id: SP - Flip Compound Face
-  category: utility
+  catalog: utility
   tags:
     - utility
     - compound
-  status: null
+  testing-status: none
 - id: SP - NURBS to Bezier Patch
-  category: convert
+  catalog: convert
   tags:
     - convert
     - compound
-  status: null
+  testing-status: none
 - id: SP - Cable Compound
-  category: null
+  catalog: null
   tags:
     - compound
-  status: null
+  testing-status: none
 - id: SP - Compound Meshing
-  category: shape
+  catalog: shape
   tags:
     - shape
     - meshing
     - compound
-  status: null
+  testing-status: none
 - id: SP - Copy Compound Nearest Shapes
-  category: copy
+  catalog: copy
   tags:
     - copy
     - compound
-  status: null
+  testing-status: none
 - id: SP - Text to Compound
-  category: shape
+  catalog: shape
   tags:
     - shape
     - compound
-  status: null
+  testing-status: none
 - id: SP - Oblong Extrusion Compound
-  category: shape
+  catalog: shape
   tags:
     - shape
     - solid
     - compound
-  status: null
+  testing-status: none
 - id: SP - Split to Patches
-  category: convert
+  catalog: convert
   tags:
     - convert
     - compound
-  status: null
+  testing-status: none
 - id: SP - Disc CP
-  category: shape
+  catalog: shape
   tags:
     - shape
     - curve & wire
     - compound
-  status: null
+  testing-status: none
 - id: SP - Interval Curves
-  category: shape
+  catalog: shape
   tags:
     - shape
     - curve & wire
     - compound
-  status: null
+  testing-status: none
 - id: SP - Add Shape to Compound
-  category: utility
+  catalog: utility
   tags:
     - utility
     - compound
-  status: null
+  testing-status: none
 - id: SP - Profile Revolution Compound
-  category: shape
+  catalog: shape
   tags:
     - shape
     - surface
     - compound
-  status: null
+  testing-status: none
 - id: SP - Frame Compound
-  category: shape
+  catalog: shape
   tags:
     - shape
     - solid
     - compound
-  status: null
+  testing-status: none
 - {}
