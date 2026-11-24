@@ -6,6 +6,7 @@
     - bezier surface
   testing-status: none
   Comment: null
+  icon filename: null
 - id: SP - Connect Curve
   catalog: connect
   tags:
@@ -155,6 +156,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: null
 - id: SP - Set Segment Type
   catalog: null
   tags:
@@ -255,7 +257,8 @@
     - blend & fill
     - curve
     - flat patch
-  testing-status: none
+  testing-status: light
+  icon filename: null
 - id: SP - Copy Mesh Face
   catalog: copy
   tags:
@@ -632,7 +635,7 @@
   tags:
     - blend & fill
     - surface
-  testing-status: none
+  testing-status: light
 - id: SP - Transform UVMap
   catalog: utility
   tags:
@@ -797,4 +800,3 @@
     - solid
     - compound
   testing-status: none
-- {}

@@ -46,7 +46,7 @@ names = [
 
 
 for n in names:
-    bpy.ops.object.sp_cad_import(filepath="..\\STEP samples\\" + n)
+    bpy.ops.wm.sp_cad_import(filepath="..\\STEP samples\\" + n)
 
 # bpy.context.view_layer.update()
 # for area in bpy.context.screen.areas:

@@ -49,7 +49,7 @@
         {
             "label": "Build",
             "type": "shell",
-            "command": "blender",
+            "command": "C:\\Program Files\\Blender Foundation\\Blender 5.3\\blender.exe",
             "args": [
                 "--command",
                 "extension",
@@ -180,5 +180,11 @@
         //     python -c "import runpy; m = runpy.run_path(r'c:\Users\romai\Documents\Projets\26 - Bezier Quest\surfacepsycho\docs\.doc_generator_and_inspector.py');"
 
         // }
+        // 
+        // 
+        // FOR MISSING NODEBPY : 
+        // in blender, run this :
+        // from pip._internal.cli.main import main
+        // main(["install", "--target", r"C:\Users\romai\AppData\Roaming\Blender Foundation\Blender\5.3\extensions\.local\lib\python3.13\site-packages", "nodebpy"])
     ],
 }

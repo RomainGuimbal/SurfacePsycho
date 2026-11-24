@@ -2,7 +2,8 @@ from pathlib import Path
 
 import bpy
 
-from . import overlay_endpoints, overlay_segment_selection
+from ..tools import overlay_segment_selection
+from ..tools import overlay_endpoints
 from .keymap import EDIT_KEYMAP, OBJ_KEYMAP
 
 _ICON_NAME = "ops.generic.surface_psycho"
