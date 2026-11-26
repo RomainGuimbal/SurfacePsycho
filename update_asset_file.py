@@ -1,20 +1,16 @@
-import bpy
-from pathlib import Path
+import sys
 import uuid
-import sys
-# import types
-# import importlib.util
-from packaging.version import Version
-
 from pathlib import Path
-import sys
+
+import bpy
+from packaging.version import Version
 
 quest_path = Path(__file__).resolve().parent.parent
 workspace_root = Path(__file__).resolve().parent/"src/surfacepsycho"
 print(workspace_root)
 sys.path.insert(0, str(workspace_root))
 
-from common import enums, asset_list, version_utils
+from common import asset_list, enums, version_utils
 
 VERSION = Version(enums.VERSION_STR)
 ASSET_NODE_GROUPS_LEVEL_2 = asset_list.ASSET_NODE_GROUPS_LEVEL_2
@@ -112,21 +108,19 @@ def get_catalog_uuid(catalog_identifier, folder):
 
 def assign_asset_to_catalog(asset_name, catalog_identifier):
     folder = FILE_PATH.parent
-
     catalog_uuid = get_catalog_uuid(catalog_identifier, folder)
-
     asset = None
 
     # Check different data types
-    if asset_name in bpy.data.collections.keys():
+    if asset_name in bpy.data.collections:
         asset = bpy.data.collections[asset_name]
-    elif asset_name in bpy.data.objects.keys():
+    elif asset_name in bpy.data.objects:
         asset = bpy.data.objects[asset_name]
-    elif asset_name in bpy.data.node_groups.keys():
+    elif asset_name in bpy.data.node_groups:
         asset = bpy.data.node_groups[asset_name]
-    elif asset_name in bpy.data.materials.keys():
+    elif asset_name in bpy.data.materials:
         asset = bpy.data.materials[asset_name]
-    elif asset_name in bpy.data.meshes.keys():
+    elif asset_name in bpy.data.meshes:
         asset = bpy.data.meshes[asset_name]
     else:
         print(f"Asset '{asset_name}' not found in any data category")
@@ -141,7 +135,7 @@ def assign_asset_to_catalog(asset_name, catalog_identifier):
         raise ValueError(f"'{asset_name}' is not marked as an asset")
 
 
-def append_by_name(path, asset_names, asset_type="node_groups"):
+def append_by_name(filepath, asset_names, asset_type="node_groups"):
     # Determine which data block to access
     datablock_path = {
         "node_groups": "node_groups",
@@ -149,10 +143,10 @@ def append_by_name(path, asset_names, asset_type="node_groups"):
         "collections": "collections",
     }.get(asset_type, "node_groups")
 
-    path = str(path)
+    filepath = str(filepath)
 
     # link = False parce que link = True ne conserve pas les asset_data
-    with bpy.data.libraries.load(path, link=False, assets_only=True) as (
+    with bpy.data.libraries.load(filepath, link=False, assets_only=True) as (
         data_from,
         data_to,
     ):
@@ -169,22 +163,16 @@ def append_by_name(path, asset_names, asset_type="node_groups"):
 
     # Read catalog definition file
     catalogs_id_name_pairs = {}
-    for item in loaded_data:
-        if item and item.asset_data:
-            catalog_id = item.asset_data.catalog_id
-            catalog_file = (FILE_PATH.parent.parent).joinpath(
-                "blender_assets.cats.txt"
-            )
-            with open(catalog_file, "r") as f:
-                for line in f:
-                    if line.startswith(("#", "VERSION", "\n")) or line.strip() == "":
-                        continue
+    with (quest_path / "blender_assets.cats.txt").open() as f:
+        for line in f:
+            if line.startswith(("#", "VERSION", "\n")) or line.strip() == "":
+                continue
 
-                    # Each line format: 'uuid:catalog_path:catalog_name'
-                    parts = line.strip().split(":")
+            # Each line format: 'uuid:catalog_path:catalog_name'
+            parts = line.strip().split(":")
 
-                    if len(parts) >= 3 and parts[0] == str(catalog_id):
-                        catalogs_id_name_pairs[catalog_id] = parts[2]
+            if len(parts) >= 3:
+                catalogs_id_name_pairs[parts[0]] = parts[2]
 
     # Assign to catalog
     for item in loaded_data:
@@ -209,8 +197,6 @@ def append_by_name(path, asset_names, asset_type="node_groups"):
         for collection in data_to.collections:
             if collection is not None:
                 bpy.context.scene.collection.children.link(collection)
-
-    return
 
 
 def remove_fake_user_node_groups():
