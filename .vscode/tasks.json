@@ -8,7 +8,7 @@
             "type": "shell",
             "command": ".vscode/launch_blender_with_script.bat",
             "args": [
-                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/surfacepsycho/src/surfacepsycho/assets/assets.blend",
             ],
             "problemMatcher": [],
         },
@@ -18,9 +18,9 @@
             "command": ".vscode/launch_blender_with_script.bat",
             "args": [
                 "--background",
-                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/surfacepsycho/src/surfacepsycho/assets/assets.blend",
                 "--python",
-                ".vscode/update_asset_file.py"
+                "/update_asset_file.py"
             ],
             "problemMatcher": []
         },
@@ -38,9 +38,9 @@
             "command": ".vscode/launch_blender_with_script.bat",
             "args": [
                 "--background",
-                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/SurfacePsycho/assets/assets.blend",
+                "C:/Users/romai/Documents/Projets/26 - Bezier Quest/surfacepsycho/src/surfacepsycho/assets/assets.blend",
                 "--python",
-                ".vscode/update_asset_file.py",
+                "/update_asset_file.py",
                 "--",
                 "--fast"
             ],

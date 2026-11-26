@@ -1,5 +1,6 @@
 ASSET_NODE_GROUPS_LEVEL_2 = {
     "SP - Reorder Grid Index",
+    "SP - Reorder Grid Index [Tool]",
 }
 
 ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
@@ -26,7 +27,6 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Multi Split Curve",
     "SP - NURBS to Bezier Curve or FlatPatch",
     "SP - Oblong Wire",
-    "SP - Offset Curve",
     "SP - Offset Curve",
     "SP - Plot Curve Torsion",
     "SP - Plot Distance Between Curves",

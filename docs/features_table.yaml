@@ -18,7 +18,6 @@
   tags:
     - utility
     - index
-    - level 2
   testing-status: none
 - id: SP - Fit Curve
   catalog: rebuild
@@ -158,7 +157,7 @@
   testing-status: none
   icon filename: null
 - id: SP - Set Segment Type
-  catalog: null
+  catalog: utility
   tags:
     - curve
     - flat patch
@@ -799,4 +798,11 @@
     - shape
     - solid
     - compound
+  testing-status: none
+- id: SP - Reorder Grid Index [Tool]
+  catalog: utility
+  tags:
+    - utility
+    - index
+    - tool
   testing-status: none

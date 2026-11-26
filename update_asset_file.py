@@ -9,7 +9,9 @@ from packaging.version import Version
 from pathlib import Path
 import sys
 
-workspace_root = Path(__file__).resolve().parent.parent
+quest_path = Path(__file__).resolve().parent.parent
+workspace_root = Path(__file__).resolve().parent/"src/surfacepsycho"
+print(workspace_root)
 sys.path.insert(0, str(workspace_root))
 
 from common import enums, asset_list, version_utils
@@ -147,6 +149,8 @@ def append_by_name(path, asset_names, asset_type="node_groups"):
         "collections": "collections",
     }.get(asset_type, "node_groups")
 
+    path = str(path)
+
     # link = False parce que link = True ne conserve pas les asset_data
     with bpy.data.libraries.load(path, link=False, assets_only=True) as (
         data_from,
@@ -168,7 +172,7 @@ def append_by_name(path, asset_names, asset_type="node_groups"):
     for item in loaded_data:
         if item and item.asset_data:
             catalog_id = item.asset_data.catalog_id
-            catalog_file = (FILE_PATH.parent.parent.parent).joinpath(
+            catalog_file = (FILE_PATH.parent.parent).joinpath(
                 "blender_assets.cats.txt"
             )
             with open(catalog_file, "r") as f:
@@ -238,39 +242,39 @@ def hide_manage_panel():
 ################################
 
 # LVL 2
-path_lvl_2 = "//../../SP Assets Level 2.blend"
+path_lvl_2 = quest_path/"SP Assets Level 2.blend"
 
 # PROBE
-path_probe = "//../../Principal curvature.blend"
+path_probe = quest_path/"Principal curvature.blend"
 obj_probe = {"SP - Curvatures Probe"}
 
 # CURVE
-path_curve_flat = "//../../SP - Curve and FlatPatch.blend"
+path_curve_flat = quest_path/"SP - Curve and FlatPatch.blend"
 obj_curve_flat = {
     "FlatPatch",
     "PsychoCurve",
 }
 
 # BEZIER SURF
-path_surf = "//../../SP - Bezier surface.blend"
+path_surf = quest_path/"SP - Bezier surface.blend"
 obj_surf = {
     "Bezier Patch",
     "Internal Curve For Patch",
 }
 
 # NURBS
-path_nurbs = "//../../SP - NURBS.blend"
+path_nurbs = quest_path/"SP - NURBS.blend"
 obj_nurbs = {"NURBS Patch"}
 
 # OTHER
-path_other = "//../../SP - Other Primitives.blend"
+path_other = quest_path/"SP - Other Primitives.blend"
 # obj_other={""}
 
 # COMPOUND
-path_compound = "//../../SP - Compound.blend"
+path_compound = quest_path/"SP - Compound.blend"
 
 # SHAPES
-path_preset = "//../../SP - Shapes presets.blend"
+path_preset = quest_path/"SP - Shapes presets.blend"
 obj_preset = {
     "Compound",
     "Text Compound",
