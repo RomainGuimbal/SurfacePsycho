@@ -5,10 +5,22 @@ from pathlib import Path
 import bpy
 from packaging.version import Version
 
-quest_path = Path(__file__).resolve().parent.parent
-workspace_root = Path(__file__).resolve().parent/"src/surfacepsycho"
-print(workspace_root)
-sys.path.insert(0, str(workspace_root))
+# Paths ######################################################################
+
+SCRIPT_PATH = Path(__file__).resolve()
+REPO_ROOT = SCRIPT_PATH.parent  # surfacepsycho/
+QUEST_ROOT = REPO_ROOT.parent  # folder holding the source .blend files
+ADDON_DIR = REPO_ROOT / "src" / "surfacepsycho"
+
+FILE_PATH = Path(bpy.data.filepath).resolve()
+ASSETS_DIR = FILE_PATH.parent  # folder holding assets.blend
+
+# Blender resolves catalogs from the asset library root, so the source files and
+# the destination file each need their own catalog definition file.
+SOURCE_CATALOG_FILE = QUEST_ROOT / "blender_assets.cats.txt"
+CATALOG_FILE = ASSETS_DIR / "blender_assets.cats.txt"
+
+sys.path.insert(0, str(ADDON_DIR))
 
 from common import asset_list, enums, version_utils
 
@@ -22,8 +34,6 @@ ASSET_NODE_GROUPS_COMPOUND = asset_list.ASSET_NODE_GROUPS_COMPOUND
 ASSET_NODE_GROUPS = asset_list.ASSET_NODE_GROUPS
 set_nodes_version = version_utils.set_nodes_version
 replace_duplicates = version_utils.replace_duplicates
-
-FILE_PATH = Path(bpy.data.filepath).resolve()
 
 RED = "\033[91m"
 GREEN = "\033[32m"
@@ -43,11 +53,25 @@ def delete_all_data():
     bpy.data.batch_remove(bpy.data.materials)
 
 
-def clear_and_create_catalogs(cat_names):
-    catalog_file = FILE_PATH.parent / "blender_assets.cats.txt"
+def read_catalogs(catalog_file):
+    """Map catalog UUIDs to their simple names."""
+    catalogs = {}
+    with open(catalog_file, "r") as f:
+        for line in f:
+            if line.startswith(("#", "VERSION", "\n")) or line.strip() == "":
+                continue
 
+            # Each line format: 'uuid:catalog_path:catalog_name'
+            parts = line.strip().split(":")
+
+            if len(parts) >= 3:
+                catalogs[parts[0]] = parts[2]
+    return catalogs
+
+
+def clear_and_create_catalogs(cat_names):
     # Clear the catalog file (or create it if it doesn't exist)
-    with open(catalog_file, "w") as f:
+    with open(CATALOG_FILE, "w") as f:
         f.write("# This is an Asset Catalog Definition file for Blender.\n")
         f.write("#\n")
         f.write("# Empty lines and lines starting with `#` will be ignored.\n")
@@ -57,7 +81,7 @@ def clear_and_create_catalogs(cat_names):
         )
         f.write("VERSION 1\n\n")
 
-    print(f"Cleared catalog file at: {catalog_file}")
+    print(f"Cleared catalog file at: {CATALOG_FILE}")
 
     # Create new catalogs
     new_catalogs = []
@@ -68,18 +92,18 @@ def clear_and_create_catalogs(cat_names):
             new_catalogs.append((c, "SurfacePsycho/" + c))
 
     # Append new catalogs to the file
-    with open(catalog_file, "a") as f:
+    with open(CATALOG_FILE, "a") as f:
         for catalog_name, catalog_path in new_catalogs:
             catalog_uuid = str(uuid.uuid4())
             f.write(f"{catalog_uuid}:{catalog_path}:{catalog_name}\n")
             print(f"Created catalog: {catalog_name} ({catalog_path})")
 
 
-def get_catalog_uuid(catalog_identifier, folder):
+def get_catalog_uuid(catalog_identifier):
     catalog_uuid = None
 
-    with (folder / "blender_assets.cats.txt").open() as f:
-        for line_num, line in enumerate(f.readlines(), 1):
+    with open(CATALOG_FILE, "r") as f:
+        for line in f.readlines():
             if line.startswith(("#", "VERSION", "\n")) or line.strip() == "":
                 continue
 
@@ -101,14 +125,13 @@ def get_catalog_uuid(catalog_identifier, folder):
 
         if not catalog_uuid:
             raise ValueError(
-                f"Error: Catalog '{catalog_identifier}' not found in blender_assets.cats.txt"
+                f"Error: Catalog '{catalog_identifier}' not found in {CATALOG_FILE}"
             )
     return catalog_uuid
 
 
 def assign_asset_to_catalog(asset_name, catalog_identifier):
-    folder = FILE_PATH.parent
-    catalog_uuid = get_catalog_uuid(catalog_identifier, folder)
+    catalog_uuid = get_catalog_uuid(catalog_identifier)
     asset = None
 
     # Check different data types
@@ -161,18 +184,8 @@ def append_by_name(filepath, asset_names, asset_type="node_groups"):
     # Access the loaded assets and get their catalog IDs
     loaded_data = getattr(data_to, datablock_path)
 
-    # Read catalog definition file
-    catalogs_id_name_pairs = {}
-    with (quest_path / "blender_assets.cats.txt").open() as f:
-        for line in f:
-            if line.startswith(("#", "VERSION", "\n")) or line.strip() == "":
-                continue
-
-            # Each line format: 'uuid:catalog_path:catalog_name'
-            parts = line.strip().split(":")
-
-            if len(parts) >= 3:
-                catalogs_id_name_pairs[parts[0]] = parts[2]
+    # Read catalog definition file of the source library
+    catalogs_id_name_pairs = read_catalogs(SOURCE_CATALOG_FILE)
 
     # Assign to catalog
     for item in loaded_data:
@@ -228,39 +241,39 @@ def hide_manage_panel():
 ################################
 
 # LVL 2
-path_lvl_2 = quest_path/"SP Assets Level 2.blend"
+path_lvl_2 = QUEST_ROOT / "SP Assets Level 2.blend"
 
 # PROBE
-path_probe = quest_path/"Principal curvature.blend"
+path_probe = QUEST_ROOT / "Principal curvature.blend"
 obj_probe = {"SP - Curvatures Probe"}
 
 # CURVE
-path_curve_flat = quest_path/"SP - Curve and FlatPatch.blend"
+path_curve_flat = QUEST_ROOT / "SP - Curve and FlatPatch.blend"
 obj_curve_flat = {
     "FlatPatch",
     "PsychoCurve",
 }
 
 # BEZIER SURF
-path_surf = quest_path/"SP - Bezier surface.blend"
+path_surf = QUEST_ROOT / "SP - Bezier surface.blend"
 obj_surf = {
     "Bezier Patch",
     "Internal Curve For Patch",
 }
 
 # NURBS
-path_nurbs = quest_path/"SP - NURBS.blend"
+path_nurbs = QUEST_ROOT / "SP - NURBS.blend"
 obj_nurbs = {"NURBS Patch"}
 
 # OTHER
-path_other = quest_path/"SP - Other Primitives.blend"
+path_other = QUEST_ROOT / "SP - Other Primitives.blend"
 # obj_other={""}
 
 # COMPOUND
-path_compound = quest_path/"SP - Compound.blend"
+path_compound = QUEST_ROOT / "SP - Compound.blend"
 
 # SHAPES
-path_preset = quest_path/"SP - Shapes presets.blend"
+path_preset = QUEST_ROOT / "SP - Shapes presets.blend"
 obj_preset = {
     "Compound",
     "Text Compound",
