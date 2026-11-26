@@ -3,6 +3,7 @@
 *.whl
 *.prof
 *.blend
+!assets.blend
 
 __pycache__/
 
