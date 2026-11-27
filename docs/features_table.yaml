@@ -6,7 +6,7 @@
     - bezier surface
   testing-status: none
   Comment: null
-  icon filename: null
+  icon filename: SP - Connect Surface.png
   file: null
 - id: SP - Connect Curve
   catalog: connect
@@ -15,7 +15,7 @@
     - curve
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: connect.png
+  icon filename: SP - Connect Curve.png
 - id: SP - Reorder Grid Index
   catalog: utility
   tags:
@@ -23,7 +23,7 @@
     - index
   testing-status: none
   file: SP Assets Level 2.blend
-  icon filename: reorder grid.png
+  icon filename: SP - Reorder Grid Index.png
 - id: SP - Fit Curve
   catalog: rebuild
   tags:
@@ -32,7 +32,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: fit curve.png
+  icon filename: SP - Fit Curve.png
 - id: SP - Reorder Curve Index
   catalog: utility
   tags:
@@ -42,7 +42,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: curve reorder.png
+  icon filename: SP - Reorder Curve Index.png
 - id: SP - Oblong Wire
   catalog: shape
   tags:
@@ -51,6 +51,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Oblong Wire.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Split Curve
   catalog: utility
@@ -61,7 +62,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: Curve split.png
+  icon filename: SP - Split Curve.png
 - id: SP - NURBS to Bezier Curve or FlatPatch
   catalog: convert
   tags:
@@ -69,6 +70,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - NURBS to Bezier Curve or FlatPatch.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Raise or Lower Curve Degree
   catalog: convert
@@ -77,6 +79,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Raise or Lower Curve Degree.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Reproject Ellipse Arcs Ends
   catalog: utility
@@ -85,6 +88,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Reproject Ellipse Arcs Ends.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Crop or Extend Curve
   catalog: trim
@@ -94,7 +98,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: curve crop.png
+  icon filename: SP - Crop or Extend Curve.png
 - id: SP - Interval Curve
   catalog: shape
   tags:
@@ -104,7 +108,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: curve interval.png
+  icon filename: SP - Interval Curve.png
 - id: SP - Copy Internal Curve
   catalog: copy
   tags:
@@ -112,6 +116,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Copy Internal Curve.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Trim Curve with Curve
   catalog: null
@@ -119,6 +124,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Trim Curve with Curve.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Continuities between Segments
   catalog: utility
@@ -128,7 +134,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: segment continuity.png
+  icon filename: SP - Continuities between Segments.png
 - id: SP - Make Parallel to Flat Patch
   catalog: utility
   tags:
@@ -137,7 +143,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: flat parallel.png
+  icon filename: SP - Make Parallel to Flat Patch.png
 - id: SP - Radial Array FlatPatch
   catalog: symmetry
   tags:
@@ -146,7 +152,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: flat radial array.png
+  icon filename: SP - Radial Array FlatPatch.png
 - id: SP - Convert Circles and Ellipses to Splines
   catalog: convert
   tags:
@@ -154,6 +160,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Convert Circles and Ellipses to Splines.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Interpolate Curve or FlatPatch
   catalog: rebuild
@@ -163,7 +170,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: Curve through points.png
+  icon filename: SP - Interpolate Curve or FlatPatch.png
 - id: SP - Resample Selection
   catalog: rebuild
   tags:
@@ -171,6 +178,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Resample Selection.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Switch Curve Direction
   catalog: convert
@@ -179,6 +187,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Switch Curve Direction.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Fillet Polyline with Circles
   catalog: fillet
@@ -187,7 +196,7 @@
     - curve
     - flat patch
   testing-status: none
-  icon filename: null
+  icon filename: SP - Fillet Polyline with Circles.png
   file: SP - Curve and FlatPatch.blend
   Comment: To merge with fillet wires
 - id: SP - Set Segment Type
@@ -196,6 +205,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Set Segment Type.png
   file: SP Assets Level 0.blend
 - id: SP - Plot Curve Torsion
   catalog: analyse
@@ -205,7 +215,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: torsion.png
+  icon filename: SP - Plot Curve Torsion.png
 - id: SP - Sample Curve Per Degree
   catalog: rebuild
   tags:
@@ -213,6 +223,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Sample Curve Per Degree.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Edge Offset of Flat Patch
   catalog: trim
@@ -222,7 +233,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: offset edge.png
+  icon filename: SP - Edge Offset of Flat Patch.png
 - id: SP - Make SVG Ready
   catalog: convert
   tags:
@@ -231,7 +242,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: svg.png
+  icon filename: SP - Make SVG Ready.png
 - id: SP - Crown Curve
   catalog: shape
   tags:
@@ -241,7 +252,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: crown.png
+  icon filename: SP - Crown Curve.png
 - id: SP - Offset Curve
   catalog: utility
   tags:
@@ -251,7 +262,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: offset curve.png
+  icon filename: SP - Offset Curve.png
 - id: SP - Curve Meshing
   catalog: shape
   tags:
@@ -261,7 +272,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: curve meshing.png
+  icon filename: SP - Curve Meshing.png
 - id: SP - Multi Split Curve
   catalog: utility
   tags:
@@ -271,7 +282,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: multi split.png
+  icon filename: SP - Multi Split Curve.png
 - id: SP - Fillet Curve or FlatPatch
   catalog: fillet
   tags:
@@ -280,7 +291,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: curve fillet.png
+  icon filename: SP - Fillet Curve or FlatPatch.png
   Comment: Rename Fillet Wires
 - id: SP - Plot Distance Between Curves
   catalog: analyse
@@ -290,7 +301,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: Curve distance.png
+  icon filename: SP - Plot Distance Between Curves.png
 - id: SP - Set Edge Length
   catalog: utility
   tags:
@@ -298,6 +309,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Set Edge Length.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Raise or Lower Degree of Selected Segment
   catalog: convert
@@ -306,6 +318,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Raise or Lower Degree of Selected Segment.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Blend Curve
   catalog: blend & fill
@@ -314,7 +327,7 @@
     - curve
     - flat patch
   testing-status: light
-  icon filename: null
+  icon filename: SP - Blend Curve.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Copy Mesh Face
   catalog: copy
@@ -323,6 +336,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Copy Mesh Face.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - FlatPatch Meshing
   catalog: shape
@@ -333,7 +347,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: flat mesh.png
+  icon filename: SP - FlatPatch Meshing.png
 - id: SP - Reorder Curve Selection
   catalog: utility
   tags:
@@ -342,6 +356,7 @@
     - curve
     - flat patch
   testing-status: none
+  icon filename: SP - Reorder Curve Selection.png
   file: SP - Curve and FlatPatch.blend
 - id: SP - Maths Function Segment
   catalog: shape
@@ -352,7 +367,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: math function.png
+  icon filename: SP - Maths Function Segment.png
 - id: SP - Inset FlatPatch
   catalog: trim
   tags:
@@ -361,13 +376,14 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: flat inset.png
+  icon filename: SP - Inset FlatPatch.png
 - id: SP - Loft
   catalog: blend & fill
   tags:
     - blend & fill
     - bezier surface
   testing-status: none
+  icon filename: SP - Loft.png
   file: SP - Bezier surface.blend
 - id: SP - Project Curve on Surface
   catalog: project
@@ -376,7 +392,7 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
-  icon filename: project curve.png
+  icon filename: SP - Project Curve on Surface.png
 - id: SP - Gradient Map
   catalog: utility
   tags:
@@ -385,7 +401,7 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
-  icon filename: AOP gradient.png
+  icon filename: SP - Gradient Map.png
 - id: SP - Select Patch Range
   catalog: utility
   tags:
@@ -393,6 +409,7 @@
     - select
     - bezier surface
   testing-status: none
+  icon filename: SP - Select Patch Range.png
   file: SP - Bezier surface.blend
 - id: SP - Bezier Patch Meshing
   catalog: shape
@@ -401,12 +418,14 @@
     - meshing
     - bezier surface
   testing-status: none
+  icon filename: SP - Bezier Patch Meshing.png
   file: SP - Bezier surface.blend
 - id: SP - Crown Surface
   catalog: null
   tags:
     - bezier surface
   testing-status: none
+  icon filename: SP - Crown Surface.png
   file: SP - Bezier surface.blend
 - id: SP - Fillet Trim Contour
   catalog: fillet
@@ -414,6 +433,7 @@
     - fillet
     - bezier surface
   testing-status: none
+  icon filename: SP - Fillet Trim Contour.png
   file: SP - Bezier surface.blend
   Comment: To merge with fillet Wires
 - id: SP - Coon Patch
@@ -422,6 +442,7 @@
     - blend & fill
     - bezier surface
   testing-status: none
+  icon filename: SP - Coon Patch.png
   file: SP - Bezier surface.blend
 - id: SP - Ruled Surface from Mesh Loop
   catalog: shape
@@ -431,7 +452,7 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
-  icon filename: ruled from loop.png
+  icon filename: SP - Ruled Surface from Mesh Loop.png
 - id: SP - Loft from Internal Curves
   catalog: blend & fill
   tags:
@@ -439,13 +460,14 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
-  icon filename: loft from internal curves.png
+  icon filename: SP - Loft from Internal Curves.png
 - id: SP - Bezier Segment Through Segment
   catalog: connect
   tags:
     - connect
     - bezier surface
   testing-status: none
+  icon filename: SP - Bezier Segment Through Segment.png
   file: SP - Bezier surface.blend
 - id: SP - Offset Precisely
   catalog: utility
@@ -455,12 +477,13 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
-  icon filename: common displace precisely.png
+  icon filename: SP - Offset Precisely.png
 - id: SP - Side Aligned Reparametrize
   catalog: null
   tags:
     - bezier surface
   testing-status: none
+  icon filename: SP - Side Aligned Reparametrize.png
   file: SP - Bezier surface.blend
 - id: SP - Trim Bezier Surface from Projected Wires
   catalog: trim
@@ -469,13 +492,14 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
-  icon filename: trim from flat.png
+  icon filename: SP - Trim Bezier Surface from Projected Wires.png
 - id: SP - Connect Bezier Patch
   catalog: connect
   tags:
     - connect
     - bezier surface
   testing-status: none
+  icon filename: SP - Connect Bezier Patch.png
   file: SP - Bezier surface.blend
 - id: SP - UV Curve on Surface
   catalog: project
@@ -483,6 +507,7 @@
     - project
     - bezier surface
   testing-status: none
+  icon filename: SP - UV Curve on Surface.png
   file: SP - Bezier surface.blend
 - id: SP - Blend Surfaces
   catalog: blend & fill
@@ -490,12 +515,14 @@
     - blend & fill
     - bezier surface
   testing-status: none
+  icon filename: SP - Blend Surfaces.png
   file: SP - Bezier surface.blend
 - id: SP - Shrinkwrap Bezier Patch
   catalog: null
   tags:
     - bezier surface
   testing-status: none
+  icon filename: SP - Shrinkwrap Bezier Patch.png
   file: SP - Bezier surface.blend
 - id: SP - Crop Patch to Point
   catalog: trim
@@ -504,13 +531,14 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
-  icon filename: patch crop to point.png
+  icon filename: SP - Crop Patch to Point.png
 - id: SP - Raise or Lower Degree Bezier Patch
   catalog: convert
   tags:
     - convert
     - bezier surface
   testing-status: none
+  icon filename: SP - Raise or Lower Degree Bezier Patch.png
   file: SP - Bezier surface.blend
 - id: SP - Displace Bezier Patch Control Grid
   catalog: utility
@@ -519,6 +547,7 @@
     - transform
     - bezier surface
   testing-status: none
+  icon filename: SP - Displace Bezier Patch Control Grid.png
   file: SP - Bezier surface.blend
 - id: SP - Railed Bezier Surface
   catalog: shape
@@ -527,6 +556,7 @@
     - surface
     - bezier surface
   testing-status: none
+  icon filename: SP - Railed Bezier Surface.png
   file: SP - Bezier surface.blend
 - id: SP - Convert Flat Patch to Bezier Patch
   catalog: convert
@@ -534,12 +564,14 @@
     - convert
     - bezier surface
   testing-status: none
+  icon filename: SP - Convert Flat Patch to Bezier Patch.png
   file: SP - Bezier surface.blend
 - id: SP - Trim Patch with Segment
   catalog: null
   tags:
     - bezier surface
   testing-status: none
+  icon filename: SP - Trim Patch with Segment.png
   file: SP - Bezier surface.blend
 - id: SP - Flatten Patch Side
   catalog: utility
@@ -547,6 +579,7 @@
     - utility
     - bezier surface
   testing-status: none
+  icon filename: SP - Flatten Patch Side.png
   file: SP - Bezier surface.blend
 - id: SP - Flatten Patch
   catalog: utility
@@ -555,6 +588,7 @@
     - transform
     - bezier surface
   testing-status: none
+  icon filename: SP - Flatten Patch.png
   file: SP - Bezier surface.blend
 - id: SP - Reparametrize Bezier Patch
   catalog: rebuild
@@ -562,6 +596,7 @@
     - rebuild
     - bezier surface
   testing-status: none
+  icon filename: SP - Reparametrize Bezier Patch.png
   file: SP - Bezier surface.blend
 - id: SP - Set Knot NURBS Patch
   catalog: utility
@@ -570,6 +605,7 @@
     - set property
     - nurbs surface
   testing-status: none
+  icon filename: SP - Set Knot NURBS Patch.png
   file: SP - NURBS.blend
 - id: SP - Continuity Analysis
   catalog: analyse
@@ -578,13 +614,14 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
-  icon filename: continuity analysis.png
+  icon filename: SP - Continuity Analysis.png
 - id: SP - Curvature Analysis
   catalog: analyse
   tags:
     - analyse
     - nurbs surface
   testing-status: none
+  icon filename: SP - Curvature Analysis.png
   file: SP - NURBS.blend
 - id: SP - Convert Contour
   catalog: convert
@@ -592,6 +629,7 @@
     - convert
     - nurbs surface
   testing-status: none
+  icon filename: SP - Convert Contour.png
   file: SP - NURBS.blend
 - id: SP - Interpolate Patch
   catalog: rebuild
@@ -600,7 +638,7 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
-  icon filename: interpolate patch.png
+  icon filename: SP - Interpolate Patch.png
 - id: SP - NURBS Weighting
   catalog: utility
   tags:
@@ -609,7 +647,7 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
-  icon filename: weight.png
+  icon filename: SP - NURBS Weighting.png
 - id: SP - Fit Patch
   catalog: rebuild
   tags:
@@ -617,13 +655,14 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
-  icon filename: fit patch.png
+  icon filename: SP - Fit Patch.png
 - id: SP - Sweep
   catalog: blend & fill
   tags:
     - blend & fill
     - nurbs surface
   testing-status: none
+  icon filename: SP - Sweep.png
   file: SP - NURBS.blend
 - id: SP - Insert Knot NURBS Patch
   catalog: utility
@@ -631,6 +670,7 @@
     - utility
     - nurbs surface
   testing-status: none
+  icon filename: SP - Insert Knot NURBS Patch.png
   file: SP - NURBS.blend
 - id: SP - Crop or Extend Patch
   catalog: trim
@@ -639,7 +679,7 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
-  icon filename: patch crop.png
+  icon filename: SP - Crop or Extend Patch.png
 - id: SP - NURBS Patch Meshing
   catalog: shape
   tags:
@@ -648,13 +688,14 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
-  icon filename: NURBS meshing.png
+  icon filename: SP - NURBS Patch Meshing.png
 - id: SP - Plot Distance from Mesh
   catalog: analyse
   tags:
     - analyse
     - surface
   testing-status: none
+  icon filename: SP - Plot Distance from Mesh.png
   file: SP - Other Primitives.blend
 - id: SP - Copy Geometry
   catalog: copy
@@ -663,7 +704,7 @@
     - surface
   testing-status: none
   file: SP - Other Primitives.blend
-  icon filename: Copy.png
+  icon filename: SP - Copy Geometry.png
 - id: SP - Compare Mesh
   catalog: analyse
   tags:
@@ -671,7 +712,7 @@
     - surface
   testing-status: none
   file: SP - Other Primitives.blend
-  icon filename: compare mesh.png
+  icon filename: SP - Compare Mesh.png
 - id: SP - Surface of Revolution Meshing
   catalog: shape
   tags:
@@ -679,6 +720,7 @@
     - meshing
     - surface
   testing-status: none
+  icon filename: SP - Surface of Revolution Meshing.png
   file: SP - Other Primitives.blend
 - id: SP - Symmetrize
   catalog: symmetry
@@ -687,7 +729,7 @@
     - surface
   testing-status: none
   file: SP - Other Primitives.blend
-  icon filename: symmetrize.png
+  icon filename: SP - Symmetrize.png
 - id: SP - Isoparametric Curve
   catalog: shape
   tags:
@@ -695,6 +737,7 @@
     - curve & wire
     - surface
   testing-status: none
+  icon filename: SP - Isoparametric Curve.png
   file: SP - Other Primitives.blend
 - id: SP - Surface of Extrusion Meshing
   catalog: shape
@@ -703,6 +746,7 @@
     - meshing
     - surface
   testing-status: none
+  icon filename: SP - Surface of Extrusion Meshing.png
   file: SP - Other Primitives.blend
 - id: SP - Spherical Meshing
   catalog: shape
@@ -711,6 +755,7 @@
     - meshing
     - surface
   testing-status: none
+  icon filename: SP - Spherical Meshing.png
   file: SP - Other Primitives.blend
 - id: SP - Adjust Revolution Sweep Angle
   catalog: trim
@@ -719,6 +764,7 @@
     - surface
     - surface of revolution
   testing-status: none
+  icon filename: SP - Adjust Revolution Sweep Angle.png
   file: SP - Other Primitives.blend
 - id: SP - Connect Flat Patch
   catalog: connect
@@ -727,7 +773,7 @@
     - surface
   testing-status: none
   file: SP - Other Primitives.blend
-  icon filename: connect flat.png
+  icon filename: SP - Connect Flat Patch.png
 - id: SP - Conical Meshing
   catalog: shape
   tags:
@@ -735,6 +781,7 @@
     - meshing
     - surface
   testing-status: none
+  icon filename: SP - Conical Meshing.png
   file: SP - Other Primitives.blend
 - id: SP - Toroidal Meshing
   catalog: shape
@@ -743,6 +790,7 @@
     - meshing
     - surface
   testing-status: none
+  icon filename: SP - Toroidal Meshing.png
   file: SP - Other Primitives.blend
 - id: SP - Patch Normal to Side
   catalog: shape
@@ -750,6 +798,7 @@
     - shape
     - surface
   testing-status: none
+  icon filename: SP - Patch Normal to Side.png
   file: SP - Other Primitives.blend
 - id: SP - Cylindrical Meshing
   catalog: shape
@@ -758,6 +807,7 @@
     - meshing
     - surface
   testing-status: none
+  icon filename: SP - Cylindrical Meshing.png
   file: SP - Other Primitives.blend
 - id: SP - Fill Patch
   catalog: blend & fill
@@ -766,7 +816,7 @@
     - surface
   testing-status: none
   file: SP - Other Primitives.blend
-  icon filename: fill patch.png
+  icon filename: SP - Fill Patch.png
 - id: SP - Square Fill
   catalog: blend & fill
   tags:
@@ -774,7 +824,7 @@
     - surface
   testing-status: light
   file: SP - Other Primitives.blend
-  icon filename: square fill.png
+  icon filename: SP - Square Fill.png
 - id: SP - Transform UVMap
   catalog: utility
   tags:
@@ -782,6 +832,7 @@
     - transform
     - surface
   testing-status: none
+  icon filename: SP - Transform UVMap.png
   file: SP - Other Primitives.blend
 - id: SP - Cylinder Compound
   catalog: shape
@@ -790,6 +841,7 @@
     - solid
     - compound
   testing-status: none
+  icon filename: SP - Cylinder Compound.png
   file: SP - Compound.blend
 - id: SP - Tubes Compound
   catalog: shape
@@ -798,6 +850,7 @@
     - solid
     - compound
   testing-status: none
+  icon filename: SP - Tubes Compound.png
   file: SP - Compound.blend
 - id: SP - Pipe Compound
   catalog: shape
@@ -806,6 +859,7 @@
     - surface
     - compound
   testing-status: none
+  icon filename: SP - Pipe Compound.png
   file: SP - Compound.blend
 - id: SP - Slab Compound
   catalog: shape
@@ -814,6 +868,7 @@
     - solid
     - compound
   testing-status: none
+  icon filename: SP - Slab Compound.png
   file: SP - Compound.blend
 - id: SP - Trim Bezier Patch
   catalog: trim
@@ -822,12 +877,13 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
-  icon filename: trim unilateral.png
+  icon filename: SP - Trim Bezier Patch.png
 - id: SP - Set Patch Instance Type
   catalog: null
   tags:
     - compound
   testing-status: none
+  icon filename: SP - Set Patch Instance Type.png
   file: SP Assets Level 1.blend
 - id: SP - Extrude Compound
   catalog: shape
@@ -836,13 +892,14 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
-  icon filename: extrude.png
+  icon filename: SP - Extrude Compound.png
 - id: SP - Copy Compound Nearest Edges
   catalog: copy
   tags:
     - copy
     - compound
   testing-status: none
+  icon filename: SP - Copy Compound Nearest Edges.png
   file: SP - Compound.blend
 - id: SP - SubD to Compound
   catalog: convert
@@ -851,20 +908,21 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
-  icon filename: subd to compound.png
+  icon filename: SP - SubD to Compound.png
 - id: SP - Patch-Patch Intersection Curves
   catalog: null
   tags:
     - compound
   testing-status: none
   file: SP - Compound.blend
-  icon filename: surf-surf Intersection.png
+  icon filename: SP - Patch-Patch Intersection Curves.png
 - id: SP - Trim Bezier Patch as Compound
   catalog: trim
   tags:
     - trim
     - compound
   testing-status: none
+  icon filename: SP - Trim Bezier Patch as Compound.png
   file: null
 - id: SP - Poly to Compound
   catalog: convert
@@ -873,13 +931,14 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
-  icon filename: poly to compound.png
+  icon filename: SP - Poly to Compound.png
 - id: SP - Flip Compound Face
   catalog: utility
   tags:
     - utility
     - compound
   testing-status: none
+  icon filename: SP - Flip Compound Face.png
   file: SP - Compound.blend
 - id: SP - NURBS to Bezier Patch
   catalog: convert
@@ -887,12 +946,14 @@
     - convert
     - compound
   testing-status: none
+  icon filename: SP - NURBS to Bezier Patch.png
   file: null
 - id: SP - Cable Compound
   catalog: null
   tags:
     - compound
   testing-status: none
+  icon filename: SP - Cable Compound.png
   file: SP - Compound.blend
 - id: SP - Compound Meshing
   catalog: shape
@@ -902,13 +963,14 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
-  icon filename: Compound meshing.png
+  icon filename: SP - Compound Meshing.png
 - id: SP - Copy Compound Nearest Shapes
   catalog: copy
   tags:
     - copy
     - compound
   testing-status: none
+  icon filename: SP - Copy Compound Nearest Shapes.png
   file: SP - Compound.blend
 - id: SP - Text to Compound
   catalog: shape
@@ -917,7 +979,7 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
-  icon filename: text to compound.png
+  icon filename: SP - Text to Compound.png
 - id: SP - Oblong Extrusion Compound
   catalog: shape
   tags:
@@ -925,6 +987,7 @@
     - solid
     - compound
   testing-status: none
+  icon filename: SP - Oblong Extrusion Compound.png
   file: SP - Compound.blend
 - id: SP - Split to Patches
   catalog: convert
@@ -932,6 +995,7 @@
     - convert
     - compound
   testing-status: none
+  icon filename: SP - Split to Patches.png
   file: SP - Compound.blend
 - id: SP - Disc CP
   catalog: shape
@@ -940,6 +1004,7 @@
     - curve & wire
     - compound
   testing-status: none
+  icon filename: SP - Disc CP.png
   file: SP Assets Level 0.blend
 - id: SP - Interval Curves
   catalog: shape
@@ -949,13 +1014,14 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
-  icon filename: Interval.png
+  icon filename: SP - Interval Curves.png
 - id: SP - Add Shape to Compound
   catalog: utility
   tags:
     - utility
     - compound
   testing-status: none
+  icon filename: SP - Add Shape to Compound.png
   file: SP - Compound.blend
 - id: SP - Profile Revolution Compound
   catalog: shape
@@ -964,6 +1030,7 @@
     - surface
     - compound
   testing-status: none
+  icon filename: SP - Profile Revolution Compound.png
   file: SP - Compound.blend
 - id: SP - Frame Compound
   catalog: shape
@@ -972,6 +1039,7 @@
     - solid
     - compound
   testing-status: none
+  icon filename: SP - Frame Compound.png
   file: SP - Compound.blend
 - id: SP - Reorder Grid Index [Tool]
   catalog: utility
@@ -980,4 +1048,5 @@
     - index
     - tool
   testing-status: none
+  icon filename: SP - Reorder Grid Index [Tool].png
   file: SP Assets Level 2.blend
