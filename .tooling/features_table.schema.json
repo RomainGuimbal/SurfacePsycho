@@ -3,7 +3,9 @@
   "title": "SurfacePsycho features table",
   "description": "Shape of docs/features_table.yaml and the values allowed in its catalog, tags and testing-status columns. VS Code reports violations inline through the yaml.schemas setting of .vscode/settings.json.",
   "type": "array",
-  "items": { "$ref": "#/$defs/feature" },
+  "items": {
+    "$ref": "#/$defs/feature"
+  },
   "$defs": {
     "id": {
       "description": "Node group name, prefixed with 'SP - '. It doubles as the asset name in Blender.",
@@ -12,7 +14,10 @@
     },
     "catalog": {
       "description": "The single category the feature is filed under in the asset library. null means not filed yet.",
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "enum": [
         "analyse",
         "blend & fill",
@@ -32,25 +37,23 @@
     "tags": {
       "description": "Free-form labels used for searching. The catalog and the primitive family are always the first tags.",
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "uniqueItems": true,
       "items": {
         "type": "string",
         "enum": [
           "analyse",
-          "bezier surface",
-          "blend & fill",
+          "bezier",
           "compound",
           "connect",
           "convert",
           "copy",
           "curve",
-          "curve & wire",
           "fillet",
-          "flat patch",
+          "flat",
           "index",
           "meshing",
-          "nurbs surface",
+          "nurbs",
           "project",
           "rebuild",
           "select",
@@ -59,7 +62,7 @@
           "solid",
           "split",
           "surface",
-          "surface of revolution",
+          "revolution",
           "symmetry",
           "tool",
           "transform",
@@ -71,20 +74,51 @@
     "testing-status": {
       "description": "How much automated testing covers the feature. none: untested. light: a test exists but covers little.",
       "type": "string",
-      "enum": ["none", "light"]
+      "enum": [
+        "none",
+        "light"
+      ]
+    },
+    "type": {
+      "description": "feature type",
+      "type":"string",
+      "enum": [
+        "modifier",
+        "tool",
+        "shape",
+        "nodegroup"
+      ]
     },
     "feature": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "catalog", "tags", "testing-status", "icon filename", "file"],
+      "required": [
+        "id",
+        "catalog",
+        "tags",
+        "testing-status",
+        "icon filename",
+        "file"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "catalog": { "$ref": "#/$defs/catalog" },
-        "tags": { "$ref": "#/$defs/tags" },
-        "testing-status": { "$ref": "#/$defs/testing-status" },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "catalog": {
+          "$ref": "#/$defs/catalog"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        },
+        "testing-status": {
+          "$ref": "#/$defs/testing-status"
+        },
         "Comment": {
           "description": "Working note, typically a planned merge or rename. Omit the key when there is nothing to say.",
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "icon filename": {
           "description": "File name in icons/, normally '<id>.png'.",
@@ -93,8 +127,14 @@
         },
         "file": {
           "description": "Name of the .blend file at the quest folder top level owning the node group, or null when none does. Filled by .tooling/update_features_table.py.",
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "pattern": "^.+\\.blend$"
+        },
+        "type": {
+          "$ref": "#/$defs/type"
         }
       }
     }
