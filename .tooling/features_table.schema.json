@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "SurfacePsycho features table",
-  "description": "Shape of docs/features_table.yaml and the values allowed in its catalog, tags and testing-status columns. VS Code reports violations inline through the yaml.schemas setting of .vscode/settings.json.",
+  "description": "Shape of docs/features_table.yaml and the values allowed in its catalog, tags and testing columns. VS Code reports violations inline through the yaml.schemas setting of .vscode/settings.json.",
   "type": "array",
   "items": {
     "$ref": "#/$defs/feature"
@@ -10,7 +10,7 @@
     "id": {
       "description": "Node group name, prefixed with 'SP - '. It doubles as the asset name in Blender.",
       "type": "string",
-      "pattern": "^SP - .+$"
+      "pattern": "^SP.+$"
     },
     "catalog": {
       "description": "The single category the feature is filed under in the asset library. null means not filed yet.",
@@ -35,7 +35,7 @@
       ]
     },
     "tags": {
-      "description": "Free-form labels used for searching. The catalog and the primitive family are always the first tags.",
+      "description": "For the asset browser search",
       "type": "array",
       "minItems": 0,
       "uniqueItems": true,
@@ -71,22 +71,24 @@
         ]
       }
     },
-    "testing-status": {
-      "description": "How much automated testing covers the feature. none: untested. light: a test exists but covers little.",
+    "testing": {
+      "description": "How much automated testing covers the feature",
       "type": "string",
       "enum": [
         "none",
-        "light"
+        "light",
+        "good"
       ]
     },
     "type": {
       "description": "feature type",
-      "type":"string",
+      "type": "string",
       "enum": [
         "modifier",
         "tool",
         "shape",
-        "nodegroup"
+        "nodegroup",
+        "operator"
       ]
     },
     "feature": {
@@ -95,10 +97,8 @@
       "required": [
         "id",
         "catalog",
-        "tags",
-        "testing-status",
-        "icon filename",
-        "file"
+        "file",
+        "type"
       ],
       "properties": {
         "id": {
@@ -110,8 +110,8 @@
         "tags": {
           "$ref": "#/$defs/tags"
         },
-        "testing-status": {
-          "$ref": "#/$defs/testing-status"
+        "testing": {
+          "$ref": "#/$defs/testing"
         },
         "Comment": {
           "description": "Working note, typically a planned merge or rename. Omit the key when there is nothing to say.",
@@ -122,7 +122,10 @@
         },
         "icon filename": {
           "description": "File name in icons/, normally '<id>.png'.",
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "pattern": "\\.png$"
         },
         "file": {
