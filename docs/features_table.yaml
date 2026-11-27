@@ -231,7 +231,7 @@
   testing: none
   icon filename: SP - Set Segment Type.png
   file: SP Assets Level 0.blend
-  type: modifier
+  type: nodegroup
 - id: SP - Plot Curve Torsion
   catalog: analyse
   tags:
@@ -1012,7 +1012,7 @@
   icon filename: SP - Trim Bezier Patch.png
   type: modifier
 - id: SP - Set Patch Instance Type
-  catalog: null
+  catalog: utility
   tags:
     - compound
   testing: none
@@ -1202,3 +1202,11 @@
   icon filename: SP - Reorder Grid Index [Tool].png
   file: SP Assets Level 2.blend
   type: tool
+- id: SP - Trim Bezier Patches as Compound
+  catalog: trim
+  file: SP - Compound.blend
+  type: modifier
+  tags:
+    - compound
+    - trim
+    - bezier
