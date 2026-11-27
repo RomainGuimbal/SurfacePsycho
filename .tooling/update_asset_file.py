@@ -8,7 +8,7 @@ from packaging.version import Version
 # Paths ######################################################################
 
 SCRIPT_PATH = Path(__file__).resolve()
-REPO_ROOT = SCRIPT_PATH.parent  # surfacepsycho/
+REPO_ROOT = SCRIPT_PATH.parent.parent  # surfacepsycho/
 QUEST_ROOT = REPO_ROOT.parent  # folder holding the source .blend files
 ADDON_DIR = REPO_ROOT / "src" / "surfacepsycho"
 

@@ -6,7 +6,7 @@
         {
             "label": "Open assets",
             "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
+            "command": "blender",
             "args": [
                 "C:/Users/romai/Documents/Projets/26 - Bezier Quest/surfacepsycho/src/surfacepsycho/assets/assets.blend",
             ],
@@ -15,12 +15,12 @@
         {
             "label": "Update assets",
             "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
+            "command": "blender",
             "args": [
                 "--background",
                 "C:/Users/romai/Documents/Projets/26 - Bezier Quest/surfacepsycho/src/surfacepsycho/assets/assets.blend",
                 "--python",
-                "/update_asset_file.py"
+                ".tooling/update_asset_file.py"
             ],
             "problemMatcher": []
         },
@@ -35,12 +35,12 @@
         {
             "label": "Update assets FAST",
             "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
+            "command": "blender",
             "args": [
                 "--background",
                 "C:/Users/romai/Documents/Projets/26 - Bezier Quest/surfacepsycho/src/surfacepsycho/assets/assets.blend",
                 "--python",
-                "/update_asset_file.py",
+                ".tooling/update_asset_file.py",
                 "--",
                 "--fast"
             ],
@@ -49,7 +49,7 @@
         {
             "label": "Build",
             "type": "shell",
-            "command": "C:\\Program Files\\Blender Foundation\\Blender 5.3\\blender.exe",
+            "command": "blender",
             "args": [
                 "--command",
                 "extension",
@@ -100,7 +100,7 @@
         {
             "label": "Import primitives",
             "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
+            "command": "blender",
             "args": [
                 "--python",
                 ".testing/import_primitives.py"
@@ -110,7 +110,7 @@
         {
             "label": "Import complexe",
             "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
+            "command": "blender",
             "args": [
                 "--python",
                 ".testing/import_complexe.py"
@@ -120,7 +120,7 @@
         {
             "label": "curve type export",
             "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
+            "command": "blender",
             "args": [
                 "--background",
                 "--python",
@@ -139,7 +139,7 @@
         {
             "label": "variety export intern",
             "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
+            "command": "blender",
             "args": [
                 "--background",
                 "--python",
@@ -158,7 +158,7 @@
         {
             "label": "Test macros",
             "type": "shell",
-            "command": ".vscode/launch_blender_with_script.bat",
+            "command": "blender",
             "args": [
                 "--python",
                 ".testing/macros_test.py"

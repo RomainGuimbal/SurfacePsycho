@@ -7,7 +7,7 @@ when no file owns it.
 
 Run with:
     blender --background --factory-startup --disable-autoexec \
-        --python update_features_table.py
+        --python .tooling/update_features_table.py
 """
 
 from pathlib import Path
@@ -17,7 +17,7 @@ import bpy
 # Paths ######################################################################
 
 SCRIPT_PATH = Path(__file__).resolve()
-REPO_ROOT = SCRIPT_PATH.parent  # surfacepsycho/
+REPO_ROOT = SCRIPT_PATH.parent.parent  # surfacepsycho/
 QUEST_ROOT = REPO_ROOT.parent  # folder holding the source .blend files
 TABLE_PATH = REPO_ROOT / "docs" / "features_table.yaml"
 
