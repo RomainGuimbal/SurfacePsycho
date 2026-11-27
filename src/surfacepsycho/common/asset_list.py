@@ -1,3 +1,12 @@
+ASSET_NODE_GROUPS_LEVEL_0 = {
+    "SP - Disc CP",
+    "SP - Set Segment Type",
+}
+
+ASSET_NODE_GROUPS_LEVEL_1 = {
+    "SP - Set Patch Instance Type",
+}
+
 ASSET_NODE_GROUPS_LEVEL_2 = {
     "SP - Reorder Grid Index",
     "SP - Reorder Grid Index [Tool]",
@@ -39,30 +48,27 @@ ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = {
     "SP - Resample Selection",
     "SP - Sample Curve Per Degree",
     "SP - Set Edge Length",
-    "SP - Set Segment Type",
     "SP - Split Curve",
     "SP - Switch Curve Direction",
     "SP - Trim Curve with Curve",
-    # "SP - Bezier Circlular Arc",
-    # "SP - Compose FlatPatch From Sides",
 }
 
 ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Bezier Patch Meshing",
     "SP - Bezier Segment Through Segment",
     "SP - Blend Surfaces",
-    "SP - Crown Surface",
     "SP - Connect Bezier Patch",
     "SP - Convert Flat Patch to Bezier Patch",
     "SP - Coon Patch",
     "SP - Crop Patch to Point",
+    "SP - Crown Surface",
     "SP - Displace Bezier Patch Control Grid",
     "SP - Fillet Trim Contour",
-    "SP - Flatten Patch Side",
     "SP - Flatten Patch",
+    "SP - Flatten Patch Side",
     "SP - Gradient Map",
-    "SP - Loft from Internal Curves",
     "SP - Loft",
+    "SP - Loft from Internal Curves",
     "SP - Offset Precisely",
     "SP - Project Curve on Surface",
     "SP - Railed Bezier Surface",
@@ -70,11 +76,11 @@ ASSET_NODE_GROUPS_BEZIER_PATCH = {
     "SP - Reparametrize Bezier Patch",
     "SP - Ruled Surface from Mesh Loop",
     "SP - Select Patch Range",
-    "SP - Trim Bezier Surface from Projected Wires",
-    "SP - UV Curve on Surface",
-    "SP - Side Aligned Reparametrize",
     "SP - Shrinkwrap Bezier Patch",
+    "SP - Side Aligned Reparametrize",
+    "SP - Trim Bezier Surface from Projected Wires",
     "SP - Trim Patch with Segment",
+    "SP - UV Curve on Surface",
 }
 
 ASSET_NODE_GROUPS_NURBS_PATCH = {
@@ -93,54 +99,53 @@ ASSET_NODE_GROUPS_NURBS_PATCH = {
 
 ASSET_NODE_GROUPS_OTHER_SURFACES = {
     "SP - Adjust Revolution Sweep Angle",
+    "SP - Compare Mesh",
     "SP - Conical Meshing",
+    "SP - Connect Flat Patch",
     "SP - Copy Geometry",
     "SP - Cylindrical Meshing",
     "SP - Fill Patch",
     "SP - Isoparametric Curve",
+    "SP - Patch Normal to Side",
     "SP - Plot Distance from Mesh",
     "SP - Spherical Meshing",
+    "SP - Square Fill",
     "SP - Surface of Extrusion Meshing",
     "SP - Surface of Revolution Meshing",
+    "SP - Symmetrize",
     "SP - Toroidal Meshing",
     "SP - Transform UVMap",
-    "SP - Connect Flat Patch",
-    "SP - Symmetrize",
-    "SP - Square Fill",
-    "SP - Compare Mesh",
-    "SP - Patch Normal to Side",
 }
 
 ASSET_NODE_GROUPS_COMPOUND = {
     "SP - Add Shape to Compound",
+    "SP - Cable Compound",
     "SP - Compound Meshing",
     "SP - Copy Compound Nearest Edges",
     "SP - Copy Compound Nearest Shapes",
+    "SP - Cylinder Compound",
     "SP - Extrude Compound",
     "SP - Flip Compound Face",
-    "SP - Patch-Patch Intersection Curves",
+    "SP - Frame Compound",
     "SP - Interval Curves",
-    "SP - NURBS to Bezier Patches",
+    "SP - Oblong Extrusion Compound",
+    "SP - Patch-Patch Intersection Curves",
     "SP - Pipe Compound",
     "SP - Poly to Compound",
     "SP - Profile Revolution Compound",
-    "SP - Set Patch Instance Type",
+    "SP - Slab Compound",
     "SP - Split to Patches",
     "SP - SubD to Compound",
     "SP - Text to Compound",
     "SP - Trim Bezier Patch",
     "SP - Trim Bezier Patches as Compound",
     "SP - Tubes Compound",
-    "SP - Cylinder Compound",
-    "SP - Disc CP",
-    "SP - Frame Compound",
-    "SP - Oblong Extrusion Compound",
-    "SP - Slab Compound",
-    "SP - Cable Compound",
 }
 
 ASSET_NODE_GROUPS = (
-    ASSET_NODE_GROUPS_LEVEL_2
+    ASSET_NODE_GROUPS_LEVEL_0
+    | ASSET_NODE_GROUPS_LEVEL_1
+    | ASSET_NODE_GROUPS_LEVEL_2
     | ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
     | ASSET_NODE_GROUPS_BEZIER_PATCH
     | ASSET_NODE_GROUPS_NURBS_PATCH

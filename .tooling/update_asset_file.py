@@ -37,6 +37,11 @@ RESET = "\033[0m"
 
 TABLE_ID_PREFIX = "- id: "
 TABLE_FILE_KEY = "  file:"
+TABLE_TYPE_KEY = "  type:"
+
+# Feature types that ship as node group assets. The other types (tool, operator)
+# are skipped.
+NODE_GROUP_TYPES = ("modifier", "nodegroup")
 
 # Node group .blend file holding each set of asset_list.py, in append order.
 NODE_GROUP_FILES = {
@@ -239,34 +244,52 @@ def hide_manage_panel():
                 m.show_manage_panel = False
 
 
+def read_table_value(line, key):
+    """Read the value of a table line, or None when it is null or empty."""
+    value = line[len(key) :].split(" #")[0].strip().strip("'\"")
+    return None if value in ("", "null", "~") else value
+
+
 def read_features_table():
     """Map each node group .blend file to the assets the table files under it.
 
     The `file:` column of docs/features_table.yaml is the reference: an asset is
-    appended from the file it names there. Assets filed under no known file are
-    returned separately.
+    appended from the file it names there. Only `modifier` and `nodegroup`
+    features are node group assets, the others are skipped. Assets filed under
+    no known file are returned separately, as are node group assets whose
+    `file:` is missing.
     """
-    entries = []
-    name = None
-    file_name = None
+    records = []
+    record = None
     for line in FEATURES_TABLE_PATH.read_bytes().decode("utf-8").splitlines():
         if line.startswith(TABLE_ID_PREFIX):
-            if name is not None:
-                entries.append((name, file_name))
-            name = line[len(TABLE_ID_PREFIX) :].strip()
-            file_name = None
-        elif line.startswith(TABLE_FILE_KEY):
-            file_name = line[len(TABLE_FILE_KEY) :].strip()
-
-    if name is not None:
-        entries.append((name, file_name))
+            record = {}
+            records.append(record)
+            record[TABLE_ID_PREFIX] = read_table_value(line, TABLE_ID_PREFIX)
+        elif record is not None:
+            for key in (TABLE_FILE_KEY, TABLE_TYPE_KEY):
+                # First occurrence wins, so a repeated key cannot overwrite the
+                # record's own value.
+                if line.startswith(key):
+                    record.setdefault(key, read_table_value(line, key))
 
     sources = {file_name: set() for file_name in NODE_GROUP_FILES}
-    for name, file_name in entries:
-        if file_name in sources:
+    unlocated = []
+    errors = []
+    for record in records:
+        name = record[TABLE_ID_PREFIX]
+        feature_type = record.get(TABLE_TYPE_KEY)
+        if feature_type not in NODE_GROUP_TYPES:
+            continue
+        file_name = record.get(TABLE_FILE_KEY)
+        if file_name is None:
+            errors.append(f'- "{name}" is a {feature_type} with no file field')
+        elif file_name not in sources:
+            unlocated.append(name)
+        else:
             sources[file_name].add(name)
 
-    return sources, [name for name, file_name in entries if file_name not in sources]
+    return sources, unlocated, errors
 
 
 def write_asset_list(sources):
@@ -390,7 +413,9 @@ if __name__ == "__main__":
             "Utility",
         ]
     )
-    sources, unlocated = read_features_table()
+    sources, unlocated, errors = read_features_table()
+    for error in errors:
+        print(f"{RED}Error: {error}{RESET}")
 
     print("\n______________________________________________________\n")
     print(f"Appending Groups..{RED}")
