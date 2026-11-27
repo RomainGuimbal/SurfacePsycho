@@ -18,4 +18,9 @@
     "blender.addonFolders": [
         "./src/surfacepsycho"
     ],
+    "yaml.schemas": {
+        "./.tooling/features_table.schema.json": [
+            "docs/features_table.yaml"
+        ]
+    },
 }
