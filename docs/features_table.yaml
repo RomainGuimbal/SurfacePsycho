@@ -15,7 +15,7 @@
     - curve
   testing-status: none
   file: SP - Curve and FlatPatch.blend
-  icon filename: null
+  icon filename: connect.png
 - id: SP - Reorder Grid Index
   catalog: utility
   tags:
@@ -42,6 +42,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: curve reorder.png
 - id: SP - Oblong Wire
   catalog: shape
   tags:
@@ -60,6 +61,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: Curve split.png
 - id: SP - NURBS to Bezier Curve or FlatPatch
   catalog: convert
   tags:
@@ -92,6 +94,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: curve crop.png
 - id: SP - Interval Curve
   catalog: shape
   tags:
@@ -101,6 +104,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: curve interval.png
 - id: SP - Copy Internal Curve
   catalog: copy
   tags:
@@ -124,6 +128,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: segment continuity.png
 - id: SP - Make Parallel to Flat Patch
   catalog: utility
   tags:
@@ -132,6 +137,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: flat parallel.png
 - id: SP - Radial Array FlatPatch
   catalog: symmetry
   tags:
@@ -140,6 +146,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: flat radial array.png
 - id: SP - Convert Circles and Ellipses to Splines
   catalog: convert
   tags:
@@ -156,6 +163,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: Curve through points.png
 - id: SP - Resample Selection
   catalog: rebuild
   tags:
@@ -197,6 +205,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: torsion.png
 - id: SP - Sample Curve Per Degree
   catalog: rebuild
   tags:
@@ -213,6 +222,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: offset edge.png
 - id: SP - Make SVG Ready
   catalog: convert
   tags:
@@ -221,6 +231,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: svg.png
 - id: SP - Crown Curve
   catalog: shape
   tags:
@@ -230,6 +241,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: crown.png
 - id: SP - Offset Curve
   catalog: utility
   tags:
@@ -239,6 +251,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: offset curve.png
 - id: SP - Curve Meshing
   catalog: shape
   tags:
@@ -248,6 +261,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: curve meshing.png
 - id: SP - Multi Split Curve
   catalog: utility
   tags:
@@ -257,6 +271,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: multi split.png
 - id: SP - Fillet Curve or FlatPatch
   catalog: fillet
   tags:
@@ -275,6 +290,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: Curve distance.png
 - id: SP - Set Edge Length
   catalog: utility
   tags:
@@ -317,6 +333,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: flat mesh.png
 - id: SP - Reorder Curve Selection
   catalog: utility
   tags:
@@ -335,6 +352,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: math function.png
 - id: SP - Inset FlatPatch
   catalog: trim
   tags:
@@ -343,6 +361,7 @@
     - flat patch
   testing-status: none
   file: SP - Curve and FlatPatch.blend
+  icon filename: flat inset.png
 - id: SP - Loft
   catalog: blend & fill
   tags:
@@ -357,6 +376,7 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
+  icon filename: project curve.png
 - id: SP - Gradient Map
   catalog: utility
   tags:
@@ -365,6 +385,7 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
+  icon filename: AOP gradient.png
 - id: SP - Select Patch Range
   catalog: utility
   tags:
@@ -410,6 +431,7 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
+  icon filename: ruled from loop.png
 - id: SP - Loft from Internal Curves
   catalog: blend & fill
   tags:
@@ -417,6 +439,7 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
+  icon filename: loft from internal curves.png
 - id: SP - Bezier Segment Through Segment
   catalog: connect
   tags:
@@ -432,6 +455,7 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
+  icon filename: common displace precisely.png
 - id: SP - Side Aligned Reparametrize
   catalog: null
   tags:
@@ -480,6 +504,7 @@
     - bezier surface
   testing-status: none
   file: SP - Bezier surface.blend
+  icon filename: patch crop to point.png
 - id: SP - Raise or Lower Degree Bezier Patch
   catalog: convert
   tags:
@@ -553,6 +578,7 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
+  icon filename: continuity analysis.png
 - id: SP - Curvature Analysis
   catalog: analyse
   tags:
@@ -574,6 +600,7 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
+  icon filename: interpolate patch.png
 - id: SP - NURBS Weighting
   catalog: utility
   tags:
@@ -582,6 +609,7 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
+  icon filename: weight.png
 - id: SP - Fit Patch
   catalog: rebuild
   tags:
@@ -589,6 +617,7 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
+  icon filename: fit patch.png
 - id: SP - Sweep
   catalog: blend & fill
   tags:
@@ -610,6 +639,7 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
+  icon filename: patch crop.png
 - id: SP - NURBS Patch Meshing
   catalog: shape
   tags:
@@ -618,6 +648,7 @@
     - nurbs surface
   testing-status: none
   file: SP - NURBS.blend
+  icon filename: NURBS meshing.png
 - id: SP - Plot Distance from Mesh
   catalog: analyse
   tags:
@@ -640,6 +671,7 @@
     - surface
   testing-status: none
   file: SP - Other Primitives.blend
+  icon filename: compare mesh.png
 - id: SP - Surface of Revolution Meshing
   catalog: shape
   tags:
@@ -655,6 +687,7 @@
     - surface
   testing-status: none
   file: SP - Other Primitives.blend
+  icon filename: symmetrize.png
 - id: SP - Isoparametric Curve
   catalog: shape
   tags:
@@ -694,6 +727,7 @@
     - surface
   testing-status: none
   file: SP - Other Primitives.blend
+  icon filename: connect flat.png
 - id: SP - Conical Meshing
   catalog: shape
   tags:
@@ -788,6 +822,7 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
+  icon filename: trim unilateral.png
 - id: SP - Set Patch Instance Type
   catalog: null
   tags:
@@ -801,6 +836,7 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
+  icon filename: extrude.png
 - id: SP - Copy Compound Nearest Edges
   catalog: copy
   tags:
@@ -815,12 +851,14 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
+  icon filename: subd to compound.png
 - id: SP - Patch-Patch Intersection Curves
   catalog: null
   tags:
     - compound
   testing-status: none
   file: SP - Compound.blend
+  icon filename: surf-surf Intersection.png
 - id: SP - Trim Bezier Patch as Compound
   catalog: trim
   tags:
@@ -835,6 +873,7 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
+  icon filename: poly to compound.png
 - id: SP - Flip Compound Face
   catalog: utility
   tags:
@@ -863,6 +902,7 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
+  icon filename: Compound meshing.png
 - id: SP - Copy Compound Nearest Shapes
   catalog: copy
   tags:
@@ -877,6 +917,7 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
+  icon filename: text to compound.png
 - id: SP - Oblong Extrusion Compound
   catalog: shape
   tags:
@@ -908,6 +949,7 @@
     - compound
   testing-status: none
   file: SP - Compound.blend
+  icon filename: Interval.png
 - id: SP - Add Shape to Compound
   catalog: utility
   tags:
