@@ -11,6 +11,8 @@ SCRIPT_PATH = Path(__file__).resolve()
 REPO_ROOT = SCRIPT_PATH.parent.parent  # surfacepsycho/
 QUEST_ROOT = REPO_ROOT.parent  # folder holding the source .blend files
 ADDON_DIR = REPO_ROOT / "src" / "surfacepsycho"
+FEATURES_TABLE_PATH = REPO_ROOT / "docs" / "features_table.yaml"
+ASSET_LIST_PATH = ADDON_DIR / "common" / "asset_list.py"
 
 FILE_PATH = Path(bpy.data.filepath).resolve()
 ASSETS_DIR = FILE_PATH.parent  # folder holding assets.blend
@@ -22,16 +24,9 @@ CATALOG_FILE = ASSETS_DIR / "blender_assets.cats.txt"
 
 sys.path.insert(0, str(ADDON_DIR))
 
-from common import asset_list, enums, version_utils
+from common import enums, version_utils
 
 VERSION = Version(enums.VERSION_STR)
-ASSET_NODE_GROUPS_LEVEL_2 = asset_list.ASSET_NODE_GROUPS_LEVEL_2
-ASSET_NODE_GROUPS_BEZIER_PATCH = asset_list.ASSET_NODE_GROUPS_BEZIER_PATCH
-ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH = asset_list.ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH
-ASSET_NODE_GROUPS_NURBS_PATCH = asset_list.ASSET_NODE_GROUPS_NURBS_PATCH
-ASSET_NODE_GROUPS_OTHER_SURFACES = asset_list.ASSET_NODE_GROUPS_OTHER_SURFACES
-ASSET_NODE_GROUPS_COMPOUND = asset_list.ASSET_NODE_GROUPS_COMPOUND
-ASSET_NODE_GROUPS = asset_list.ASSET_NODE_GROUPS
 set_nodes_version = version_utils.set_nodes_version
 replace_duplicates = version_utils.replace_duplicates
 
@@ -39,6 +34,21 @@ RED = "\033[91m"
 GREEN = "\033[32m"
 BLUE = "\033[94m"
 RESET = "\033[0m"
+
+TABLE_ID_PREFIX = "- id: "
+TABLE_FILE_KEY = "  file:"
+
+# Node group .blend file holding each set of asset_list.py, in append order.
+NODE_GROUP_FILES = {
+    "SP Assets Level 0.blend": "ASSET_NODE_GROUPS_LEVEL_0",
+    "SP Assets Level 1.blend": "ASSET_NODE_GROUPS_LEVEL_1",
+    "SP Assets Level 2.blend": "ASSET_NODE_GROUPS_LEVEL_2",
+    "SP - Curve and FlatPatch.blend": "ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH",
+    "SP - Bezier surface.blend": "ASSET_NODE_GROUPS_BEZIER_PATCH",
+    "SP - NURBS.blend": "ASSET_NODE_GROUPS_NURBS_PATCH",
+    "SP - Other Primitives.blend": "ASSET_NODE_GROUPS_OTHER_SURFACES",
+    "SP - Compound.blend": "ASSET_NODE_GROUPS_COMPOUND",
+}
 
 
 def delete_all_data():
@@ -229,6 +239,58 @@ def hide_manage_panel():
                 m.show_manage_panel = False
 
 
+def read_features_table():
+    """Map each node group .blend file to the assets the table files under it.
+
+    The `file:` column of docs/features_table.yaml is the reference: an asset is
+    appended from the file it names there. Assets filed under no known file are
+    returned separately.
+    """
+    entries = []
+    name = None
+    file_name = None
+    for line in FEATURES_TABLE_PATH.read_bytes().decode("utf-8").splitlines():
+        if line.startswith(TABLE_ID_PREFIX):
+            if name is not None:
+                entries.append((name, file_name))
+            name = line[len(TABLE_ID_PREFIX) :].strip()
+            file_name = None
+        elif line.startswith(TABLE_FILE_KEY):
+            file_name = line[len(TABLE_FILE_KEY) :].strip()
+
+    if name is not None:
+        entries.append((name, file_name))
+
+    sources = {file_name: set() for file_name in NODE_GROUP_FILES}
+    for name, file_name in entries:
+        if file_name in sources:
+            sources[file_name].add(name)
+
+    return sources, [name for name, file_name in entries if file_name not in sources]
+
+
+def write_asset_list(sources):
+    """Regenerate asset_list.py from the features table."""
+    text = ASSET_LIST_PATH.read_bytes().decode("utf-8")
+    eol = "\r\n" if "\r\n" in text else "\n"
+
+    lines = []
+    for file_name, set_name in NODE_GROUP_FILES.items():
+        lines.append(f"{set_name} = {{")
+        lines.extend(f'    "{name}",' for name in sorted(sources[file_name]))
+        lines.append("}")
+        lines.append("")
+
+    set_names = list(NODE_GROUP_FILES.values())
+    lines.append("ASSET_NODE_GROUPS = (")
+    lines.append(f"    {set_names[0]}")
+    lines.extend(f"    | {set_name}" for set_name in set_names[1:])
+    lines.append(")")
+
+    ASSET_LIST_PATH.write_bytes((eol.join(lines) + eol).encode("utf-8"))
+    return sum(len(names) for names in sources.values())
+
+
 ############################################################################################
 ############################################################################################
 ############################################################################################
@@ -239,9 +301,6 @@ def hide_manage_panel():
 #          TO IMPORT           #
 #                              #
 ################################
-
-# LVL 2
-path_lvl_2 = QUEST_ROOT / "SP Assets Level 2.blend"
 
 # PROBE
 path_probe = QUEST_ROOT / "Principal curvature.blend"
@@ -264,13 +323,6 @@ obj_surf = {
 # NURBS
 path_nurbs = QUEST_ROOT / "SP - NURBS.blend"
 obj_nurbs = {"NURBS Patch"}
-
-# OTHER
-path_other = QUEST_ROOT / "SP - Other Primitives.blend"
-# obj_other={""}
-
-# COMPOUND
-path_compound = QUEST_ROOT / "SP - Compound.blend"
 
 # SHAPES
 path_preset = QUEST_ROOT / "SP - Shapes presets.blend"
@@ -338,16 +390,12 @@ if __name__ == "__main__":
             "Utility",
         ]
     )
+    sources, unlocated = read_features_table()
+
     print("\n______________________________________________________\n")
     print(f"Appending Groups..{RED}")
-    append_by_name(path_lvl_2, ASSET_NODE_GROUPS_LEVEL_2, "node_groups")
-    append_by_name(
-        path_curve_flat, ASSET_NODE_GROUPS_CURVE_AND_FLATPATCH, "node_groups"
-    )
-    append_by_name(path_surf, ASSET_NODE_GROUPS_BEZIER_PATCH, "node_groups")
-    append_by_name(path_nurbs, ASSET_NODE_GROUPS_NURBS_PATCH, "node_groups")
-    append_by_name(path_other, ASSET_NODE_GROUPS_OTHER_SURFACES, "node_groups")
-    append_by_name(path_compound, ASSET_NODE_GROUPS_COMPOUND, "node_groups")
+    for file_name in NODE_GROUP_FILES:
+        append_by_name(QUEST_ROOT / file_name, sources[file_name], "node_groups")
 
     print(f"{RESET}\n______________________________________________________\n")
     print("Appending Objects..")
@@ -387,11 +435,19 @@ if __name__ == "__main__":
     #    profiler.disable()
     #    profiler.print_stats()
 
+    print("\n______________________________________________________\n")
+    print("Update asset list..")
+    count = write_asset_list(sources)
+    print(f"{count} node groups written to {ASSET_LIST_PATH}")
+    for name in unlocated:
+        print(f'- "{name}" is filed under no known file')
+
     missing = []
     present = bpy.data.node_groups.keys()
-    for ng in ASSET_NODE_GROUPS:
-        if ng not in present:
-            missing.append(ng)
+    for names in sources.values():
+        for ng in sorted(names):
+            if ng not in present:
+                missing.append(ng)
 
     # Blender refuses to overwrite a file that is currently loaded as a library.
     # Workaround: save to a temp path (copy=True keeps the session filepath unchanged),
